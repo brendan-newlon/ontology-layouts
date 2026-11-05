@@ -169,16 +169,16 @@ The whole pipeline (4.1 to 4.9 and 4.11) is run from different random seeds and 
 
 For each set-aside node `v` in reverse order of removal, with hub `h` already placed:
 
-1. For each of 72 directions `u`, the node would sit at `p_h + u · need`, where `need = min( ((w_h + w_v)/2 + G)/|u_x| , ((h_h + h_v)/2 + G)/|u_y| )` and `G = 40` is the gap (scale with node size).
+1. For each of 72 directions `u`, the node would sit at `p_h + u · need`, where `need = min( ((w_h + w_v)/2 + G)/|u_x| , ((h_h + h_v)/2 + G)/|u_y| )` and `G` is the gap: at least 40 (scale with node size) and at least the printed length of the link label plus 16 px, so that the text on the link fits between the two boxes (optional fourth element of an edge, `[i, j, weight, labelLength]`).
 2. **Ray cast.** `reach(u)` is the distance along the ray from `p_h` to the first link that does not touch `h`. If `reach < need + half-extent of v + 14`, the direction needs the surroundings stretched by `s = want / reach`.
-3. **Clash test.** If any other node (including leaves already put back) would overlap the new box (with 12 px of margin) when all other nodes are stretched about `h` by `s`, increase `s` through `{1.1, 1.25, 1.5, 2, 3, 5, 8, 15, 30, 60}` until none does.
+3. **Clash test.** If any other node (including leaves already put back) would overlap the new box (with 12 px of margin) when all other nodes are stretched about `h` by `s`, increase `s` through `{1.1, 1.25, 1.5, 2, 3, 5, 8, 15, 30, 60}` until none does. **Line clearance.** The same test is made for links: no placed link may pass through the new box (with 12 px of margin) under the same stretch. A link that starts at `h` cannot be stretched away, so a direction that lies on one is rejected and another is taken.
 4. Choose the direction with the smallest `s` (ties: longer reach). If `s > 1`, scale all placed nodes about `h` by `1.03 s`; this is a similarity transform, so **no crossing changes while room is made**. Place `v`.
 
 If any leaf needed stretching, restart the whole placement from the core scaled up about its centre by `min(1.04 · s_max, 3)`, up to 5 passes, so that the room comes from the core as a whole rather than from many local stretches.
 
 A link to a single-link node cannot cross anything by construction: the segment from the hub to the chosen position lies inside the clear cone found by the ray cast.
 
-**Shrink.** Stretching may have left the drawing larger than needed. Scale every position about the centroid by `f ∈ (0, 1]`, with `f` found by bisection on a log scale (30 steps) as the smallest value for which the number of touching pairs is no larger than at `f = 1`. A pair touches when boxes are closer than `G − 6` apart, or when two cluster bounding boxes are within 34 px. A uniform scale preserves every crossing and the order of everything, so the shrink is free; the gap threshold stops it squeezing a leaf back against its hub.
+**Shrink.** Stretching may have left the drawing larger than needed. Scale every position about the centroid by `f ∈ (0, 1]`, with `f` found by bisection on a log scale (30 steps) as the smallest value for which the number of touching pairs is no larger than at `f = 1`. A pair touches when boxes are closer than 8 px (for a leaf and its hub, `G − 6`) apart, or when two cluster bounding boxes are within 34 px. A uniform scale preserves every crossing and the order of everything, so the shrink is free; the gap threshold stops it squeezing a leaf back against its hub.
 
 ## 5. Cost
 
@@ -247,7 +247,7 @@ When node boxes are much larger or smaller than about 100 × 30 px, scale `L`, `
 
 ## Appendix A. Reference implementation (JavaScript)
 
-Self-contained; no dependencies. `_ogClusterLayout(items, edges, opts)` is the entry point: `items` is an array of `{ w, h }`, `edges` an array of `[i, j, weight]`; it returns `{ pos: [{ x, y }, …], crossings }`, or `null` when the graph is smaller than 8 nodes, has no links, or forms a single cluster (use a force layout then). The function names carry the prefix `_og` (ontology graph); rename freely.
+Self-contained; no dependencies. `_ogClusterLayout(items, edges, opts)` is the entry point: `items` is an array of `{ w, h }`, `edges` an array of `[i, j, weight]` (optionally `[i, j, weight, labelLength]`, the printed length of the link label in pixels); it returns `{ pos: [{ x, y }, …], crossings }`, or `null` when the graph is smaller than 8 nodes, has no links, or forms a single cluster (use a force layout then). The function names carry the prefix `_og` (ontology graph); rename freely.
 
 ```js
 // ── OG: Cluster layout ─────────────
@@ -581,6 +581,12 @@ function _ogClCore(N, edges, opt, seed) {
   return { P, com, groups, ms: performance.now() - t0 };
 }
 // The whole layout: set aside single-link classes, lay out the rest, put the single-link classes back, shrink evenly.
+// Does the segment (ax,ay)-(bx,by), given relative to a box's centre, touch the box of half-sizes hw, hh?
+function _ogClSegBox(ax, ay, bx, by, hw, hh) {
+  let t0 = 0, t1 = 1; const dx = bx - ax, dy = by - ay;
+  const clip = (p, q) => { if (p === 0) return q >= 0; const r = q / p; if (p < 0) { if (r > t1) return false; if (r > t0) t0 = r; } else { if (r < t0) return false; if (r < t1) t1 = r; } return true; };
+  return clip(-dx, ax + hw) && clip(dx, hw - ax) && clip(-dy, ay + hh) && clip(dy, hh - ay);
+}
 function _ogClOnce(items, edges, opt, seed) {
   const n = items.length, N = items.map((it) => ({ w: it.w, h: it.h }));
   const nb = Array.from({ length: n }, () => new Set());
@@ -599,7 +605,10 @@ function _ogClOnce(items, edges, opt, seed) {
   const r = _ogClCore(core.map((i) => N[i]), cEdges, opt, seed);
   if (!r) return null;
   const allEE = edges.filter(([a, b]) => a !== b).map(([a, b]) => [a, b]);
-  const LG = opt.leafGap;
+  const LG = opt.leafGap, lgOf = new Array(n).fill(0), labLen = new Map();
+  // The room beside a single-link class also has to hold the text on its link.
+  edges.forEach(([a, b, w, len]) => { if (len) { const k = a < b ? a * n + b : b * n + a; labLen.set(k, Math.max(labLen.get(k) || 0, len)); } });
+  const gapFor = (v, h) => Math.max(LG, (labLen.get(v < h ? v * n + h : h * n + v) || 0) + 16);
   let P = null, com = null, placed = null, maxNeed = 0, S = 1;
   const rayHit = (h, ux, uy) => {
     let best = Infinity; const o = P[h];
@@ -613,10 +622,10 @@ function _ogClOnce(items, edges, opt, seed) {
   };
   const scaleAbout = (h, s) => { const hx = P[h].x, hy = P[h].y; for (let u = 0; u < n; u++) if (P[u] && u !== h) { P[u].x = hx + (P[u].x - hx) * s; P[u].y = hy + (P[u].y - hy) * s; } };
   const placeLeaf = (v, h) => {
-    let best = null;
+    let best = null; const LGv = gapFor(v, h); lgOf[v] = LGv;
     for (let a = 0; a < 72; a++) {
       const t = 2 * Math.PI * a / 72 + 0.05, ux = Math.cos(t), uy = Math.sin(t);
-      const need = Math.min(((N[h].w + N[v].w) / 2 + LG) / Math.max(Math.abs(ux), 1e-6), ((N[h].h + N[v].h) / 2 + LG) / Math.max(Math.abs(uy), 1e-6));
+      const need = Math.min(((N[h].w + N[v].w) / 2 + LGv) / Math.max(Math.abs(ux), 1e-6), ((N[h].h + N[v].h) / 2 + LGv) / Math.max(Math.abs(uy), 1e-6));
       const reach = rayHit(h, ux, uy), want = need + Math.max(N[v].w * Math.abs(ux), N[v].h * Math.abs(uy)) / 2 + 14;
       let s = Math.max(1, want / reach);
       const p = { x: P[h].x + ux * need * 1.02, y: P[h].y + uy * need * 1.02 };
@@ -629,7 +638,16 @@ function _ogClOnce(items, edges, opt, seed) {
         }
         return false;
       };
-      if (clash(s)) { let ok = false; for (const f of [1.1, 1.25, 1.5, 2, 3, 5, 8, 15, 30, 60]) { const s2 = Math.max(s, f); if (!clash(s2)) { s = s2; ok = true; break; } } if (!ok) s = 1e3; }
+      // and no link may run through the leaf's box (a link from the hub itself cannot be stretched away, so that direction is rejected)
+      const lineClash = (sc) => {
+        const hx = P[h].x, hy = P[h].y, hw = N[v].w / 2 + 12, hh = N[v].h / 2 + 12;
+        for (const [x, y] of placed) {
+          if (_ogClSegBox(hx + (P[x].x - hx) * sc - p.x, hy + (P[x].y - hy) * sc - p.y, hx + (P[y].x - hx) * sc - p.x, hy + (P[y].y - hy) * sc - p.y, hw, hh)) return true;
+        }
+        return false;
+      };
+      const bad = (sc) => clash(sc) || lineClash(sc);
+      if (bad(s)) { let ok = false; for (const f of [1.1, 1.25, 1.5, 2, 3, 5, 8, 15, 30, 60]) { const s2 = Math.max(s, f); if (!bad(s2)) { s = s2; ok = true; break; } } if (!ok) s = 1e3; }
       const cost = s + (Number.isFinite(reach) ? 0 : -0.001) - Math.min(reach, 400) * 1e-5;
       if (!best || cost < best.cost) best = { cost, s, ux, uy, need };
     }
@@ -651,7 +669,10 @@ function _ogClOnce(items, edges, opt, seed) {
   const cx = P.reduce((s, p) => s + p.x, 0) / n, cy = P.reduce((s, p) => s + p.y, 0) / n, P1 = P.map((p) => ({ x: p.x, y: p.y })), tp = Math.max(8, LG - 6);
   const touches = (s) => {
     const Q = P1.map((p) => ({ x: cx + (p.x - cx) * s, y: cy + (p.y - cy) * s })); let c = 0;
-    for (let i = 0; i < n; i++) for (let j = i + 1; j < n; j++) if (Math.abs(Q[i].x - Q[j].x) < (N[i].w + N[j].w) / 2 + tp && Math.abs(Q[i].y - Q[j].y) < (N[i].h + N[j].h) / 2 + tp) c++;
+    for (let i = 0; i < n; i++) for (let j = i + 1; j < n; j++) {
+      const pad = Math.max(tp, removed[i] && hubOf[i] === j ? lgOf[i] - 6 : 0, removed[j] && hubOf[j] === i ? lgOf[j] - 6 : 0);
+      if (Math.abs(Q[i].x - Q[j].x) < (N[i].w + N[j].w) / 2 + pad && Math.abs(Q[i].y - Q[j].y) < (N[i].h + N[j].h) / 2 + pad) c++;
+    }
     const B = groups.map((g) => { let x1 = 1e9, y1 = 1e9, x2 = -1e9, y2 = -1e9; g.forEach((i) => { x1 = Math.min(x1, Q[i].x - N[i].w / 2); x2 = Math.max(x2, Q[i].x + N[i].w / 2); y1 = Math.min(y1, Q[i].y - N[i].h / 2); y2 = Math.max(y2, Q[i].y + N[i].h / 2); }); return { x1, y1, x2, y2 }; });
     for (let a = 0; a < B.length; a++) for (let b = a + 1; b < B.length; b++) if (B[a].x1 < B[b].x2 + 34 && B[b].x1 < B[a].x2 + 34 && B[a].y1 < B[b].y2 + 34 && B[b].y1 < B[a].y2 + 34) c++;
     return c;
