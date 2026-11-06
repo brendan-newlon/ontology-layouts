@@ -1,124 +1,184 @@
-# Ontology diagram layouts: hand-off notes
+# Tidy Stress and Mycelium: layouts for readable ontology diagrams
 
-Layouts for drawing an ontology (classes as labelled boxes, subclass links and object-property links between them) so that a person can read it: few crossed links, no link running through a class box, short and even links, classes that belong together drawn together, a drawing that is not much bigger than it needs to be. Written so another team can reimplement or reuse the code for any node-link diagram with labelled rectangular nodes.
+Two layout algorithms for node-link diagrams with labelled rectangular nodes, built for ontologies (classes joined by subclass and relationship links), and **Best Read**, a selector that runs them and keeps the more readable result.
 
-The code is pure geometry with no dependencies (about 500 lines of JavaScript in `src/ontology-layouts.js`, between `// ── OG: Layout geometry helpers` and `function _ogClusterSpread`). Input: boxes `[{w, h}]` and links `[[i, j, weight, labelWidth?]]` (weight 2 for subclass links). Output: box centres `[{x, y}]`. Nothing is rounded.
+- **Tidy Stress** suits models of up to a few dozen classes. It lays a model out by stress majorization, then tidies it with local moves that remove crossings, links running through class boxes and needlessly long links, never making any of those worse.
+- **Mycelium** suits large models and hub-heavy models. It draws groups of closely linked classes as compact pods joined by longer threads, gives each hub a ring of room for its neighbours, and fans single-link classes out around the class they hang from.
+- **Best Read** is not a layout algorithm. It runs the variants of Tidy Stress and Mycelium that suit the model's size and keeps the best by a readability score.
 
-Working names are used below (**Compact**, **Grouped**, **Auto**); official names are still to be chosen (see the last section).
+On a benchmark of 19 models (13 to 537 classes) against eleven widely used open-source layouts, Best Read ranks first overall on readability. It also has the fewest crossed links and the fewest links running through classes: about 2–3× fewer than the best open-source layout on mid-size and hub-heavy models. At the largest size tested (537 classes), WebCola draws somewhat fewer crossings but takes over a hundred times as long. Details, limits and every number are below.
 
-## What is new, and what is not
+## Foundations and credit
 
-Most building blocks are published, well-known techniques. Stated plainly, so nobody oversells this:
+Both algorithms are built from published techniques, and this work depends on them:
 
-| Building block | Source | Ours? |
+| Technique | Authors | Used for |
 |---|---|---|
-| Stress majorization (place nodes so straight distances match graph distances, weights 1/d²) | Gansner, Koren and North 2004; Graphviz `neato` | no |
-| Pivot MDS start | Brandes and Pich 2006 | no |
-| Louvain communities | Blondel et al. 2008 | no |
-| Edge lengths that differ inside and between groups | known idea (group-aware and modularity layouts, cola's link-length helpers) | the factors are ours |
-| Removing degree-1 nodes before layout and adding them back | common practice | the placement rule is ours |
+| Stress majorization | Gansner, Koren and North, *Graph Drawing by Stress Majorization*, 2004, building on Kamada and Kawai, 1989 | Initial placement in both algorithms |
+| Pivot MDS | Brandes and Pich, *Eigensolver Methods for Progressive Multidimensional Scaling of Large Data*, 2006 | A repeatable starting placement |
+| Louvain community detection | Blondel, Guillaume, Lambiotte and Lefebvre, *Fast Unfolding of Communities in Large Networks*, 2008 | Finding the pods in Mycelium |
+| Link lengths that depend on graph structure | e.g. Dwyer et al., WebCola (2009 onwards), and Noack's LinLog energy model, 2007 | The idea behind pod-dependent link lengths |
+| Readability measures (crossings, edge length, node–edge overlap) | Purchase, *Which aesthetic has the greatest effect on human understanding?*, 1997, and later work | The metrics used for scoring |
+| Choosing a layout per graph by predicted quality | e.g. Kwon, Crnovrsanin and Ma, *What Would a Graph Look Like in This Layout?*, 2018 | The idea behind Best Read |
 
-What this work adds, and what the measurements below support:
+What is new here is the design of the parts below, the order in which they run, and the measurement that chose each setting. None of the individual building blocks is claimed as new.
 
-1. **Hub ring lengths.** A link at a class with k neighbours gets an ideal length of at least Σ(neighbour box width + 20) / 2π, the radius of a ring that holds those neighbours side by side. One line of code, and on hub-heavy models it removes many of the links that run through classes (health record model, 53 classes and 129 links: about 80 links through classes with plain lengths, about 43 with ring lengths alone, about 22 with ring lengths, groups and leaf fanning together).
-2. **One-link class placement with label room ("leaf fanning").** Classes with a single neighbour are taken out, the rest is laid out, then each is put back around its neighbour by searching 48 directions × the nearest free distances, minimising 100 × crossings + 80 × links touching the box + distance. It keeps a gap of max(40 px, label width + 16 px) from the neighbour so the link's text fits. A final pass re-places any whose link ended up crossed or touched. This is what makes taxonomy-heavy ontologies (many leaf subclasses) readable.
-3. **Safe clean-up passes after stress.** Four local searches, each refusing any move that adds a crossing, a link through a box or an overlap: swap or move classes to reduce crossings; move a class off links that run through it; pull each class toward its neighbours to shorten long links; shrink the whole drawing evenly as far as the boxes allow. In the benchmark, plain stress runs typically 2–3× (1.2–4×) as many links through classes as stress with these passes, and usually about twice as many crossed links (up to 6× on the customer-hub model).
-4. **A readability score and a portfolio.** Instead of one algorithm, several variants run within a time budget and a single score picks the result. The score: 10·crossings + 8·links through boxes + 2·near-touching link pairs (< 30 px) + 40·overlapping boxes + mean link length/10 + max(0, mean length − 350)/2 + max(0, area/(Σ box area) − 8)·4·√n + 25·Σ max(0, length/median − 1.8). The last two terms matter: without them the score prefers sprawling drawings (fewer crossings bought with enormous empty space) and drawings with a few absurdly long links.
-5. **Measured, size-aware choice.** Which variants to run, and when to stop running them, comes from a benchmark of 28 model shapes (below), not from taste.
+## What Tidy Stress and Mycelium add
 
-None of this is a new layout paradigm; it is a carefully tuned and measured combination aimed at ontologies. Whether it beats commercial engines (yFiles organic, Tom Sawyer) has not been tested.
+1. **Safe tidy-up passes.** After stress placement, four local searches run in a tested order. Each refuses any move that would add a crossing, a link through a box or an overlap:
+   1. Swap two classes, or move one beside a neighbour, when that reduces crossings.
+   2. Move a class off links that run through it.
+   3. Pull each class toward its neighbours to shorten long links, then shrink the whole drawing evenly as far as the boxes allow.
+   4. Move classes off links once more.
 
-## The algorithms
+   Plain stress majorization (as in Graphviz `neato`) leaves typically 2–3× as many links through classes and about twice as many crossings.
+2. **Hub rings (Mycelium).** A link at a class with k neighbours gets an ideal length of at least Σ(neighbour width + 20 px) / 2π. That is the radius of a ring that holds the neighbours side by side. On a 53-class clinical-record model with three super-hubs, links through classes fall from about 80 to about 43 with this rule alone.
+3. **Pods (Mycelium).** Links inside a Louvain group are drawn at 0.85× the base length and links between groups at 1.6×. The stress placement then separates the groups without hard constraints, so a class shared between groups can still sit between them.
+4. **Leaf fanning with label room (both).** Classes with a single neighbour are laid out last:
+   - Each is placed around its neighbour by searching 48 directions at the nearest free distances, minimising 100 × crossings + 80 × links touching it + distance.
+   - Each keeps max(40 px, label width + 16 px) from its neighbour, so the link's text fits.
+   - A final pass re-places any whose link ended up crossed or touched.
 
-### Shared core: one stress run (`_ogStressLayout`)
+   This matters for ontologies, where many classes are leaf subclasses.
+5. **A readability score that resists sprawl.** Best Read scores each result on:
+   - 10 × crossings,
+   - 8 × links through boxes,
+   - 2 × near-touching link pairs,
+   - 40 × overlapping boxes,
+   - mean link length,
+   - area beyond eight times the area of the boxes,
+   - links more than 1.8 × the median length.
+
+   Without the last two terms, a score built from crossings alone favours drawings that avoid crossings by spreading out enormously, or by stretching a few links across the whole drawing.
+
+## How they run
 
 ```
-boxes  := each class box + 16 × 12 px of room (× 1.3 when attribute tables are shown)
-leaves := classes with exactly one distinct neighbour whose neighbour has others      (if cfg.leaves)
-core   := all classes − leaves
+boxes  := each class box + 16 × 12 px margin
+leaves := classes with exactly one distinct neighbour, whose neighbour has others
+core   := all classes − leaves                       (Tidy Stress variants may keep leaves in the core)
 for each core link (u, v):
-    len := L (170 px; subclass links 0.9 L)
-    if cfg.hub:  len := max(len, min(3 L, ring(u), ring(v)))      ring(x) = Σ(neighbour width + 20) / 2π
-    if cfg.pods: len *= 0.85 if same Louvain group else cfg.pods (1.6)
-    if the link carries a label: len := max(len, (w_u + w_v)/2 + labelWidth + 24)
-D := all-pairs shortest paths over len (Dijkstra)
-repeat restarts (8 / 4 / 2 by size; first from pivot MDS, others random), within 40 % of the budget:
-    stress majorization on D (≤ 120 iterations, stop when average move < 0.05 px)
-    push overlapping boxes apart
-    keep the run with fewest crossings
-clean-up: fewer crossings (swap/move) → off links → shorten links + even shrink → off links   (each time-boxed)
-if cfg.leaves: put leaves back (see 2 above), clean-up once more on the whole drawing
-re-place any one-link class closer than its label room, or whose link is crossed or touched (two passes)
-if cfg.leafFix: move each one-link class to a better free spot if there is one
+    len := L (170 px; subclass links 0.9 L; Mycelium uses L = 260 px from 100 classes)
+    Mycelium:  len := max(len, min(3 L, ring(u), ring(v)))        ring(x) = Σ(neighbour width + 20) / 2π
+               len *= 0.85 inside a Louvain group, 1.6 between groups
+    labelled link: len := max(len, (w_u + w_v)/2 + label width + 24)
+D := all-pairs shortest-path lengths (Dijkstra)
+place: pivot MDS start (plus random restarts while time allows), stress majorization on D, push overlapping boxes apart
+tidy-up passes (time-boxed), fan the leaves out, tidy-up once more, re-place any leaf that is crossed or touched
 ```
 
-### Variants
+Tidy Stress tries up to four variants within 1.5 s and keeps the best by the score:
+- plain stress with random starts;
+- pivot-MDS start with a final leaf improvement;
+- hub rings with leaf fanning;
+- leaf fanning alone.
 
-| Variant | Settings | Good at |
-|---|---|---|
-| stress | random starts, plain lengths | dense small models (telecom-like meshes) |
-| mds | pivot MDS start, leafFix | the safe default at every size |
-| hubs | hub ring lengths, leaves out then back | models with one or two hubs and many one-link classes |
-| leaves | leaves out then back | taxonomies |
-| groups | pods 1.6, hub rings, leaves out then back; L 260 from 100 classes | large and hub-heavy models |
+Above 60 classes it runs only the second, because sharing the time starves each variant's tidy-up.
 
-### Compact
-Runs the variants that suit the size and keeps the best score: up to 30 classes mds, stress, hubs, leaves; up to 60 mds, stress, leaves; above that mds alone (sharing the time on large models starves the clean-up). 1.5 s budget.
+Mycelium refuses models of fewer than 8 classes; its budget is 1 s.
 
-### Grouped
-The `groups` variant alone, 1 s budget; refuses models under 8 classes. Groups of closely linked classes stand apart, hubs get room, one-link classes fan out round their neighbour.
+## Benchmark
 
-### Auto
-Compact's variants plus `groups` up to 100 classes (dense models over 30 classes with more than two links per class: only mds plus groups), `groups` alone above 100 classes. Keeps the best score.
+**Models.** 19 shapes:
+- Ontologies written from the published structure of PROV-O, SOSA/SSN, W3C ORG, the Pizza tutorial ontology and a FIBO-like loan model.
+- Invented models of typical domains: university, hotel booking, HR, clinical trial, telecom network, supply chain, customer 360 (one large hub), schema.org-style core types, a clinical record with three super-hubs, a 115-class biomedical taxonomy and a 179-class bank.
+- A 400-node scale-free graph, and three banks joined (537 classes).
 
-## Results
+**Boxes.** Sized from label length.
 
-Benchmark: 28 model shapes, 9 to 537 classes, two seeds each, run as a Node module on a laptop (one core). The shapes include ontologies written from the published structure of PROV-O, SOSA/SSN, W3C ORG, the Pizza tutorial ontology, schema.org's core types and a FIBO-like loan model, plus invented domain models (university, hotel, HR, clinical trial, energy grid, telecom, healthcare record, customer 360 with one large hub, retail, supply chain, a 115-class biomedical taxonomy, a 179-class bank, three banks joined (537)), a structureless random mesh and scale-free graphs of 60–400 nodes. Boxes are sized from the label text.
+**Seeds.** Two per layout.
 
-Each cell: **crossed links / links through a class box (box + 9 px)**. "Plain stress" is the public baseline (stress majorization from a pivot-MDS start, as Graphviz `neato` does, then overlap removal). "fcose" is the Cytoscape force-directed layout with the settings the library uses for its Force choice (one run, then the same overlap removal), measured in a browser on the same boxes.
+**Contenders.** Graphviz `neato`, `fdp` and `sfdp` (through viz.js, with Graphviz's own overlap removal), ELK stress, force and layered, WebCola, d3-force, dagre, and Cytoscape `cose` and `fcose`. They ran with sensible general settings, not tuned per model.
 
-| Model | classes / links | Plain stress | fcose | Compact | Grouped | Auto (kept) | Auto time |
-|---|---|---|---|---|---|---|---|
-| University | 14 / 20 | 3 / 1 | 3 / 2 | 2 / 0 | 1 / 1 | 2 / 0 (Compact) | 22 ms |
-| W3C ORG | 15 / 20 | 2 / 2 | 6 / 6 | 0 / 0 | 0 / 0 | 0 / 0 (Compact) | 13 ms |
-| Brewery IoT (app sample) | 23 / 37 | 2 / 1 | 3 / 0 | 1 / 0 | 1 / 0 | 1 / 0 (Compact) | 39 ms |
-| PROV-O | 30 / 62 | 58 / 24 | 86 / 32 | 35 / 10 | 28 / 12 | 35 / 10 (Compact) | 0.5 s |
-| Telecom network (dense) | 34 / 86 | 69 / 15 | 172 / 33 | 32 / 7 | 36 / 4 | 30 / 6 (Grouped) | 0.3 s |
-| SOSA/SSN | 36 / 63 | 38 / 20 | 45 / 21 | 12 / 8 | 14 / 5 | 12 / 8 (Compact) | 0.3 s |
-| schema.org core (hubs) | 49 / 102 | 237 / 59 | 402 / 132 | 112 / 29 | 58 / 47 | 111 / 29 (Compact) | 0.7 s |
-| Healthcare record (3 super-hubs) | 53 / 129 | 451 / 128 | 755 / 208 | 214 / 101 | 161 / 25 | 161 / 25 (Grouped) | 1.2 s |
-| FIBO-like loans | 59 / 77 | 32 / 19 | 44 / 39 | 14 / 6 | 14 / 4 | 14 / 6 (Compact) | 0.4 s |
-| Pizza (taxonomy) | 90 / 94 | 15 / 86 | 102 / 107 | 2 / 26 | 10 / 38 | 2 / 26 (Compact) | 0.4 s |
-| Biomedical taxonomy | 115 / 139 | 71 / 61 | 181 / 139 | 36 / 22 | 22 / 9 | 22 / 9 (Grouped) | 0.4 s |
-| Bank | 179 / 285 | 337 / 296 | 719 / 461 | 152 / 126 | 72 / 15 | 71 / 16 (Grouped) | 1.0 s |
-| Scale-free 400 | 400 / 482 | 1242 / 860 | 4527 / 3727 | 1063 / 617 | 753 / 253 | 766 / 256 (Grouped) | 1.3 s |
-| Three banks joined | 537 / 915 | 4129 / 2646 | 5861 / 3142 | 3921 / 2282 | 2317 / 1012 | 2292 / 984 (Grouped) | 1.4 s |
+**Fairness.** Every layout received the same boxes, the same 170 px target link length where the library takes one, and afterwards the same overlap removal.
 
-On the readability score, Auto ranks first or tied-first on 27 of the 28 shapes (the random mesh is 0.3 % behind Compact), and plain stress ranks last on every shape. fcose is faster (under 50 ms up to 180 classes) but from 30 classes up it crosses 2.5–10× more links and runs 3–30× more links through classes than the better of Compact and Grouped. Compact's drawings take 4–10× the area of their boxes; Grouped's 5–30× (hub-heavy models spread most).
+**Environment.** All ran in one browser tab on one machine. Times are comparable with each other, not absolute.
 
-Honest limits:
-- Hub-heavy models stay hard: the health model still has 161 crossings. Grouped gets links out of class boxes (25 against 101), not out of each other's way.
-- One-link classes: Grouped keeps every one at least its label room from its neighbour; on a 159-class test model none has its link crossed and 3 of 31 have another link touching them (the rest are boxed in by surrounding links, and making room would mean stretching the drawing).
-- Timings are for one core in Node; in a visible browser tab expect about the same, in a hidden tab 2–4× slower. The time budget is enforced by the clean-up steps; the fixed part (paths, stress, leaf placement) is about 0.3 s at 160 classes.
+### Scoreboard
 
-## What did not work (do not repeat)
-- **Unbounded stretching** to make room for one-link classes (scale the drawing about the neighbour until a clean spot exists). The earlier cluster layout did this and produced drawings millions of pixels wide on hub-heavy models; even capped at 2.5× it doubled the area of dense drawings for one or two fewer touched classes.
-- Pulling hubs together toward the centre, 1/d stress weights instead of 1/d², degree- or Jaccard-scaled link lengths: no gain.
-- Splitting a fixed time budget between several variants on large models: each run's clean-up is starved and the result is worse than one variant with all the time.
-- Longer base link length (L 280) for large models: fewer links through classes but more area; 260 from 100 classes is the compromise.
-- A 20-second exhaustive search on the hub-heavy health model reaches about 150 crossings against 161 in 1 s. For hub-heavy models the stress family is near its limit; a real improvement there needs a different drawing (edge bundling, or showing a hub more than once), not a better placement.
+Average rank among 14 layouts across the 19 models (1 = best; ties share a rank). Best Read takes the better of Tidy Stress and Mycelium, so it shares ranks with them. "Wins" counts first places on the readability score, with Best Read left out.
 
-## Reuse notes
-- Pure functions; wrap boxes and links from any renderer (the library wraps Cytoscape nodes in `_ogClusterSpread`).
-- Benchmark harness: `bench.mjs` with `models*.js` and `engines2.js`. Run the code as an ES module: Node's `vm` contexts run it about 20× slower, and a hidden browser tab 2–4× slower than a visible one.
+| Layout | Readability score: all | Score: ≤ 30 classes | Score: 31–100 classes | Score: > 100 classes | Crossings | Links through classes | Area | Very long links | Wins | Median time |
+|---|---|---|---|---|---|---|---|---|---|---|
+| **Best Read** | **1.3** | 1.1 | **1.0** | 2.3 | **1.5** | **1.6** | 6.2 | 9.5 | – | 359 ms |
+| **Tidy Stress** | 1.8 | **1.0** | 1.8 | 3.5 | 2.1 | 3.0 | 5.6 | 8.5 | 14 | 288 ms |
+| **Mycelium** | 3.6 | 4.0 | 4.1 | **1.8** | 1.8 | 2.4 | 7.6 | 11.9 | 4 | 88 ms |
+| Graphviz sfdp | 6.1 | 4.7 | 5.8 | 9.0 | 6.4 | 4.9 | 7.2 | 7.7 | 0 | 8 ms |
+| ELK stress | 6.1 | 6.4 | 6.0 | 5.8 | 5.8 | 6.8 | 7.3 | **1.1** | 0 | 152 ms |
+| WebCola | 6.2 | 9.7 | 5.0 | 2.5 | 5.2 | 4.9 | 10.9 | 3.6 | 1 | 97 ms |
+| Graphviz neato | 6.5 | 6.6 | 4.9 | 9.8 | 5.7 | 4.1 | 10.4 | 5.5 | 0 | 7 ms |
+| d3-force | 7.7 | 8.9 | 8.0 | 5.3 | 8.3 | 7.6 | 9.6 | 2.0 | 0 | 22 ms |
+| Cytoscape fcose | 8.3 | 6.9 | 9.0 | 9.3 | 8.5 | 9.3 | 5.4 | 1.2 | 0 | 6 ms |
+| ELK layered | 8.9 | 8.3 | 9.5 | 8.7 | 8.1 | 8.7 | 9.6 | 12.4 | 0 | 35 ms |
+| dagre (layered) | 9.6 | 8.3 | 10.6 | 10.0 | 9.6 | 11.3 | 4.5 | 11.3 | 0 | 19 ms |
+| ELK force | 12.2 | 11.4 | 12.4 | 13.3 | 13.2 | 10.8 | 11.1 | 3.9 | 0 | 143 ms |
+| Cytoscape cose | 12.8 | 13.9 | 13.1 | 10.3 | 11.4 | 13.9 | **1.1** | 10.4 | 0 | 23 ms |
+| Graphviz fdp | 12.9 | 13.0 | 13.3 | 12.3 | 13.6 | 11.7 | 7.6 | 3.5 | 0 | 10 ms |
 
-## Names (to be decided)
+How to read it:
+- **Strengths.** Tidy Stress and Mycelium lead clearly on the two measures that most affect reading: crossed links and links that pass through a class (which make two classes look connected when they are not).
+- **Costs.**
+  - They are not the most compact. `cose` and dagre pack tighter, `cose` by letting links run through boxes.
+  - Mycelium's threads between pods are long by design, so it ranks low on "very long links".
+  - They are slower than the C and native libraries, though within a second or two at every size tested.
 
-Three things here are worth a name of their own. Suggestions only; the final names are the author's call. The names a user sees in the library's list can stay short and plain (Compact, Grouped, Auto) whatever the algorithms are called in documents.
+### Per model
 
-| What | Working name | Suggestions | Reasoning |
-|---|---|---|---|
-| Stress layout with safe clean-up passes and leaf fanning, best of a few variants | Compact | **Tidy Stress**; **Settled Stress**; **Stress+** | Says what it is (stress majorization) and what it adds (a tidy result: nothing crossed, touched or stretched that a safe move can fix). |
-| Group- and hub-aware stress: short links inside Louvain groups, long between, ring room for hubs, fanned leaves | Grouped | **Mycelium**; **Pod Stress**; **Hub-and-Pod** | Mycelium matches the picture (dense pods joined by long threads) and the "mycelium-style pods" idea it came from; Pod Stress is the descriptive alternative. |
-| Running a few layouts and keeping the best by one readability score with sprawl and long-link penalties | Auto | **Readability Portfolio**; **Best-Read**; **Layout Jury** | It is a portfolio judged by a score, not an algorithm; the name should say it picks. |
-| The two smaller techniques, if they are written up separately | (none) | **Hub rings** (ring-radius link lengths); **Leaf fanning with label room** | Plain descriptive names; neither is big enough to deserve a brand. |
+Crossed links / links through classes (average of two seeds), and the best open-source result on the readability score for the same model.
+
+| Model | Classes / links | Best Read | Tidy Stress | Mycelium | Best open-source on score |
+|---|---|---|---|---|---|
+| University | 14 / 20 | 1 / 1 | 1 / 1 | 0 / 1 | Graphviz sfdp 4 / 3 |
+| Hotel booking | 13 / 16 | 0 / 0 | 0 / 0 | 0 / 1 | Graphviz sfdp 1 / 0 |
+| HR | 20 / 24 | 0 / 0 | 0 / 0 | 0 / 0 | ELK layered 0 / 3 |
+| W3C ORG | 15 / 20 | 0 / 0 | 0 / 0 | 0 / 0 | ELK stress 4 / 1 |
+| Brewery IoT | 23 / 37 | 1 / 0 | 1 / 0 | 1 / 0 | Graphviz sfdp 2 / 1 |
+| Clinical trial | 24 / 28 | 1 / 0 | 1 / 0 | 2 / 0 | Graphviz sfdp 4 / 2 |
+| PROV-O | 30 / 62 | 35 / 10 | 35 / 10 | 28 / 12 | ELK stress 66 / 30 |
+| Telecom network | 34 / 86 | 30 / 6 | 32 / 7 | 36 / 4 | Graphviz neato 79 / 10 |
+| SOSA/SSN | 36 / 63 | 12 / 8 | 12 / 8 | 14 / 5 | ELK stress 35 / 16 |
+| Customer 360 | 31 / 49 | 8 / 7 | 8 / 7 | 6 / 7 | Graphviz sfdp 27 / 13 |
+| Supply chain | 39 / 76 | 17 / 2 | 15 / 3 | 18 / 1 | Graphviz sfdp 42 / 19 |
+| schema.org core | 49 / 102 | 111 / 29 | 110 / 36 | 58 / 47 | Graphviz neato 215 / 36 |
+| Clinical record (3 super-hubs) | 53 / 129 | 161 / 25 | 210 / 97 | 161 / 25 | Graphviz neato 435 / 66 |
+| FIBO-like loans | 59 / 77 | 14 / 6 | 14 / 6 | 14 / 4 | Graphviz neato 25 / 13 |
+| Pizza (taxonomy) | 90 / 94 | 2 / 26 | 2 / 26 | 10 / 38 | d3-force 12 / 35 |
+| Biomedical taxonomy | 115 / 139 | 22 / 9 | 32 / 20 | 22 / 9 | WebCola 57 / 29 |
+| Bank | 179 / 285 | 67 / 23 | 148 / 132 | 59 / 15 | WebCola 128 / 77 |
+| Scale-free 400 | 400 / 482 | 760 / 223 | 1058 / 583 | 764 / 212 | WebCola 847 / 401 |
+| Three banks joined | 537 / 915 | 2254 / 965 | 3931 / 2283 | 2250 / 969 | WebCola 2096 / 774 |
+
+Times at the large end (same tab): Best Read 1.3–1.5 s for 179–537 classes. WebCola took 2.8 s, 41 s and 219 s for 179, 400 and 537 classes. ELK stress took 14 s to 3.5 minutes; Graphviz `sfdp` took 0.5–2 s and `neato` 0.6–4.7 s.
+
+### Limits
+- **Our measures and our score.** The score is our own, and the layouts were tuned against it. The crossing and through-class counts are standard measures that the score does not hide, and they tell the same story. Still, no study with people reading the diagrams has been done.
+- **Contender settings.** The contenders used general-purpose settings. Each could probably do better if tuned per model, as ours were tuned for ontologies.
+- **Models.** The models are reconstructions and inventions of typical shapes, not a public corpus of real ontologies. Commercial engines (yFiles, Tom Sawyer) were not tested.
+- **Largest sizes.** At about 500 classes and up, WebCola draws fewer crossings when given minutes to run. Within a time budget of a couple of seconds, Mycelium is the stronger choice there.
+- **Hub-heavy models stay hard.** On the clinical-record model, a 20-second exhaustive search reaches only about 150 crossings, against 161 in one second. Big further gains there need a different kind of drawing, such as bundled links or repeating a hub, rather than a better placement.
+
+## What did not work
+- **Stretching the drawing** about a class until every single-link neighbour has a clean spot. Without a limit this produced drawings millions of pixels wide on hub-heavy models; even capped at 2.5× it doubled the area for little gain.
+- **Pulling hubs together toward the centre.** No gain.
+- **Other stress weights and link lengths:** 1/d weights instead of 1/d², and link lengths scaled by degree or by neighbourhood overlap. No gain.
+- **Alternatives to plain Louvain pods:**
+  - Overlapping membership (a class also joins any group holding 30 % of its links).
+  - Coarser and finer resolutions (γ = 0.7, 1.5).
+
+  None did better on average across 14 mid-size and large models; each won on some models and lost on others. Because the pods only bias link lengths, how exactly the groups are drawn matters less than whether there are groups at all. Removing them costs the most on large and hub-heavy models: on the bank model, crossings rise from 73 to 128 and links through classes from 53 to 103.
+- **Splitting a fixed time budget** between several variants on large models. It starves each variant's tidy-up, and the result is worse than one variant given all the time.
+
+## Using the code
+The reference implementation is plain JavaScript with no dependencies, about 500 lines. Input is box sizes `[{w, h}]` and links `[[i, j, weight, labelWidth?]]` (weight 2 for subclass links); output is box centres `[{x, y}]`.
+
+| Function | Algorithm |
+|---|---|
+| `_ogCompactLayout(items, edges, opts)` | Tidy Stress |
+| `_ogGroupedLayout(items, edges, opts)` | Mycelium |
+| `_ogAutoLayout(items, edges, opts)` | Best Read |
+| `_ogStressLayout(items, edges, cfg, opts)` | One run, with `cfg` options for each technique |
+| `_ogPlacementMetrics`, `_ogPlacementScore` | The measures and the score |
+
+All arithmetic is on unrounded floats.
+
+The benchmark scripts and model definitions are available on request.
