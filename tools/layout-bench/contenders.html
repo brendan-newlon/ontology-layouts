@@ -32,10 +32,16 @@ function cyOf(N, E) {
 }
 const cyPos = (c) => c.nodes().map((n) => ({ x: n.position().x, y: n.position().y }));
 const runCy = (c, opt) => new Promise((res) => { const l = c.layout(opt); l.one('layoutstop', () => res()); l.run(); });
+const withCleanUp = (f) => async (it, ed, s, N) => { const t0 = Date.now(), P = (await f(it, ed, s)).map((p) => ({ x: p.x, y: p.y })); O.sep(P, N, 6, 200); return O.cleanUp(P, it, ed, t0); };
 const ALGOS = {
-  'Tidy Stress (ours)': async (it, ed, s) => O.compact(it, ed, { seed: s }).pos,
-  'Mycelium (ours)': async (it, ed, s) => (O.grouped2(it, ed, { seed: s }) || O.compact(it, ed, { seed: s })).pos,
-  'Best Read (ours)': async (it, ed, s) => O.auto(it, ed, { seed: s }).pos,
+  // ours as the library runs them: the layout, the same overlap removal, then the clean-up within the rest of a 1.5 s budget
+  'Tidy Stress (ours)': withCleanUp(async (it, ed, s) => O.compact(it, ed, { seed: s }).pos),
+  'Mycelium (ours)': withCleanUp(async (it, ed, s) => (O.grouped2(it, ed, { seed: s }) || O.compact(it, ed, { seed: s })).pos),
+  'Best Read (ours)': withCleanUp(async (it, ed, s) => O.auto(it, ed, { seed: s }).pos),
+  // the same layouts without the clean-up, to show what it adds
+  'Tidy Stress, no clean-up (ours)': async (it, ed, s) => O.compact(it, ed, { seed: s }).pos,
+  'Mycelium, no clean-up (ours)': async (it, ed, s) => (O.grouped2(it, ed, { seed: s }) || O.compact(it, ed, { seed: s })).pos,
+  'Best Read, no clean-up (ours)': async (it, ed, s) => O.auto(it, ed, { seed: s }).pos,
   'Graphviz neato': (it, ed, s) => gv('neato', it, ed, s),
   'Graphviz fdp': (it, ed, s) => gv('fdp', it, ed, s),
   'Graphviz sfdp': (it, ed, s) => gv('sfdp', it, ed, s),

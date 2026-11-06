@@ -11,14 +11,23 @@ const budgets = (process.argv[2] || '500,2000,5000').split(',').map(Number);
 const graphs = process.argv[3] ? process.argv[3].split(',') : GRAPHS;
 const extra = process.argv[4] ? JSON.parse(process.argv[4]) : {};
 const rows = [];
+// Best Read depends on timing, so its drawings vary from run to run. HB_STARTS=<file> keeps the starting drawings in that file
+// (written on the first run, reused afterwards), so that variants of the clean-up are compared on the same drawings.
+const startsFile = process.env.HB_STARTS, starts = startsFile && fs.existsSync(startsFile) ? JSON.parse(fs.readFileSync(startsFile, 'utf8')) : {};
 for (const g of graphs) {
   const Md = await MODELS[g].load();
   const D = Md.labels.map((l) => ({ w: String(l).length * 6.6 + 10, h: 20 }));
   const edges = Md.edges.filter((e) => e.s !== e.t).map((e) => [e.s, e.t, e.kind === 'sub' ? 2 : 1]);
   const E = edges.map(([s, t]) => ({ s, t }));
   const t0 = Date.now();
-  const P = OURS.auto(D.map((d) => ({ w: d.w, h: d.h })), edges, { seed: 1 }).pos.map((p) => ({ x: p.x, y: p.y }));
-  OURS.sep(P, D.map((d) => ({ w: d.w + 16, h: d.h + 12 })), 6, 200);
+  let P;
+  if (starts[g]) P = starts[g].map(([x, y]) => ({ x, y }));
+  else {
+    P = OURS.auto(D.map((d) => ({ w: d.w, h: d.h })), edges, { seed: 1 }).pos.map((p) => ({ x: p.x, y: p.y }));
+    OURS.sep(P, D.map((d) => ({ w: d.w + 16, h: d.h + 12 })), 6, 200);
+    starts[g] = P.map((p) => [p.x, p.y]);
+    if (startsFile) fs.writeFileSync(startsFile, JSON.stringify(starts));
+  }
   const layMs = Date.now() - t0, m0 = HT.measure(P, D, E), row = { graph: g, n: D.length, layMs, before: m0, after: {} };
   for (const b of budgets) {
     const r = HT.run(P, D, E, { budgetMs: b, ...extra });
@@ -32,5 +41,5 @@ for (const g of graphs) {
 }
 const sum = (k, sel) => rows.reduce((s, r) => s + sel(r)[k], 0);
 console.log('TOTAL start', ['cross', 'thru', 'sharp', 'tight'].map((k) => k + ' ' + sum(k, (r) => r.before)).join(', '));
-for (const b of budgets) console.log(`TOTAL ${b}ms`, ['cross', 'thru', 'sharp', 'tight'].map((k) => k + ' ' + sum(k, (r) => r.after[b])).join(', '), 'time', sum('ms', (r) => r.after[b]), 'ms');
+for (const b of budgets) console.log(`TOTAL ${b}ms`, ['cross', 'thru', 'sharp', 'tight'].map((k) => k + ' ' + sum(k, (r) => r.after[b])).join(', '), 'time', sum('ms', (r) => r.after[b]), 'ms max', Math.max(...rows.map((r) => r.after[b].ms)), 'area x', (rows.reduce((s, r) => s + r.after[b].area / r.before.area, 0) / rows.length).toFixed(3));
 fs.writeFileSync(path.join(here, '..', '..', '_temp', 'handbench_last.json'), JSON.stringify(rows));

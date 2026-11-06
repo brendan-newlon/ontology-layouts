@@ -38,12 +38,19 @@ const OntologyLayouts = {
   tidyStress: _ogCompactLayout,  // (boxes, links, options) -> { pos: [{x, y}], crossings, algo: "compact" | "grouped", variant, scores }
   mycelium: _ogGroupedLayout,    // same, or null for fewer than 8 classes
   bestRead: _ogAutoLayout,       // the more readable of the two
+  cleanUp: _ogLayoutCleanUp,     // (pos, boxes, links, startedAt) -> [{x, y}]: the clean-up after a layout
   metrics: _ogPlacementMetrics,  // (pos, boxes, links as [{s, t}]) -> { cross, thru, near, ov, len, lout, area, fill }
   score: _ogPlacementScore       // (metrics) -> number, lower is more readable
 };
 `;
 const esc = (t) => t.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
-const out = tpl.replace('/*__DATA__*/null', () => data).replace('<!--__CODE__-->', () => esc(code));
+// tables from tables.mjs, the worked example from gen_example.mjs
+execSync('node tables.mjs', { cwd: here });
+const tables = JSON.parse(fs.readFileSync(path.join(here, 'tables.json'), 'utf8'));
+const example = fs.readFileSync(path.join(here, 'example.json'), 'utf8');
+let out = tpl.replace('/*__DATA__*/null', () => data).replace('/*__EXAMPLE__*/null', () => example).replace('<!--__CODE__-->', () => esc(code));
+for (const [k, v] of Object.entries(tables)) { if (!out.includes('<!--__' + k + '__-->')) throw new Error('no place for ' + k); out = out.replace('<!--__' + k + '__-->', () => v); }
+if (/<!--__[A-Z_]+__-->/.test(out)) throw new Error('unfilled placeholder: ' + out.match(/<!--__[A-Z_]+__-->/)[0]);
 const dest = path.resolve(here, '..', '..', 'docs', 'ONTOLOGY-LAYOUT-ALGORITHMS.html');
 fs.writeFileSync(dest, out);
 console.log('wrote', dest, (out.length / 1024).toFixed(0), 'KB,', order.length, 'models');

@@ -7,6 +7,11 @@ const a = s.indexOf('function _ogClRng(');
 const b = s.indexOf('// ── end of the layouts ──');
 if (a < 0 || b < 0 || b < a) throw new Error('anchors not found');
 let body = s.slice(a, b).replace(/\r\n/g, '\n');
-body += `\nwindow.OURS = { layout: _ogGroupedLayout, louvain: _ogClLouvain, merge: _ogClMergeSmall, separate: _ogClSeparate, crossings: _ogClCrossings, segX: _ogClSegX, dps: _ogClDPS, dss: _ogClDSS, segBox: _ogClSegBox, rng: _ogClRng, compact: _ogCompactLayout, grouped2: _ogGroupedLayout, stressLayout: _ogStressLayout, auto: _ogAutoLayout, pmetrics: _ogPlacementMetrics, pscore: _ogPlacementScore, sep: _ogClSeparate };\n`;
+// The clean-up after a layout (_ogHandTidy) also lives in the library; handtidy.js is generated from it for the lab and handbench.mjs
+const t0 = body.indexOf('// ── Clean-up after a layout ──'), t1 = body.indexOf('// ── end of the clean-up ──');
+if (t0 < 0 || t1 < 0) throw new Error('clean-up anchors not found');
+const tidy = body.slice(t0, t1).split('\n').map((l) => l.replace(/^      /, '')).join('\n');
+fs.writeFileSync(path.join(here, 'handtidy.js'), '// generated from src/ontology-layouts.js by build_base.mjs: edit the library, then run node build_base.mjs\n(function (root) {\n' + tidy + 'root.HandTidy = _ogHandTidy; root.HandTidy.cleanUp = _ogLayoutCleanUp;\n})(typeof window !== \'undefined\' ? window : globalThis);\n');
+body += `\nwindow.OURS = { tidy: _ogHandTidy, cleanUp: _ogLayoutCleanUp, layout: _ogGroupedLayout, louvain: _ogClLouvain, merge: _ogClMergeSmall, separate: _ogClSeparate, crossings: _ogClCrossings, segX: _ogClSegX, dps: _ogClDPS, dss: _ogClDSS, segBox: _ogClSegBox, rng: _ogClRng, compact: _ogCompactLayout, grouped2: _ogGroupedLayout, stressLayout: _ogStressLayout, auto: _ogAutoLayout, pmetrics: _ogPlacementMetrics, pscore: _ogPlacementScore, sep: _ogClSeparate };\n`;
 fs.writeFileSync(path.join(here, 'base_layout.js'), '// generated from src/ontology-layouts.js by build_base.mjs\n' + body);
 console.log('base_layout.js', body.length, 'chars');

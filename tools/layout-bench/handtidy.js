@@ -1,15 +1,22 @@
-﻿// Hand-style clean-up, learned from the Layout Lab sessions. It runs AFTER a layout, on its positions, and works the way a person
-// fixing the drawing did:
-//   1. pendant units: a leaf, a short leaf chain, a leaf triangle or loop hangs off the rest of the graph by one class (its anchor),
-//      so it can always be turned around that anchor, stretched, mirrored or reordered until it crosses nothing;
-//   2. single moves: a class at the end of a crossed link, or one a link runs through, moves into nearby open space (any distance:
-//      link length is not a goal);
-//   3. group moves: the classes crowding one side of a problem, picked by where they sit in the drawing rather than by their links,
-//      move together toward open space, even when that first makes things worse; a few single moves then repair around the problem,
-//      and the whole step is kept only if the end result is better.
-// Growing the drawing's area is penalised, so open space inside the drawing is used before the drawing gets bigger.
-// Straight links only. Usage: HandTidy.run(P, D, E, opts) with P [{x,y}], D [{w,h}], E [{s,t}] -> { P, log, stats }.
+// generated from src/ontology-layouts.js by build_base.mjs: edit the library, then run node build_base.mjs
 (function (root) {
+// ── Clean-up after a layout ──
+// Generalised from recorded sessions of a person tidying these layouts by hand. It runs after a layout, on its positions:
+//   1. single moves: a class at the end of a crossed link, or one a link runs through, moves into nearby open space (a grid
+//      over the drawing whose cells hold no class and no link) or is nudged a little; link length is not a goal;
+//   2. leaf units: a leaf, a short leaf chain, a leaf triangle or loop hangs off the rest of the graph by one class (its anchor),
+//      so it can always be turned around that anchor, stretched, mirrored or reordered until it crosses nothing; a single
+//      leaf with a long label tries sideways spots first, since a long label reads best on a link that runs sideways;
+//   3. crowd spreading: problems are counted on a grid of cells one link long; the regions with the most problems are spread
+//      outward in 8 slices around their centre, more where open space lies beyond, pushing the neighbours further out a
+//      little too; a few single moves then repair, and the step is kept only if the drawing ends up better;
+//   4. group moves: the classes on one side of a remaining problem move together away from the line, with a few repair moves;
+//   5. a last pass over leaf units and single classes, which can be left on a line by the moves before.
+// Growing the drawing's area is penalised, so open space inside the drawing is used before the drawing gets bigger.
+// A class or problem that could not be improved is tried again only once something near it has moved.
+// Straight links only. _ogHandTidy.run(P, D, E, opts) with P [{x,y}], D [{w,h}], E [{s,t}] -> { P, log, stats };
+// opts.budgetMs bounds the whole run, opts.record keeps every step for replaying it.
+const _ogHandTidy = (function () {
   'use strict';
   const orient = (a, b, c) => (b.x - a.x) * (c.y - a.y) - (b.y - a.y) * (c.x - a.x);
   function crosses(a, b, c, d) {
@@ -31,7 +38,7 @@
     }
     return true;
   }
-  const DEF = { budgetMs: 2000, unitSize: 4, clearance: 8, groupDepth: 4, groups: true, spread: true, spreadRepair: true, finish: true, cell: 0.3, repReach: 1.8, repOpen: 12, repCap: 99, crowdMax: 10, groupTop: 2, W: { cross: 6, sharp: 3, thru: 10, tight: 1, ov: 1000, area: 1 } };
+  const DEF = { budgetMs: 2000, unitSize: 4, clearance: 8, groupDepth: 4, groups: true, spread: true, spreadRepair: true, finish: true, order: ['single', 'unit', 'spread', 'group'], cell: 0.3, repReach: 1.8, repOpen: 12, repCap: 99, crowdMax: 10, groupTop: 2, W: { cross: 6, sharp: 3, thru: 10, tight: 1, ov: 1000, area: 6 } };
 
   function Model(P0, D, E0, o) {
     const n = P0.length, seen = new Set(), E = [];
@@ -40,7 +47,8 @@
     E.forEach((e, k) => { inc[e.s].push(k); inc[e.t].push(k); adj[e.s].push(e.t); adj[e.t].push(e.s); });
     const M = { n, m: E.length, P: P0.map((p) => ({ x: p.x, y: p.y })), D, E, inc, adj, o, W: o.W,
       hw: D.map((d) => d.w / 2 + o.clearance), hh: D.map((d) => d.h / 2 + o.clearance),
-      ow: D.map((d) => d.w / 2 + 6), oh: D.map((d) => d.h / 2 + 5), mN: new Uint8Array(n), mE: new Uint8Array(E.length) };
+      // classes keep at least 16 px apart sideways and 12 px vertically, the gap the layouts' overlap removal leaves
+      ow: D.map((d) => d.w / 2 + 8), oh: D.map((d) => d.h / 2 + 6), mN: new Uint8Array(n), mE: new Uint8Array(E.length) };
     const ls = E.map((e) => Math.hypot(M.P[e.s].x - M.P[e.t].x, M.P[e.s].y - M.P[e.t].y)).sort((a, b) => a - b);
     M.medLen = ls[ls.length >> 1] || 150; M.A0 = bboxArea(M); return M;
   }
@@ -200,6 +208,28 @@
     }
     return { s, avg, dens, cols, rows, x1, y1, crowds: out.sort((a, b) => b.weight - a.weight), center, ci };
   }
+  // Problem regions: a crowd worth spreading is one with problems in it. Problems (crossings, links through classes) are
+  // counted on a grid of cells one link long. Hot cells hold at least 2 problems and at least half as many as the worst
+  // cell; touching hot cells form a region, the regions with the most problems come first, and each is centred on the
+  // mean of its problems, with a radius of at most one and a half cells, so that a spread stays local.
+  function problemCrowds(M, issues) {
+    const s = M.medLen, cells = new Map();
+    issues.forEach((is) => { if (is.kind === 'tight') return; const k = Math.floor(is.q.x / s) + ',' + Math.floor(is.q.y / s); if (!cells.has(k)) cells.set(k, []); cells.get(k).push(is); });
+    let most = 0; cells.forEach((l) => (most = Math.max(most, l.length)));
+    const hotMin = Math.max(2, Math.ceil(most / 2));
+    for (const [k, l] of [...cells]) if (l.length < hotMin) cells.delete(k);
+    const seen = new Set(), out = [];
+    for (const k0 of cells.keys()) {
+      if (seen.has(k0)) continue;
+      const q = [k0], list = [], cl = []; seen.add(k0);
+      while (q.length) { const k = q.pop(); cl.push(k); list.push(...cells.get(k)); const [x, y] = k.split(',').map(Number);
+        for (let dx = -1; dx <= 1; dx++) for (let dy = -1; dy <= 1; dy++) { const n = (x + dx) + ',' + (y + dy); if (cells.has(n) && !seen.has(n)) { seen.add(n); q.push(n); } } }
+      const c = { x: list.reduce((a, is) => a + is.q.x, 0) / list.length, y: list.reduce((a, is) => a + is.q.y, 0) / list.length };
+      const r0 = Math.min(1.5 * s, Math.max(...list.map((is) => Math.hypot(is.q.x - c.x, is.q.y - c.y))) + 0.6 * s);
+      out.push({ c, r0, weight: list.length, cells: cl.map((k) => { const [x, y] = k.split(',').map(Number); return { x: (x + 0.5) * s, y: (y + 0.5) * s }; }), cellSize: s });
+    }
+    return out.sort((a, b) => b.weight - a.weight);
+  }
   // Pizza slices: the drawing around a crowd's centre is cut into 8 slices. Classes inside the crowd move outward in
   // proportion to their distance from the centre, classes beyond it are pushed less the further out they are, so the room
   // is made by shifting the neighbours too. "room" weights each slice by how much low-density space lies beyond it.
@@ -230,7 +260,8 @@
   const cp = (S, M) => S.map((v) => [Math.round(M.P[v].x * 10) / 10, Math.round(M.P[v].y * 10) / 10]);
   function run(P0, D, E0, opts = {}) {
     const o = { ...DEF, ...opts, W: { ...DEF.W, ...(opts.W || {}) } }, t0 = Date.now(), M = Model(P0, D, E0, o), log = [];
-    const timeUp = () => Date.now() - t0 > o.budgetMs, rec = !!o.record;
+    // budgetMs is the whole clean-up: the rounds get 80% of it, the final leaf pass the rest
+    const timeUp = () => Date.now() - t0 > o.budgetMs * (o.finish ? 0.8 : 1), rec = !!o.record;
     const units = o.unitSize > 0 ? findUnits(M, o.unitSize) : [];
     const start = total(M, true); let cur = start.c, rounds = 0;
     const stats = { start: start.c, units: units.length, unitMoves: 0, singleMoves: 0, groupTried: 0, groupKept: 0, skipped: 0 };
@@ -262,12 +293,11 @@
     let tally = null;
     const stage = (phase) => { if (!rec) return; if (tally) log.push({ kind: 'phase-end', ...tally, ms: Date.now() - t0 - tally.t0 }); tally = phase ? { phase, round: rounds, t0: Date.now() - t0, tried: 0, kept: 0, skipped: 0 } : null; if (phase) log.push({ kind: 'phase', phase, round: rounds, t: Date.now() - t0 }); };
     const tick = (k) => { if (tally) tally[k]++; };
-    while (!timeUp()) {
-      rounds++; let gained = 0; tp = Date.now();
+    let gained = 0;
+    // 1. single classes at the end of a crossed link or under a link: move into open space
+    const doSingle = () => {
       stage('single');
-      // 1. single classes at the end of a crossed link or under a link: move into open space
-      let { issues } = total(M, true);
-      const hot = new Set(); issues.forEach((is) => is.nodes.forEach((v) => hot.add(v)));
+      const { issues } = total(M, true), hot = new Set(); issues.forEach((is) => is.nodes.forEach((v) => hot.add(v)));
       grid = openGrid(M);
       for (const v of hot) {
         if (timeUp()) break;
@@ -279,9 +309,11 @@
         else failedV.set(v, clock);
       }
       lap('single');
-      // 2. pendant units involved in a problem: turn, mirror or reorder them around their anchor, then stretch or shrink
+    };
+    // 2. leaf units involved in a problem (the easy fixes): turn, mirror or reorder them around their anchor, then stretch or shrink
+    const doUnit = () => {
       stage('unit');
-      ({ issues } = total(M, true)); hot.clear(); issues.forEach((is) => is.nodes.forEach((v) => hot.add(v)));
+      const { issues } = total(M, true), hot = new Set(); issues.forEach((is) => is.nodes.forEach((v) => hot.add(v)));
       for (const U of units) {
         if (timeUp()) break;
         if (!U.nodes.some((v) => hot.has(v)) && !hot.has(U.anchor)) continue;
@@ -290,36 +322,39 @@
         if (g > 0) { gained += g; stats.unitMoves++; tick('kept'); moved(U.nodes); step({ kind: 'unit', anchor: U.anchor, nodes: U.nodes.slice(), from, to: rec ? cp(U.nodes, M) : null, gain: +g.toFixed(1) }); }
       }
       lap('unit');
-      // 2b. spread crowds: cut the space around each crowded spot into slices and shift them outward, toward open space
-      if (o.spread && !timeUp()) {
-        stage('spread');
-        const dg = crowdsOf(M);
-        for (const C of dg.crowds.slice(0, o.spreadMax || 6)) {
-          if (timeUp()) break;
-          if (failedCrowd.some((f) => Math.hypot(f.x - C.c.x, f.y - C.c.y) < C.r0 && quietSince(C.c, 3 * C.r0, f.at))) { stats.skipped++; tick('skipped'); continue; }
-          tick('tried');
-          const { S, cands, room } = spreadCands(M, dg, C); if (S.length < 3) continue;
-          const snapAll = M.P.slice(); let g = best(M, S, cands);
-          if (!(g > 0) && o.spreadRepair) { // the room pays off only after a few single moves: push, repair, keep if better overall
-            const snap = M.P.slice(), F0 = local(M, S) + areaPen(M); let bestC = null, bestF = Infinity;
-            cands.forEach((c, ci) => { S.forEach((v, i) => (M.P[v] = c[i])); const f = local(M, S) + areaPen(M); if (f < bestF) { bestF = f; bestC = ci; } });
-            S.forEach((v, i) => (M.P[v] = cands[bestC][i]));
-            const Sx = new Set(S); repair(C.c, 1.5 * C.r0 + M.medLen, o.groupDepth, Sx);
-            const Sa = [...Sx], F1 = local(M, Sa) + areaPen(M), now = Sa.map((v) => M.P[v]); Sa.forEach((v) => (M.P[v] = snap[v]));
-            const F0b = local(M, Sa) + areaPen(M);
-            if (F1 < F0b - 0.5) { Sa.forEach((v, i) => (M.P[v] = now[i])); g = F0b - F1; S.length = 0; Sa.forEach((v) => S.push(v)); } else M.P = snap;
-          }
-          if (g > 0) { gained += g; stats.spreadMoves = (stats.spreadMoves || 0) + 1; tick('kept'); moved(S);
-            step({ kind: 'spread', center: { x: Math.round(C.c.x), y: Math.round(C.c.y) }, r0: Math.round(C.r0), cells: rec ? C.cells.map((p) => [Math.round(p.x), Math.round(p.y)]) : undefined, cell: Math.round(dg.s), room: rec ? room.map((x) => +x.toFixed(1)) : undefined, nodes: S.slice(), from: rec ? S.map((v) => [Math.round(snapAll[v].x * 10) / 10, Math.round(snapAll[v].y * 10) / 10]) : null, to: rec ? cp(S, M) : null, gain: +g.toFixed(1) }); }
-          else failedCrowd.push({ x: C.c.x, y: C.c.y, at: clock });
+    };
+    // 3. spread the regions with the most problems: cut the space around each into slices and shift them outward, toward open space
+    const doSpread = () => {
+      if (!o.spread || timeUp()) return;
+      stage('spread');
+      const dg = crowdsOf(M), crowds = o.spreadAll ? dg.crowds : problemCrowds(M, total(M, true).issues);
+      for (const C of crowds.slice(0, o.spreadMax || 6)) {
+        if (timeUp()) break;
+        if (failedCrowd.some((f) => Math.hypot(f.x - C.c.x, f.y - C.c.y) < C.r0 && quietSince(C.c, 3 * C.r0, f.at))) { stats.skipped++; tick('skipped'); continue; }
+        tick('tried');
+        const { S, cands, room } = spreadCands(M, dg, C); if (S.length < 3) continue;
+        const snapAll = M.P.slice(); let g = best(M, S, cands), pushed = null;
+        if (!(g > 0) && o.spreadRepair) { // the room pays off only after a few single moves: push, repair, keep if better overall
+          const snap = M.P.slice(); let bestC = 0, bestF = Infinity;
+          cands.forEach((c, ci) => { S.forEach((v, i) => (M.P[v] = c[i])); const f = local(M, S) + areaPen(M); if (f < bestF) { bestF = f; bestC = ci; } });
+          S.forEach((v, i) => (M.P[v] = cands[bestC][i]));
+          if (rec) pushed = S.map((v) => [v, Math.round(M.P[v].x * 10) / 10, Math.round(M.P[v].y * 10) / 10]);
+          const Sx = new Set(S); repair(C.c, 1.5 * C.r0 + M.medLen, o.groupDepth, Sx);
+          const Sa = [...Sx], F1 = local(M, Sa) + areaPen(M), now = Sa.map((v) => M.P[v]); Sa.forEach((v) => (M.P[v] = snap[v]));
+          const F0b = local(M, Sa) + areaPen(M);
+          if (F1 < F0b - 0.5) { Sa.forEach((v, i) => (M.P[v] = now[i])); g = F0b - F1; S.length = 0; Sa.forEach((v) => S.push(v)); } else M.P = snap;
         }
-        lap('spread');
+        if (g > 0) { gained += g; stats.spreadMoves = (stats.spreadMoves || 0) + 1; tick('kept'); moved(S);
+          step({ kind: 'spread', center: { x: Math.round(C.c.x), y: Math.round(C.c.y) }, r0: Math.round(C.r0), problems: C.weight, cells: rec ? C.cells.map((p) => [Math.round(p.x), Math.round(p.y)]) : undefined, cell: Math.round(C.cellSize || dg.s), room: rec ? room.map((x) => +x.toFixed(1)) : undefined, nodes: S.slice(), from: rec ? S.map((v) => [Math.round(snapAll[v].x * 10) / 10, Math.round(snapAll[v].y * 10) / 10]) : null, to: rec ? cp(S, M) : null, pushed: pushed || undefined, gain: +g.toFixed(1) }); }
+        else failedCrowd.push({ x: C.c.x, y: C.c.y, at: clock });
       }
-      cur = total(M);
-      // 3. group moves with look-ahead, on the problems still left
-      if (o.groups && !timeUp()) {
-        stage('group');
-        ({ issues } = total(M, true)); grid = openGrid(M);
+      lap('spread');
+    };
+    // 4. group moves with look-ahead, on the problems still left
+    const doGroup = () => {
+      if (!o.groups || timeUp()) return;
+      stage('group');
+        const { issues } = total(M, true); grid = openGrid(M);
         const R = 1.3 * M.medLen;
         for (const is of issues.filter((x) => x.kind !== 'tight')) {
           if (timeUp()) break;
@@ -358,21 +393,27 @@
           }
           if (!kept) failedIssue.set(key, clock);
         }
-      }
       lap('group');
+    };
+    const STAGES = { single: doSingle, unit: doUnit, spread: doSpread, group: doGroup };
+    while (!timeUp()) {
+      rounds++; gained = 0; tp = Date.now();
+      for (const k of o.order) STAGES[k]();
       stage(null);
       const now = total(M); if (cur - now < 0.5 && gained < 0.5) break; cur = now;
     }
     // finish: one last pass over leaves and single classes, even when the time is up, since it is cheap and the group moves
     // can leave a leaf on a line (the hand sessions also tidied leaves last)
+    // the rounds stop at 80% of the budget, so the finish has the rest; it stops at the budget too
     if (o.finish) {
       rounds++; stage('finish');
+      const hardUp = () => Date.now() - t0 > o.budgetMs;
       const hot = new Set(); total(M, true).issues.forEach((is) => is.nodes.forEach((v) => hot.add(v)));
-      for (const U of units) { if (!U.nodes.some((v) => hot.has(v)) && !hot.has(U.anchor)) continue; tick('tried');
+      for (const U of units) { if (hardUp()) break; if (!U.nodes.some((v) => hot.has(v)) && !hot.has(U.anchor)) continue; tick('tried');
         const from = rec ? cp(U.nodes, M) : null, g = best(M, U.nodes, unitCands(M, U)) + best(M, U.nodes, unitScale(M, U));
         if (g > 0) { stats.unitMoves++; tick('kept'); moved(U.nodes); step({ kind: 'unit', anchor: U.anchor, nodes: U.nodes.slice(), from, to: rec ? cp(U.nodes, M) : null, gain: +g.toFixed(1) }); } }
       hot.clear(); total(M, true).issues.forEach((is) => is.nodes.forEach((v) => hot.add(v))); grid = openGrid(M);
-      for (const v of hot) { tick('tried'); const from = rec ? cp([v], M) : null, g = best(M, [v], openCands(M, v, grid, 1.8, 12));
+      for (const v of hot) { if (hardUp()) break; tick('tried'); const from = rec ? cp([v], M) : null, g = best(M, [v], openCands(M, v, grid, 1.8, 12));
         if (g > 0) { stats.singleMoves++; tick('kept'); moved([v]); step({ kind: 'move', nodes: [v], from, to: rec ? cp([v], M) : null, gain: +g.toFixed(1) }); } }
     }
     stage(null); stats.end = total(M); stats.rounds = rounds; stats.ms = Date.now() - t0; stats.evals = M.evals;
@@ -388,6 +429,15 @@
     let boxA = 0; D.forEach((d) => (boxA += (d.w + 16) * (d.h + 12)));
     return { cross, sharp, thru, tight, area: +(bboxArea(M) / boxA).toFixed(2) };
   }
-  root.HandTidy = { run, measure, findUnits: (P, D, E, K) => findUnits(Model(P, D, E, DEF), K),
+  return { run, measure, findUnits: (P, D, E, K) => findUnits(Model(P, D, E, DEF), K),
     openSpace: (P, D, E, cell) => openGrid(Model(P, D, E, { ...DEF, cell: cell || DEF.cell })) };
+})();
+// The clean-up as the layouts use it: whatever is left of 1.5 s after the layout, at most 500 ms. With less than
+// 100 ms left (very large models, where the layout itself takes the time) it is skipped: it would change too little.
+function _ogLayoutCleanUp(pos, items, edges, startedAt) {
+  const budgetMs = Math.min(500, 1500 - (Date.now() - startedAt));
+  if (budgetMs < 100) return pos;
+  return _ogHandTidy.run(pos, items, edges.map((e) => ({ s: e[0], t: e[1] })), { budgetMs }).P;
+}
+root.HandTidy = _ogHandTidy; root.HandTidy.cleanUp = _ogLayoutCleanUp;
 })(typeof window !== 'undefined' ? window : globalThis);
