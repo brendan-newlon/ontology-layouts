@@ -64,6 +64,13 @@ What they give up:
 - **Subclass links top-down.** A constrained variant (subclass at least 40 px below its parent, kept by every tidy-up move) draws 100% of subclass links downward, against about half now. On small graphs it costs little; on broad taxonomies it costs readability. Details and numbers are in the HTML page.
 - **Bent links.** Bending the links that run through a class, instead of moving classes, draws a quarter fewer crossings in 15% less area at about 22 bends per graph. Moving first and then bending what is left leaves almost no link through a class at about 8 bends.
 
+- **Hand-style clean-up.** Generalised from recorded hand sessions in the layout lab (`tools/layout-bench/handtidy.js`). After the layout:
+  - classes at the ends of problem links move into open space;
+  - leaf units (leaves, short leaf chains, leaf triangles and loops) are turned around the class they hang from, since they can always avoid crossings;
+  - groups of classes picked by position move together toward open space, with a few repair moves of look-ahead.
+
+  With 2 s per graph over the 15 test graphs, it cut links through classes from 151 to 31, crossings from 498 to 443 and cramped classes from 96 to 52, with no change in area. On the graphs edited by hand, 3 s of clean-up matched or beat about 10 minutes of hand editing on each one. Its weak spot is dense hub graphs, such as the clinical record with three hubs, where many crossings remain.
+
 ## Limits
 - The readability score was designed with these layouts, and the layouts were tuned against it. On standard measures the lead holds for crossed links and links through classes; crossing angle is a weaker point (Tidy Stress 4.4, Mycelium 6.6). No study with people reading the diagrams has been done.
 - The tuned settings are a reasonable search, not an exhaustive one. All drawings are measured with straight links; layered layouts that route their own links would show fewer links through classes.

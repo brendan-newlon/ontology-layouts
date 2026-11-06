@@ -64,6 +64,9 @@ aside h2 { font-size: 13px; margin: 0; padding: 8px 12px; border-bottom: 1px sol
   <select id="algo" title="Starting layout"><option value="auto">Best Read</option><option value="compact">Tidy Stress</option><option value="grouped">Mycelium</option></select>
   <button id="relayout">Lay out again</button>
   <button id="undo" title="Ctrl+Z">Undo</button>
+  <button id="tidy" title="Clean up the drawing the way the recorded hand sessions did: leaf units, single moves into open space, group moves with look-ahead">Clean up</button>
+  <label class="tog" title="Time the clean-up may take">Time <input type="range" id="tidyT" min="0.5" max="10" step="0.5" value="2"> <span id="tidyTv">2 s</span></label>
+  <label class="tog" title="How many repair moves a group move may use before it has to pay off">Look-ahead <input type="range" id="tidyLA" min="0" max="8" step="1" value="4"> <span id="tidyLAv">4</span></label>
   <label class="tog"><input type="checkbox" id="marks" checked> Mark problems</label>
   <label class="tog"><input type="checkbox" id="handles" checked> Show bends</label>
   <div class="metrics" id="metrics"></div>
@@ -87,6 +90,7 @@ aside h2 { font-size: 13px; margin: 0; padding: 8px 12px; border-bottom: 1px sol
 <script src="models2.js"></script>
 <script src="models3.js"></script>
 <script src="models4.js"></script>
+<script src="handtidy.js"></script>
 <script>
 // Every action and note is kept in order, with the metrics before and after and the full positions after, so that a session
 // can be replayed and studied. Sessions are posted to the local receiver (tools/recv.py, port 8013) and kept in localStorage.
@@ -209,6 +213,8 @@ function describe(ev) {
     case 'select': return `<span class="d">Selected ${ev.classes.length ? esc(ev.classes.join(', ')) : 'nothing'}</span>`;
     case 'layout': return `<span class="d">Laid out ${esc(ev.graph)} with ${esc(ev.algo)}</span> <span class="m">crossings ${ev.after.cross}, through ${ev.after.thru}, sharp ${ev.after.sharp}, cramped ${ev.after.tight}</span>`;
     case 'undo': return `<span class="d">Undid step ${ev.undid} (a trial)</span>` + m;
+    case 'cleanup': { const c = (k) => ev.steps.filter((s) => s.kind === k).length;
+      return `<span class="d">Cleaned up in ${(ev.ms / 1000).toFixed(1)} s: ${c('move')} single moves, ${c('unit')} leaf units turned, ${c('group')} group moves</span>` + m; }
     case 'resume': return `<span class="d">Came back to ${esc(ev.graph)}, continuing from where you left it</span>`;
     default: return esc(ev.kind);
   }
@@ -358,6 +364,19 @@ function sendNote() { const text = $('note').value.trim(); if (!text) return; $(
   const ev = { seq: S.events.length + 1, ms: Math.round(performance.now() - S.started), at: new Date().toISOString(), kind: 'note', text, selected: [...G.sel].map((i) => G.labels[i]), afterStep: S.events.length ? S.events[S.events.length - 1].seq : 0 };
   S.events.push(ev); showEvent(ev); persist(); }
 $('send').onclick = sendNote;
+// Clean up: the hand-style post-layout steps (handtidy.js), as one undoable step
+$('tidyT').oninput = () => ($('tidyTv').textContent = $('tidyT').value + ' s');
+$('tidyLA').oninput = () => ($('tidyLAv').textContent = $('tidyLA').value);
+$('tidy').onclick = () => {
+  const b = $('tidy'); b.disabled = true; b.textContent = 'Cleaning up…';
+  setTimeout(() => {
+    const before = measure(), snap = snapshot(), budgetMs = +$('tidyT').value * 1000, groupDepth = +$('tidyLA').value;
+    const r = HandTidy.run(G.P, G.D, G.E.map((e) => ({ s: e.s, t: e.t })), { budgetMs, groupDepth });
+    G.P = r.P; S.undo.push(snap);
+    record('cleanup', { budgetMs, groupDepth, ms: r.stats.ms, steps: r.log.map((l) => ({ kind: l.kind, classes: l.nodes.map((i) => G.labels[i]), anchor: l.anchor != null ? G.labels[l.anchor] : undefined, gain: l.gain })) }, before);
+    draw(); b.disabled = false; b.textContent = 'Clean up';
+  }, 30);
+};
 $('note').addEventListener('keydown', (ev) => { if (ev.key === 'Enter' && !ev.shiftKey) { ev.preventDefault(); sendNote(); } });
 $('marks').onchange = () => { draw(); record('toggle', { marks: $('marks').checked }); };
 $('handles').onchange = () => { draw(); record('toggle', { bends: $('handles').checked }); };
