@@ -8,16 +8,16 @@
 :root {
   --bg: #f7f6f2; --paper: #ffffff; --ink: #1d232b; --muted: #5b6573; --rule: #dcdad2; --accent: #2f6b4f; --accent-soft: #e3efe8;
   --ours: #2f6b4f; --pub: #5a5f8a; --box: #eef3fb; --box-line: #6d86b0; --sub: #6f9a54; --rel: #8b97a8; --bad: #c43d32; --bad-soft: rgba(196,61,50,.14);
-  --code-bg: #f0eee7; --star: #b7791f;
+  --code-bg: #f0eee7; --auto: #7a5a1f; --auto-soft: #f6efe0;
 }
 @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
   --bg: #15181c; --paper: #1c2026; --ink: #e6e8eb; --muted: #9aa4b1; --rule: #30353d; --accent: #7cc39e; --accent-soft: #1f3329;
   --ours: #7cc39e; --pub: #a7acd9; --box: #233041; --box-line: #6f8db8; --sub: #8fbf6f; --rel: #6f7b8c; --bad: #ff6f61; --bad-soft: rgba(255,111,97,.18);
-  --code-bg: #232830; --star: #e0a43a; color-scheme: dark; } }
+  --code-bg: #232830; --auto: #e0b56a; --auto-soft: #2c261b; color-scheme: dark; } }
 :root[data-theme="dark"] {
   --bg: #15181c; --paper: #1c2026; --ink: #e6e8eb; --muted: #9aa4b1; --rule: #30353d; --accent: #7cc39e; --accent-soft: #1f3329;
   --ours: #7cc39e; --pub: #a7acd9; --box: #233041; --box-line: #6f8db8; --sub: #8fbf6f; --rel: #6f7b8c; --bad: #ff6f61; --bad-soft: rgba(255,111,97,.18);
-  --code-bg: #232830; --star: #e0a43a; color-scheme: dark; }
+  --code-bg: #232830; --auto: #e0b56a; --auto-soft: #2c261b; color-scheme: dark; }
 * { box-sizing: border-box; }
 body { margin: 0; background: var(--bg); color: var(--ink); font: 16px/1.6 "Segoe UI", system-ui, -apple-system, "Helvetica Neue", Arial, sans-serif; }
 .wrap { max-width: 1120px; margin: 0 auto; padding-block: 40px 80px; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
@@ -26,29 +26,42 @@ h1 { font-size: clamp(2rem, 4.5vw, 3rem); line-height: 1.1; margin: 0 0 .4rem; l
 h2 { font-size: 1.55rem; margin: 3rem 0 .8rem; padding-top: 1.2rem; border-top: 1px solid var(--rule); text-wrap: balance; }
 h3 { font-size: 1.15rem; margin: 2rem 0 .5rem; }
 .kicker { text-transform: uppercase; letter-spacing: .12em; font-size: .78rem; color: var(--accent); font-weight: 600; margin-bottom: .6rem; }
-.sub { font-size: 1.2rem; color: var(--muted); margin: 0 0 1.6rem; max-width: 60ch; }
+.sub { font-size: 1.2rem; color: var(--muted); margin: 0 0 1.6rem; max-width: 62ch; }
 p { margin: 0 0 1rem; }
 a { color: var(--accent); }
 .stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px; margin: 1.6rem 0 1.4rem; }
 .stat { background: var(--paper); border: 1px solid var(--rule); border-left: 4px solid var(--accent); border-radius: 8px; padding: 14px 16px; }
-.stat b { display: block; font-size: 1.7rem; line-height: 1.1; color: var(--accent); font-variant-numeric: tabular-nums; }
+.stat b { display: block; font-size: 1.6rem; line-height: 1.15; color: var(--accent); font-variant-numeric: tabular-nums; }
 .stat span { color: var(--muted); font-size: .92rem; }
-.note { background: var(--paper); border: 1px solid var(--rule); border-radius: 8px; padding: 12px 16px; color: var(--muted); font-size: .95rem; }
-.cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 14px; margin: 1rem 0; }
+.cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 14px; margin: 1rem 0; }
 .card { background: var(--paper); border: 1px solid var(--rule); border-radius: 10px; padding: 16px 18px; min-width: 0; }
 .card h3 { margin-top: 0; }
 .tag { display: inline-block; font-size: .75rem; padding: 1px 8px; border-radius: 99px; background: var(--accent-soft); color: var(--accent); font-weight: 600; margin-left: 6px; vertical-align: middle; }
+.auto { background: var(--auto-soft); border: 1px solid var(--rule); border-left: 4px solid var(--auto); border-radius: 10px; padding: 14px 18px; margin: 1.2rem 0; max-width: 78ch; }
+.auto h3 { margin: 0 0 .4rem; color: var(--auto); }
+.auto p:last-child { margin-bottom: 0; }
 .tbl { overflow-x: auto; margin: 1rem 0 1.4rem; border: 1px solid var(--rule); border-radius: 8px; background: var(--paper); }
 table { border-collapse: collapse; width: 100%; font-size: .9rem; font-variant-numeric: tabular-nums; }
 th, td { padding: 7px 10px; text-align: right; border-bottom: 1px solid var(--rule); white-space: nowrap; }
 th:first-child, td:first-child { text-align: left; }
+td.l, th.l { text-align: left; white-space: normal; }
 thead th { font-size: .78rem; text-transform: uppercase; letter-spacing: .05em; color: var(--muted); font-weight: 600; vertical-align: bottom; white-space: normal; }
 tr.ours td { background: var(--accent-soft); }
 tr.ours td:first-child { font-weight: 700; color: var(--accent); }
+tr.autorow td { background: var(--auto-soft); }
+tr.autorow td:first-child { font-weight: 700; color: var(--auto); }
+tr.split td { border-top: 2px solid var(--rule); }
 td.best { font-weight: 700; }
 pre { background: var(--code-bg); padding: 14px 16px; border-radius: 8px; overflow-x: auto; font: 13px/1.5 Consolas, "SFMono-Regular", Menlo, monospace; }
 code { font: .9em Consolas, "SFMono-Regular", Menlo, monospace; background: var(--code-bg); padding: 1px 5px; border-radius: 4px; }
+pre code { background: none; padding: 0; font-size: 12.5px; }
 ul, ol { padding-left: 1.3rem; margin: 0 0 1rem; } li { margin: .25rem 0; }
+details.code { background: var(--paper); border: 1px solid var(--rule); border-radius: 10px; margin: 1rem 0; }
+details.code summary { cursor: pointer; padding: 12px 16px; font-weight: 600; }
+details.code .bar { display: flex; justify-content: flex-end; padding: 0 12px; }
+details.code pre { margin: 8px 12px 12px; max-height: 70vh; }
+button { font: inherit; font-size: .85rem; padding: 4px 12px; border: 1px solid var(--rule); border-radius: 6px; background: var(--paper); color: var(--ink); cursor: pointer; }
+button:hover { border-color: var(--accent); }
 /* comparison widget */
 .cmp { background: var(--paper); border: 1px solid var(--rule); border-radius: 12px; padding: 14px; margin: 1.4rem 0 1.8rem; }
 .cmp-head { display: flex; flex-wrap: wrap; gap: 10px 18px; align-items: center; justify-content: space-between; margin-bottom: 10px; }
@@ -69,12 +82,10 @@ select { font: inherit; font-size: .9rem; padding: 4px 8px; border: 1px solid va
 .pane-stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 4px; padding: 8px 10px; border-top: 1px solid var(--rule); font-size: .8rem; color: var(--muted); }
 .pane-stats b { display: block; font-size: 1.05rem; color: var(--ink); font-variant-numeric: tabular-nums; }
 .pane-stats .good b { color: var(--ours); }
-.cmp-cap { color: var(--muted); font-size: .92rem; margin: 10px 2px 0; }
+.cmp-cap { color: var(--muted); font-size: .85rem; margin: 10px 2px 0; }
 .legend { display: inline-flex; gap: 12px; align-items: center; flex-wrap: wrap; }
 .legend i { display: inline-block; width: 18px; height: 0; border-top: 2px solid; vertical-align: middle; margin-right: 4px; }
 label.tog { display: inline-flex; gap: 6px; align-items: center; cursor: pointer; }
-.hint { font-size: .8rem; color: var(--muted); }
-footer { margin-top: 3rem; color: var(--muted); font-size: .88rem; border-top: 1px solid var(--rule); padding-top: 1rem; }
 </style>
 </head>
 <body>
@@ -82,48 +93,51 @@ footer { margin-top: 3rem; color: var(--muted); font-size: .88rem; border-top: 1
 
 <div class="kicker">Graph layout for ontologies</div>
 <h1>Tidy Stress and Mycelium</h1>
-<p class="sub">Two layouts that draw ontology diagrams with far fewer crossed links and far fewer links running through classes than the widely used open-source layouts, plus Best Read, which picks the better of the two for each model.</p>
+<p class="sub">Two layouts that draw ontologies with far fewer crossed links and far fewer links running through classes than the widely used open-source layouts, and an auto mode, Best Read, that picks the better of the two layouts for a given ontology.</p>
 
 <div class="stats">
-  <div class="stat"><b>1st of 14</b><span>overall readability rank, against 11 open-source layouts on 19 models</span></div>
-  <div class="stat"><b>2–3× fewer</b><span>crossed links than the best open-source layout on mid-size and hub-heavy models</span></div>
-  <div class="stat"><b>2–5× fewer</b><span>links running through a class box, the error that makes unrelated classes look linked</span></div>
-  <div class="stat"><b>≤ 1.5 s</b><span>for models of up to 537 classes, in a browser</span></div>
+  <div class="stat"><b>Ahead of all 11</b><span>Tidy Stress and Mycelium each rank above every one of 11 open-source layouts on overall readability, across 19 test graphs</span></div>
+  <div class="stat"><b>2–3× fewer crossed links</b><span>than the best open-source layout, on mid-size and hub-heavy ontologies</span></div>
+  <div class="stat"><b>2–5× fewer links through classes</b><span>the error that makes two unrelated classes look linked</span></div>
+  <div class="stat"><b>1.5 s or less</b><span>for ontologies of up to 537 classes, in a browser</span></div>
 </div>
 
 <div class="prose">
-<p>An ontology diagram is only useful if a reader can follow each link from one class to another. Two things make that hard: links that cross, and links that pass under a class box, so that two unrelated classes look connected. General-purpose layouts usually reduce the first only as a side effect, and do little about the second. Tidy Stress and Mycelium are built to minimise both, without letting the drawing sprawl.</p>
-<p>Below, a 179-class banking model: eleven taxonomies joined by relationships. On the left is the open-source layout that scored best on this model; on the right, ours. <em>Mark problems</em> shows every crossing (dot) and every link that runs through a class (red).</p>
+<p>An ontology diagram is only useful if a reader can follow each link from one class to another. Two things make that hard: links that cross, and links that pass under a class box, so that two unrelated classes look connected. General-purpose layouts reduce the first only as a side effect and do little about the second. Tidy Stress and Mycelium are built to minimise both, without letting the drawing sprawl.</p>
+<p>Below, a 179-class banking ontology: eleven class hierarchies joined by relationships. On the left is the open-source layout that scored best on this ontology; on the right, ours. <em>Mark problems</em> shows every crossing (dot) and every link that runs through a class (red).</p>
 </div>
 
-<div class="cmp" data-model="big" data-right="Mycelium" data-problems="1"></div>
+<div class="cmp" data-graph="big" data-right="Mycelium" data-problems="1"></div>
 
-<div class="note">Honest scope: the benchmark, its models and its readability score are ours, and no study with people reading the diagrams has been done yet. The crossing and through-class counts are standard measures and tell the same story as the score. The full method and every limit are set out below under <a href="#limits">Limits</a>.</div>
-
-<h2 id="what">What they are</h2>
+<h2 id="layouts">The two layouts</h2>
 <div class="cards">
-  <div class="card"><h3>Tidy Stress <span class="tag">up to a few dozen classes</span></h3><p>Places classes so that straight-line distances match how many links apart they are (stress majorization), then tidies the drawing with local moves that remove crossings, links through boxes and needlessly long links. No move is kept if it makes any of those worse. It tries a few variants and keeps the most readable.</p></div>
-  <div class="card"><h3>Mycelium <span class="tag">large and hub-heavy models</span></h3><p>Draws groups of closely linked classes as compact pods joined by longer threads. It gives every hub a ring wide enough for all its neighbours, and fans classes with a single link out around the class they hang from, with room for the link's label.</p></div>
-  <div class="card"><h3>Best Read <span class="tag">a selector, not a layout</span></h3><p>Runs the variants of Tidy Stress and Mycelium that suit the model's size within a time budget, scores each on readability, and keeps the best. It adds no layout step of its own.</p></div>
+  <div class="card"><h3>Tidy Stress <span class="tag">up to a few dozen classes</span></h3><p>Places classes so that straight-line distances match how many links apart they are, then tidies the drawing: it moves classes to remove crossings, to take them off links that run through them, and to shorten long links, keeping a move only if nothing else gets worse.</p></div>
+  <div class="card"><h3>Mycelium <span class="tag">large and hub-heavy ontologies</span></h3><p>Draws groups of closely linked classes as compact pods joined by longer threads. Every hub gets a ring wide enough for all its neighbours, and classes with a single link fan out around the class they hang from, with room for the link's label.</p></div>
+</div>
+<div class="auto">
+  <h3>Auto mode: Best Read</h3>
+  <p>Best Read applies whichever of the two layouts reads better for a given ontology. It runs Tidy Stress and Mycelium, scores both drawings for readability, and keeps the better one. Above 100 classes it runs Mycelium alone: at that size Mycelium drew far fewer crossings and links through classes in every test, and running both would double the time. It changes no setting inside either layout; it only chooses between their results.</p>
 </div>
 
-<h3>Tidy Stress on a typical model</h3>
+<h3>Tidy Stress on a typical ontology</h3>
 <div class="prose"><p>Most ontologies people draw have 10 to 30 classes. There the open-source layouts are already decent, and the difference is in the details: fewer crossings, no link through a class, links of even length.</p></div>
-<div class="cmp" data-model="uni" data-right="Tidy Stress"></div>
+<div class="cmp" data-graph="uni" data-right="Tidy Stress"></div>
 
 <h3>Mycelium on the hardest case: hubs</h3>
-<div class="prose"><p>A 53-class clinical record in which three classes link to almost everything. No placement can untangle this fully; Mycelium gives each hub a ring of room so its links stop running through other classes, at the cost of a larger drawing.</p></div>
-<div class="cmp" data-model="health" data-right="Mycelium" data-problems="1"></div>
+<div class="prose"><p>A 53-class clinical record in which three classes link to almost everything. No placement can untangle this fully. Mycelium gives each hub a ring of room so that its links stop running through other classes, at the cost of a larger drawing.</p></div>
+<div class="cmp" data-graph="health" data-right="Mycelium" data-problems="1"></div>
 
 <h2 id="scoreboard">Scoreboard</h2>
-<div class="prose"><p>Average rank of each layout across the 19 benchmark models (1 = best; ties share a rank). Best Read keeps the better of Tidy Stress and Mycelium, so it shares their ranks. Wins count first places on the readability score among the other 13.</p></div>
+<div class="prose">
+<p>Average rank of each layout across the 19 test graphs: 1 is best, and layouts with equal results share a rank. The readability score combines all the measures to its right; how it is calculated is explained under <a href="#score">How readability is scored</a>.</p>
+<p><strong>Wins</strong> is the number of graphs on which a layout ranked first in readability against the other 12 layouts. Best Read is left out of that count, because its drawing is always one of ours. Its own row is included because it is a complete layout procedure: it takes a graph and returns positions, and its time includes running both layouts.</p>
+</div>
 <div class="tbl"><table>
-<thead><tr><th>Layout</th><th>Readability, all</th><th>≤ 30 classes</th><th>31–100</th><th>&gt; 100</th><th>Crossed links</th><th>Links through classes</th><th>Area</th><th>Very long links</th><th>Wins</th><th>Median time</th></tr></thead>
+<thead><tr><th>Layout</th><th>Readability, all graphs</th><th>≤ 30 classes</th><th>31–100 classes</th><th>&gt; 100 classes</th><th>Crossed links</th><th>Links through classes</th><th>Area</th><th>Very long links</th><th>Wins</th><th>Median time</th></tr></thead>
 <tbody>
-<tr class="ours"><td>Best Read</td><td class="best">1.3</td><td>1.1</td><td class="best">1.0</td><td>2.3</td><td class="best">1.5</td><td class="best">1.6</td><td>6.2</td><td>9.5</td><td>–</td><td>359 ms</td></tr>
-<tr class="ours"><td>Tidy Stress</td><td>1.8</td><td class="best">1.0</td><td>1.8</td><td>3.5</td><td>2.1</td><td>3.0</td><td>5.6</td><td>8.5</td><td class="best">14</td><td>288 ms</td></tr>
-<tr class="ours"><td>Mycelium</td><td>3.6</td><td>4.0</td><td>4.1</td><td class="best">1.8</td><td>1.8</td><td>2.4</td><td>7.6</td><td>11.9</td><td>4</td><td>88 ms</td></tr>
-<tr><td>Graphviz sfdp</td><td>6.1</td><td>4.7</td><td>5.8</td><td>9.0</td><td>6.4</td><td>4.9</td><td>7.2</td><td>7.7</td><td>0</td><td>8 ms</td></tr>
+<tr class="ours"><td>Tidy Stress</td><td class="best">1.8</td><td class="best">1.0</td><td class="best">1.8</td><td>3.5</td><td>2.1</td><td>3.0</td><td>5.6</td><td>8.5</td><td class="best">14</td><td>288 ms</td></tr>
+<tr class="ours"><td>Mycelium</td><td>3.6</td><td>4.0</td><td>4.1</td><td class="best">1.8</td><td class="best">1.8</td><td class="best">2.4</td><td>7.6</td><td>11.9</td><td>4</td><td>88 ms</td></tr>
+<tr class="split"><td>Graphviz sfdp</td><td>6.1</td><td>4.7</td><td>5.8</td><td>9.0</td><td>6.4</td><td>4.9</td><td>7.2</td><td>7.7</td><td>0</td><td>8 ms</td></tr>
 <tr><td>ELK stress</td><td>6.1</td><td>6.4</td><td>6.0</td><td>5.8</td><td>5.8</td><td>6.8</td><td>7.3</td><td class="best">1.1</td><td>0</td><td>152 ms</td></tr>
 <tr><td>WebCola</td><td>6.2</td><td>9.7</td><td>5.0</td><td>2.5</td><td>5.2</td><td>4.9</td><td>10.9</td><td>3.6</td><td>1</td><td>97 ms</td></tr>
 <tr><td>Graphviz neato</td><td>6.5</td><td>6.6</td><td>4.9</td><td>9.8</td><td>5.7</td><td>4.1</td><td>10.4</td><td>5.5</td><td>0</td><td>7 ms</td></tr>
@@ -134,164 +148,203 @@ footer { margin-top: 3rem; color: var(--muted); font-size: .88rem; border-top: 1
 <tr><td>ELK force</td><td>12.2</td><td>11.4</td><td>12.4</td><td>13.3</td><td>13.2</td><td>10.8</td><td>11.1</td><td>3.9</td><td>0</td><td>143 ms</td></tr>
 <tr><td>Cytoscape cose</td><td>12.8</td><td>13.9</td><td>13.1</td><td>10.3</td><td>11.4</td><td>13.9</td><td class="best">1.1</td><td>10.4</td><td>0</td><td>23 ms</td></tr>
 <tr><td>Graphviz fdp</td><td>12.9</td><td>13.0</td><td>13.3</td><td>12.3</td><td>13.6</td><td>11.7</td><td>7.6</td><td>3.5</td><td>0</td><td>10 ms</td></tr>
+<tr class="autorow split"><td>Best Read (auto mode)</td><td>1.3</td><td>1.1</td><td>1.0</td><td>2.3</td><td>1.5</td><td>1.6</td><td>6.2</td><td>9.5</td><td>–</td><td>359 ms</td></tr>
 </tbody></table></div>
 <div class="prose">
-<p><strong>Where ours win:</strong> readability overall and in every size band, and clearly on the two measures that matter most for reading, crossed links and links through classes.</p>
-<p><strong>What they give up:</strong> they are not the most compact (<code>cose</code> and dagre pack tighter, <code>cose</code> by letting links run through boxes); Mycelium's threads between pods are long by design; and they are slower than the native libraries, though within about a second and a half at every size tested.</p>
+<p><strong>Where ours lead:</strong> overall readability and, between them, every size band; and clearly on the two measures that matter most for reading, crossed links and links through classes. On graphs above 100 classes Mycelium leads, WebCola is second, and Tidy Stress third.</p>
+<p><strong>What they give up:</strong></p>
+<ul>
+<li>They are not the most compact. <code>cose</code> and dagre pack tighter; <code>cose</code> does so by letting links run through boxes.</li>
+<li>Mycelium's threads between pods are long by design.</li>
+<li>They are slower than the native libraries, though within about a second and a half at every size tested.</li>
+</ul>
 </div>
 
-<h2 id="explore">Explore every model</h2>
-<div class="prose"><p>Pick any of the 15 models with drawings below. Each side's list puts the layout that scored best on that model first, marked ★. Scroll to zoom, drag to move, double-click to fit.</p></div>
-<div class="cmp" data-model="schema" data-pick="1"></div>
+<h2 id="explore">Explore every test graph</h2>
+<div class="prose"><p>Pick any of the 15 graphs that have recorded drawings. Each side's list puts the layout that scored best on that graph first, marked ★.</p></div>
+<div class="cmp" data-graph="schema" data-pick="1"></div>
 
-<h3>Per model</h3>
-<div class="prose"><p>Crossed links / links through classes, averaged over two runs, next to the best open-source layout on the readability score for the same model.</p></div>
+<h3>Per graph</h3>
+<div class="prose"><p>Each layout column shows crossed links / links through classes, averaged over two runs. The last column is the open-source layout with the best readability score on that graph.</p></div>
 <div class="tbl"><table>
-<thead><tr><th>Model</th><th>Classes / links</th><th>Best Read</th><th>Tidy Stress</th><th>Mycelium</th><th>Best open-source</th></tr></thead>
+<thead><tr><th>Graph</th><th>Classes</th><th>Links</th><th>Tidy Stress</th><th>Mycelium</th><th>Best open-source layout</th></tr></thead>
 <tbody>
-<tr><td>University</td><td>14 / 20</td><td>1 / 1</td><td>1 / 1</td><td>0 / 1</td><td>Graphviz sfdp 4 / 3</td></tr>
-<tr><td>Hotel booking</td><td>13 / 16</td><td>0 / 0</td><td>0 / 0</td><td>0 / 1</td><td>Graphviz sfdp 1 / 0</td></tr>
-<tr><td>HR</td><td>20 / 24</td><td>0 / 0</td><td>0 / 0</td><td>0 / 0</td><td>ELK layered 0 / 3</td></tr>
-<tr><td>W3C ORG</td><td>15 / 20</td><td>0 / 0</td><td>0 / 0</td><td>0 / 0</td><td>ELK stress 4 / 1</td></tr>
-<tr><td>Brewery IoT</td><td>23 / 37</td><td>1 / 0</td><td>1 / 0</td><td>1 / 0</td><td>Graphviz sfdp 2 / 1</td></tr>
-<tr><td>Clinical trial</td><td>24 / 28</td><td>1 / 0</td><td>1 / 0</td><td>2 / 0</td><td>Graphviz sfdp 4 / 2</td></tr>
-<tr><td>PROV-O</td><td>30 / 62</td><td>35 / 10</td><td>35 / 10</td><td>28 / 12</td><td>ELK stress 66 / 30</td></tr>
-<tr><td>Telecom network</td><td>34 / 86</td><td>30 / 6</td><td>32 / 7</td><td>36 / 4</td><td>Graphviz neato 79 / 10</td></tr>
-<tr><td>SOSA/SSN</td><td>36 / 63</td><td>12 / 8</td><td>12 / 8</td><td>14 / 5</td><td>ELK stress 35 / 16</td></tr>
-<tr><td>Customer 360</td><td>31 / 49</td><td>8 / 7</td><td>8 / 7</td><td>6 / 7</td><td>Graphviz sfdp 27 / 13</td></tr>
-<tr><td>Supply chain</td><td>39 / 76</td><td>17 / 2</td><td>15 / 3</td><td>18 / 1</td><td>Graphviz sfdp 42 / 19</td></tr>
-<tr><td>schema.org core</td><td>49 / 102</td><td>111 / 29</td><td>110 / 36</td><td>58 / 47</td><td>Graphviz neato 215 / 36</td></tr>
-<tr><td>Clinical record (3 super-hubs)</td><td>53 / 129</td><td>161 / 25</td><td>210 / 97</td><td>161 / 25</td><td>Graphviz neato 435 / 66</td></tr>
-<tr><td>FIBO-like loans</td><td>59 / 77</td><td>14 / 6</td><td>14 / 6</td><td>14 / 4</td><td>Graphviz neato 25 / 13</td></tr>
-<tr><td>Pizza (taxonomy)</td><td>90 / 94</td><td>2 / 26</td><td>2 / 26</td><td>10 / 38</td><td>d3-force 12 / 35</td></tr>
-<tr><td>Biomedical taxonomy</td><td>115 / 139</td><td>22 / 9</td><td>32 / 20</td><td>22 / 9</td><td>WebCola 57 / 29</td></tr>
-<tr><td>Bank</td><td>179 / 285</td><td>67 / 23</td><td>148 / 132</td><td>59 / 15</td><td>WebCola 128 / 77</td></tr>
-<tr><td>Scale-free graph</td><td>400 / 482</td><td>760 / 223</td><td>1058 / 583</td><td>764 / 212</td><td>WebCola 847 / 401</td></tr>
-<tr><td>Three banks joined</td><td>537 / 915</td><td>2254 / 965</td><td>3931 / 2283</td><td>2250 / 969</td><td>WebCola 2096 / 774</td></tr>
+<tr><td>University</td><td>14</td><td>20</td><td>1 / 1</td><td>0 / 1</td><td>Graphviz sfdp 4 / 3</td></tr>
+<tr><td>Hotel booking</td><td>13</td><td>16</td><td>0 / 0</td><td>0 / 1</td><td>Graphviz sfdp 1 / 0</td></tr>
+<tr><td>HR</td><td>20</td><td>24</td><td>0 / 0</td><td>0 / 0</td><td>ELK layered 0 / 3</td></tr>
+<tr><td>W3C ORG</td><td>15</td><td>20</td><td>0 / 0</td><td>0 / 0</td><td>ELK stress 4 / 1</td></tr>
+<tr><td>Brewery IoT</td><td>23</td><td>37</td><td>1 / 0</td><td>1 / 0</td><td>Graphviz sfdp 2 / 1</td></tr>
+<tr><td>Clinical trial</td><td>24</td><td>28</td><td>1 / 0</td><td>2 / 0</td><td>Graphviz sfdp 4 / 2</td></tr>
+<tr><td>PROV-O</td><td>30</td><td>62</td><td>35 / 10</td><td>28 / 12</td><td>ELK stress 66 / 30</td></tr>
+<tr><td>Telecom network</td><td>34</td><td>86</td><td>32 / 7</td><td>36 / 4</td><td>Graphviz neato 79 / 10</td></tr>
+<tr><td>SOSA/SSN</td><td>36</td><td>63</td><td>12 / 8</td><td>14 / 5</td><td>ELK stress 35 / 16</td></tr>
+<tr><td>Customer 360</td><td>31</td><td>49</td><td>8 / 7</td><td>6 / 7</td><td>Graphviz sfdp 27 / 13</td></tr>
+<tr><td>Supply chain</td><td>39</td><td>76</td><td>15 / 3</td><td>18 / 1</td><td>Graphviz sfdp 42 / 19</td></tr>
+<tr><td>schema.org core</td><td>49</td><td>102</td><td>110 / 36</td><td>58 / 47</td><td>Graphviz neato 215 / 36</td></tr>
+<tr><td>Clinical record (3 super-hubs)</td><td>53</td><td>129</td><td>210 / 97</td><td>161 / 25</td><td>Graphviz neato 435 / 66</td></tr>
+<tr><td>FIBO-like loans</td><td>59</td><td>77</td><td>14 / 6</td><td>14 / 4</td><td>Graphviz neato 25 / 13</td></tr>
+<tr><td>Pizza (taxonomy)</td><td>90</td><td>94</td><td>2 / 26</td><td>10 / 38</td><td>d3-force 12 / 35</td></tr>
+<tr><td>Biomedical taxonomy</td><td>115</td><td>139</td><td>32 / 20</td><td>22 / 9</td><td>WebCola 57 / 29</td></tr>
+<tr><td>Bank</td><td>179</td><td>285</td><td>148 / 132</td><td>59 / 15</td><td>WebCola 128 / 77</td></tr>
+<tr><td>Scale-free graph</td><td>400</td><td>482</td><td>1058 / 583</td><td>764 / 212</td><td>WebCola 847 / 401</td></tr>
+<tr><td>Three banks joined</td><td>537</td><td>915</td><td>3931 / 2283</td><td>2250 / 969</td><td>WebCola 2096 / 774</td></tr>
 </tbody></table></div>
-<div class="prose"><p>Times at the large end, in the same browser tab: Best Read 1.3–1.5 s for 179–537 classes. WebCola took 2.8 s, 41 s and 219 s for 179, 400 and 537 classes. ELK stress took 14 s to 3.5 min, Graphviz <code>sfdp</code> 0.5–2 s and <code>neato</code> 0.6–4.7 s.</p></div>
+<div class="prose"><p>Times at the large end, in the same browser tab: Mycelium took 0.9–1.5 s for 179–537 classes. WebCola took 2.8 s, 41 s and 219 s for 179, 400 and 537 classes. ELK stress took 14 s to 3.5 minutes. Graphviz <code>sfdp</code> took 0.5–2 s and <code>neato</code> 0.6–4.7 s.</p></div>
 
-<h2 id="new">What is new, and what it builds on</h2>
+<h2 id="how">How the layouts work</h2>
+<h3>Steps both layouts share</h3>
 <div class="prose">
-<p>Both layouts are assembled from published techniques, and this work depends on them. What is new is the design of the parts below, the order in which they run, and the measurement that chose each setting. No individual building block is claimed as new.</p>
 <ol>
-<li><strong>Safe tidy-up passes.</strong> After stress placement, four local searches run in a tested order, each refusing any move that adds a crossing, a link through a box or an overlap:
+<li><strong>Target distances.</strong> Every link gets a target length (170 px by default; subclass links slightly shorter; a link with a label is long enough for the label). The target distance between any two classes is the length of the shortest path of links between them.</li>
+<li><strong>Placement.</strong> Classes are placed so that straight-line distances match the target distances as closely as possible (stress majorization), starting from a pivot-MDS placement, which gives the same result every time. Overlapping boxes are then pushed apart.</li>
+<li><strong>Tidy-up.</strong> Four local searches run in this order. Each keeps a move only if it adds no crossing, no link through a box and no overlap:
   <ol>
     <li>Swap two classes, or move one beside a neighbour, when that reduces crossings.</li>
     <li>Move a class off links that run through it.</li>
-    <li>Pull classes toward their neighbours to shorten long links, then shrink the drawing evenly as far as the boxes allow.</li>
+    <li>Pull classes toward their neighbours to shorten long links, then shrink the whole drawing evenly as far as the boxes allow.</li>
     <li>Move classes off links once more.</li>
   </ol>
-  Plain stress majorization (as in Graphviz <code>neato</code>) leaves typically 2–3× as many links through classes and about twice as many crossings.</li>
-<li><strong>Hub rings (Mycelium).</strong> A link at a class with <i>k</i> neighbours gets an ideal length of at least Σ(neighbour width + 20 px) / 2π, the radius of a ring that holds those neighbours side by side. On the clinical-record model this rule alone cuts links through classes from about 80 to about 43.</li>
-<li><strong>Pods (Mycelium).</strong> Links inside a group found by Louvain community detection are drawn at 0.85× the base length, links between groups at 1.6×. Stress placement then separates the groups without hard constraints, so a class shared by two groups can still sit between them.</li>
-<li><strong>Leaf fanning with label room.</strong> Classes with a single neighbour are laid out last.
+  Without these steps (placement alone, as in Graphviz <code>neato</code>) a drawing has typically 2–3× as many links through classes and about twice as many crossings.</li>
+<li><strong>Leaf fanning</strong>, when used. Classes linked to a single other class are left out of placement and put back last.
   <ul>
-    <li>Each is placed around its neighbour by searching 48 directions at the nearest free distances.</li>
-    <li>The search minimises 100 × crossings + 80 × links touching the box + distance.</li>
-    <li>Each keeps max(40 px, label width + 16 px) from its neighbour, so the link's text fits.</li>
-    <li>A final pass re-places any whose link ended up crossed or touched.</li>
+    <li>Each is placed around its neighbour by trying 48 directions at the nearest free distances.</li>
+    <li>The chosen spot minimises 100 × crossings + 80 × links touching the box + distance.</li>
+    <li>Each keeps at least max(40 px, label width + 16 px) from its neighbour, so the link's label fits.</li>
+    <li>Any whose link ends up crossed or touched is placed again.</li>
   </ul>
-  Ontologies are full of leaf subclasses, so this matters.</li>
-<li><strong>A readability score that resists sprawl.</strong> Best Read scores on:
-  <ul>
-    <li>crossings (×10);</li>
-    <li>links through boxes (×8);</li>
-    <li>near-touching link pairs (×2);</li>
-    <li>overlapping boxes (×40);</li>
-    <li>mean link length;</li>
-    <li>area beyond eight times that of the boxes;</li>
-    <li>links longer than 1.8 × the median length.</li>
-  </ul>
-  Without the last two terms, a score built on crossings favours drawings that avoid them by spreading out enormously.</li>
+  Ontologies have many classes of this kind, such as leaf subclasses.</li>
 </ol>
 </div>
-<div class="tbl"><table>
-<thead><tr><th>Technique</th><th>Authors</th><th>Used for</th></tr></thead>
-<tbody>
-<tr><td>Stress majorization</td><td style="text-align:left">Gansner, Koren and North, <em>Graph Drawing by Stress Majorization</em>, 2004; building on Kamada and Kawai, 1989</td><td style="text-align:left">Placement in both layouts</td></tr>
-<tr><td>Pivot MDS</td><td style="text-align:left">Brandes and Pich, <em>Eigensolver Methods for Progressive Multidimensional Scaling of Large Data</em>, 2006</td><td style="text-align:left">A repeatable starting placement</td></tr>
-<tr><td>Louvain communities</td><td style="text-align:left">Blondel, Guillaume, Lambiotte and Lefebvre, <em>Fast Unfolding of Communities in Large Networks</em>, 2008</td><td style="text-align:left">Finding Mycelium's pods</td></tr>
-<tr><td>Structure-dependent link lengths</td><td style="text-align:left">e.g. Dwyer et al., WebCola, 2009 onwards; Noack, LinLog energy model, 2007</td><td style="text-align:left">The idea behind pod link lengths</td></tr>
-<tr><td>Readability measures</td><td style="text-align:left">Purchase, <em>Which Aesthetic Has the Greatest Effect on Human Understanding?</em>, 1997, and later work</td><td style="text-align:left">The measures in the score</td></tr>
-<tr><td>Choosing a layout per graph</td><td style="text-align:left">e.g. Kwon, Crnovrsanin and Ma, <em>What Would a Graph Look Like in This Layout?</em>, 2018</td><td style="text-align:left">The idea behind Best Read</td></tr>
-</tbody></table></div>
-
-<h2 id="how">How they run</h2>
-<pre>boxes  := each class box + 16 × 12 px margin
-leaves := classes with exactly one distinct neighbour, whose neighbour has others
-core   := all classes − leaves
-for each core link (u, v):
-    len := L   (170 px; subclass links 0.9 L; Mycelium uses L = 260 px from 100 classes)
-    Mycelium:  len := max(len, min(3 L, ring(u), ring(v)))      ring(x) = Σ(neighbour width + 20) / 2π
-               len *= 0.85 inside a Louvain group, 1.6 between groups
-    labelled link: len := max(len, (w_u + w_v)/2 + label width + 24)
-D := all-pairs shortest-path lengths (Dijkstra)
-place:  pivot-MDS start (+ random restarts while time allows) → stress majorization on D → push overlapping boxes apart
-tidy:   fewer crossings → off links → shorten and shrink → off links   (each step time-boxed)
-leaves: fan out round their neighbour → tidy once more → re-place any that are crossed or touched</pre>
+<h3>Tidy Stress</h3>
 <div class="prose">
-<p><strong>Tidy Stress</strong> tries up to four variants within 1.5 s and keeps the best by the score:</p>
+<p>Tidy Stress tries four settings of the shared steps within 1.5 seconds, scores each drawing, and keeps the most readable. The settings differ only in their options, not in the order of the steps:</p>
 <ul>
-<li>plain stress with random starts;</li>
-<li>pivot-MDS start with a final leaf improvement;</li>
-<li>hub rings with leaf fanning;</li>
+<li>random starts instead of the pivot-MDS start, keeping the start with the fewest crossings;</li>
+<li>the pivot-MDS start, then moving any single-link class to a better free spot if there is one;</li>
+<li>leaf fanning, with extra room round classes that have many links (the hub rings described below);</li>
 <li>leaf fanning alone.</li>
 </ul>
-<p>Above 60 classes it runs only the second, because sharing the time starves each variant's tidy-up.</p>
-<p><strong>Mycelium</strong> needs at least 8 classes and has a 1 s budget.</p>
+<p>From 31 to 60 classes it tries three of these, and above 60 only the second, because sharing the time between settings leaves each too little time to tidy up.</p>
 </div>
+<h3>Mycelium</h3>
+<div class="prose"><ul>
+<li><strong>Pods.</strong> Louvain community detection finds groups of closely linked classes. Links inside a group get 0.85× the target length and links between groups 1.6×, so placement separates the groups while still letting a class shared by two groups sit between them.</li>
+<li><strong>Hub rings.</strong> A link at a class with <i>k</i> neighbours is at least Σ(neighbour width + 20 px) / 2π long, the radius of a ring that holds all the neighbours side by side. On the clinical-record graph this rule alone cuts links through classes from about 80 to about 43.</li>
+<li><strong>Leaf fanning</strong>, as above.</li>
+<li><strong>Target length.</strong> 260 px from 100 classes.</li>
+<li><strong>Limits.</strong> It needs at least 8 classes and has a 1 s budget.</li>
+</ul></div>
+
+<h3 id="score">How readability is scored</h3>
+<div class="prose">
+<p>Tidy Stress (between its settings) and Best Read (between the two layouts) choose the drawing with the lowest score. The score adds up:</p>
+<ul>
+<li>10 for every pair of crossed links;</li>
+<li>8 for every link that runs through a class box;</li>
+<li>2 for every pair of links that come within 30 px of each other;</li>
+<li>40 for every pair of overlapping boxes;</li>
+<li>a tenth of the mean link length, plus a penalty when the mean exceeds 350 px;</li>
+<li>a penalty for area beyond eight times the total area of the boxes, growing with the number of classes;</li>
+<li>25 for every multiple, beyond 1.8, of the median link length by which a link is longer.</li>
+</ul>
+<p>The last two terms matter. A layout can avoid crossings by pushing classes far apart or by stretching a few links across the whole drawing. Without those terms, such drawings would win on crossings alone even though they are hard to read.</p>
+</div>
+
+<h3>Best Read</h3>
+<div class="prose"><ul>
+<li><strong>Up to 30 classes:</strong> runs Tidy Stress's four settings and Mycelium, and keeps the lowest score.</li>
+<li><strong>31 to 100 classes:</strong> runs Tidy Stress's settings for that size and Mycelium. For dense ontologies (more than two links per class) it runs only one Tidy Stress setting, so Mycelium has enough time.</li>
+<li><strong>Above 100 classes:</strong> runs Mycelium alone.</li>
+</ul>
+<p>Its budget is 1.5 s up to 30 classes, 2.2 s up to 100, and 1 s above.</p></div>
+
+<pre>for each link (u, v):
+    len := L   (170 px; subclass links 0.9 L; Mycelium: L = 260 px from 100 classes)
+    Mycelium:      len := max(len, min(3 L, ring(u), ring(v)))     ring(x) = Σ(neighbour width + 20) / 2π
+                   len *= 0.85 inside a Louvain group, 1.6 between groups
+    labelled link: len := max(len, (w_u + w_v)/2 + label width + 24)
+D := all-pairs shortest-path lengths over len (Dijkstra)
+place:  pivot-MDS start (+ random restarts while time allows) → stress majorization on D → push overlapping boxes apart
+tidy:   fewer crossings → off links → shorten and shrink → off links   (each step time-boxed)
+leaves: fan out round their neighbour → tidy once more → place again any that are crossed or touched</pre>
+
+<h2 id="prior">Prior work these layouts use</h2>
+<div class="prose">
+<p>Each layout combines established techniques with steps of its own. These are the established parts and where they come from. Our own parts are the tidy-up passes, the hub rings, the pod length factors, leaf fanning with room for labels, the readability score, and the settings, each chosen by benchmark.</p>
+</div>
+<div class="tbl"><table>
+<thead><tr><th>Technique</th><th class="l">Source</th><th class="l">Used for</th></tr></thead>
+<tbody>
+<tr><td>Stress majorization</td><td class="l">Gansner, Koren and North, <em>Graph Drawing by Stress Majorization</em>, 2004; building on Kamada and Kawai, 1989</td><td class="l">Placement in both layouts</td></tr>
+<tr><td>Pivot MDS</td><td class="l">Brandes and Pich, <em>Eigensolver Methods for Progressive Multidimensional Scaling of Large Data</em>, 2006</td><td class="l">The starting placement</td></tr>
+<tr><td>Louvain communities</td><td class="l">Blondel, Guillaume, Lambiotte and Lefebvre, <em>Fast Unfolding of Communities in Large Networks</em>, 2008</td><td class="l">Mycelium's pods</td></tr>
+<tr><td>Link lengths set by graph structure</td><td class="l">For example Dwyer and others, WebCola, 2009 onwards; Noack, LinLog energy model, 2007</td><td class="l">The idea behind the pod lengths</td></tr>
+<tr><td>Readability measures</td><td class="l">Purchase, <em>Which Aesthetic Has the Greatest Effect on Human Understanding?</em>, 1997, and later work</td><td class="l">The measures in the score</td></tr>
+<tr><td>Choosing a layout per graph</td><td class="l">For example Kwon, Crnovrsanin and Ma, <em>What Would a Graph Look Like in This Layout?</em>, 2018</td><td class="l">The idea behind Best Read</td></tr>
+</tbody></table></div>
 
 <h2 id="method">Benchmark method</h2>
 <div class="prose">
-<p><strong>Models.</strong> 19 shapes:</p>
+<p><strong>Test graphs.</strong> 19 graphs:</p>
 <ul>
-<li>Ontologies written from the published structure of PROV-O, SOSA/SSN, W3C ORG, the Pizza tutorial ontology and a FIBO-like loan model.</li>
-<li>Models of typical domains: university, hotel booking, HR, clinical trial, telecom network, supply chain, customer 360, schema.org-style core types, a clinical record with three super-hubs, a 115-class biomedical taxonomy and a 179-class bank.</li>
+<li>Ontologies written from the published structure of PROV-O, SOSA/SSN, W3C ORG, the Pizza tutorial ontology and a FIBO-like loan ontology.</li>
+<li>Ontologies for typical domains: university, hotel booking, HR, clinical trial, telecom network, supply chain, customer 360, schema.org-style core types, a clinical record with three super-hubs, a 115-class biomedical taxonomy and a 179-class bank.</li>
 <li>A 400-node scale-free graph, and three banks joined (537 classes).</li>
 </ul>
 <p><strong>Boxes.</strong> Sized from the label length.</p>
-<p><strong>Contenders.</strong> Graphviz <code>neato</code>, <code>fdp</code> and <code>sfdp</code> (with Graphviz's own overlap removal), ELK stress, force and layered, WebCola, d3-force, dagre, and Cytoscape <code>cose</code> and <code>fcose</code>, with sensible general settings rather than per-model tuning.</p>
+<p><strong>Contenders.</strong> Graphviz <code>neato</code>, <code>fdp</code> and <code>sfdp</code> (with Graphviz's own overlap removal), ELK stress, force and layered, WebCola, d3-force, dagre, and Cytoscape <code>cose</code> and <code>fcose</code>. They ran with sensible general settings rather than settings tuned for each graph.</p>
 <p><strong>Fairness.</strong> Every layout received the same boxes, the same 170 px target link length where it takes one, and the same overlap removal afterwards.</p>
-<p><strong>Runs.</strong> Two seeds each, all in one browser tab on one machine, so times compare with each other but are not absolute. The drawings on this page are the first run of each.</p>
+<p><strong>Runs.</strong> Two runs per layout, all in one browser tab on one machine, so the times compare with each other but are not absolute. The drawings on this page are the first run of each.</p>
 </div>
 
 <h2 id="limits">Limits</h2>
 <div class="prose"><ul>
-<li><strong>Our measures, our score.</strong> The readability score is ours, and the layouts were tuned against it. The crossing and through-class counts are standard measures and agree with it, but no study with people reading the diagrams has been done.</li>
-<li><strong>Contender settings.</strong> The open-source layouts ran with general settings. Each could probably do better if tuned for these models, as ours were tuned for ontologies.</li>
-<li><strong>Models.</strong> They are reconstructions and inventions of typical shapes, not a public corpus of real ontologies. Commercial engines (yFiles, Tom Sawyer) were not tested.</li>
-<li><strong>Largest sizes.</strong> At around 500 classes, WebCola draws fewer crossings when given minutes to run. Within a budget of a second or two, Mycelium is the stronger choice.</li>
-<li><strong>Hub-heavy models stay hard.</strong> On the clinical-record model, a 20-second exhaustive search reaches only about 150 crossings against Mycelium's 161 in one second. Further big gains need a different kind of drawing, such as bundled links or repeating a hub, not a better placement.</li>
+<li><strong>The score.</strong> The readability score was designed with these layouts, and the layouts were tuned against it. The crossing and through-class counts are standard measures and agree with the score, but no study with people reading the diagrams has been done.</li>
+<li><strong>Contender settings.</strong> The open-source layouts ran with general settings. Each could probably do better if tuned for these graphs, as ours were tuned for ontologies.</li>
+<li><strong>Test graphs.</strong> They are reconstructions and inventions of typical shapes, not a public collection of real ontologies. Commercial engines (yFiles, Tom Sawyer) were not tested.</li>
+<li><strong>Very large graphs.</strong> At around 500 classes, WebCola draws fewer crossings when given minutes to run. Within a budget of a second or two, Mycelium is the stronger choice.</li>
+<li><strong>Hub-heavy graphs stay hard.</strong> On the clinical-record graph, a 20-second exhaustive search reaches only about 150 crossings, against Mycelium's 161 in one second. Large further gains need a different kind of drawing, such as bundled links or showing a hub more than once.</li>
 </ul></div>
 
 <h2 id="tried">What did not work</h2>
 <div class="prose"><ul>
-<li><strong>Stretching the drawing</strong> around a class until every single-link neighbour has a clean spot. Unlimited, it produced drawings millions of pixels wide on hub-heavy models; capped at 2.5×, it doubled the area for little gain.</li>
+<li><strong>Stretching the drawing</strong> around a class until every single-link neighbour has a clean spot. Without a limit it produced drawings millions of pixels wide on hub-heavy graphs; with a limit of 2.5× it doubled the area for little gain.</li>
 <li><strong>Pulling hubs toward the centre.</strong> No gain.</li>
-<li><strong>Other stress weights and link lengths.</strong> 1/d weights in place of 1/d², and link lengths scaled by degree or by shared neighbours. No gain.</li>
-<li><strong>Alternatives to plain Louvain pods:</strong>
+<li><strong>Other placement weights.</strong> 1/d in place of 1/d². No gain.</li>
+<li><strong>Other link lengths.</strong> Lengths scaled by the number of links or by shared neighbours. No gain.</li>
+<li><strong>Other ways of finding pods:</strong>
   <ul>
-    <li>overlapping membership (a class also joins any group holding 30 % of its links);</li>
-    <li>coarser and finer resolutions.</li>
+    <li>overlapping groups, where a class also joins any group that holds 30% of its links;</li>
+    <li>coarser and finer group sizes.</li>
   </ul>
-  Each won on some models and lost on others, with no gain on average. The pods only bias link lengths, so having groups matters more than how they are drawn. Removing them costs most on large models: on the bank model, crossings rise from 73 to 128 and links through classes from 53 to 103.</li>
-<li><strong>Sharing a fixed time budget</strong> among several variants on large models. It starves each variant's tidy-up, and one variant with all the time does better.</li>
+  Each did better on some graphs and worse on others, with no gain on average. The pods only change link lengths, so having groups at all matters more than exactly how they are drawn. Removing them costs most on large graphs: on the bank, crossings rise from 73 to 128 and links through classes from 53 to 103.</li>
+<li><strong>Sharing a fixed time budget</strong> among several settings on large graphs. Each setting gets too little time to tidy up; one setting with all the time does better.</li>
 </ul></div>
 
-<h2 id="code">Using the code</h2>
-<div class="prose"><p>The reference implementation is plain JavaScript with no dependencies, about 500 lines. It takes box sizes <code>[{w, h}]</code> and links <code>[[i, j, weight, labelWidth?]]</code> (weight 2 for subclass links) and returns box centres <code>[{x, y}]</code>.</p></div>
-<div class="tbl"><table>
-<thead><tr><th>Function</th><th>What it is</th></tr></thead>
-<tbody>
-<tr><td><code>_ogCompactLayout(items, edges, opts)</code></td><td style="text-align:left">Tidy Stress</td></tr>
-<tr><td><code>_ogGroupedLayout(items, edges, opts)</code></td><td style="text-align:left">Mycelium</td></tr>
-<tr><td><code>_ogAutoLayout(items, edges, opts)</code></td><td style="text-align:left">Best Read</td></tr>
-<tr><td><code>_ogStressLayout(items, edges, cfg, opts)</code></td><td style="text-align:left">One run, with options for each technique</td></tr>
-<tr><td><code>_ogPlacementMetrics</code>, <code>_ogPlacementScore</code></td><td style="text-align:left">The measures and the score</td></tr>
-</tbody></table></div>
+<h2 id="code">Source code</h2>
+<div class="prose">
+<p>The implementation below is complete and self-contained: plain JavaScript, no dependencies, about 500 lines.</p>
+<p><strong>Input.</strong> An array of boxes <code>[{ w, h }]</code> and an array of links <code>[[i, j, weight, labelWidth]]</code>:</p>
+<ul>
+<li><code>i</code> and <code>j</code> index into the boxes;</li>
+<li><code>weight</code> is 2 for subclass links and 1 for others;</li>
+<li><code>labelWidth</code>, the pixel width of the link's label, is optional.</li>
+</ul>
+<p><strong>Output.</strong> An object whose <code>pos</code> array holds the centre <code>{ x, y }</code> of each box. All arithmetic is on unrounded floating-point numbers.</p>
+</div>
+<pre><code>const boxes = [{ w: 90, h: 20 }, { w: 70, h: 20 }, { w: 110, h: 20 }];
+const links = [[1, 0, 2], [2, 0, 1, 60]];       // 1 is a subclass of 0; 2 links to 0 with a 60 px label
+const result = OntologyLayouts.bestRead(boxes, links, {});    // or .tidyStress(…) / .mycelium(…)
+result.pos.forEach((p, i) =&gt; console.log(i, p.x, p.y));
+// options: { roomy: true } leaves 30% more space (for example when boxes grow), { budgetMs } sets the time budget
+// Mycelium returns null for fewer than 8 classes; Best Read then uses Tidy Stress.</code></pre>
+<div class="prose"><p>The entry points are collected at the end of the code as <code>OntologyLayouts.tidyStress</code>, <code>OntologyLayouts.mycelium</code>, <code>OntologyLayouts.bestRead</code>, <code>OntologyLayouts.metrics</code> and <code>OntologyLayouts.score</code>.</p></div>
+<details class="code">
+  <summary>Show the code (about 500 lines)</summary>
+  <div class="bar"><button type="button" id="copyCode">Copy</button></div>
+  <pre><code id="srcCode"><!--__CODE__--></code></pre>
+</details>
 
-<footer>Benchmark drawings recorded November 2026.</footer>
 </div>
 
 <script>
@@ -310,20 +363,30 @@ function segBox(a, b, cx, cy, hw, hh) {
   return clip(-dx, ax + hw) && clip(dx, hw - ax) && clip(-dy, ay + hh) && clip(dy, hh - ay);
 }
 function el(tag, attrs, parent) { const e = document.createElementNS(SVGNS, tag); for (const k in attrs) e.setAttribute(k, attrs[k]); if (parent) parent.appendChild(e); return e; }
-function draw(box, model, layout, problems) {
+// Zoom limits: never closer than about three boxes across, never further out than 1.6 times the fitted view,
+// and the middle of the view always stays over the drawing, so some of the graph is always in sight.
+function clampView(svg) {
+  const h = svg._home, v = svg._vb, ratio = v[3] / v[2];
+  let w = Math.min(Math.max(v[2], Math.min(h[2], 320)), h[2] * 1.6);
+  const cx = Math.min(Math.max(v[0] + v[2] / 2, h[0]), h[0] + h[2]), cy = Math.min(Math.max(v[1] + v[3] / 2, h[1]), h[1] + h[3]);
+  svg._vb = [cx - w / 2, cy - w * ratio / 2, w, w * ratio];
+  svg.setAttribute("viewBox", svg._vb.join(" "));
+}
+function fit(svg) { svg._vb = svg._home.slice(); svg.setAttribute("viewBox", svg._vb.join(" ")); }
+function draw(box, graph, layout, problems) {
   box.innerHTML = "";
-  const P = layout.pos, W = model.box, n = P.length;
+  const P = layout.pos, W = graph.box, n = P.length;
   let x1 = Infinity, y1 = Infinity, x2 = -Infinity, y2 = -Infinity;
   P.forEach((p, i) => { x1 = Math.min(x1, p[0] - W[i] / 2); x2 = Math.max(x2, p[0] + W[i] / 2); y1 = Math.min(y1, p[1] - BOXH / 2); y2 = Math.max(y2, p[1] + BOXH / 2); });
   const pad = 24, vb = [x1 - pad, y1 - pad, x2 - x1 + 2 * pad, y2 - y1 + 2 * pad];
   const svg = el("svg", { viewBox: vb.join(" "), preserveAspectRatio: "xMidYMid meet" }, box);
   svg._home = vb.slice(); svg._vb = vb.slice();
   const thru = new Set(), hitBox = new Set();
-  if (problems) model.edges.forEach(([a, b], k) => { for (let i = 0; i < n; i++) { if (i === a || i === b) continue; if (segBox(P[a], P[b], P[i][0], P[i][1], W[i] / 2 + 3, BOXH / 2 + 3)) { thru.add(k); hitBox.add(i); } } });
+  if (problems) graph.edges.forEach(([a, b], k) => { for (let i = 0; i < n; i++) { if (i === a || i === b) continue; if (segBox(P[a], P[b], P[i][0], P[i][1], W[i] / 2 + 3, BOXH / 2 + 3)) { thru.add(k); hitBox.add(i); } } });
   const g = el("g", {}, svg);
-  model.edges.forEach(([a, b, sub], k) => el("line", { x1: P[a][0], y1: P[a][1], x2: P[b][0], y2: P[b][1], stroke: thru.has(k) ? "var(--bad)" : sub ? "var(--sub)" : "var(--rel)", "stroke-width": thru.has(k) ? 2.2 : 1.3, "vector-effect": "non-scaling-stroke" }, g));
+  graph.edges.forEach(([a, b, sub], k) => el("line", { x1: P[a][0], y1: P[a][1], x2: P[b][0], y2: P[b][1], stroke: thru.has(k) ? "var(--bad)" : sub ? "var(--sub)" : "var(--rel)", "stroke-width": thru.has(k) ? 2.2 : 1.3, "vector-effect": "non-scaling-stroke" }, g));
   if (problems) {
-    const E = model.edges;
+    const E = graph.edges;
     for (let i = 0; i < E.length; i++) for (let j = i + 1; j < E.length; j++) {
       const [a, b] = E[i], [c, d] = E[j]; if (a === c || a === d || b === c || b === d) continue;
       const q = segX(P[a], P[b], P[c], P[d]); if (q) el("circle", { cx: q[0], cy: q[1], r: 4, fill: "var(--bad)", opacity: 0.8 }, g);
@@ -332,21 +395,21 @@ function draw(box, model, layout, problems) {
   P.forEach((p, i) => {
     el("rect", { x: p[0] - W[i] / 2, y: p[1] - BOXH / 2, width: W[i], height: BOXH, rx: 6, fill: hitBox.has(i) ? "var(--bad-soft)" : "var(--box)", stroke: hitBox.has(i) ? "var(--bad)" : "var(--box-line)", "stroke-width": 1, "vector-effect": "non-scaling-stroke" }, g);
     const t = el("text", { x: p[0], y: p[1] + 4, "text-anchor": "middle", "font-size": 11, fill: "var(--ink)", "font-family": "Segoe UI, system-ui, sans-serif" }, g);
-    t.textContent = model.labels[i];
+    t.textContent = graph.labels[i];
   });
-  // zoom and pan by changing the viewBox
-  const setVB = () => svg.setAttribute("viewBox", svg._vb.join(" "));
+  // gentle zoom: each wheel event changes the scale by at most about 8%, so a page scroll that lands on a drawing cannot throw it out of sight
   svg.addEventListener("wheel", (ev) => {
-    ev.preventDefault(); const r = svg.getBoundingClientRect(), f = ev.deltaY > 0 ? 1.15 : 1 / 1.15, v = svg._vb;
+    ev.preventDefault();
+    const r = svg.getBoundingClientRect(), v = svg._vb, dy = Math.max(-60, Math.min(60, ev.deltaY)), f = Math.exp(dy * 0.0013);
     const s = Math.max(v[2] / r.width, v[3] / r.height), ox = v[0] + (v[2] - r.width * s) / 2, oy = v[1] + (v[3] - r.height * s) / 2;
     const mx = ox + (ev.clientX - r.left) * s, my = oy + (ev.clientY - r.top) * s;
-    svg._vb = [mx - (mx - v[0]) * f, my - (my - v[1]) * f, v[2] * f, v[3] * f]; setVB();
+    svg._vb = [mx - (mx - v[0]) * f, my - (my - v[1]) * f, v[2] * f, v[3] * f]; clampView(svg);
   }, { passive: false });
   let drag = null;
   svg.addEventListener("pointerdown", (ev) => { drag = { x: ev.clientX, y: ev.clientY, v: svg._vb.slice() }; svg.setPointerCapture(ev.pointerId); });
-  svg.addEventListener("pointermove", (ev) => { if (!drag) return; const r = svg.getBoundingClientRect(), s = Math.max(drag.v[2] / r.width, drag.v[3] / r.height); svg._vb = [drag.v[0] - (ev.clientX - drag.x) * s, drag.v[1] - (ev.clientY - drag.y) * s, drag.v[2], drag.v[3]]; setVB(); });
+  svg.addEventListener("pointermove", (ev) => { if (!drag) return; const r = svg.getBoundingClientRect(), s = Math.max(drag.v[2] / r.width, drag.v[3] / r.height); svg._vb = [drag.v[0] - (ev.clientX - drag.x) * s, drag.v[1] - (ev.clientY - drag.y) * s, drag.v[2], drag.v[3]]; clampView(svg); });
   svg.addEventListener("pointerup", () => { drag = null; });
-  svg.addEventListener("dblclick", () => { svg._vb = svg._home.slice(); setVB(); });
+  svg.addEventListener("dblclick", () => fit(svg));
 }
 function ranked(side) { return Object.entries(side).sort((a, b) => a[1].score - b[1].score).map(([k]) => k); }
 function stats(node, L, other) {
@@ -354,28 +417,35 @@ function stats(node, L, other) {
   node.innerHTML = cell("crossed links", L.cross, other && other.cross) + cell("links through classes", L.thru, other && other.thru) + cell("area ÷ class area", L.fill, undefined, (v) => v + "×") + cell("time", L.ms, undefined, (v) => v < 1000 ? v + " ms" : (v / 1000).toFixed(1) + " s");
 }
 function buildCompare(host) {
-  let key = host.dataset.model; const pick = !!host.dataset.pick;
-  host.innerHTML = `<div class="cmp-head"><div class="cmp-title"></div><div class="cmp-ctl">${pick ? '<select class="mdl" aria-label="Model"></select>' : ""}<label class="tog"><input type="checkbox" class="prob"${host.dataset.problems ? " checked" : ""}> Mark problems</label><span class="legend"><span><i style="border-color:var(--sub)"></i>subclass</span><span><i style="border-color:var(--rel)"></i>relationship</span></span></div></div>
+  let key = host.dataset.graph; const pick = !!host.dataset.pick;
+  host.innerHTML = `<div class="cmp-head"><div class="cmp-title"></div><div class="cmp-ctl">${pick ? '<select class="gsel" aria-label="Graph"></select>' : ""}<label class="tog"><input type="checkbox" class="prob"${host.dataset.problems ? " checked" : ""}> Mark problems</label><button type="button" class="fitboth">Fit both</button><span class="legend"><span><i style="border-color:var(--sub)"></i>subclass</span><span><i style="border-color:var(--rel)"></i>relationship</span></span></div></div>
   <div class="cmp-grid"><div class="pane pub"><div class="pane-head"><span class="side">Open source</span><select class="lsel" aria-label="Open-source layout"></select></div><div class="svgbox lsvg"></div><div class="pane-stats lst"></div></div>
   <div class="pane ours"><div class="pane-head"><span class="side">Ours</span><select class="rsel" aria-label="Our layout"></select></div><div class="svgbox rsvg"></div><div class="pane-stats rst"></div></div></div>
-  <div class="cmp-cap hint">★ marks the layout that scored best on this model on each side. Scroll to zoom, drag to move, double-click to fit.</div>`;
+  <div class="cmp-cap">★ marks the layout that scored best on this graph on each side.</div>`;
   const q = (c) => host.querySelector(c), lsel = q(".lsel"), rsel = q(".rsel"), prob = q(".prob");
-  if (pick) { const ms = q(".mdl"); DATA.order.forEach((k) => { const o = document.createElement("option"); o.value = k; o.textContent = DATA.models[k].name + " (" + DATA.models[k].labels.length + " classes)"; ms.appendChild(o); }); ms.value = key; ms.addEventListener("change", () => { key = ms.value; fill(); }); }
+  if (pick) { const gs = q(".gsel"); DATA.order.forEach((k) => { const o = document.createElement("option"); o.value = k; o.textContent = DATA.graphs[k].name + " (" + DATA.graphs[k].labels.length + " classes)"; gs.appendChild(o); }); gs.value = key; gs.addEventListener("change", () => { key = gs.value; fill(); }); }
   const fillSel = (sel, side, want) => { const r = ranked(side); sel.innerHTML = ""; r.forEach((k, i) => { const o = document.createElement("option"); o.value = k; o.textContent = (i === 0 ? "★ " : "") + k; sel.appendChild(o); }); sel.value = want && side[want] ? want : r[0]; };
   function render() {
-    const m = DATA.models[key], L = m.pub[lsel.value], R = m.ours[rsel.value];
+    const m = DATA.graphs[key], L = m.pub[lsel.value], R = m.ours[rsel.value];
     draw(q(".lsvg"), m, L, prob.checked); draw(q(".rsvg"), m, R, prob.checked);
     stats(q(".lst"), L); stats(q(".rst"), R, L);
   }
   function fill() {
-    const m = DATA.models[key];
+    const m = DATA.graphs[key];
     q(".cmp-title").innerHTML = m.name + `<small>${m.labels.length} classes · ${m.edges.length} links</small>`;
     fillSel(lsel, m.pub, null); fillSel(rsel, m.ours, host.dataset.right || null); render();
   }
   [lsel, rsel, prob].forEach((s) => s.addEventListener("change", render));
+  q(".fitboth").addEventListener("click", () => host.querySelectorAll(".svgbox svg").forEach(fit));
   fill();
 }
 document.querySelectorAll(".cmp").forEach(buildCompare);
+document.getElementById("copyCode").addEventListener("click", async (ev) => {
+  const text = document.getElementById("srcCode").textContent, btn = ev.currentTarget;
+  try { await navigator.clipboard.writeText(text); btn.textContent = "Copied"; }
+  catch (err) { const r = document.createRange(); r.selectNodeContents(document.getElementById("srcCode")); const s = getSelection(); s.removeAllRanges(); s.addRange(r); btn.textContent = "Selected; press Ctrl+C"; }
+  setTimeout(() => (btn.textContent = "Copy"), 2500);
+});
 </script>
 </body>
 </html>
