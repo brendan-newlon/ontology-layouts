@@ -444,4 +444,202 @@
         }
         return best;
       }
+      // ── OG: Compact layout and automatic choice ──────────────────────────────
+      // Compact layout: all classes placed at once so that straight distances match link counts (stress majorization, each link a spring;
+      // subclass links a little shorter), best of several starts, then clean-up steps in the order that tested best:
+      // remove overlaps, search for fewer crossings, move classes off links, shorten long links and shrink evenly, move off links once more.
+      // Pure geometry: items [{w, h}], edges [[i, j, weight]]. Returns { pos, crossings } or null.
+      function _ogClStress(ids, P, N, springs, L, rnd) {
+        const n = ids.length, pos = new Map(ids.map((g, k) => [g, k])), adj = Array.from({ length: n }, () => []);
+        springs.forEach(([a, b, len]) => { if (pos.has(a) && pos.has(b)) { adj[pos.get(a)].push([pos.get(b), len]); adj[pos.get(b)].push([pos.get(a), len]); } });
+        const D = Array.from({ length: n }, () => new Float64Array(n).fill(Infinity)); let mx = 0;
+        for (let s0 = 0; s0 < n; s0++) {
+          D[s0][s0] = 0; const done = new Uint8Array(n);
+          for (let it = 0; it < n; it++) {
+            let u = -1, b = Infinity; for (let i = 0; i < n; i++) if (!done[i] && D[s0][i] < b) { b = D[s0][i]; u = i; }
+            if (u < 0) break; done[u] = 1; adj[u].forEach(([v, w]) => { if (D[s0][u] + w < D[s0][v]) D[s0][v] = D[s0][u] + w; });
+          }
+          for (let i = 0; i < n; i++) if (isFinite(D[s0][i])) mx = Math.max(mx, D[s0][i]);
+        }
+        for (let i = 0; i < n; i++) for (let j = 0; j < n; j++) if (!isFinite(D[i][j])) D[i][j] = mx + L;
+        for (let it = 0; it < 120; it++) {
+          for (let i = 0; i < n; i++) {
+            const pi = P[ids[i]]; let nx = 0, ny = 0, den = 0;
+            for (let j = 0; j < n; j++) {
+              if (i === j) continue;
+              const pj = P[ids[j]], d = D[i][j], w = 1 / (d * d); let dx = pi.x - pj.x, dy = pi.y - pj.y, cur = Math.hypot(dx, dy);
+              if (cur < 1e-3) { dx = rnd() - 0.5; dy = rnd() - 0.5; cur = Math.hypot(dx, dy); }
+              nx += w * (pj.x + d * dx / cur); ny += w * (pj.y + d * dy / cur); den += w;
+            }
+            if (den) { pi.x = nx / den; pi.y = ny / den; }
+          }
+        }
+      }
+      function _ogClFree(P, N, v, p, gap) {
+        for (let u = 0; u < P.length; u++) if (u !== v && Math.abs(P[u].x - p.x) < (N[u].w + N[v].w) / 2 + gap && Math.abs(P[u].y - p.y) < (N[u].h + N[v].h) / 2 + gap) return false;
+        return true;
+      }
+      function _ogClIncidence(n, EE) { const inc = Array.from({ length: n }, () => []); EE.forEach((e, k) => { inc[e.s].push(k); inc[e.t].push(k); }); return inc; }
+      // Crossings among a set of links (indexes) and every other link.
+      function _ogClCrossSet(P, EE, ks) {
+        const set = new Set(ks); let c = 0;
+        for (const k of set) {
+          const e = EE[k];
+          for (let j = 0; j < EE.length; j++) {
+            if (j === k || (set.has(j) && j < k)) continue;
+            const f = EE[j]; if (e.s === f.s || e.s === f.t || e.t === f.s || e.t === f.t) continue;
+            if (_ogClSegX(P[e.s], P[e.t], P[f.s], P[f.t])) c++;
+          }
+        }
+        return c;
+      }
+      // Swap two classes, or move one beside a neighbour, when the number of crossed links drops and nothing overlaps.
+      function _ogClFinCross(P, N, EE, budgetMs, seed) {
+        const n = P.length, rnd = _ogClRng(seed || 1), inc = _ogClIncidence(n, EE), t0 = performance.now(); let improved = true;
+        while (improved && performance.now() - t0 < budgetMs) {
+          improved = false;
+          const order = [...Array(n).keys()].sort(() => rnd() - 0.5);
+          for (const v of order) {
+            if (performance.now() - t0 > budgetMs) break;
+            if (!_ogClCrossSet(P, EE, inc[v])) continue;
+            let best = null;
+            for (let u = 0; u < n && !(best && best.c === 0); u++) {
+              if (u === v) continue;
+              const ks = inc[v].concat(inc[u]), before = _ogClCrossSet(P, EE, ks); if (!before) continue;
+              const pv = P[v], pu = P[u]; P[v] = pu; P[u] = pv; const after = _ogClCrossSet(P, EE, ks); P[v] = pv; P[u] = pu;
+              if (after < before && (!best || after - before < best.d)) best = { kind: "swap", u, d: after - before, c: after };
+            }
+            const cands = [];
+            inc[v].forEach((k) => { const e = EE[k], o = e.s === v ? e.t : e.s; for (let a = 0; a < 12; a++) { const th = a * Math.PI / 6, r = (N[o].w + N[v].w) / 2 + 40 + (a % 3) * 25; cands.push({ x: P[o].x + Math.cos(th) * r, y: P[o].y + Math.sin(th) * r }); } });
+            const keep = P[v], before = _ogClCrossSet(P, EE, inc[v]);
+            for (const c of cands) {
+              if (!_ogClFree(P, N, v, c, 8)) continue;
+              P[v] = c; const after = _ogClCrossSet(P, EE, inc[v]); P[v] = keep;
+              if (after < before && (!best || after - before < best.d)) best = { kind: "move", c2: c, d: after - before, c: after };
+            }
+            if (best) { if (best.kind === "swap") { const pv = P[v]; P[v] = P[best.u]; P[best.u] = pv; } else P[v] = best.c2; improved = true; }
+          }
+        }
+      }
+      // Links through class v (its box padded by pad), and v's own links through other classes.
+      function _ogClThruCount(P, N, EE, inc, v, pad) {
+        let c = 0;
+        for (const e of EE) { if (e.s === v || e.t === v) continue; if (_ogClSegBox(P[e.s].x - P[v].x, P[e.s].y - P[v].y, P[e.t].x - P[v].x, P[e.t].y - P[v].y, N[v].w / 2 + pad, N[v].h / 2 + pad)) c++; }
+        inc[v].forEach((k) => { const e = EE[k]; for (let u = 0; u < P.length; u++) { if (u === e.s || u === e.t) continue; if (_ogClSegBox(P[e.s].x - P[u].x, P[e.s].y - P[u].y, P[e.t].x - P[u].x, P[e.t].y - P[u].y, N[u].w / 2 + pad, N[u].h / 2 + pad)) c++; } });
+        return c;
+      }
+      // Move classes off links that run through them, never adding a crossing.
+      function _ogClFinThru(P, N, EE, rounds, pad, budgetMs) {
+        const n = P.length, inc = _ogClIncidence(n, EE), t0 = performance.now();
+        for (let r = 0; r < rounds; r++) {
+          let moved = false;
+          for (let v = 0; v < n; v++) {
+            if (performance.now() - t0 > budgetMs) return;
+            const b0 = _ogClThruCount(P, N, EE, inc, v, pad); if (!b0) continue;
+            const x0 = _ogClCrossSet(P, EE, inc[v]), keep = P[v]; let best = null;
+            for (let a = 0; a < 16; a++) for (const d of [20, 45, 80, 120, 170, 230]) {
+              const c = { x: keep.x + Math.cos(a * Math.PI / 8) * d, y: keep.y + Math.sin(a * Math.PI / 8) * d };
+              if (!_ogClFree(P, N, v, c, 8)) continue;
+              P[v] = c; const b1 = _ogClThruCount(P, N, EE, inc, v, pad);
+              if (b1 < b0 && _ogClCrossSet(P, EE, inc[v]) <= x0 && (!best || b1 < best.b || (b1 === best.b && d < best.d))) best = { c, b: b1, d };
+              P[v] = keep;
+            }
+            if (best) { P[v] = best.c; moved = true; }
+          }
+          if (!moved) break;
+        }
+      }
+      // Shorten long links: pull each class toward its neighbours when the total length of its links drops and nothing gets worse
+      // (no overlap, no new crossing, no new link through a class); then shrink the drawing evenly as far as the boxes allow.
+      function _ogClFinTight(P, N, EE, rounds, gap, budgetMs) {
+        const n = P.length, inc = _ogClIncidence(n, EE), t0 = performance.now();
+        const len = (v) => { let s = 0; inc[v].forEach((k) => { const e = EE[k]; s += Math.hypot(P[e.s].x - P[e.t].x, P[e.s].y - P[e.t].y); }); return s; };
+        for (let r = 0; r < rounds; r++) {
+          let moved = false;
+          const order = [...Array(n).keys()].sort((a, b) => len(b) - len(a));
+          for (const v of order) {
+            if (!inc[v].length) continue;
+            if (performance.now() - t0 > budgetMs) return;
+            const l0 = len(v), x0 = _ogClCrossSet(P, EE, inc[v]), h0 = _ogClThruCount(P, N, EE, inc, v, 8), keep = P[v], cands = [];
+            const nb = inc[v].map((k) => (EE[k].s === v ? EE[k].t : EE[k].s)), cx = nb.reduce((s, u) => s + P[u].x, 0) / nb.length, cy = nb.reduce((s, u) => s + P[u].y, 0) / nb.length;
+            for (const f of [0.15, 0.3, 0.45, 0.6, 0.75, 0.9]) { cands.push({ x: keep.x + (cx - keep.x) * f, y: keep.y + (cy - keep.y) * f }); nb.forEach((u) => cands.push({ x: keep.x + (P[u].x - keep.x) * f, y: keep.y + (P[u].y - keep.y) * f })); }
+            let best = null;
+            for (const c of cands) {
+              if (!_ogClFree(P, N, v, c, gap)) continue;
+              P[v] = c; const l1 = len(v);
+              if (l1 < l0 - 4 && (!best || l1 < best.l) && _ogClCrossSet(P, EE, inc[v]) <= x0 && _ogClThruCount(P, N, EE, inc, v, 8) <= h0) best = { c, l: l1 };
+              P[v] = keep;
+            }
+            if (best) { P[v] = best.c; moved = true; }
+          }
+          if (!moved) break;
+        }
+        const all = () => { let c = 0; for (let v = 0; v < n; v++) c += _ogClThruCount(P, N, EE, inc, v, 8); return c; }, h0 = all();
+        let cxm = 0, cym = 0; P.forEach((p) => { cxm += p.x / n; cym += p.y / n; });
+        for (let it = 0; it < 30; it++) {
+          const old = P.map((p) => ({ x: p.x, y: p.y }));
+          P.forEach((p) => { p.x = cxm + (p.x - cxm) * 0.96; p.y = cym + (p.y - cym) * 0.96; });
+          let ok = true;
+          for (let i = 0; i < n && ok; i++) for (let j = i + 1; j < n; j++) if (Math.abs(P[i].x - P[j].x) < (N[i].w + N[j].w) / 2 + gap && Math.abs(P[i].y - P[j].y) < (N[i].h + N[j].h) / 2 + gap) { ok = false; break; }
+          if (!ok || all() > h0) { old.forEach((o, i) => { P[i].x = o.x; P[i].y = o.y; }); break; }
+        }
+      }
+      function _ogCompactLayout(items, edges, opts) {
+        const n = items.length; if (n < 2 || !edges.length) return null;
+        const o = opts || {}, sc = o.roomy ? 1.3 : 1, L = 170 * sc, seed = o.seed || 1;
+        const N = items.map((it) => ({ w: it.w + 16 * sc, h: it.h + 12 * sc }));
+        const EE = edges.filter(([a, b]) => a !== b).map(([a, b, w]) => ({ s: a, t: b, sub: w === 2 }));
+        if (!EE.length) return null;
+        const ids = [...Array(n).keys()], springs = EE.map((e) => [e.s, e.t, L * (e.sub ? 0.9 : 1)]), rnd = _ogClRng(seed * 31 + 7);
+        const budget = o.budgetMs || 1500, t0 = performance.now(), restarts = n <= 30 ? 8 : n <= 80 ? 4 : 2, countX = EE.length <= 2500;
+        let best = null;
+        for (let r = 0; r < restarts && (r === 0 || performance.now() - t0 < budget / 2); r++) {
+          const P = N.map(() => ({ x: (rnd() - 0.5) * 400, y: (rnd() - 0.5) * 400 }));
+          _ogClStress(ids, P, N, springs, L, rnd); _ogClSeparate(P, N, 12, 120);
+          const x = countX ? _ogClCrossings(P, EE) : 0; if (!best || x < best.x) best = { x, P: P.map((p) => ({ x: p.x, y: p.y })) };
+        }
+        const P = best.P, left = () => Math.max(50, budget - (performance.now() - t0));
+        if (countX) {
+          _ogClFinCross(P, N, EE, n <= 30 ? 150 : 300, seed); _ogClSeparate(P, N, 12, 120);
+          _ogClFinThru(P, N, EE, 12, 10, left() / 3); _ogClFinTight(P, N, EE, 12, 26 * sc, left() / 2); _ogClFinThru(P, N, EE, 8, 10, left());
+        } else _ogClFinTight(P, N, EE, 6, 26 * sc, left());
+        return { pos: P, crossings: countX ? _ogClCrossings(P, EE) : 0 };
+      }
+      // How good a placement is, for choosing among layouts: crossed links, links through classes, near-touching links, touching classes,
+      // mean link length and the area taken. P: [{x, y}], N: [{w, h}], EE: [{s, t}].
+      function _ogPlacementMetrics(P, N, EE) {
+        const n = P.length; let near = 0, thru = 0, ov = 0, len = 0;
+        const cross = EE.length <= 2500 ? _ogClCrossings(P, EE) : 0;
+        if (EE.length <= 1500) for (let i = 0; i < EE.length; i++) for (let j = i + 1; j < EE.length; j++) {
+          const e = EE[i], f = EE[j]; if (e.s === f.s || e.s === f.t || e.t === f.s || e.t === f.t) continue;
+          if (_ogClDSS(P[e.s], P[e.t], P[f.s], P[f.t]) < 30) near++;
+        }
+        for (const e of EE) { len += Math.hypot(P[e.s].x - P[e.t].x, P[e.s].y - P[e.t].y); for (let i = 0; i < n; i++) { if (i === e.s || i === e.t) continue; if (_ogClSegBox(P[e.s].x - P[i].x, P[e.s].y - P[i].y, P[e.t].x - P[i].x, P[e.t].y - P[i].y, N[i].w / 2 + 6, N[i].h / 2 + 6)) thru++; } }
+        let x1 = 1e9, x2 = -1e9, y1 = 1e9, y2 = -1e9;
+        for (let i = 0; i < n; i++) {
+          x1 = Math.min(x1, P[i].x - N[i].w / 2); x2 = Math.max(x2, P[i].x + N[i].w / 2); y1 = Math.min(y1, P[i].y - N[i].h / 2); y2 = Math.max(y2, P[i].y + N[i].h / 2);
+          for (let j = i + 1; j < n; j++) if (Math.abs(P[i].x - P[j].x) < (N[i].w + N[j].w) / 2 && Math.abs(P[i].y - P[j].y) < (N[i].h + N[j].h) / 2) ov++;
+        }
+        return { cross, near, thru, ov, len: len / Math.max(1, EE.length), area: (x2 - x1) * (y2 - y1) };
+      }
+      function _ogPlacementScore(m) { return 10 * m.cross + 6 * m.thru + 2 * m.near + 30 * m.ov + m.len / 10 + Math.max(0, m.len - 350) / 2 + Math.sqrt(m.area) / 40; }
+      // Automatic choice: lay the classes out with each algorithm that suits the size, score each result, keep the best.
+      // Returns { pos, crossings, algo, scores: { compact, grouped } } or null.
+      function _ogAutoLayout(items, edges, opts) {
+        const n = items.length, o = opts || {}, sc = o.roomy ? 1.3 : 1;
+        const N = items.map((it) => ({ w: it.w + 16 * sc, h: it.h + 12 * sc })), EE = edges.filter(([a, b]) => a !== b).map(([a, b]) => ({ s: a, t: b }));
+        const cands = [], scores = {};
+        const attempt = (algo, fn) => {
+          let r = null; try { r = fn(items, edges, o); } catch (err) { r = null; }
+          if (!r) return;
+          const P = r.pos.map((p) => ({ x: p.x, y: p.y })); _ogClSeparate(P, N, 6, 40);
+          const score = _ogPlacementScore(_ogPlacementMetrics(P, N, EE)); scores[algo] = Math.round(score * 10) / 10;
+          cands.push({ algo, pos: r.pos, crossings: r.crossings, score });
+        };
+        if (n <= 150) attempt("compact", _ogCompactLayout);
+        if (n >= 8) attempt("grouped", _ogClusterLayout);
+        if (!cands.length) return null;
+        cands.sort((a, b) => a.score - b.score);
+        return { pos: cands[0].pos, crossings: cands[0].crossings, algo: cands[0].algo, scores };
+      }
       // ── end of the layouts ──
