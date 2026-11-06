@@ -10,14 +10,16 @@ The full write-up is [ONTOLOGY-LAYOUT-ALGORITHMS.html](ONTOLOGY-LAYOUT-ALGORITHM
 This file is a short summary.
 
 ## Results
-Against 11 widely used open-source layouts, on 19 test graphs of 13 to 537 classes:
+Against 11 widely used open-source layouts. The scoreboard below uses 19 test graphs of 13 to 537 classes with the open-source layouts at general settings; the tuned comparison uses the 15 graphs up to 179 classes.
 
 | Result | Detail |
 |---|---|
-| **Ahead of all 11** | Tidy Stress and Mycelium each rank above every one of the 11 open-source layouts on overall readability |
-| **2–3× fewer crossed links** | Than the best open-source layout, on mid-size and hub-heavy ontologies |
-| **2–5× fewer links through classes** | The error that makes two unrelated classes look linked |
+| **About half the crossings** | Of the best open-source layout with tuned settings: 550 against 960 or more, over 15 graphs |
+| **40% fewer links through classes** | Than any tuned open-source layout of similar size (183 against 307); tuned `neato` has fewer but draws twelve times the area |
+| **A trade, not a sweep** | Placement is less faithful to graph distance and link lengths are less even. On an equal mix of seven standard measures WebCola is first (4.9) and Tidy Stress second (5.1) |
 | **1.5 s or less** | For ontologies of up to 537 classes, in a browser |
+
+Our readability score was designed with these layouts, so the HTML page also ranks every layout on standard measures we do not optimise (normalised stress, link-length evenness, crossing angle, angular resolution), against tuned open-source settings chosen by crossings plus links through classes rather than by our score.
 
 The open-source layouts were Graphviz `neato`, `fdp` and `sfdp`, ELK stress, force and layered, WebCola, d3-force, dagre, and Cytoscape `cose` and `fcose`.
 
@@ -56,10 +58,14 @@ What they give up:
 - **Wins** counts the graphs on which a layout ranked first in readability against the other 12 layouts. Best Read is left out of that count, because its drawing is always one of ours.
 - **Best Read** has its own row because it is a complete layout procedure: it takes a graph and returns positions, and its time includes running both layouts.
 
+## Experiments not yet in the layouts
+- **Subclass links top-down.** A constrained variant (subclass at least 40 px below its parent, kept by every tidy-up move) draws 100% of subclass links downward, against about half now. On small graphs it costs little; on broad taxonomies it costs readability. Details and numbers are in the HTML page.
+- **Bent links.** Bending the links that run through a class, instead of moving classes, draws a quarter fewer crossings in 15% less area at about 22 bends per graph. Moving first and then bending what is left leaves almost no link through a class at about 8 bends.
+
 ## Limits
-- The readability score was designed with these layouts, and the layouts were tuned against it. The crossing and through-class counts are standard measures and agree with the score, but no study with people reading the diagrams has been done.
-- The open-source layouts ran with general settings, not settings tuned for each graph.
-- The test graphs are reconstructions and inventions of typical shapes, not a public collection of real ontologies. Commercial engines were not tested.
+- The readability score was designed with these layouts, and the layouts were tuned against it. On standard measures the lead holds for crossed links and links through classes but not for distance fidelity or link-length evenness. No study with people reading the diagrams has been done.
+- The tuned settings are a reasonable search, not an exhaustive one. All drawings are measured with straight links; layered layouts that route their own links would show fewer links through classes.
+- The test graphs are reconstructions and inventions of typical shapes, not a public collection of real ontologies (such as the OBO Foundry or the Manchester OWL corpus). Commercial engines were not tested.
 
 ## For developers
 - **Code:** the implementation is in `src/ontology-layouts.js`:

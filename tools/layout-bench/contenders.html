@@ -17,6 +17,8 @@
 <script src="models2.js"></script>
 <script src="models3.js"></script>
 <script src="models4.js"></script>
+<script src="engines3.js"></script>
+<script src="stdmetrics.js"></script>
 <script>
 // Every contender gets the same boxes (label box + 16 x 12 px) and, afterwards, the same overlap removal, then the same metrics.
 const O = window.OURS, rng = (s) => O.rng(s * 7919 + 13);
@@ -50,9 +52,61 @@ const ALGOS = {
   'Cytoscape cose': async (it, ed, s, N, E) => { const c = cyOf(N, E); await runCy(c, { name: 'cose', animate: false, randomize: true, nodeRepulsion: 14000, idealEdgeLength: 150, gravity: 0.06 }); return cyPos(c); },
   'Cytoscape fcose': async (it, ed, s, N, E) => { const c = cyOf(N, E); await runCy(c, { name: 'fcose', quality: 'proof', animate: false, randomize: true, nodeRepulsion: 20000, idealEdgeLength: 200, nodeSeparation: 150, edgeElasticity: 0.32, gravity: 0.05, gravityRange: 4.2, numIter: 2500, nodeDimensionsIncludeLabels: true }); return cyPos(c); }
 };
-async function gv(engine, it, ed, s) {
+
+// Tuned settings: each library gets several settings (and seeds where it is random), and the run with the fewest crossed links plus
+// links through classes is kept, a choice made on standard measures rather than on our readability score. Layered layouts get
+// subclass links oriented parent to child, so the hierarchy runs top-down.
+const ori = (ed) => ed.map(([a, b, w]) => (w === 2 ? [b, a, w] : [a, b, w]));
+async function bestOf(runs, it, N, E) {
+  let best = null;
+  for (const run of runs) {
+    let P; try { P = (await run()).map((p) => ({ x: p.x, y: p.y })); } catch (err) { continue; }
+    const Q = P.map((p) => ({ ...p })); O.sep(Q, N, 6, 200);
+    const m = O.pmetrics(Q, it.map((d) => ({ w: d.w + 6, h: d.h + 6 })), E), ml = O.pmetrics(Q, N, E), k = m.cross + m.thru + ml.fill / 1000;
+    if (!best || k < best.k) best = { k, P };
+  }
+  return best.P;
+}
+const seeds = (s) => [s, s + 101, s + 202];
+const cola = (N, E, s, extra) => async () => { const c = cyOf(N, E), opt = { name: 'cola', animate: false, randomize: true, avoidOverlap: true, edgeLength: 170, maxSimulationTime: 4000, nodeSpacing: 10, ...extra }; if (opt.gaps) { opt.gapInequalities = opt.gaps.map(([p, ch]) => ({ axis: 'y', left: c.getElementById('n' + p), right: c.getElementById('n' + ch), gap: 50 })); delete opt.gaps; } Math.seedrandom && Math.seedrandom(String(s)); await runCy(c, opt); return cyPos(c); };
+const d3run = (N, E, s, charge) => async () => {
+  const r = rng(s), nodes = N.map((d, i) => ({ i, x: (r() - 0.5) * 600, y: (r() - 0.5) * 600 })), links = E.map((e) => ({ source: e.s, target: e.t }));
+  const sim = d3.forceSimulation(nodes).force('link', d3.forceLink(links).distance(170).strength(0.6)).force('charge', d3.forceManyBody().strength(charge)).force('collide', d3.forceCollide((n) => Math.max(N[n.i].w, N[n.i].h) / 2 + 6)).force('center', d3.forceCenter(0, 0)).stop();
+  for (let k = 0; k < 600; k++) sim.tick(); return nodes.map((n) => ({ x: n.x, y: n.y }));
+};
+Object.assign(ALGOS, {
+  'Tidy Stress, top-down (ours, experiment)': async (it, ed, s) => EXP3.compactF(it, ed, { seed: s }).pos,
+  'Best Read, top-down (ours, experiment)': async (it, ed, s) => EXP3.autoF(it, ed, { seed: s }).pos,
+  'Graphviz neato (tuned)': (it, ed, s, N, E) => bestOf(['', 'mode=sgd, ', 'model=subset, '].flatMap((a) => [s, s + 7].map((z) => () => gv('neato', it, ed, z, a))), it, N, E),
+  'Graphviz sfdp (tuned)': (it, ed, s, N, E) => bestOf(['', 'K=1.4, ', 'repulsiveforce=2, ', 'smoothing=spring, '].flatMap((a) => [s, s + 7].map((z) => () => gv('sfdp', it, ed, z, a))), it, N, E),
+  'Graphviz fdp (tuned)': (it, ed, s, N, E) => bestOf(seeds(s).map((z) => () => gv('fdp', it, ed, z, 'K=1.4, ')), it, N, E),
+  'ELK stress (tuned)': (it, ed, s, N, E) => bestOf(['120', '170', '230'].map((L) => () => elk('stress', it, ed, { 'elk.stress.desiredEdgeLength': L, 'elk.stress.iterationLimit': '1000' })), it, N, E),
+  'ELK force (tuned)': (it, ed, s, N, E) => bestOf(seeds(s).map((z) => () => elk('force', it, ed, { 'elk.randomSeed': String(z), 'elk.force.iterations': '1000' })), it, N, E),
+  'ELK layered (tuned)': (it, ed, s, N, E) => bestOf(['NETWORK_SIMPLEX', 'BRANDES_KOEPF', 'LINEAR_SEGMENTS'].map((p) => () => elk('layered', it, ori(ed), { 'elk.layered.nodePlacement.strategy': p, 'elk.layered.thoroughness': '40', 'elk.direction': 'DOWN' })), it, N, E),
+  'dagre (tuned)': (it, ed, s, N, E) => bestOf(['network-simplex', 'tight-tree', 'longest-path'].map((rk) => async () => { const c = cyOf(N, ori(ed).map(([a, b]) => ({ s: a, t: b }))); await runCy(c, { name: 'dagre', rankDir: 'TB', ranker: rk, nodeSep: 30, rankSep: 60, animate: false }); return cyPos(c); }), it, N, E),
+  'WebCola (tuned)': (it, ed, s, N, E) => bestOf(seeds(s).map((z) => cola(N, E, z, {})), it, N, E),
+  'WebCola, top-down (tuned)': (it, ed, s, N, E) => bestOf(seeds(s).map((z) => cola(N, E, z, { gaps: ed.filter((e) => e[2] === 2).map(([c, p]) => [p, c]) })), it, N, E),
+  'd3-force (tuned)': (it, ed, s, N, E) => bestOf(seeds(s).flatMap((z) => [-400, -700, -1200].map((ch) => d3run(N, E, z, ch))), it, N, E),
+  'Cytoscape cose (tuned)': (it, ed, s, N, E) => bestOf(seeds(s).flatMap((z) => [8000, 30000].map((rep) => async () => { const c = cyOf(N, E); await runCy(c, { name: 'cose', animate: false, randomize: true, nodeRepulsion: rep, idealEdgeLength: 170, gravity: 0.06, numIter: 2500 }); return cyPos(c); })), it, N, E),
+  'Cytoscape fcose (tuned)': (it, ed, s, N, E) => bestOf(seeds(s).flatMap((z) => [8000, 20000, 45000].map((rep) => async () => { const c = cyOf(N, E); await runCy(c, { name: 'fcose', quality: 'proof', animate: false, randomize: true, nodeRepulsion: rep, idealEdgeLength: 170, nodeSeparation: 100, gravity: 0.05, numIter: 2500, nodeDimensionsIncludeLabels: true }); return cyPos(c); })), it, N, E)
+});
+
+// Top-down contenders: only runs that orient or constrain subclass links, never the default run.
+ALGOS['ELK layered, top-down (tuned)'] = ALGOS['ELK layered (tuned)']; ALGOS['dagre, top-down (tuned)'] = ALGOS['dagre (tuned)']; ALGOS['WebCola, top-down (constrained)'] = ALGOS['WebCola, top-down (tuned)'];
+// Each tuned set also contains the library's default run above, so tuning never does worse on the selection measure.
+{
+  const base = { 'Graphviz neato (tuned)': 'Graphviz neato', 'Graphviz sfdp (tuned)': 'Graphviz sfdp', 'Graphviz fdp (tuned)': 'Graphviz fdp', 'ELK stress (tuned)': 'ELK stress', 'ELK force (tuned)': 'ELK force', 'ELK layered (tuned)': 'ELK layered', 'dagre (tuned)': 'dagre (layered)', 'WebCola (tuned)': 'WebCola', 'd3-force (tuned)': 'd3-force', 'Cytoscape cose (tuned)': 'Cytoscape cose', 'Cytoscape fcose (tuned)': 'Cytoscape fcose' };
+  for (const [t, b] of Object.entries(base)) { const tf = ALGOS[t], bf = ALGOS[b]; ALGOS[t] = (it, ed, s, N, E) => bestOf([() => bf(it, ed, s, N, E), () => tf(it, ed, s, N, E)], it, N, E); }
+}
+// A browser tab that is not in front throttles timers to one a second, which slows the libraries that schedule work with
+// setTimeout(0) and cuts short the ones that stop after a fixed time. Zero-delay timers run through a message channel instead.
+{
+  const ch = new MessageChannel(), q = [], st = window.setTimeout.bind(window); ch.port1.onmessage = () => { const f = q.shift(); f && f(); };
+  window.setTimeout = (fn, d, ...a) => { if (!d || d <= 4) { q.push(() => fn(...a)); ch.port2.postMessage(0); return 0; } return st(fn, d, ...a); };
+}
+async function gv(engine, it, ed, s, extra) {
   const N = it.map((d) => ({ w: d.w + 16, h: d.h + 12 }));
-  let dot = 'graph G { graph [overlap=prism, sep="+6", start=' + s + ']; node [shape=box, fixedsize=true, label=""];\n';
+  let dot = 'graph G { graph [' + (extra || '') + 'overlap=prism, sep="+6", start=' + s + ']; node [shape=box, fixedsize=true, label=""];\n';
   N.forEach((d, i) => { dot += 'n' + i + ' [width=' + (d.w / 72) + ', height=' + (d.h / 72) + '];\n'; });
   ed.forEach(([a, b]) => { dot += 'n' + a + ' -- n' + b + ' [len=' + (170 / 72) + '];\n'; });
   const j = (await viz()).renderJSON(dot + '}', { engine });
@@ -60,9 +114,9 @@ async function gv(engine, it, ed, s) {
   (j.objects || []).forEach((o) => { const m = /^n(\d+)$/.exec(o.name || ''); if (m && o.pos) { const [x, y] = o.pos.split(',').map(Number); P[+m[1]] = { x, y: -y }; } });
   return P.map((p) => p || { x: 0, y: 0 });
 }
-async function elk(algorithm, it, ed) {
+async function elk(algorithm, it, ed, extra) {
   const N = it.map((d) => ({ w: d.w + 16, h: d.h + 12 }));
-  const g = await ELKI.layout({ id: 'root', layoutOptions: { 'elk.algorithm': algorithm, 'elk.stress.desiredEdgeLength': '170', 'elk.spacing.nodeNode': '30', 'elk.layered.spacing.nodeNodeBetweenLayers': '60' },
+  const g = await ELKI.layout({ id: 'root', layoutOptions: { 'elk.algorithm': algorithm, 'elk.stress.desiredEdgeLength': '170', 'elk.spacing.nodeNode': '30', 'elk.layered.spacing.nodeNodeBetweenLayers': '60', ...(extra || {}) },
     children: N.map((d, i) => ({ id: 'n' + i, width: d.w, height: d.h })), edges: ed.map(([a, b], k) => ({ id: 'e' + k, sources: ['n' + a], targets: ['n' + b] })) });
   const P = new Array(N.length); g.children.forEach((c) => { P[+c.id.slice(1)] = { x: c.x + c.width / 2, y: c.y + c.height / 2 }; }); return P;
 }
@@ -76,7 +130,7 @@ window.runOne = async (key, algo, seed) => {
   const ms = performance.now() - t0;
   P = P.map((p) => ({ x: p.x, y: p.y })); O.sep(P, N, 6, 200);
   const m = O.pmetrics(P, D.map((d) => ({ w: d.w + 6, h: d.h + 6 })), E), ml = O.pmetrics(P, N, E);
-  const r = { key, algo, seed, n: N.length, links: E.length, cross: m.cross, thru: m.thru, near: m.near, len: m.len, fill: ml.fill, lout: ml.lout, ov: ml.ov, score: O.pscore(ml), ms };
+  const r = { key, algo, seed, n: N.length, links: E.length, cross: m.cross, thru: m.thru, near: m.near, len: m.len, fill: ml.fill, lout: ml.lout, ov: ml.ov, score: O.pscore(ml), ms, ...stdMetrics(P, M.edges.filter((e) => e.s !== e.t).map((e) => ({ s: e.s, t: e.t, sub: e.kind === 'sub' }))) };
   if (window.KEEP_POS) { r.pos = P.map((q) => [Math.round(q.x * 10) / 10, Math.round(q.y * 10) / 10]); r.labels = M.labels; r.edges = M.edges.filter((e) => e.s !== e.t).map((e) => [e.s, e.t, e.kind === 'sub' ? 1 : 0]); r.box = D.map((d) => d.w); }
   window.RES.push(r); return r;
 };

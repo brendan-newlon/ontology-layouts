@@ -6,7 +6,7 @@ import path from 'node:path';
 const here = path.dirname(new URL(import.meta.url).pathname.replace(/^\/([A-Za-z]:)/, '$1')), root = path.resolve(here, '..', '..');
 import { execSync } from 'node:child_process';
 execSync('node build_base.mjs', { cwd: here }); execSync('node mkbundle.mjs', { cwd: here });
-const { MODELS, OURS, EXP } = await import('./_bundle.mjs?' + Date.now());
+const { MODELS, OURS, EXP, EXP3 } = await import('./_bundle.mjs?' + Date.now());
 const charW = 6.6;
 const dims = (labels) => labels.map((l) => { const dw = String(l).length * charW + 10, dh = 20; return { w: dw, h: dh }; });
 const SETS = {
@@ -19,7 +19,7 @@ const ENG = {
   compact: (it, ed, o) => OURS.compact(it, ed, o),
   grouped: (it, ed, o) => OURS.layout(it, ed, o),
   auto: (it, ed, o) => OURS.auto(it, ed, o),
-  ...EXP.engines(OURS)
+  ...EXP.engines(OURS), ...EXP3
 };
 // Judge on the drawn boxes (label box) so every engine is measured the same way, whatever room it reserved.
 export function judge(P, D, EE) {

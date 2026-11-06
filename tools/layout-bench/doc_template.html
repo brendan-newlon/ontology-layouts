@@ -93,12 +93,12 @@ label.tog { display: inline-flex; gap: 6px; align-items: center; cursor: pointer
 
 <div class="kicker">Graph layout for ontologies</div>
 <h1>Tidy Stress and Mycelium</h1>
-<p class="sub">Two layouts that draw ontologies with far fewer crossed links and far fewer links running through classes than the widely used open-source layouts, and an auto mode, Best Read, that picks the better of the two layouts for a given ontology.</p>
+<p class="sub">Two layouts that draw ontologies with far fewer crossed links and fewer links running through classes than the widely used open-source layouts, even when those are tuned, and an auto mode, Best Read, that picks the better of the two layouts for a given ontology.</p>
 
 <div class="stats">
-  <div class="stat"><b>Ahead of all 11</b><span>Tidy Stress and Mycelium each rank above every one of 11 open-source layouts on overall readability, across 19 test graphs</span></div>
-  <div class="stat"><b>2–3× fewer crossed links</b><span>than the best open-source layout, on mid-size and hub-heavy ontologies</span></div>
-  <div class="stat"><b>2–5× fewer links through classes</b><span>the error that makes two unrelated classes look linked</span></div>
+  <div class="stat"><b>About half the crossings</b><span>of the best open-source layout with tuned settings: 550 against 960 or more, over 15 test graphs</span></div>
+  <div class="stat"><b>40% fewer links through classes</b><span>than any tuned open-source layout of similar size; the one that has fewer draws twelve times the area</span></div>
+  <div class="stat"><b>A trade, not a sweep</b><span>Placement is less faithful to graph distance and link lengths are less even; on an equal mix of seven standard measures we are a close second</span></div>
   <div class="stat"><b>1.5 s or less</b><span>for ontologies of up to 537 classes, in a browser</span></div>
 </div>
 
@@ -129,7 +129,7 @@ label.tog { display: inline-flex; gap: 6px; align-items: center; cursor: pointer
 
 <h2 id="scoreboard">Scoreboard</h2>
 <div class="prose">
-<p>Average rank of each layout across the 19 test graphs: 1 is best, and layouts with equal results share a rank. The readability score combines all the measures to its right; how it is calculated is explained under <a href="#score">How readability is scored</a>.</p>
+<p>Average rank of each layout across the 19 test graphs, with the open-source layouts at general settings: 1 is best, and layouts with equal results share a rank. The readability score combines all the measures to its right; how it is calculated is explained under <a href="#score">How readability is scored</a>. That score was designed together with our layouts, so the next section repeats the comparison with tuned open-source settings and measures we do not optimise.</p>
 <p><strong>Wins</strong> is the number of graphs on which a layout ranked first in readability against the other 12 layouts. Best Read is left out of that count, because its drawing is always one of ours. Its own row is included because it is a complete layout procedure: it takes a graph and returns positions, and its time includes running both layouts.</p>
 </div>
 <div class="tbl"><table>
@@ -157,6 +157,43 @@ label.tog { display: inline-flex; gap: 6px; align-items: center; cursor: pointer
 <li>They are not the most compact. <code>cose</code> and dagre pack tighter; <code>cose</code> does so by letting links run through boxes.</li>
 <li>Mycelium's threads between pods are long by design.</li>
 <li>They are slower than the native libraries, though within about a second and a half at every size tested.</li>
+</ul>
+</div>
+
+<h2 id="tuned">Against tuned settings, on standard measures</h2>
+<div class="prose">
+<p>A readability score designed alongside the layouts it ranks can flatter them. So this comparison changes two things:</p>
+<ul>
+<li><strong>Tuned settings.</strong> Each open-source library tried several settings and seeds, its default run included, on each of the 15 graphs up to 179 classes. It kept the run with the fewest crossed links plus links through classes, a choice made on standard counts rather than on our score. Layered layouts were given subclass links oriented parent to child. The settings tried are listed under <a href="#method">Benchmark method</a>.</li>
+<li><strong>Standard measures.</strong> Besides crossings, links through classes and area, four measures from the graph-drawing literature that our layouts do not optimise directly: how faithfully straight-line distance follows graph distance (normalised stress), how even the link lengths are, the angle at which links cross, and the smallest angle between the links at a class (angular resolution).</li>
+</ul>
+<p>Average rank among 13 layouts, 1 is best:</p>
+</div>
+<div class="tbl"><table>
+<thead><tr><th>Layout</th><th>Our readability score</th><th>Crossed links</th><th>Links through classes</th><th>Area</th><th>Distance fidelity</th><th>Even link lengths</th><th>Crossing angle</th><th>Angular resolution</th><th>Mean of the seven standard measures</th></tr></thead>
+<tbody>
+<tr class="ours"><td>Tidy Stress</td><td class="best">1.4</td><td>2.7</td><td>4.0</td><td>4.7</td><td>7.4</td><td>8.8</td><td>4.4</td><td>3.8</td><td>5.1</td></tr>
+<tr class="ours"><td>Mycelium</td><td>4.1</td><td class="best">2.2</td><td>3.6</td><td>7.3</td><td>9.5</td><td>11.3</td><td>6.6</td><td class="best">3.6</td><td>6.3</td></tr>
+<tr class="split"><td>Graphviz sfdp</td><td>3.5</td><td>5.1</td><td>5.2</td><td>6.0</td><td>7.3</td><td>7.5</td><td>6.2</td><td>6.9</td><td>6.3</td></tr>
+<tr><td>WebCola</td><td>5.5</td><td>4.2</td><td>4.7</td><td>9.7</td><td>2.7</td><td>4.9</td><td>4.2</td><td>3.7</td><td class="best">4.9</td></tr>
+<tr><td>ELK stress</td><td>6.1</td><td>7.3</td><td>6.8</td><td>7.9</td><td class="best">1.9</td><td>2.9</td><td>5.9</td><td>6.3</td><td>5.6</td></tr>
+<tr><td>Cytoscape fcose</td><td>6.2</td><td>8.1</td><td>8.6</td><td>4.6</td><td>4.3</td><td class="best">1.1</td><td class="best">3.7</td><td>6.3</td><td>5.2</td></tr>
+<tr><td>Graphviz fdp</td><td>7.1</td><td>7.8</td><td>5.1</td><td>9.5</td><td>5.3</td><td>5.5</td><td>5.7</td><td>5.3</td><td>6.3</td></tr>
+<tr><td>d3-force</td><td>7.7</td><td>8.0</td><td>6.2</td><td>9.9</td><td>4.5</td><td>2.6</td><td>6.1</td><td>5.9</td><td>6.2</td></tr>
+<tr><td>ELK layered</td><td>8.3</td><td>7.5</td><td>9.0</td><td>7.4</td><td>11.1</td><td>11.0</td><td>10.7</td><td>10.7</td><td>9.6</td></tr>
+<tr><td>Graphviz neato</td><td>8.9</td><td>3.9</td><td class="best">2.6</td><td>11.0</td><td>3.9</td><td>5.9</td><td>5.2</td><td>4.1</td><td>5.2</td></tr>
+<tr><td>dagre</td><td>10.0</td><td>10.5</td><td>11.5</td><td>3.3</td><td>11.9</td><td>11.7</td><td>10.7</td><td>11.0</td><td>10.1</td></tr>
+<tr><td>ELK force</td><td>10.1</td><td>12.7</td><td>10.7</td><td>8.5</td><td>9.3</td><td>6.7</td><td>9.0</td><td>10.9</td><td>9.7</td></tr>
+<tr><td>Cytoscape cose</td><td>12.1</td><td>11.0</td><td>13.0</td><td class="best">1.2</td><td>11.9</td><td>11.0</td><td>12.6</td><td>12.5</td><td>10.5</td></tr>
+</tbody></table></div>
+<div class="prose">
+<p><strong>What holds up.</strong> Ours draw the fewest crossed links: over the 15 graphs, Best Read draws 550 and Mycelium 542, against 960 for tuned <code>neato</code>, 971 for tuned WebCola and 1,070 for tuned <code>sfdp</code>. They also draw fewer links through classes than every tuned layout but one, and they share the best angular resolution with WebCola. Tidy Stress still ranks first on our readability score, and is first on that score on 12 of the 15 graphs.</p>
+<p><strong>What does not.</strong></p>
+<ul>
+<li>Tuned <code>neato</code> draws fewer links through classes (81 against Best Read's 183) by spreading out: its median drawing takes twelve times the area of Best Read's. Tuning made its readability score worse, not better.</li>
+<li>The tidy-up moves classes away from where distance alone would put them. On distance fidelity and even link lengths, both layouts rank in the bottom half; ELK stress, WebCola, fcose and d3-force are better.</li>
+<li>Weighting the seven standard measures equally, WebCola comes first at 4.9 and Tidy Stress second at 5.1, with fcose and <code>neato</code> at 5.2. Our lead is specific to crossed links and links through classes. We think those two matter most for reading an ontology diagram, since each can make a reader follow the wrong link, but that is a judgement, not a measurement.</li>
+<li>Tuning brought the open-source layouts closer: tuned WebCola, <code>sfdp</code> and <code>neato</code> draw 13%, 17% and 34% fewer crossings than at their general settings.</li>
 </ul>
 </div>
 
@@ -292,16 +329,60 @@ leaves: fan out round their neighbour → tidy once more → place again any tha
 <li>A 400-node scale-free graph, and three banks joined (537 classes).</li>
 </ul>
 <p><strong>Boxes.</strong> Sized from the label length.</p>
-<p><strong>Contenders.</strong> Graphviz <code>neato</code>, <code>fdp</code> and <code>sfdp</code> (with Graphviz's own overlap removal), ELK stress, force and layered, WebCola, d3-force, dagre, and Cytoscape <code>cose</code> and <code>fcose</code>. They ran with sensible general settings rather than settings tuned for each graph.</p>
+<p><strong>Contenders.</strong> Graphviz <code>neato</code>, <code>fdp</code> and <code>sfdp</code> (with Graphviz's own overlap removal), ELK stress, force and layered, WebCola, d3-force, dagre, and Cytoscape <code>cose</code> and <code>fcose</code>. The scoreboard used sensible general settings.</p>
+<p><strong>Tuned settings.</strong> For the comparison against tuned settings, each library kept the best of its default run and these, by fewest crossed links plus links through classes:</p>
+<ul>
+<li>Graphviz <code>neato</code>: stress majorization, stochastic gradient descent (<code>mode=sgd</code>) and <code>model=subset</code>, two seeds each. <code>sfdp</code>: default, <code>K=1.4</code>, <code>repulsiveforce=2</code> and <code>smoothing=spring</code>, two seeds each. <code>fdp</code>: <code>K=1.4</code>, three seeds.</li>
+<li>ELK stress: target lengths 120, 170 and 230 px, 1,000 iterations. ELK force: three seeds, 1,000 iterations. ELK layered: three node-placement strategies, higher thoroughness, subclass links parent to child.</li>
+<li>dagre: three ranking methods, subclass links parent to child.</li>
+<li>WebCola: three seeds. d3-force: three seeds × three repulsion strengths. Cytoscape <code>cose</code>: three seeds × two repulsion strengths. <code>fcose</code>: three seeds × three repulsion strengths.</li>
+</ul>
+<p>On the 179-class bank, tuned ELK force gave no result within two minutes, so its default run stands in.</p>
+<p><strong>Standard measures.</strong> Normalised stress against hop distance at the best uniform scale (Gansner, Koren and North, 2004); the coefficient of variation of link lengths; the mean angle at which links cross (Huang, Eades and Hong, 2008); and the smallest angle between the links at a class as a share of 360° divided by its number of links.</p>
 <p><strong>Fairness.</strong> Every layout received the same boxes, the same 170 px target link length where it takes one, and the same overlap removal afterwards.</p>
 <p><strong>Runs.</strong> Two runs per layout, all in one browser tab on one machine, so the times compare with each other but are not absolute. The drawings on this page are the first run of each.</p>
 </div>
 
+<h2 id="experiments">Experiments: top-down hierarchy and bent links</h2>
+<div class="prose">
+<p>A review of an earlier version of this write-up raised two design questions. Both were tested; neither result is in the layouts yet.</p>
+<h3>Subclass links drawn top-down</h3>
+<p>Ontologies are built on class hierarchies, and readers expect a subclass below its parent. Both layouts treat a subclass link as an ordinary link, so only about half point down. The variant tested adds a separation constraint for every subclass link, subclass at least 40 px below its parent, in the spirit of Dwyer, Koren and Marriott's constrained stress majorization (IPSep-CoLa, 2006). The constraints are applied by projection after each placement sweep, and every tidy-up move and leaf placement must keep them.</p>
+<p>Compared with the layouts that draw hierarchies top-down by design, each given only runs that orient or constrain subclass links: WebCola with the same separation constraints, and ELK layered and dagre tuned as above. Totals over the 15 graphs:</p>
+</div>
+<div class="tbl"><table>
+<thead><tr><th>Layout</th><th>Subclass links pointing down</th><th>Crossed links</th><th>Links through classes</th><th>Median area</th><th>Median time</th><th>Mean of the seven standard measures (rank of 5)</th></tr></thead>
+<tbody>
+<tr class="ours"><td>Best Read, top-down</td><td class="best">100%</td><td class="best">654</td><td class="best">332</td><td>7.3</td><td>1.3 s</td><td>2.4</td></tr>
+<tr class="ours"><td>Tidy Stress, top-down</td><td class="best">100%</td><td>880</td><td>595</td><td>7.2</td><td>1.3 s</td><td>2.4</td></tr>
+<tr class="split"><td>WebCola, constrained</td><td>93%</td><td>1,109</td><td>414</td><td>17.6</td><td>21 s (up to 9 min)</td><td class="best">2.3</td></tr>
+<tr><td>ELK layered</td><td>97%</td><td>1,663</td><td>516</td><td>12.4</td><td>2.3 s</td><td>3.8</td></tr>
+<tr><td>dagre</td><td>97%</td><td>2,245</td><td>1,427</td><td class="best">4.4</td><td>0.6 s</td><td>4.1</td></tr>
+<tr class="autorow split"><td>Best Read, as now (for reference)</td><td>44%</td><td>550</td><td>183</td><td>8.4</td><td>1.4 s</td><td>–</td></tr>
+</tbody></table></div>
+<div class="prose">
+<p>Area is the drawing's bounding box divided by the total area of the class boxes. Among top-down layouts, the constrained variant draws the fewest crossings and links through classes, in less than half WebCola's area and a small fraction of its time. ELK layered and dagre keep a strict layering, which costs them crossings on ontologies whose relationships cut across the hierarchy. The cost of going top-down, against Best Read as it is now, is 19% more crossed links and 81% more links through classes, most of it on broad taxonomies: the Pizza ontology's readability score rises from 479 to 701 and the biomedical taxonomy's from 1,567 to 2,211. On graphs under 30 classes the difference is a few crossings at most, and on the University graph the top-down drawing scores slightly better.</p>
+<h3>Bending links instead of moving classes</h3>
+<p>The tidy-up removes links through classes by moving classes, which costs area. The alternative is to leave the classes where they are and bend each offending link around the class in its way, with one or two bends at the box corners, choosing the bends that cross the fewest other links. Over the same 15 graphs, with Best Read:</p>
+</div>
+<div class="tbl"><table>
+<thead><tr><th>Approach</th><th>Crossed links</th><th>Links through classes</th><th>Bends</th><th>Area</th></tr></thead>
+<tbody>
+<tr class="ours"><td>Move classes (as now)</td><td>26.2</td><td>7.3</td><td class="best">0</td><td>100%</td></tr>
+<tr><td>Bend links, don't move classes</td><td class="best">19.9</td><td>4.3</td><td>21.7</td><td class="best">85%</td></tr>
+<tr><td>Move classes, then bend what is left</td><td>23.3</td><td class="best">1.8</td><td>7.9</td><td>100%</td></tr>
+</tbody></table></div>
+<div class="prose">
+<p>Averages per graph. Bending wins on every count except the bends themselves: bending alone draws a quarter fewer crossings in 15% less area, but needs about 22 bends per graph; moving first and then bending the few links still in the way leaves almost no link through a class with about 8 bends. Whether a bend costs a reader less than a crossing or a larger drawing is the open question; Purchase's studies rank bends as less harmful than crossings.</p>
+</div>
+
 <h2 id="limits">Limits</h2>
 <div class="prose"><ul>
-<li><strong>The score.</strong> The readability score was designed with these layouts, and the layouts were tuned against it. The crossing and through-class counts are standard measures and agree with the score, but no study with people reading the diagrams has been done.</li>
-<li><strong>Contender settings.</strong> The open-source layouts ran with general settings. Each could probably do better if tuned for these graphs, as ours were tuned for ontologies.</li>
-<li><strong>Test graphs.</strong> They are reconstructions and inventions of typical shapes, not a public collection of real ontologies. Commercial engines (yFiles, Tom Sawyer) were not tested.</li>
+<li><strong>The score.</strong> The readability score was designed with these layouts, and the layouts were tuned against it. The comparison against tuned settings shows where the lead holds on standard measures (crossed links, links through classes) and where it does not (distance fidelity, even link lengths, an equal mix of measures). No study with people reading the diagrams has been done, so which measures matter most for understanding an ontology is not established here.</li>
+<li><strong>Tuning.</strong> The tuned settings are a reasonable search, not an exhaustive one. A library tuned per graph by an expert could do better.</li>
+<li><strong>Straight links.</strong> Every drawing is measured with straight links, because that is how the diagrams are drawn. Layered layouts such as ELK layered can route their own links around boxes; measured that way they would show fewer links through classes.</li>
+<li><strong>Hierarchy.</strong> Neither layout draws subclass links top-down; about half point down, as in most force and stress layouts. See <a href="#experiments">Experiments</a> for a top-down variant.</li>
+<li><strong>Test graphs.</strong> They are reconstructions and inventions of typical shapes, not a public collection of real ontologies such as the OBO Foundry or the Manchester OWL corpus. Commercial engines (yFiles, Tom Sawyer) were not tested.</li>
 <li><strong>Very large graphs.</strong> At around 500 classes, WebCola draws fewer crossings when given minutes to run. Within a budget of a second or two, Mycelium is the stronger choice.</li>
 <li><strong>Hub-heavy graphs stay hard.</strong> On the clinical-record graph, a 20-second exhaustive search reaches only about 150 crossings, against Mycelium's 161 in one second. Large further gains need a different kind of drawing, such as bundled links or showing a hub more than once.</li>
 </ul></div>
