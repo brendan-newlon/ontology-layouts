@@ -88,7 +88,7 @@ aside h2 { font-size: 13px; margin: 0; padding: 8px 12px; border-bottom: 1px sol
 <header>
   <h1>Layout Lab</h1>
   <select id="graph" title="Graph"></select>
-  <select id="algo" title="Starting layout"><option value="auto">Best Read</option><option value="compact">Tidy Stress</option><option value="grouped">Mycelium</option></select>
+  <select id="algo" title="Starting layout"><option value="auto">Best Read</option><option value="compact">Tidy Stress</option><option value="grouped">Mycelium</option><option value="auto-soft">Best Read, subclasses below where cheap</option><option value="auto-down">Best Read, subclasses always below</option></select>
   <button id="relayout">Lay out again</button>
   <button id="undo" title="Ctrl+Z">Undo</button>
   <button id="tidy" title="Clean up the drawing the way the recorded hand sessions did: single moves into open space, leaf units, crowds spread outward, group moves with look-ahead, a last leaf pass">Clean up</button>
@@ -129,6 +129,7 @@ aside h2 { font-size: 13px; margin: 0; padding: 8px 12px; border-bottom: 1px sol
 <script src="models2.js"></script>
 <script src="models3.js"></script>
 <script src="models4.js"></script>
+<script src="engines3.js"></script>
 <script src="handtidy.js"></script>
 <script>
 // Every action and note is kept in order, with the metrics before and after and the full positions after, so that a session
@@ -201,9 +202,10 @@ function measure() {
   const bends = G.H.reduce((s, h) => s + h.length, 0);
   const all = bbox(G.P.map((p, i) => ({ x: p.x - G.D[i].w / 2, y: p.y - G.D[i].h / 2 })).concat(G.P.map((p, i) => ({ x: p.x + G.D[i].w / 2, y: p.y + G.D[i].h / 2 }))));
   let boxA = 0; G.D.forEach((d) => (boxA += (d.w + 16) * (d.h + 12)));
-  return { cross: X.length, thru, sharp, meanAng, angres: arN ? arSum / arN : 1, tight, bends, area: (all.x2 - all.x1) * (all.y2 - all.y1) / boxA, X, thruL, tightN };
+  const subs = G.E.filter((e) => e.sub), down = subs.filter((e) => G.P[e.s].y > G.P[e.t].y + 1).length;
+  return { cross: X.length, thru, sharp, meanAng, angres: arN ? arSum / arN : 1, tight, bends, area: (all.x2 - all.x1) * (all.y2 - all.y1) / boxA, down, subs: subs.length, X, thruL, tightN };
 }
-const brief = (m) => ({ cross: m.cross, thru: m.thru, sharp: m.sharp, meanAng: +m.meanAng.toFixed(1), angres: +m.angres.toFixed(3), tight: m.tight, bends: m.bends, area: +m.area.toFixed(2) });
+const brief = (m) => ({ cross: m.cross, thru: m.thru, sharp: m.sharp, meanAng: +m.meanAng.toFixed(1), angres: +m.angres.toFixed(3), tight: m.tight, bends: m.bends, area: +m.area.toFixed(2), down: m.down });
 
 // ---------- drawing ----------
 let M = null, lastM = null;
@@ -230,7 +232,7 @@ function draw() {
   const base = S.base || M, cmp = (v, b, lowGood = true) => { const better = lowGood ? v < b : v > b, worse = lowGood ? v > b : v < b; return better ? 'down' : worse ? 'up' : ''; };
   $('metrics').innerHTML = [
     ['Crossings', M.cross, base.cross], ['Sharp (&lt;30°)', M.sharp, base.sharp], ['Through classes', M.thru, base.thru],
-    ['Mean crossing angle', M.meanAng.toFixed(0) + '°', null], ['Cramped classes', M.tight, base.tight], ['Bends', M.bends, null], ['Area', M.area.toFixed(1), null]
+    ['Mean crossing angle', M.meanAng.toFixed(0) + '°', null], ['Cramped classes', M.tight, base.tight], ['Bends', M.bends, null], ['Area', M.area.toFixed(1), null], ['Subclass links pointing down', M.down + ' of ' + M.subs, null]
   ].map(([l, v, b]) => `<span>${l} <b class="${b == null ? '' : cmp(+v, b)}">${v}</b>${b == null ? '' : `<small> (start ${b})</small>`}</span>`).join('');
   $('selinfo').textContent = G.sel.size ? `Selected: ${[...G.sel].map((i) => G.labels[i]).join(', ')}` : 'Nothing selected';
 }
@@ -324,7 +326,7 @@ async function load(key, algo, logIt = true) {
 // The starting layout of the current graph, as "Lay out again" draws it
 function freshLayout(algo) {
   const items = G.D.map((d) => ({ w: d.w, h: d.h })), edges = G.E.map((e) => [e.s, e.t, e.sub ? 2 : 1]);
-  const fn = algo === 'compact' ? O.compact : algo === 'grouped' ? (a, b, c) => O.grouped2(a, b, c) || O.compact(a, b, c) : O.auto;
+  const fn = algo === 'compact' ? O.compact : algo === 'grouped' ? (a, b, c) => O.grouped2(a, b, c) || O.compact(a, b, c) : algo === 'auto-down' ? EXP3.autoF : O.auto;
   const P = fn(items, edges, { seed: 1 }).pos.map((p) => ({ x: p.x, y: p.y }));
   O.sep(P, G.D.map((d) => ({ w: d.w + 16, h: d.h + 12 })), 6, 200);
   return P;
@@ -418,6 +420,11 @@ function sendNote() { const text = $('note').value.trim(); if (!text) return; $(
   if (W) { const f = W.frames[W.i]; ev.walk = { walk: W.seq, step: W.i + 1, where: frameWhere(f), about: $('wWhat').textContent }; }
   S.events.push(ev); showEvent(ev); persist(); }
 $('send').onclick = sendNote;
+// Subclasses below their superclass: "always" starts from the top-down layout and the clean-up keeps every subclass at least
+// 20 px below; "where cheap" starts from Best Read and the clean-up turns a subclass link downward when that costs little
+// (an upward link costs 3, half a crossing)
+const downOpt = () => { const a = $('algo').value, down = G.E.filter((e) => e.sub).map((e) => [e.s, e.t]);
+  return a === 'auto-down' ? { down, downGap: 20 } : a === 'auto-soft' ? { down, downGap: 20, W: { up: 3 } } : {}; };
 // Clean up: the hand-style post-layout steps (handtidy.js), as one undoable step
 $('tidyT').oninput = () => ($('tidyTv').textContent = $('tidyT').value + ' s');
 $('tidyLA').oninput = () => ($('tidyLAv').textContent = $('tidyLA').value);
@@ -426,7 +433,7 @@ $('tidy').onclick = () => {
   const b = $('tidy'); b.disabled = true; b.textContent = 'Cleaning up…';
   setTimeout(() => {
     const before = measure(), snap = snapshot(), budgetMs = +$('tidyT').value * 1000, groupDepth = +$('tidyLA').value;
-    const r = HandTidy.run(G.P, G.D, G.E.map((e) => ({ s: e.s, t: e.t })), { budgetMs, groupDepth });
+    const r = HandTidy.run(G.P, G.D, G.E.map((e) => ({ s: e.s, t: e.t })), { budgetMs, groupDepth, ...downOpt() });
     G.P = r.P; S.undo.push(snap);
     record('cleanup', { budgetMs, groupDepth, ms: r.stats.ms, steps: r.log.map((l) => ({ kind: l.kind, classes: l.nodes.map((i) => G.labels[i]), anchor: l.anchor != null ? G.labels[l.anchor] : undefined, gain: l.gain })) }, before);
     draw(); b.disabled = false; b.textContent = 'Clean up';
@@ -561,7 +568,7 @@ $('walkBtn').onclick = () => {
     const budgetMs = +$('tidyT').value * 1000, groupDepth = +$('tidyLA').value, E = G.E.map((e) => ({ s: e.s, t: e.t }));
     // "from the starting layout" leaves your drawing alone: the walk-through runs on a fresh layout, and Close brings yours back
     const from = $('walkFrom').value, home = { P: toP(G.P), H: G.H }, P0 = from === 'start' ? freshLayout($('algo').value) : toP(G.P);
-    const r = HandTidy.run(P0, G.D, E, { budgetMs, groupDepth, record: true });
+    const r = HandTidy.run(P0, G.D, E, { budgetMs, groupDepth, record: true, ...downOpt() });
     G.P = P0; _med = null; medLen(); G.P = home.P; // link length of the walked drawing, for telling a nudge from a move
     W = { P0, home, from, final: toP(r.P), stages: buildWalk(r, P0), i: 0, budgetMs, groupDepth, ms: r.stats.ms };
     W.frames = walkFrames(); G.sel.clear(); G.pick = -1;

@@ -17,6 +17,7 @@
 <script src="models2.js"></script>
 <script src="models3.js"></script>
 <script src="models4.js"></script>
+<script src="models5.js"></script>
 <script src="engines3.js"></script>
 <script src="stdmetrics.js"></script>
 <script>
@@ -32,7 +33,7 @@ function cyOf(N, E) {
 }
 const cyPos = (c) => c.nodes().map((n) => ({ x: n.position().x, y: n.position().y }));
 const runCy = (c, opt) => new Promise((res) => { const l = c.layout(opt); l.one('layoutstop', () => res()); l.run(); });
-const withCleanUp = (f) => async (it, ed, s, N) => { const t0 = Date.now(), P = (await f(it, ed, s)).map((p) => ({ x: p.x, y: p.y })); O.sep(P, N, 6, 200); return O.cleanUp(P, it, ed, t0); };
+const withCleanUp = (f) => async (it, ed, s, N) => { const t0 = O.now(), P = (await f(it, ed, s)).map((p) => ({ x: p.x, y: p.y })); O.sep(P, N, 6, 200); return O.cleanUp(P, it, ed, t0); };
 const ALGOS = {
   // ours as the library runs them: the layout, the same overlap removal, then the clean-up within the rest of a 1.5 s budget
   'Tidy Stress (ours)': withCleanUp(async (it, ed, s) => O.compact(it, ed, { seed: s }).pos),

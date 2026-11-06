@@ -10,8 +10,11 @@ let body = s.slice(a, b).replace(/\r\n/g, '\n');
 // The clean-up after a layout (_ogHandTidy) also lives in the library; handtidy.js is generated from it for the lab and handbench.mjs
 const t0 = body.indexOf('// ── Clean-up after a layout ──'), t1 = body.indexOf('// ── end of the clean-up ──');
 if (t0 < 0 || t1 < 0) throw new Error('clean-up anchors not found');
-const tidy = body.slice(t0, t1).split('\n').map((l) => l.replace(/^      /, '')).join('\n');
+// handtidy.js runs on its own (lab, handbench.mjs), so it gets its own copy of the work clock
+const c0 = body.indexOf('// ── Work clock ──'), c1 = body.indexOf('// ── end of the work clock ──');
+if (c0 < 0 || c1 < 0) throw new Error('work clock anchors not found');
+const tidy = (body.slice(c0, c1) + body.slice(t0, t1)).split('\n').map((l) => l.replace(/^      /, '')).join('\n');
 fs.writeFileSync(path.join(here, 'handtidy.js'), '// generated from src/ontology-layouts.js by build_base.mjs: edit the library, then run node build_base.mjs\n(function (root) {\n' + tidy + 'root.HandTidy = _ogHandTidy; root.HandTidy.cleanUp = _ogLayoutCleanUp;\n})(typeof window !== \'undefined\' ? window : globalThis);\n');
-body += `\nwindow.OURS = { tidy: _ogHandTidy, cleanUp: _ogLayoutCleanUp, layout: _ogGroupedLayout, louvain: _ogClLouvain, merge: _ogClMergeSmall, separate: _ogClSeparate, crossings: _ogClCrossings, segX: _ogClSegX, dps: _ogClDPS, dss: _ogClDSS, segBox: _ogClSegBox, rng: _ogClRng, compact: _ogCompactLayout, grouped2: _ogGroupedLayout, stressLayout: _ogStressLayout, auto: _ogAutoLayout, pmetrics: _ogPlacementMetrics, pscore: _ogPlacementScore, sep: _ogClSeparate };\n`;
+body += `\nwindow.OURS = { tidy: _ogHandTidy, cleanUp: _ogLayoutCleanUp, layout: _ogGroupedLayout, louvain: _ogClLouvain, merge: _ogClMergeSmall, separate: _ogClSeparate, crossings: _ogClCrossings, segX: _ogClSegX, dps: _ogClDPS, dss: _ogClDSS, segBox: _ogClSegBox, rng: _ogClRng, compact: _ogCompactLayout, grouped2: _ogGroupedLayout, stressLayout: _ogStressLayout, auto: _ogAutoLayout, pmetrics: _ogPlacementMetrics, pscore: _ogPlacementScore, sep: _ogClSeparate, now: _ogNow, work: _ogWorkN, clocked: _ogClocked, workNs: _OG_WORK_NS };\n`;
 fs.writeFileSync(path.join(here, 'base_layout.js'), '// generated from src/ontology-layouts.js by build_base.mjs\n' + body);
 console.log('base_layout.js', body.length, 'chars');
