@@ -22,6 +22,7 @@ for (const g of graphs) {
   const layMs = Date.now() - t0, m0 = HT.measure(P, D, E), row = { graph: g, n: D.length, layMs, before: m0, after: {} };
   for (const b of budgets) {
     const r = HT.run(P, D, E, { budgetMs: b, ...extra });
+    if (extra.trace) console.log('  ', g, b, JSON.stringify(r.stats.phase), 'evals', r.stats.evals, 'start', Math.round(r.stats.start), JSON.stringify(r.stats.trace));
     row.after[b] = { ...HT.measure(r.P, D, E), ms: r.stats.ms, units: r.stats.units, unitMoves: r.stats.unitMoves, singleMoves: r.stats.singleMoves, groups: r.stats.groupKept + '/' + r.stats.groupTried, rounds: r.stats.rounds };
     if (b === budgets[budgets.length - 1]) row.P = r.P.map((p) => [Math.round(p.x * 10) / 10, Math.round(p.y * 10) / 10]);
   }

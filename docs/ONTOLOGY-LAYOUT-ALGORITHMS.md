@@ -67,9 +67,11 @@ What they give up:
 - **Hand-style clean-up.** Generalised from recorded hand sessions in the layout lab (`tools/layout-bench/handtidy.js`). After the layout:
   - classes at the ends of problem links move into open space;
   - leaf units (leaves, short leaf chains, leaf triangles and loops) are turned around the class they hang from, since they can always avoid crossings;
-  - groups of classes picked by position move together toward open space, with a few repair moves of look-ahead.
+  - crowds found on a density grid are spread outward in slices, more toward open space, with a few repair moves;
+  - groups of classes picked by position move together toward open space, with a few repair moves of look-ahead;
+  - a last pass over leaves runs at the end.
 
-  With 2 s per graph over the 15 test graphs, it cut links through classes from 151 to 31, crossings from 498 to 443 and cramped classes from 96 to 52, with no change in area. On the graphs edited by hand, 3 s of clean-up matched or beat about 10 minutes of hand editing on each one. Its weak spot is dense hub graphs, such as the clinical record with three hubs, where many crossings remain.
+  Over the 15 test graphs, 0.3 s per graph cut links through classes from 126 to 27, sharp crossings from 23 to 4 and cramped classes from 91 to 52; 1.5 s per graph reached 20, 2 and 55. Crossings stayed about level (441 to 446) and area did not change. Profiling showed that the group moves took about 95% of the time while keeping about one try in twenty. The crowd spreading reaches most of their effect at a quarter of the time. Its weak spot is dense hub graphs, such as the clinical record with three hubs, where many crossings remain. The lab's **Walk through** shows each stage and step for review.
 
 ## Limits
 - The readability score was designed with these layouts, and the layouts were tuned against it. On standard measures the lead holds for crossed links and links through classes; crossing angle is a weaker point (Tidy Stress 4.4, Mycelium 6.6). No study with people reading the diagrams has been done.

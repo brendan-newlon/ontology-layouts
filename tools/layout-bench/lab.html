@@ -6,9 +6,11 @@
 <title>Layout Lab</title>
 <style>
 :root { --bg: #f4f3ee; --paper: #fff; --ink: #1d232b; --muted: #5d6673; --rule: #d9d6cc; --accent: #2f6b4f; --box: #eef3fb; --box-line: #6d86b0;
-  --sub: #6f9a54; --rel: #8b97a8; --bad: #c43d32; --warn: #c98a12; --sel: #e0a100; --handle: #2b6cb0; --note: #fdf6e3; }
+  --sub: #6f9a54; --rel: #8b97a8; --bad: #c43d32; --warn: #c98a12; --sel: #e0a100; --handle: #2b6cb0; --note: #fdf6e3;
+  --open: #3f9d5a; --crowd: #bcd3ff; --crowd-line: #2f5fb3; --unit: #b5e3dc; --unit-line: #1f8577; --mover: #ffe08a; --ghost: #7a8494; }
 @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) { --bg: #15181c; --paper: #1c2026; --ink: #e6e8eb; --muted: #9aa4b1; --rule: #30353d; --accent: #7cc39e;
-  --box: #233041; --box-line: #6f8db8; --sub: #8fbf6f; --rel: #6f7b8c; --bad: #ff6f61; --warn: #f0b44a; --sel: #ffcc33; --handle: #6fb1ff; --note: #2a261c; color-scheme: dark; } }
+  --box: #233041; --box-line: #6f8db8; --sub: #8fbf6f; --rel: #6f7b8c; --bad: #ff6f61; --warn: #f0b44a; --sel: #ffcc33; --handle: #6fb1ff; --note: #2a261c;
+  --open: #5fc47c; --crowd: #2b4a80; --crowd-line: #8fb4ff; --unit: #1f5550; --unit-line: #6fd3c4; --mover: #6b5a1c; --ghost: #8a94a4; color-scheme: dark; } }
 * { box-sizing: border-box; }
 html, body { height: 100%; }
 body { margin: 0; background: var(--bg); color: var(--ink); font: 14px/1.45 "Segoe UI", system-ui, sans-serif; display: grid; grid-template-rows: auto 1fr; }
@@ -24,7 +26,32 @@ main { display: grid; grid-template-columns: 1fr 360px; min-height: 0; }
 #stage { position: relative; min-width: 0; min-height: 0; }
 #svg { width: 100%; height: 100%; display: block; background: var(--bg); touch-action: none; user-select: none; }
 #help { position: absolute; left: 10px; bottom: 8px; color: var(--muted); font-size: 12px; background: color-mix(in srgb, var(--paper) 85%, transparent); padding: 4px 8px; border-radius: 6px; max-width: calc(100% - 20px); }
-aside { border-left: 1px solid var(--rule); background: var(--paper); display: grid; grid-template-rows: auto 1fr auto; min-height: 0; }
+aside { border-left: 1px solid var(--rule); background: var(--paper); display: grid; grid-template-rows: auto auto 1fr auto; min-height: 0; }
+/* walk-through panel */
+#walk { border-bottom: 1px solid var(--rule); padding: 8px 10px; display: grid; gap: 6px; background: color-mix(in srgb, var(--accent) 6%, var(--paper)); max-height: 55vh; overflow-y: auto; }
+#walk .where { font-size: 11px; text-transform: uppercase; letter-spacing: .05em; color: var(--muted); display: flex; justify-content: space-between; }
+#walk .what { font-size: 13px; }
+#walk .what small { color: var(--muted); display: block; margin-top: 3px; }
+#walk .btns { display: flex; flex-wrap: wrap; gap: 4px; }
+#walk .btns button { font-size: 12px; padding: 2px 7px; }
+#walk .legend { display: grid; grid-template-columns: 1fr 1fr; gap: 2px 8px; font-size: 11.5px; color: var(--muted); }
+#walk .legend label { display: flex; gap: 5px; align-items: center; cursor: pointer; }
+#walk .sw { width: 14px; height: 10px; border-radius: 3px; display: inline-block; flex: none; }
+.node.crowd rect { fill: var(--crowd); stroke: var(--crowd-line); stroke-width: 1.6; }
+.node.unit rect { fill: var(--unit); stroke: var(--unit-line); stroke-width: 1.6; }
+.node.anchor rect { stroke: var(--unit-line); stroke-width: 3.5; }
+.node.mover rect { fill: var(--mover); stroke: var(--warn); stroke-width: 1.8; }
+.opencell { fill: var(--open); opacity: .16; }
+.densecell { fill: var(--warn); opacity: .22; }
+.slice { fill: none; stroke: var(--warn); stroke-width: 1.4; stroke-dasharray: 6 4; opacity: .8; }
+.ghost { fill: none; stroke: var(--ghost); stroke-dasharray: 4 3; stroke-width: 1.3; }
+.ghost.tried { stroke: var(--bad); }
+.arrow { stroke: var(--ink); stroke-width: 1.5; fill: none; opacity: .75; }
+.arrow.rep { stroke-dasharray: 3 2; opacity: .6; }
+.arrow.tried { stroke: var(--bad); }
+.focus { fill: none; stroke: var(--bad); stroke-width: 3; opacity: .8; }
+.link.focusline { stroke: var(--bad); stroke-width: 3; }
+.ev.note .on { display: block; font-size: 11px; color: var(--muted); margin-bottom: 2px; }
 aside h2 { font-size: 13px; margin: 0; padding: 8px 12px; border-bottom: 1px solid var(--rule); display: flex; justify-content: space-between; align-items: center; }
 #save { font-weight: 400; color: var(--muted); font-size: 12px; }
 #log { overflow-y: auto; padding: 8px 10px; display: flex; flex-direction: column; gap: 5px; }
@@ -64,9 +91,11 @@ aside h2 { font-size: 13px; margin: 0; padding: 8px 12px; border-bottom: 1px sol
   <select id="algo" title="Starting layout"><option value="auto">Best Read</option><option value="compact">Tidy Stress</option><option value="grouped">Mycelium</option></select>
   <button id="relayout">Lay out again</button>
   <button id="undo" title="Ctrl+Z">Undo</button>
-  <button id="tidy" title="Clean up the drawing the way the recorded hand sessions did: leaf units, single moves into open space, group moves with look-ahead">Clean up</button>
-  <label class="tog" title="Time the clean-up may take">Time <input type="range" id="tidyT" min="0.5" max="10" step="0.5" value="2"> <span id="tidyTv">2 s</span></label>
+  <button id="tidy" title="Clean up the drawing the way the recorded hand sessions did: single moves into open space, leaf units, crowds spread outward, group moves with look-ahead, a last leaf pass">Clean up</button>
+  <label class="tog" title="Time the clean-up may take">Time <input type="range" id="tidyT" min="0.25" max="10" step="0.25" value="1.5"> <span id="tidyTv">1.5 s</span></label>
   <label class="tog" title="How many repair moves a group move may use before it has to pay off">Look-ahead <input type="range" id="tidyLA" min="0" max="8" step="1" value="4"> <span id="tidyLAv">4</span></label>
+  <button id="walkBtn" title="Run the clean-up and step through what it does, stage by stage, with notes on each step">Walk through</button>
+  <select id="walkFrom" title="Which drawing the walk-through cleans up"><option value="start">from the starting layout</option><option value="here">from this drawing</option></select>
   <label class="tog"><input type="checkbox" id="marks" checked> Mark problems</label>
   <label class="tog"><input type="checkbox" id="handles" checked> Show bends</label>
   <div class="metrics" id="metrics"></div>
@@ -78,6 +107,16 @@ aside h2 { font-size: 13px; margin: 0; padding: 8px 12px; border-bottom: 1px sol
   </div>
   <aside>
     <h2>Steps and reasoning <span id="save">not saved yet</span></h2>
+    <div id="walk" hidden>
+      <div class="where"><span id="wWhere"></span><span id="wPos"></span></div>
+      <div class="what" id="wWhat"></div>
+      <div class="btns">
+        <button id="wBack" title="Left arrow">◀ Back</button><button id="wNext" title="Right arrow">Next ▶</button><button id="wStage" title="Skip to the next stage">Next stage ⏭</button>
+        <button id="wKeep" title="Keep the drawing as it is at this step (undoable)">Keep this</button><button id="wClose" title="Leave the walk-through and go back to the drawing before it">Close</button>
+      </div>
+      <label class="tog" style="font-size:12px"><input type="checkbox" id="wDropped"> Show dropped tries (group moves that were tried and thrown away)</label>
+      <div class="legend" id="wLegend"></div>
+    </div>
     <div id="log"></div>
     <div id="compose">
       <textarea id="note" placeholder="Explain what you are about to do, or why you just did it. Enter sends, Shift+Enter starts a new line."></textarea>
@@ -172,19 +211,22 @@ function draw() {
   M = measure();
   const marks = $('marks').checked, showH = $('handles').checked;
   svg.setAttribute('viewBox', `${view.x} ${view.y} ${view.w} ${view.h}`);
-  let s = '<g>';
-  G.E.forEach((e, k) => { const cls = 'link' + (e.sub ? ' sub' : '') + (marks && M.thruL.has(k) ? ' thru' : '') + (k === G.pick ? ' picked' : '');
+  const WL = W ? walkLayer() : null;
+  let s = WL ? WL.under : '';
+  s += '<g>';
+  G.E.forEach((e, k) => { const cls = 'link' + (e.sub ? ' sub' : '') + (marks && M.thruL.has(k) ? ' thru' : '') + (k === G.pick ? ' picked' : '') + (WL && WL.lines.has(k) ? ' focusline' : '');
     s += `<path class="${cls}" d="${pathD(k)}"/><path class="hit" data-k="${k}" d="${pathD(k)}"/>`; });
   s += '</g><g>';
   if (marks) M.X.forEach((c) => (s += `<circle class="xdot" cx="${c.x}" cy="${c.y}" r="${c.ang < 30 ? 5 : 3.5}" fill="${c.ang < 30 ? 'var(--bad)' : 'var(--warn)'}"><title>crossing at ${c.ang.toFixed(0)}°</title></circle>`));
   s += '</g><g>';
-  G.P.forEach((p, i) => { const d = G.D[i], cls = 'node' + (G.sel.has(i) ? ' sel' : '') + (marks && M.tightN.has(i) ? ' tight' : '');
+  G.P.forEach((p, i) => { const d = G.D[i], cls = 'node' + (G.sel.has(i) ? ' sel' : '') + (marks && M.tightN.has(i) ? ' tight' : '') + (WL && WL.cls[i] ? ' ' + WL.cls[i] : '');
     s += `<g class="${cls}" data-v="${i}" transform="translate(${p.x},${p.y})"><rect x="${-d.w / 2}" y="${-d.h / 2}" width="${d.w}" height="${d.h}" rx="4"/><text text-anchor="middle" y="4">${esc(G.labels[i])}</text></g>`; });
   s += '</g><g>';
   if (showH) G.E.forEach((e, k) => handlePts(k).forEach((h, j) => (s += `<circle class="handle" data-k="${k}" data-j="${j}" cx="${h.x}" cy="${h.y}" r="5"/>`)));
   s += '</g>';
+  if (WL) s += WL.over;
   if (drag && drag.kind === 'marquee') { const r = drag.r; s += `<rect class="marquee" x="${Math.min(r.x0, r.x1)}" y="${Math.min(r.y0, r.y1)}" width="${Math.abs(r.x1 - r.x0)}" height="${Math.abs(r.y1 - r.y0)}"/>`; }
-  svg.innerHTML = s;
+  svg.innerHTML = '<defs><marker id="ah" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0L10,5L0,10z" fill="var(--ink)"/></marker><marker id="ahr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0L10,5L0,10z" fill="var(--bad)"/></marker></defs>' + s;
   const base = S.base || M, cmp = (v, b, lowGood = true) => { const better = lowGood ? v < b : v > b, worse = lowGood ? v > b : v < b; return better ? 'down' : worse ? 'up' : ''; };
   $('metrics').innerHTML = [
     ['Crossings', M.cross, base.cross], ['Sharp (&lt;30°)', M.sharp, base.sharp], ['Through classes', M.thru, base.thru],
@@ -214,17 +256,20 @@ function describe(ev) {
     case 'layout': return `<span class="d">Laid out ${esc(ev.graph)} with ${esc(ev.algo)}</span> <span class="m">crossings ${ev.after.cross}, through ${ev.after.thru}, sharp ${ev.after.sharp}, cramped ${ev.after.tight}</span>`;
     case 'undo': return `<span class="d">Undid step ${ev.undid} (a trial)</span>` + m;
     case 'cleanup': { const c = (k) => ev.steps.filter((s) => s.kind === k).length;
-      return `<span class="d">Cleaned up in ${(ev.ms / 1000).toFixed(1)} s: ${c('move')} single moves, ${c('unit')} leaf units turned, ${c('group')} group moves</span>` + m; }
+      return `<span class="d">Cleaned up in ${(ev.ms / 1000).toFixed(1)} s: ${c('move')} single moves, ${c('unit')} leaf units turned, ${c('spread')} crowds spread, ${c('group')} group moves${ev.fromWalk ? ` (kept from the walk-through, up to step ${ev.upToStep})` : ''}</span>` + m; }
+    case 'walkthrough': return `<span class="d">Started a walk-through of the clean-up ${ev.from === 'start' ? 'from the starting layout' : 'from this drawing'} (${(ev.ms / 1000).toFixed(2)} s, ${ev.stages.length} stages)</span>`;
+    case 'walk-closed': return `<span class="d">Closed the walk-through at step ${ev.atStep}; your drawing is back as it was</span>`;
     case 'resume': return `<span class="d">Came back to ${esc(ev.graph)}, continuing from where you left it</span>`;
     default: return esc(ev.kind);
   }
 }
-const QUIET = new Set(['view', 'toggle']); // recorded, but not listed
+const QUIET = new Set(['view', 'toggle', 'walk-step']); // recorded, but not listed
 function showEvent(ev) {
   if (QUIET.has(ev.kind)) return;
   const d = document.createElement('div'); d.className = 'ev' + (ev.kind === 'note' ? ' note' : '') + (ev.undone ? ' undone' : '') + (ev.ignored ? ' ignored' : ''); d.dataset.seq = ev.seq;
   const ign = ev.kind === 'note' || ev.kind === 'resume' ? '' : `<button class="ign" data-seq="${ev.seq}" title="Mark this step as a test to leave out of the analysis">${ev.ignored ? 'keep' : 'ignore'}</button>`;
-  d.innerHTML = ign + `<span class="t">${ev.seq} · ${(ev.ms / 1000).toFixed(0)} s</span>` + (ev.kind === 'note' ? esc(ev.text) : describe(ev));
+  const on = ev.kind === 'note' && ev.walk ? `<span class="on">On walk-through step ${ev.walk.step} (${esc(ev.walk.where)})</span>` : '';
+  d.innerHTML = ign + `<span class="t">${ev.seq} · ${(ev.ms / 1000).toFixed(0)} s</span>` + (ev.kind === 'note' ? on + esc(ev.text) : describe(ev));
   $('log').appendChild(d); $('log').scrollTop = 1e9;
 }
 $('log').addEventListener('click', (e) => {
@@ -263,20 +308,26 @@ function journal(action) {
   fetch('http://127.0.0.1:8013/lab_journal.json', { method: 'POST', body }).catch(() => {});
 }
 async function load(key, algo, logIt = true) {
+  if (W) walkEnd(false);
   const Md = await MODELS[key].load();
   G.key = key; G.labels = Md.labels; G.D = Md.labels.map((l) => ({ w: String(l).length * 6.6 + 10, h: 20 }));
   const edges = Md.edges.filter((e) => e.s !== e.t).map((e) => [e.s, e.t, e.kind === 'sub' ? 2 : 1]);
   G.E = edges.map(([s, t, w]) => ({ s, t, sub: w === 2 }));
-  const items = G.D.map((d) => ({ w: d.w, h: d.h }));
-  const fn = algo === 'compact' ? O.compact : algo === 'grouped' ? (a, b, c) => O.grouped2(a, b, c) || O.compact(a, b, c) : O.auto;
-  G.P = fn(items, edges, { seed: 1 }).pos.map((p) => ({ x: p.x, y: p.y }));
-  O.sep(G.P, G.D.map((d) => ({ w: d.w + 16, h: d.h + 12 })), 6, 200);
+  G.P = freshLayout(algo);
   G.H = G.E.map(() => []); G.sel.clear(); G.pick = -1; S.undo = [];
   if (logIt === 'open' && resume(latestSession(key))) { journal('resume'); return; }
   if (!S.id || logIt === 'new' || logIt === 'open') { S.id = 'lab_' + key + '_' + new Date().toISOString().replace(/[-:]/g, '').replace('T', '-').slice(0, 15); S.events = []; S.started = performance.now(); $('log').innerHTML = ''; }
   fit(); S.base = measure();
   record('layout', { graph: key, algo: $('algo').selectedOptions[0].textContent }, S.base);
   draw(); journal(logIt === 'open' || logIt === 'new' ? 'new' : 'relayout');
+}
+// The starting layout of the current graph, as "Lay out again" draws it
+function freshLayout(algo) {
+  const items = G.D.map((d) => ({ w: d.w, h: d.h })), edges = G.E.map((e) => [e.s, e.t, e.sub ? 2 : 1]);
+  const fn = algo === 'compact' ? O.compact : algo === 'grouped' ? (a, b, c) => O.grouped2(a, b, c) || O.compact(a, b, c) : O.auto;
+  const P = fn(items, edges, { seed: 1 }).pos.map((p) => ({ x: p.x, y: p.y }));
+  O.sep(P, G.D.map((d) => ({ w: d.w + 16, h: d.h + 12 })), 6, 200);
+  return P;
 }
 function fit() {
   const b = bbox(G.P.flatMap((p, i) => [{ x: p.x - G.D[i].w / 2, y: p.y - G.D[i].h / 2 }, { x: p.x + G.D[i].w / 2, y: p.y + G.D[i].h / 2 }]));
@@ -293,6 +344,7 @@ function td(k, p) { const e = G.E[k], A = G.P[e.s], B = G.P[e.t], dx = B.x - A.x
 svg.addEventListener('pointerdown', (ev) => {
   const p = pt(ev), tgt = ev.target, node = tgt.closest('.node'), ctrl = ev.ctrlKey || ev.metaKey;
   svg.setPointerCapture(ev.pointerId);
+  if (W) { drag = { kind: 'pan', c0: { x: ev.clientX, y: ev.clientY }, v0: { ...view }, moved: false }; return; } // the walk-through only pans and zooms
   if (tgt.classList.contains('handle')) { drag = { kind: 'handle', k: +tgt.dataset.k, j: +tgt.dataset.j, before: measure(), snap: snapshot(), moved: false }; return; }
   if (node) {
     const v = +node.dataset.v, selBefore = [...G.sel].sort().join();
@@ -346,10 +398,11 @@ svg.addEventListener('pointerup', () => {
 let lastClick = null;
 svg.addEventListener('wheel', (ev) => { ev.preventDefault(); const p = pt(ev), f = Math.exp(Math.max(-60, Math.min(60, ev.deltaY)) * 0.0015);
   view = { x: p.x - (p.x - view.x) * f, y: p.y - (p.y - view.y) * f, w: view.w * f, h: view.h * f }; svg.setAttribute('viewBox', `${view.x} ${view.y} ${view.w} ${view.h}`); }, { passive: false });
-function undo() { const s = S.undo.pop(); if (!s) return; const before = measure(), undid = [...S.events].reverse().find((e) => e.state && e.kind !== 'layout' && e.kind !== 'undo' && !e.undone); if (undid) { undid.undone = true; const el = $('log').querySelector(`.ev[data-seq="${undid.seq}"]`); if (el) el.classList.add('undone'); } restore(s); record('undo', { undid: undid ? undid.seq : null }, before); draw(); }
+function undo() { if (W) return; const s = S.undo.pop(); if (!s) return; const before = measure(), undid = [...S.events].reverse().find((e) => e.state && e.kind !== 'layout' && e.kind !== 'undo' && !e.undone); if (undid) { undid.undone = true; const el = $('log').querySelector(`.ev[data-seq="${undid.seq}"]`); if (el) el.classList.add('undone'); } restore(s); record('undo', { undid: undid ? undid.seq : null }, before); draw(); }
 $('undo').onclick = undo;
 document.addEventListener('keydown', (ev) => {
   if (ev.target === $('note')) return;
+  if (W) { if (ev.key === 'ArrowRight') { ev.preventDefault(); walkMove(W.i + 1, 'next'); } if (ev.key === 'ArrowLeft') { ev.preventDefault(); walkMove(W.i - 1, 'back'); } return; }
   if ((ev.ctrlKey || ev.metaKey) && ev.key.toLowerCase() === 'z') { ev.preventDefault(); undo(); }
   if (ev.key === 'Escape' && G.sel.size) { G.sel.clear(); G.pick = -1; draw(); record('select', { classes: [], how: 'escape' }); }
 });
@@ -362,12 +415,14 @@ svg.addEventListener('wheel', noteView); svg.addEventListener('pointerup', () =>
 let lastPan = false;
 function sendNote() { const text = $('note').value.trim(); if (!text) return; $('note').value = '';
   const ev = { seq: S.events.length + 1, ms: Math.round(performance.now() - S.started), at: new Date().toISOString(), kind: 'note', text, selected: [...G.sel].map((i) => G.labels[i]), afterStep: S.events.length ? S.events[S.events.length - 1].seq : 0 };
+  if (W) { const f = W.frames[W.i]; ev.walk = { walk: W.seq, step: W.i + 1, where: frameWhere(f), about: $('wWhat').textContent }; }
   S.events.push(ev); showEvent(ev); persist(); }
 $('send').onclick = sendNote;
 // Clean up: the hand-style post-layout steps (handtidy.js), as one undoable step
 $('tidyT').oninput = () => ($('tidyTv').textContent = $('tidyT').value + ' s');
 $('tidyLA').oninput = () => ($('tidyLAv').textContent = $('tidyLA').value);
 $('tidy').onclick = () => {
+  if (W) return;
   const b = $('tidy'); b.disabled = true; b.textContent = 'Cleaning up…';
   setTimeout(() => {
     const before = measure(), snap = snapshot(), budgetMs = +$('tidyT').value * 1000, groupDepth = +$('tidyLA').value;
@@ -377,6 +432,161 @@ $('tidy').onclick = () => {
     draw(); b.disabled = false; b.textContent = 'Clean up';
   }, 30);
 };
+// ---------- walk-through: run the clean-up with every step recorded, then show it one step at a time ----------
+// W = { seq, P0 (positions before), frames, i, stages, budgetMs, groupDepth, ms }
+let W = null;
+const STAGE = {
+  single: ['Moves into open space', 'Each class at the end of a crossed link, or with a link running through it, tries the open cells near it (green) and a few small nudges. The best spot is kept if the drawing gets better.'],
+  unit: ['Leaf units turned', 'A leaf, a short leaf chain or a leaf triangle hangs off one class (its anchor). It is turned, mirrored, reordered or resized around that anchor.'],
+  spread: ['Crowds spread outward', 'A grid lies over the drawing; cells holding at least twice the average number of classes and links are crowded (orange). Around each crowd\'s centre the space is cut into 8 pizza slices. Classes in the crowd move outward, neighbours further out are pushed less, and slices with more open space beyond them move further. A few repair moves follow, and the step is kept only if the drawing ends up better.'],
+  finish: ['Final leaf pass', 'One last pass over leaf units and single classes still in a problem. It runs even when the time is up, because it is quick.'],
+  group: ['Group moves with look-ahead','For each problem left, the crowd on one side of the problem moves together away from the line, then a few single repair moves follow. The whole step is kept only if the drawing ends up better.'],
+};
+const LEGEND = [
+  ['focus', 'Problem being worked on', 'background:none;border:3px solid var(--bad);border-radius:50%'],
+  ['open', 'Open space', 'background:var(--open);opacity:.4'],
+  ['crowd', 'Crowd moving together', 'background:var(--crowd);border:1px solid var(--crowd-line)'],
+  ['dense', 'Crowded cells and slices', 'background:var(--warn);opacity:.45'],
+  ['unit', 'Leaf unit (thick: its anchor)', 'background:var(--unit);border:2px solid var(--unit-line)'],
+  ['mover', 'Class moved', 'background:var(--mover);border:1px solid var(--warn)'],
+  ['ghost', 'Where it was / arrows', 'background:none;border:1px dashed var(--ghost)'],
+  ['tried', 'Tried and dropped', 'background:none;border:1px dashed var(--bad)'],
+];
+const LG = Object.fromEntries(LEGEND.map(([k]) => [k, true]));
+$('wLegend').innerHTML = LEGEND.map(([k, l, st]) => `<label><input type="checkbox" data-lg="${k}" checked><span class="sw" style="${st}"></span>${l}</label>`).join('');
+$('wLegend').addEventListener('change', (e) => { const k = e.target.dataset.lg; if (!k) return; LG[k] = e.target.checked; draw(); record('toggle', { legend: k, on: e.target.checked }); });
+const names3 = (vs, max = 6) => vs.slice(0, max).map((v) => G.labels[v]).join(', ') + (vs.length > max ? ` and ${vs.length - max} more` : '');
+const toP = (A) => A.map((p) => ({ x: p.x, y: p.y }));
+function buildWalk(r, P0) {
+  const stages = []; let st = null, P = toP(P0);
+  for (const s of r.log) {
+    if (s.kind === 'phase') { st = { phase: s.phase, round: s.round, t: s.t, steps: [], P0: P }; stages.push(st); continue; }
+    if (s.kind === 'phase-end') { Object.assign(st, { ms: s.ms, tried: s.tried, kept: s.kept, skipped: s.skipped }); continue; }
+    s.Pb = P;
+    if (s.kind === 'move' || s.kind === 'unit' || s.kind === 'spread') { P = toP(P); s.nodes.forEach((v, i) => (P[v] = { x: s.to[i][0], y: s.to[i][1] })); }
+    else if (s.kind === 'group') { P = toP(P); s.after.forEach(([v, x, y]) => (P[v] = { x, y })); }
+    s.Pa = P; st.steps.push(s);
+  }
+  stages.forEach((x) => (x.P1 = x.steps.length ? x.steps[x.steps.length - 1].Pa : x.P0));
+  return stages;
+}
+function walkFrames() {
+  const out = [], drop = $('wDropped').checked;
+  W.stages.forEach((st, si) => {
+    const vis = st.steps.filter((s) => s.kind !== 'group-rejected' || drop);
+    if (!st.tried && !vis.length) return;
+    out.push({ st, si });
+    vis.forEach((s) => out.push({ st, si, s }));
+  });
+  out.push({ end: true });
+  return out;
+}
+function framePos(f) { return f.end ? W.final : f.s ? (f.s.kind === 'group-rejected' ? f.s.Pb : f.s.Pa) : f.st.P0; }
+function frameWhere(f) { return f.end ? 'End of the clean-up' : `Round ${f.st.round} · ${STAGE[f.st.phase][0]}`; }
+function frameText(f) {
+  if (f.end) return `<b>Done in ${(W.ms / 1000).toFixed(2)} s.</b> "Keep this" keeps the final drawing; "Close" goes back to the drawing before the walk-through.`;
+  const st = f.st, s = f.s;
+  if (!s) {
+    const sk = st.skipped ? `, skipped ${st.skipped} (nothing near them had moved since they last failed)` : '';
+    const what = { single: 'classes', unit: 'leaf units', spread: 'crowds', group: 'group moves', finish: 'leaf units and classes' }[st.phase];
+    return `<b>${STAGE[st.phase][0]}</b>. ${STAGE[st.phase][1]}<small>This stage took ${st.ms} ms (from ${(st.t / 1000).toFixed(2)} s): tried ${st.tried} ${what}, kept ${st.kept}${sk}.</small>`;
+  }
+  const at = `<small>at ${(s.t / 1000).toFixed(2)} s</small>`;
+  if (s.kind === 'move') return `<b>Moved ${esc(G.labels[s.nodes[0]])}</b> ${Math.hypot(s.to[0][0] - s.from[0][0], s.to[0][1] - s.from[0][1]) < 0.3 * medLen() ? 'a little (a nudge)' : 'into open space'}. ${f.delta || ''}${at}`;
+  if (s.kind === 'unit') return `<b>Turned the leaf unit ${esc(names3(s.nodes))}</b> around ${esc(G.labels[s.anchor])}. ${f.delta || ''}${at}`;
+  if (s.kind === 'spread') { const near = s.nodes.slice().sort((a, b) => Math.hypot(s.Pb[a].x - s.center.x, s.Pb[a].y - s.center.y) - Math.hypot(s.Pb[b].x - s.center.x, s.Pb[b].y - s.center.y));
+    return `<b>Spread the crowd around ${esc(names3(near, 3))}</b>: ${s.nodes.length} classes moved outward, repairs included. ${f.delta || ''}${at}`; }
+  const pr = s.problem, line = (e) => esc(G.labels[e[0]] + ' — ' + G.labels[e[1]]);
+  const prob = pr.kind === 'cross' ? `${line(pr.edges[0])} crosses ${line(pr.edges[1])}` : `${line(pr.edges[0])} runs through a class`;
+  const reps = s.repairs.length ? `, then ${s.repairs.length} repair move${s.repairs.length > 1 ? 's' : ''} (${esc(names3(s.repairs.map((x) => x.v)))})` : ', with no repair move';
+  const mv = `The crowd on one side (${s.nodes.length} classes: ${esc(names3(s.nodes))}) moved ${Math.round(Math.hypot(s.dx, s.dy))} px away from the line${reps}.`;
+  if (s.kind === 'group') return `<b>Group move kept.</b> Problem: ${prob}. ${mv} ${f.delta || ''}${at}`;
+  return `<b>Group move tried and dropped.</b> Problem: ${prob}. ${mv} It would have made the drawing worse by ${s.loss} points, so the drawing stays as it was.${at}`;
+}
+let _med = null; const medLen = () => { if (_med) return _med; const ls = G.E.map((e) => Math.hypot(G.P[e.s].x - G.P[e.t].x, G.P[e.s].y - G.P[e.t].y)).sort((a, b) => a - b); return (_med = ls[ls.length >> 1] || 150); };
+// the overlay for the current frame: open cells under the drawing, highlighted classes, ghosts and arrows on top
+function walkLayer() {
+  const f = W.frames[W.i], out = { under: '', over: '', cls: {}, lines: new Set() };
+  if (f.end) return out;
+  const s = f.s, before = s ? s.Pb : f.st.P0;
+  if (LG.open && (!s || s.kind !== 'unit')) {
+    if (!f.grid) f.grid = HandTidy.openSpace(before, G.D, G.E.map((e) => ({ s: e.s, t: e.t })));
+    const g = f.grid; out.under = '<g>' + g.open.map((c) => `<rect class="opencell" x="${c.x - g.s / 2 + 1}" y="${c.y - g.s / 2 + 1}" width="${g.s - 2}" height="${g.s - 2}" rx="3"/>`).join('') + '</g>';
+  }
+  if (!s) return out;
+  const box = (p, v, c) => `<rect class="ghost ${c || ''}" x="${p.x - G.D[v].w / 2}" y="${p.y - G.D[v].h / 2}" width="${G.D[v].w}" height="${G.D[v].h}" rx="4"/>`;
+  const arrow = (a, b, c) => Math.hypot(b.x - a.x, b.y - a.y) < 3 ? '' : `<line class="arrow ${c || ''}" x1="${a.x}" y1="${a.y}" x2="${b.x}" y2="${b.y}" marker-end="url(#${c && c.includes('tried') ? 'ahr' : 'ah'})"/>`;
+  let o = '';
+  if (s.kind === 'spread') {
+    if (LG.dense) { const h = s.cell / 2; o += s.cells.map(([x, y]) => `<rect class="densecell" x="${x - h + 1}" y="${y - h + 1}" width="${s.cell - 2}" height="${s.cell - 2}" rx="3"/>`).join('');
+      for (let k = 0; k < 8; k++) { const a = -Math.PI + k * Math.PI / 4, R = 3 * s.r0; o += `<line class="slice" x1="${s.center.x}" y1="${s.center.y}" x2="${s.center.x + R * Math.cos(a)}" y2="${s.center.y + R * Math.sin(a)}"/>`; }
+      o += `<circle class="slice" cx="${s.center.x}" cy="${s.center.y}" r="${s.r0}"/><circle cx="${s.center.x}" cy="${s.center.y}" r="5" fill="var(--warn)"/>`; }
+    s.nodes.forEach((v) => { if (Math.hypot(s.Pa[v].x - s.Pb[v].x, s.Pa[v].y - s.Pb[v].y) < 3) return; if (LG.crowd) out.cls[v] = 'crowd'; if (LG.ghost) o += box(s.Pb[v], v) + arrow(s.Pb[v], s.Pa[v]); });
+    out.under = out.under + '<g>' + o + '</g>'; o = '';
+  } else if (s.kind === 'move' || s.kind === 'unit') {
+    s.nodes.forEach((v) => { if (LG.mover || LG.unit) out.cls[v] = s.kind === 'unit' && LG.unit ? 'unit' : LG.mover ? 'mover' : ''; if (LG.ghost) o += box(s.Pb[v], v) + arrow(s.Pb[v], s.Pa[v]); });
+    if (s.kind === 'unit' && LG.unit) out.cls[s.anchor] = 'anchor';
+  } else {
+    const pr = s.problem;
+    if (LG.focus) { o += `<circle class="focus" cx="${pr.q.x}" cy="${pr.q.y}" r="16"/>`; pr.edges.forEach(([a, b]) => { const k = G.E.findIndex((e) => (e.s === a && e.t === b) || (e.s === b && e.t === a)); if (k >= 0) out.lines.add(k); }); }
+    if (LG.crowd) s.nodes.forEach((v) => (out.cls[v] = 'crowd'));
+    if (s.kind === 'group') {
+      s.after.forEach(([v]) => { if (LG.ghost) o += box(s.Pb[v], v) + arrow(s.Pb[v], s.Pa[v], s.nodes.includes(v) ? '' : 'rep'); if (!s.nodes.includes(v) && LG.mover) out.cls[v] = 'mover'; });
+    } else if (LG.tried) {
+      const T = {}; s.nodes.forEach((v) => (T[v] = { x: s.Pb[v].x + s.dx, y: s.Pb[v].y + s.dy })); s.repairs.forEach((r) => (T[r.v] = { x: r.to[0], y: r.to[1] }));
+      Object.entries(T).forEach(([v, p]) => { v = +v; o += box(p, v, 'tried') + arrow(s.Pb[v], p, 'tried' + (s.nodes.includes(v) ? '' : ' rep')); });
+    }
+  }
+  out.over = '<g>' + o + '</g>';
+  return out;
+}
+function showFrame() {
+  const f = W.frames[W.i];
+  G.P = toP(framePos(f));
+  if (f.s && f.s.kind !== 'group-rejected' && !f.delta) { // the change in the measures this step made
+    const keep = G.P; G.P = toP(f.s.Pb); const a = measure(); G.P = keep; const b = measure();
+    const ch = [['crossings', a.cross, b.cross], ['through', a.thru, b.thru], ['sharp', a.sharp, b.sharp], ['cramped', a.tight, b.tight]].filter((x) => x[1] !== x[2]);
+    f.delta = ch.length ? ch.map(([l, x, y]) => `${l} ${x}→${y}`).join(', ') + '.' : 'No count changed: it bought clearance or a wider angle.';
+  }
+  $('wWhere').textContent = frameWhere(f); $('wPos').textContent = `step ${W.i + 1} of ${W.frames.length}`;
+  $('wWhat').innerHTML = frameText(f);
+  $('wBack').disabled = W.i === 0; $('wNext').disabled = $('wStage').disabled = W.i === W.frames.length - 1;
+  draw();
+}
+function walkMove(i, how) { if (!W) return; W.i = Math.max(0, Math.min(W.frames.length - 1, i)); showFrame(); record('walk-step', { walk: W.seq, step: W.i + 1, how, where: frameWhere(W.frames[W.i]) }); }
+$('walkBtn').onclick = () => {
+  if (W) return;
+  const b = $('walkBtn'); b.disabled = true; b.textContent = 'Running…';
+  setTimeout(() => {
+    const budgetMs = +$('tidyT').value * 1000, groupDepth = +$('tidyLA').value, E = G.E.map((e) => ({ s: e.s, t: e.t }));
+    // "from the starting layout" leaves your drawing alone: the walk-through runs on a fresh layout, and Close brings yours back
+    const from = $('walkFrom').value, home = { P: toP(G.P), H: G.H }, P0 = from === 'start' ? freshLayout($('algo').value) : toP(G.P);
+    const r = HandTidy.run(P0, G.D, E, { budgetMs, groupDepth, record: true });
+    G.P = P0; _med = null; medLen(); G.P = home.P; // link length of the walked drawing, for telling a nudge from a move
+    W = { P0, home, from, final: toP(r.P), stages: buildWalk(r, P0), i: 0, budgetMs, groupDepth, ms: r.stats.ms };
+    W.frames = walkFrames(); G.sel.clear(); G.pick = -1;
+    record('walkthrough', { from, budgetMs, groupDepth, ms: r.stats.ms, stages: W.stages.map((st) => ({ round: st.round, stage: st.phase, ms: st.ms, tried: st.tried, kept: st.kept, skipped: st.skipped })) });
+    if (from === 'start') G.H = G.E.map(() => []);
+    W.seq = S.events[S.events.length - 1].seq;
+    $('walk').hidden = false; b.textContent = 'Walking through'; showFrame();
+  }, 30);
+};
+function walkEnd(keep) {
+  if (!W) return; const f = W.frames[W.i], to = toP(framePos(f)), w = W;
+  G.P = toP(w.home.P); G.H = w.home.H; const before = measure(), snap = snapshot();
+  if (keep && w.from === 'start') G.H = G.E.map(() => []);
+  W = null; $('walk').hidden = true; $('walkBtn').disabled = false; $('walkBtn').textContent = 'Walk through';
+  if (keep) { G.P = to; S.undo.push(snap); const kept = w.frames.slice(0, w.i + 1).filter((x) => x.s && x.s.kind !== 'group-rejected').map((x) => x.s);
+    record('cleanup', { budgetMs: w.budgetMs, groupDepth: w.groupDepth, ms: w.ms, fromWalk: w.seq, upToStep: w.i + 1, steps: kept.map((l) => ({ kind: l.kind, classes: l.nodes.map((i) => G.labels[i]), anchor: l.anchor != null ? G.labels[l.anchor] : undefined, gain: l.gain })) }, before); }
+  else record('walk-closed', { walk: w.seq, atStep: w.i + 1 });
+  draw();
+}
+$('wNext').onclick = () => walkMove(W.i + 1, 'next');
+$('wBack').onclick = () => walkMove(W.i - 1, 'back');
+$('wStage').onclick = () => { const si = W.frames[W.i].si; let j = W.i + 1; while (j < W.frames.length - 1 && W.frames[j].si === si) j++; walkMove(j, 'next stage'); };
+$('wKeep').onclick = () => walkEnd(true);
+$('wClose').onclick = () => walkEnd(false);
+$('wDropped').onchange = () => { if (!W) return; const cur = W.frames[W.i]; W.frames = walkFrames(); const j = W.frames.findIndex((f) => f.s === cur.s && f.st === cur.st && f.end === cur.end); W.i = Math.max(0, j); showFrame(); record('toggle', { droppedTries: $('wDropped').checked }); };
 $('note').addEventListener('keydown', (ev) => { if (ev.key === 'Enter' && !ev.shiftKey) { ev.preventDefault(); sendNote(); } });
 $('marks').onchange = () => { draw(); record('toggle', { marks: $('marks').checked }); };
 $('handles').onchange = () => { draw(); record('toggle', { bends: $('handles').checked }); };
