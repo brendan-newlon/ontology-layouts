@@ -1,0 +1,84 @@
+<!doctype html>
+<html><head><meta charset="utf-8"><title>Layout contenders scoreboard</title></head>
+<body><pre id="log">loading…</pre>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/cytoscape/3.28.1/cytoscape.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/dagre@0.8.5/dist/dagre.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/cytoscape-dagre@2.5.0/cytoscape-dagre.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/layout-base@2.0.1/layout-base.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/cose-base@2.2.0/cose-base.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/cytoscape-fcose@2.2.0/cytoscape-fcose.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/webcola@3.4.0/WebCola/cola.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/cytoscape-cola@2.5.1/cytoscape-cola.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/elkjs@0.9.3/lib/elk.bundled.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@viz-js/viz@3.11.0/lib/viz-standalone.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/d3@7.9.0/dist/d3.min.js"></script>
+<script src="base_layout.js"></script>
+<script src="models.js"></script>
+<script src="models2.js"></script>
+<script src="models3.js"></script>
+<script src="models4.js"></script>
+<script>
+// Every contender gets the same boxes (label box + 16 x 12 px) and, afterwards, the same overlap removal, then the same metrics.
+const O = window.OURS, rng = (s) => O.rng(s * 7919 + 13);
+const boxes = (labels) => labels.map((l) => ({ w: String(l).length * 6.6 + 10, h: 20 }));
+let VIZ = null; const ELKI = new ELK();
+async function viz() { if (!VIZ) VIZ = await Viz.instance(); return VIZ; }
+function cyOf(N, E) {
+  const c = cytoscape({ headless: true, elements: N.map((d, i) => ({ data: { id: 'n' + i } })).concat(E.map((e, j) => ({ data: { id: 'e' + j, source: 'n' + e.s, target: 'n' + e.t } }))) });
+  c.nodes().forEach((n, i) => n.style({ width: N[i].w, height: N[i].h, label: '' }));
+  return c;
+}
+const cyPos = (c) => c.nodes().map((n) => ({ x: n.position().x, y: n.position().y }));
+const runCy = (c, opt) => new Promise((res) => { const l = c.layout(opt); l.one('layoutstop', () => res()); l.run(); });
+const ALGOS = {
+  'Tidy Stress (ours)': async (it, ed, s) => O.compact(it, ed, { seed: s }).pos,
+  'Mycelium (ours)': async (it, ed, s) => (O.grouped2(it, ed, { seed: s }) || O.compact(it, ed, { seed: s })).pos,
+  'Best Read (ours)': async (it, ed, s) => O.auto(it, ed, { seed: s }).pos,
+  'Graphviz neato': (it, ed, s) => gv('neato', it, ed, s),
+  'Graphviz fdp': (it, ed, s) => gv('fdp', it, ed, s),
+  'Graphviz sfdp': (it, ed, s) => gv('sfdp', it, ed, s),
+  'ELK stress': (it, ed, s) => elk('stress', it, ed),
+  'ELK force': (it, ed, s) => elk('force', it, ed),
+  'ELK layered': (it, ed, s) => elk('layered', it, ed),
+  'WebCola': async (it, ed, s, N, E) => { const c = cyOf(N, E); await runCy(c, { name: 'cola', animate: false, randomize: true, avoidOverlap: true, edgeLength: 170, maxSimulationTime: 4000, nodeSpacing: 10 }); return cyPos(c); },
+  'd3-force': async (it, ed, s, N, E) => {
+    const r = rng(s), nodes = N.map((d, i) => ({ i, x: (r() - 0.5) * 600, y: (r() - 0.5) * 600 })), links = E.map((e) => ({ source: e.s, target: e.t }));
+    const sim = d3.forceSimulation(nodes).force('link', d3.forceLink(links).distance(170).strength(0.6)).force('charge', d3.forceManyBody().strength(-700)).force('collide', d3.forceCollide((n) => Math.max(N[n.i].w, N[n.i].h) / 2 + 6)).force('center', d3.forceCenter(0, 0)).stop();
+    for (let k = 0; k < 400; k++) sim.tick(); return nodes.map((n) => ({ x: n.x, y: n.y }));
+  },
+  'dagre (layered)': async (it, ed, s, N, E) => { const c = cyOf(N, E); await runCy(c, { name: 'dagre', rankDir: 'TB', nodeSep: 30, rankSep: 80, animate: false }); return cyPos(c); },
+  'Cytoscape cose': async (it, ed, s, N, E) => { const c = cyOf(N, E); await runCy(c, { name: 'cose', animate: false, randomize: true, nodeRepulsion: 14000, idealEdgeLength: 150, gravity: 0.06 }); return cyPos(c); },
+  'Cytoscape fcose': async (it, ed, s, N, E) => { const c = cyOf(N, E); await runCy(c, { name: 'fcose', quality: 'proof', animate: false, randomize: true, nodeRepulsion: 20000, idealEdgeLength: 200, nodeSeparation: 150, edgeElasticity: 0.32, gravity: 0.05, gravityRange: 4.2, numIter: 2500, nodeDimensionsIncludeLabels: true }); return cyPos(c); }
+};
+async function gv(engine, it, ed, s) {
+  const N = it.map((d) => ({ w: d.w + 16, h: d.h + 12 }));
+  let dot = 'graph G { graph [overlap=prism, sep="+6", start=' + s + ']; node [shape=box, fixedsize=true, label=""];\n';
+  N.forEach((d, i) => { dot += 'n' + i + ' [width=' + (d.w / 72) + ', height=' + (d.h / 72) + '];\n'; });
+  ed.forEach(([a, b]) => { dot += 'n' + a + ' -- n' + b + ' [len=' + (170 / 72) + '];\n'; });
+  const j = (await viz()).renderJSON(dot + '}', { engine });
+  const P = new Array(N.length);
+  (j.objects || []).forEach((o) => { const m = /^n(\d+)$/.exec(o.name || ''); if (m && o.pos) { const [x, y] = o.pos.split(',').map(Number); P[+m[1]] = { x, y: -y }; } });
+  return P.map((p) => p || { x: 0, y: 0 });
+}
+async function elk(algorithm, it, ed) {
+  const N = it.map((d) => ({ w: d.w + 16, h: d.h + 12 }));
+  const g = await ELKI.layout({ id: 'root', layoutOptions: { 'elk.algorithm': algorithm, 'elk.stress.desiredEdgeLength': '170', 'elk.spacing.nodeNode': '30', 'elk.layered.spacing.nodeNodeBetweenLayers': '60' },
+    children: N.map((d, i) => ({ id: 'n' + i, width: d.w, height: d.h })), edges: ed.map(([a, b], k) => ({ id: 'e' + k, sources: ['n' + a], targets: ['n' + b] })) });
+  const P = new Array(N.length); g.children.forEach((c) => { P[+c.id.slice(1)] = { x: c.x + c.width / 2, y: c.y + c.height / 2 }; }); return P;
+}
+window.RES = window.RES || [];
+window.runOne = async (key, algo, seed) => {
+  const M = await MODELS[key].load(), D = boxes(M.labels), items = D.map((d) => ({ w: d.w, h: d.h }));
+  const edges = M.edges.filter((e) => e.s !== e.t).map((e) => [e.s, e.t, e.kind === 'sub' ? 2 : 1]), E = edges.map(([s, t]) => ({ s, t }));
+  const N = D.map((d) => ({ w: d.w + 16, h: d.h + 12 }));
+  const t0 = performance.now(); let P;
+  try { P = await ALGOS[algo](items, edges, seed, N, E); } catch (err) { return { key, algo, seed, error: String(err && err.message || err) }; }
+  const ms = performance.now() - t0;
+  P = P.map((p) => ({ x: p.x, y: p.y })); O.sep(P, N, 6, 200);
+  const m = O.pmetrics(P, D.map((d) => ({ w: d.w + 6, h: d.h + 6 })), E), ml = O.pmetrics(P, N, E);
+  const r = { key, algo, seed, n: N.length, links: E.length, cross: m.cross, thru: m.thru, near: m.near, len: m.len, fill: ml.fill, lout: ml.lout, ov: ml.ov, score: O.pscore(ml), ms };
+  if (window.KEEP_POS) { r.pos = P.map((q) => [Math.round(q.x * 10) / 10, Math.round(q.y * 10) / 10]); r.labels = M.labels; r.edges = M.edges.filter((e) => e.s !== e.t).map((e) => [e.s, e.t, e.kind === 'sub' ? 1 : 0]); r.box = D.map((d) => d.w); }
+  window.RES.push(r); return r;
+};
+document.getElementById('log').textContent = 'ready: ' + Object.keys(ALGOS).length + ' algorithms';
+</script></body></html>

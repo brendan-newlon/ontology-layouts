@@ -1,12 +1,27 @@
 # Tidy Stress and Mycelium: layouts for readable ontology diagrams
 
-Two layout algorithms for node-link diagrams with labelled rectangular nodes, built for ontologies (classes joined by subclass and relationship links), and **Best Read**, a selector that runs them and keeps the more readable result.
+Against eleven widely used open-source layouts, on 19 models of 13 to 537 classes:
+
+| Result | Detail |
+|---|---|
+| **Ranked 1st of 14** | On overall readability, and in every size band |
+| **2–3× fewer crossed links** | Than the best open-source layout, on mid-size and hub-heavy models |
+| **2–5× fewer links running through a class box** | The error that makes two unrelated classes look linked |
+| **Fast** | At most 1.5 s for 537 classes, in a browser |
 
 - **Tidy Stress** suits models of up to a few dozen classes. It lays a model out by stress majorization, then tidies it with local moves that remove crossings, links running through class boxes and needlessly long links, never making any of those worse.
-- **Mycelium** suits large models and hub-heavy models. It draws groups of closely linked classes as compact pods joined by longer threads, gives each hub a ring of room for its neighbours, and fans single-link classes out around the class they hang from.
-- **Best Read** is not a layout algorithm. It runs the variants of Tidy Stress and Mycelium that suit the model's size and keeps the best by a readability score.
+- **Mycelium** suits large and hub-heavy models. It draws groups of closely linked classes as compact pods joined by longer threads, gives each hub a ring of room for its neighbours, and fans single-link classes out around the class they hang from.
+- **Best Read** is a selector, not a layout. It runs the variants of Tidy Stress and Mycelium that suit the model's size and keeps the best by a readability score.
 
-On a benchmark of 19 models (13 to 537 classes) against eleven widely used open-source layouts, Best Read ranks first overall on readability. It also has the fewest crossed links and the fewest links running through classes: about 2–3× fewer than the best open-source layout on mid-size and hub-heavy models. At the largest size tested (537 classes), WebCola draws somewhat fewer crossings but takes over a hundred times as long. Details, limits and every number are below.
+
+**What they give up:**
+- They are not the most compact.
+- Mycelium's threads between pods are long by design.
+- At 537 classes, WebCola draws somewhat fewer crossings, but takes over a hundred times as long.
+
+**How far the evidence goes:** the benchmark, its models and its score are ours, and no study with people reading the diagrams has been done; see [Limits](#limits).
+
+**Interactive version:** [ONTOLOGY-LAYOUT-ALGORITHMS.html](ONTOLOGY-LAYOUT-ALGORITHMS.html) is a single self-contained page with the same content. At several points it shows a model drawn by an open-source layout on the left and by ours on the right; each side's list puts the layout that scored best on that model first, marked ★.
 
 ## Foundations and credit
 
@@ -181,4 +196,4 @@ The reference implementation is plain JavaScript with no dependencies, about 500
 
 All arithmetic is on unrounded floats.
 
-The benchmark scripts and model definitions are available on request.
+The benchmark scripts, model definitions and recorded drawings are in `tools/layout-bench/` (see its README).
