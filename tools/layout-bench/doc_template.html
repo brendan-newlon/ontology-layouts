@@ -98,7 +98,7 @@ label.tog { display: inline-flex; gap: 6px; align-items: center; cursor: pointer
 <div class="stats">
   <div class="stat"><b>About half the crossings</b><span>of the best open-source layout with tuned settings: 550 against 960 or more, over 15 test graphs</span></div>
   <div class="stat"><b>40% fewer links through classes</b><span>than any tuned open-source layout of similar size; the one that has fewer draws twelve times the area</span></div>
-  <div class="stat"><b>A trade, not a sweep</b><span>Placement is less faithful to graph distance and link lengths are less even; on an equal mix of seven standard measures we are a close second</span></div>
+  <div class="stat"><b>First on what matters here</b><span>Tidy Stress and Mycelium rank first and second on an equal mix of five standard measures of readability, against tuned settings</span></div>
   <div class="stat"><b>1.5 s or less</b><span>for ontologies of up to 537 classes, in a browser</span></div>
 </div>
 
@@ -167,32 +167,40 @@ label.tog { display: inline-flex; gap: 6px; align-items: center; cursor: pointer
 <li><strong>Tuned settings.</strong> Each open-source library tried several settings and seeds, its default run included, on each of the 15 graphs up to 179 classes. It kept the run with the fewest crossed links plus links through classes, a choice made on standard counts rather than on our score. Layered layouts were given subclass links oriented parent to child. The settings tried are listed under <a href="#method">Benchmark method</a>.</li>
 <li><strong>Standard measures.</strong> Besides crossings, links through classes and area, four measures from the graph-drawing literature that our layouts do not optimise directly: how faithfully straight-line distance follows graph distance (normalised stress), how even the link lengths are, the angle at which links cross, and the smallest angle between the links at a class (angular resolution).</li>
 </ul>
-<p>Average rank among 13 layouts, 1 is best:</p>
+<p><strong>What we value.</strong> These layouts are for ontologies, not for graphs in general, and that changes which measures count:</p>
+<ul>
+<li><strong>Crossed links and links through classes come first.</strong> Each can make a reader follow the wrong link.</li>
+<li><strong>Crossing angle and angular resolution come next.</strong> A shallow crossing is harder to follow than a square one, and links that enter a class from almost the same direction are hard to tell apart.</li>
+<li><strong>Area matters,</strong> but less than both.</li>
+<li><strong>Distance fidelity and even link lengths are not goals.</strong> A business ontology often joins several domains, such as sales, finance and operations, each with classes linked back to shared classes like Person or Organization. The link says that they are related; drawing them close would pull the domains into each other. Keeping each domain together, even when that makes a link to a shared class long, is what Mycelium is for. These two measures are shown for completeness, not counted.</li>
+</ul>
+<p>Average rank among 13 layouts, 1 is best, sorted by the mean of the five measures we value:</p>
 </div>
 <div class="tbl"><table>
-<thead><tr><th>Layout</th><th>Our readability score</th><th>Crossed links</th><th>Links through classes</th><th>Area</th><th>Distance fidelity</th><th>Even link lengths</th><th>Crossing angle</th><th>Angular resolution</th><th>Mean of the seven standard measures</th></tr></thead>
+<thead><tr><th>Layout</th><th>Our readability score</th><th>Crossed links</th><th>Links through classes</th><th>Area</th><th>Crossing angle</th><th>Angular resolution</th><th>Mean of these five measures</th><th>Distance fidelity (not a goal)</th><th>Even link lengths (not a goal)</th></tr></thead>
 <tbody>
-<tr class="ours"><td>Tidy Stress</td><td class="best">1.4</td><td>2.7</td><td>4.0</td><td>4.7</td><td>7.4</td><td>8.8</td><td>4.4</td><td>3.8</td><td>5.1</td></tr>
-<tr class="ours"><td>Mycelium</td><td>4.1</td><td class="best">2.2</td><td>3.6</td><td>7.3</td><td>9.5</td><td>11.3</td><td>6.6</td><td class="best">3.6</td><td>6.3</td></tr>
-<tr class="split"><td>Graphviz sfdp</td><td>3.5</td><td>5.1</td><td>5.2</td><td>6.0</td><td>7.3</td><td>7.5</td><td>6.2</td><td>6.9</td><td>6.3</td></tr>
-<tr><td>WebCola</td><td>5.5</td><td>4.2</td><td>4.7</td><td>9.7</td><td>2.7</td><td>4.9</td><td>4.2</td><td>3.7</td><td class="best">4.9</td></tr>
-<tr><td>ELK stress</td><td>6.1</td><td>7.3</td><td>6.8</td><td>7.9</td><td class="best">1.9</td><td>2.9</td><td>5.9</td><td>6.3</td><td>5.6</td></tr>
-<tr><td>Cytoscape fcose</td><td>6.2</td><td>8.1</td><td>8.6</td><td>4.6</td><td>4.3</td><td class="best">1.1</td><td class="best">3.7</td><td>6.3</td><td>5.2</td></tr>
-<tr><td>Graphviz fdp</td><td>7.1</td><td>7.8</td><td>5.1</td><td>9.5</td><td>5.3</td><td>5.5</td><td>5.7</td><td>5.3</td><td>6.3</td></tr>
-<tr><td>d3-force</td><td>7.7</td><td>8.0</td><td>6.2</td><td>9.9</td><td>4.5</td><td>2.6</td><td>6.1</td><td>5.9</td><td>6.2</td></tr>
-<tr><td>ELK layered</td><td>8.3</td><td>7.5</td><td>9.0</td><td>7.4</td><td>11.1</td><td>11.0</td><td>10.7</td><td>10.7</td><td>9.6</td></tr>
-<tr><td>Graphviz neato</td><td>8.9</td><td>3.9</td><td class="best">2.6</td><td>11.0</td><td>3.9</td><td>5.9</td><td>5.2</td><td>4.1</td><td>5.2</td></tr>
-<tr><td>dagre</td><td>10.0</td><td>10.5</td><td>11.5</td><td>3.3</td><td>11.9</td><td>11.7</td><td>10.7</td><td>11.0</td><td>10.1</td></tr>
-<tr><td>ELK force</td><td>10.1</td><td>12.7</td><td>10.7</td><td>8.5</td><td>9.3</td><td>6.7</td><td>9.0</td><td>10.9</td><td>9.7</td></tr>
-<tr><td>Cytoscape cose</td><td>12.1</td><td>11.0</td><td>13.0</td><td class="best">1.2</td><td>11.9</td><td>11.0</td><td>12.6</td><td>12.5</td><td>10.5</td></tr>
+<tr class="ours"><td>Tidy Stress</td><td class="best">1.4</td><td>2.7</td><td>4.0</td><td>4.7</td><td>4.4</td><td>3.8</td><td class="best">3.9</td><td>7.4</td><td>8.8</td></tr>
+<tr class="ours"><td>Mycelium</td><td>4.1</td><td class="best">2.2</td><td>3.6</td><td>7.3</td><td>6.6</td><td class="best">3.6</td><td>4.7</td><td>9.5</td><td>11.3</td></tr>
+<tr class="split"><td>WebCola</td><td>5.5</td><td>4.2</td><td>4.7</td><td>9.7</td><td>4.2</td><td>3.7</td><td>5.3</td><td>2.7</td><td>4.9</td></tr>
+<tr><td>Graphviz neato</td><td>8.9</td><td>3.9</td><td class="best">2.6</td><td>11.0</td><td>5.2</td><td>4.1</td><td>5.4</td><td>3.9</td><td>5.9</td></tr>
+<tr><td>Graphviz sfdp</td><td>3.5</td><td>5.1</td><td>5.2</td><td>6.0</td><td>6.2</td><td>6.9</td><td>5.9</td><td>7.3</td><td>7.5</td></tr>
+<tr><td>Cytoscape fcose</td><td>6.2</td><td>8.1</td><td>8.6</td><td>4.6</td><td class="best">3.7</td><td>6.3</td><td>6.2</td><td>4.3</td><td>1.1</td></tr>
+<tr><td>Graphviz fdp</td><td>7.1</td><td>7.8</td><td>5.1</td><td>9.5</td><td>5.7</td><td>5.3</td><td>6.7</td><td>5.3</td><td>5.5</td></tr>
+<tr><td>ELK stress</td><td>6.1</td><td>7.3</td><td>6.8</td><td>7.9</td><td>5.9</td><td>6.3</td><td>6.9</td><td>1.9</td><td>2.9</td></tr>
+<tr><td>d3-force</td><td>7.7</td><td>8.0</td><td>6.2</td><td>9.9</td><td>6.1</td><td>5.9</td><td>7.2</td><td>4.5</td><td>2.6</td></tr>
+<tr><td>ELK layered</td><td>8.3</td><td>7.5</td><td>9.0</td><td>7.4</td><td>10.7</td><td>10.7</td><td>9.1</td><td>11.1</td><td>11.0</td></tr>
+<tr><td>dagre</td><td>10.0</td><td>10.5</td><td>11.5</td><td>3.3</td><td>10.7</td><td>11.0</td><td>9.4</td><td>11.9</td><td>11.7</td></tr>
+<tr><td>Cytoscape cose</td><td>12.1</td><td>11.0</td><td>13.0</td><td class="best">1.2</td><td>12.6</td><td>12.5</td><td>10.1</td><td>11.9</td><td>11.0</td></tr>
+<tr><td>ELK force</td><td>10.1</td><td>12.7</td><td>10.7</td><td>8.5</td><td>9.0</td><td>10.9</td><td>10.4</td><td>9.3</td><td>6.7</td></tr>
 </tbody></table></div>
 <div class="prose">
 <p><strong>What holds up.</strong> Ours draw the fewest crossed links: over the 15 graphs, Best Read draws 550 and Mycelium 542, against 960 for tuned <code>neato</code>, 971 for tuned WebCola and 1,070 for tuned <code>sfdp</code>. They also draw fewer links through classes than every tuned layout but one, and they share the best angular resolution with WebCola. Tidy Stress still ranks first on our readability score, and is first on that score on 12 of the 15 graphs.</p>
 <p><strong>What does not.</strong></p>
 <ul>
 <li>Tuned <code>neato</code> draws fewer links through classes (81 against Best Read's 183) by spreading out: its median drawing takes twelve times the area of Best Read's. Tuning made its readability score worse, not better.</li>
-<li>The tidy-up moves classes away from where distance alone would put them. On distance fidelity and even link lengths, both layouts rank in the bottom half; ELK stress, WebCola, fcose and d3-force are better.</li>
-<li>Weighting the seven standard measures equally, WebCola comes first at 4.9 and Tidy Stress second at 5.1, with fcose and <code>neato</code> at 5.2. Our lead is specific to crossed links and links through classes. We think those two matter most for reading an ontology diagram, since each can make a reader follow the wrong link, but that is a judgement, not a measurement.</li>
+<li>On distance fidelity and even link lengths, both layouts rank in the bottom half; ELK stress, WebCola, fcose and d3-force are better. That is by design, as explained above, but a reader who values those measures should know it. Weighting all seven measures equally, WebCola comes first at 4.9 and Tidy Stress second at 5.1.</li>
+<li>Crossing angle is a weaker point: Tidy Stress ranks 4.4 and Mycelium 6.6, behind fcose and WebCola. Bending links slightly near a crossing could square it up; see <a href="#experiments">Experiments</a>.</li>
+<li>Which measures matter most for reading an ontology is a judgement backed by Purchase's studies of crossings, not a study of our own.</li>
 <li>Tuning brought the open-source layouts closer: tuned WebCola, <code>sfdp</code> and <code>neato</code> draw 13%, 17% and 34% fewer crossings than at their general settings.</li>
 </ul>
 </div>
@@ -351,13 +359,13 @@ leaves: fan out round their neighbour → tidy once more → place again any tha
 <p>Compared with the layouts that draw hierarchies top-down by design, each given only runs that orient or constrain subclass links: WebCola with the same separation constraints, and ELK layered and dagre tuned as above. Totals over the 15 graphs:</p>
 </div>
 <div class="tbl"><table>
-<thead><tr><th>Layout</th><th>Subclass links pointing down</th><th>Crossed links</th><th>Links through classes</th><th>Median area</th><th>Median time</th><th>Mean of the seven standard measures (rank of 5)</th></tr></thead>
+<thead><tr><th>Layout</th><th>Subclass links pointing down</th><th>Crossed links</th><th>Links through classes</th><th>Median area</th><th>Median time</th><th>Mean rank of 5 on the five measures we value</th></tr></thead>
 <tbody>
-<tr class="ours"><td>Best Read, top-down</td><td class="best">100%</td><td class="best">654</td><td class="best">332</td><td>7.3</td><td>1.3 s</td><td>2.4</td></tr>
+<tr class="ours"><td>Best Read, top-down</td><td class="best">100%</td><td class="best">654</td><td class="best">332</td><td>7.3</td><td>1.3 s</td><td class="best">2.2</td></tr>
 <tr class="ours"><td>Tidy Stress, top-down</td><td class="best">100%</td><td>880</td><td>595</td><td>7.2</td><td>1.3 s</td><td>2.4</td></tr>
-<tr class="split"><td>WebCola, constrained</td><td>93%</td><td>1,109</td><td>414</td><td>17.6</td><td>21 s (up to 9 min)</td><td class="best">2.3</td></tr>
-<tr><td>ELK layered</td><td>97%</td><td>1,663</td><td>516</td><td>12.4</td><td>2.3 s</td><td>3.8</td></tr>
-<tr><td>dagre</td><td>97%</td><td>2,245</td><td>1,427</td><td class="best">4.4</td><td>0.6 s</td><td>4.1</td></tr>
+<tr class="split"><td>WebCola, constrained</td><td>93%</td><td>1,109</td><td>414</td><td>17.6</td><td>21 s (up to 9 min)</td><td>2.8</td></tr>
+<tr><td>ELK layered</td><td>97%</td><td>1,663</td><td>516</td><td>12.4</td><td>2.3 s</td><td>3.7</td></tr>
+<tr><td>dagre</td><td>97%</td><td>2,245</td><td>1,427</td><td class="best">4.4</td><td>0.6 s</td><td>3.9</td></tr>
 <tr class="autorow split"><td>Best Read, as now (for reference)</td><td>44%</td><td>550</td><td>183</td><td>8.4</td><td>1.4 s</td><td>–</td></tr>
 </tbody></table></div>
 <div class="prose">

@@ -16,10 +16,12 @@ Against 11 widely used open-source layouts. The scoreboard below uses 19 test gr
 |---|---|
 | **About half the crossings** | Of the best open-source layout with tuned settings: 550 against 960 or more, over 15 graphs |
 | **40% fewer links through classes** | Than any tuned open-source layout of similar size (183 against 307); tuned `neato` has fewer but draws twelve times the area |
-| **A trade, not a sweep** | Placement is less faithful to graph distance and link lengths are less even. On an equal mix of seven standard measures WebCola is first (4.9) and Tidy Stress second (5.1) |
+| **First on what matters here** | On an equal mix of five standard measures (crossed links, links through classes, area, crossing angle, angular resolution), Tidy Stress ranks 3.9 and Mycelium 4.7; the best tuned open-source layout, WebCola, 5.3 |
 | **1.5 s or less** | For ontologies of up to 537 classes, in a browser |
 
-Our readability score was designed with these layouts, so the HTML page also ranks every layout on standard measures we do not optimise (normalised stress, link-length evenness, crossing angle, angular resolution), against tuned open-source settings chosen by crossings plus links through classes rather than by our score.
+Our readability score was designed with these layouts, so the HTML page also ranks every layout on standard measures, against tuned open-source settings chosen by crossings plus links through classes rather than by our score.
+
+**What we value, and what we do not.** These layouts are for ontologies. Crossed links and links through classes come first, crossing angle and angular resolution next, then area. Distance fidelity (normalised stress) and even link lengths are deliberately not goals: a multi-domain business ontology links many domains back to shared classes such as Person or Organization, and keeping each domain together, even at the cost of long links to the shared classes, is a benefit. On those two measures our layouts rank in the bottom half; on all seven weighted equally, WebCola is first (4.9) and Tidy Stress second (5.1).
 
 The open-source layouts were Graphviz `neato`, `fdp` and `sfdp`, ELK stress, force and layered, WebCola, d3-force, dagre, and Cytoscape `cose` and `fcose`.
 
@@ -63,7 +65,7 @@ What they give up:
 - **Bent links.** Bending the links that run through a class, instead of moving classes, draws a quarter fewer crossings in 15% less area at about 22 bends per graph. Moving first and then bending what is left leaves almost no link through a class at about 8 bends.
 
 ## Limits
-- The readability score was designed with these layouts, and the layouts were tuned against it. On standard measures the lead holds for crossed links and links through classes but not for distance fidelity or link-length evenness. No study with people reading the diagrams has been done.
+- The readability score was designed with these layouts, and the layouts were tuned against it. On standard measures the lead holds for crossed links and links through classes; crossing angle is a weaker point (Tidy Stress 4.4, Mycelium 6.6). No study with people reading the diagrams has been done.
 - The tuned settings are a reasonable search, not an exhaustive one. All drawings are measured with straight links; layered layouts that route their own links would show fewer links through classes.
 - The test graphs are reconstructions and inventions of typical shapes, not a public collection of real ontologies (such as the OBO Foundry or the Manchester OWL corpus). Commercial engines were not tested.
 

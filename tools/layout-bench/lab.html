@@ -1,0 +1,334 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Layout Lab</title>
+<style>
+:root { --bg: #f4f3ee; --paper: #fff; --ink: #1d232b; --muted: #5d6673; --rule: #d9d6cc; --accent: #2f6b4f; --box: #eef3fb; --box-line: #6d86b0;
+  --sub: #6f9a54; --rel: #8b97a8; --bad: #c43d32; --warn: #c98a12; --sel: #e0a100; --handle: #2b6cb0; --note: #fdf6e3; }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) { --bg: #15181c; --paper: #1c2026; --ink: #e6e8eb; --muted: #9aa4b1; --rule: #30353d; --accent: #7cc39e;
+  --box: #233041; --box-line: #6f8db8; --sub: #8fbf6f; --rel: #6f7b8c; --bad: #ff6f61; --warn: #f0b44a; --sel: #ffcc33; --handle: #6fb1ff; --note: #2a261c; color-scheme: dark; } }
+* { box-sizing: border-box; }
+html, body { height: 100%; }
+body { margin: 0; background: var(--bg); color: var(--ink); font: 14px/1.45 "Segoe UI", system-ui, sans-serif; display: grid; grid-template-rows: auto 1fr; }
+header { display: flex; flex-wrap: wrap; gap: 8px 14px; align-items: center; padding: 8px 14px; border-bottom: 1px solid var(--rule); background: var(--paper); }
+header h1 { font-size: 15px; margin: 0 8px 0 0; }
+select, button, input[type=text] { font: inherit; font-size: 13px; padding: 3px 8px; border: 1px solid var(--rule); border-radius: 6px; background: var(--paper); color: var(--ink); }
+button { cursor: pointer; } button:hover { border-color: var(--accent); }
+label.tog { display: inline-flex; gap: 5px; align-items: center; cursor: pointer; color: var(--muted); }
+.metrics { display: flex; flex-wrap: wrap; gap: 4px 14px; font-variant-numeric: tabular-nums; color: var(--muted); }
+.metrics b { color: var(--ink); }
+.metrics .up { color: var(--bad); } .metrics .down { color: var(--accent); }
+main { display: grid; grid-template-columns: 1fr 360px; min-height: 0; }
+#stage { position: relative; min-width: 0; min-height: 0; }
+#svg { width: 100%; height: 100%; display: block; background: var(--bg); touch-action: none; user-select: none; }
+#help { position: absolute; left: 10px; bottom: 8px; color: var(--muted); font-size: 12px; background: color-mix(in srgb, var(--paper) 85%, transparent); padding: 4px 8px; border-radius: 6px; max-width: calc(100% - 20px); }
+aside { border-left: 1px solid var(--rule); background: var(--paper); display: grid; grid-template-rows: auto 1fr auto; min-height: 0; }
+aside h2 { font-size: 13px; margin: 0; padding: 8px 12px; border-bottom: 1px solid var(--rule); display: flex; justify-content: space-between; align-items: center; }
+#save { font-weight: 400; color: var(--muted); font-size: 12px; }
+#log { overflow-y: auto; padding: 8px 10px; display: flex; flex-direction: column; gap: 5px; }
+.ev { font-size: 12px; color: var(--muted); padding: 2px 6px; border-left: 2px solid var(--rule); }
+.ev .d { color: var(--ink); }
+.ev .m { font-variant-numeric: tabular-nums; }
+.ev.note { background: var(--note); color: var(--ink); border-left-color: var(--warn); border-radius: 6px; padding: 6px 8px; font-size: 13px; white-space: pre-wrap; }
+.ev .t { float: right; font-size: 11px; color: var(--muted); }
+#compose { border-top: 1px solid var(--rule); padding: 8px; display: grid; gap: 6px; }
+#note { width: 100%; min-height: 64px; resize: vertical; font: inherit; padding: 6px 8px; border: 1px solid var(--rule); border-radius: 6px; background: var(--bg); color: var(--ink); }
+#compose .row { display: flex; justify-content: space-between; align-items: center; color: var(--muted); font-size: 12px; }
+/* drawing */
+.link { fill: none; stroke: var(--rel); stroke-width: 1.4; }
+.link.sub { stroke: var(--sub); stroke-width: 1.8; }
+.link.thru { stroke: var(--bad); stroke-width: 2.2; }
+.link.picked { stroke: var(--handle); stroke-width: 2.6; }
+.hit { fill: none; stroke: transparent; stroke-width: 12; cursor: crosshair; }
+.node rect { fill: var(--box); stroke: var(--box-line); stroke-width: 1; }
+.node.sel rect { stroke: var(--sel); stroke-width: 2.5; }
+.node.tight rect { stroke: var(--warn); stroke-dasharray: 3 2; }
+.node text { font-size: 11px; fill: var(--ink); pointer-events: none; }
+.node { cursor: grab; }
+.xdot { stroke: none; }
+.handle { fill: var(--paper); stroke: var(--handle); stroke-width: 2; cursor: move; }
+.marquee { fill: color-mix(in srgb, var(--sel) 15%, transparent); stroke: var(--sel); stroke-dasharray: 4 3; }
+@media (max-width: 860px) { main { grid-template-columns: 1fr; grid-template-rows: 60vh auto; } aside { border-left: 0; border-top: 1px solid var(--rule); } }
+</style>
+</head>
+<body>
+<header>
+  <h1>Layout Lab</h1>
+  <select id="graph" title="Graph"></select>
+  <select id="algo" title="Starting layout"><option value="auto">Best Read</option><option value="compact">Tidy Stress</option><option value="grouped">Mycelium</option></select>
+  <button id="relayout">Lay out again</button>
+  <button id="undo" title="Ctrl+Z">Undo</button>
+  <label class="tog"><input type="checkbox" id="marks" checked> Mark problems</label>
+  <label class="tog"><input type="checkbox" id="handles" checked> Show bends</label>
+  <div class="metrics" id="metrics"></div>
+</header>
+<main>
+  <div id="stage">
+    <svg id="svg"></svg>
+    <div id="help">Drag a class to move it. Ctrl+click classes to select several, then drag one to move them together; Shift+drag on empty space selects an area. Drag on a link to pull a bend into it; drag a bend to reshape; double-click a bend to remove it, or a link to straighten it. Drag empty space to pan, wheel to zoom.</div>
+  </div>
+  <aside>
+    <h2>Steps and reasoning <span id="save">not saved yet</span></h2>
+    <div id="log"></div>
+    <div id="compose">
+      <textarea id="note" placeholder="Explain what you are about to do, or why you just did it. Enter sends, Shift+Enter starts a new line."></textarea>
+      <div class="row"><span id="selinfo">Nothing selected</span><button id="send">Add note</button></div>
+    </div>
+  </aside>
+</main>
+<script src="base_layout.js"></script>
+<script src="models.js"></script>
+<script src="models2.js"></script>
+<script src="models3.js"></script>
+<script src="models4.js"></script>
+<script>
+// Every action and note is kept in order, with the metrics before and after and the full positions after, so that a session
+// can be replayed and studied. Sessions are posted to the local receiver (tools/recv.py, port 8013) and kept in localStorage.
+const O = window.OURS; // $ (getElementById) comes from models.js
+const svg = $('svg');
+const G = { key: null, labels: [], D: [], E: [], P: [], H: [], sel: new Set(), pick: -1 };
+const S = { id: null, started: 0, events: [], undo: [] };
+let view = { x: 0, y: 0, w: 1000, h: 700 };
+
+// ---------- geometry ----------
+const SAMPLES = 14;
+function handlePts(k) {
+  const e = G.E[k], A = G.P[e.s], B = G.P[e.t], dx = B.x - A.x, dy = B.y - A.y, L = Math.hypot(dx, dy) || 1, nx = -dy / L, ny = dx / L;
+  return G.H[k].map((h) => ({ x: A.x + h.t * dx + h.d * nx, y: A.y + h.t * dy + h.d * ny }));
+}
+// Catmull-Rom through the ends and the bends, as cubic Bézier pieces
+function pieces(k) {
+  const e = G.E[k], pts = [G.P[e.s], ...handlePts(k), G.P[e.t]], out = [];
+  for (let i = 0; i < pts.length - 1; i++) {
+    const p0 = pts[Math.max(0, i - 1)], p1 = pts[i], p2 = pts[i + 1], p3 = pts[Math.min(pts.length - 1, i + 2)];
+    out.push([p1, { x: p1.x + (p2.x - p0.x) / 6, y: p1.y + (p2.y - p0.y) / 6 }, { x: p2.x - (p3.x - p1.x) / 6, y: p2.y - (p3.y - p1.y) / 6 }, p2]);
+  }
+  return out;
+}
+function pathD(k) {
+  if (!G.H[k].length) { const e = G.E[k]; return `M${G.P[e.s].x},${G.P[e.s].y}L${G.P[e.t].x},${G.P[e.t].y}`; }
+  const ps = pieces(k); return 'M' + ps[0][0].x + ',' + ps[0][0].y + ps.map((p) => `C${p[1].x},${p[1].y} ${p[2].x},${p[2].y} ${p[3].x},${p[3].y}`).join('');
+}
+function poly(k) {
+  if (!G.H[k].length) { const e = G.E[k]; return [G.P[e.s], G.P[e.t]]; }
+  const out = [];
+  pieces(k).forEach((p, i) => { for (let j = i ? 1 : 0; j <= SAMPLES; j++) { const t = j / SAMPLES, u = 1 - t; out.push({ x: u * u * u * p[0].x + 3 * u * u * t * p[1].x + 3 * u * t * t * p[2].x + t * t * t * p[3].x, y: u * u * u * p[0].y + 3 * u * u * t * p[1].y + 3 * u * t * t * p[2].y + t * t * t * p[3].y }); } });
+  return out;
+}
+function segX(a, b, c, d) {
+  const o = (p, q, r) => (q.x - p.x) * (r.y - p.y) - (q.y - p.y) * (r.x - p.x);
+  const d1 = o(a, b, c), d2 = o(a, b, d), d3 = o(c, d, a), d4 = o(c, d, b);
+  if (d1 * d2 >= 0 || d3 * d4 >= 0) return null;
+  const t = d3 / (d3 - d4); return { x: a.x + t * (b.x - a.x), y: a.y + t * (b.y - a.y) };
+}
+const bbox = (pl) => { let x1 = 1e9, y1 = 1e9, x2 = -1e9, y2 = -1e9; pl.forEach((p) => { x1 = Math.min(x1, p.x); y1 = Math.min(y1, p.y); x2 = Math.max(x2, p.x); y2 = Math.max(y2, p.y); }); return { x1, y1, x2, y2 }; };
+
+// ---------- measures (curved links measured along their curves) ----------
+function measure() {
+  const n = G.P.length, PL = G.E.map((e, k) => poly(k)), BB = PL.map(bbox), X = [], thruL = new Set();
+  for (let a = 0; a < G.E.length; a++) for (let b = a + 1; b < G.E.length; b++) {
+    const e = G.E[a], f = G.E[b]; if (e.s === f.s || e.s === f.t || e.t === f.s || e.t === f.t) continue;
+    const A = BB[a], B = BB[b]; if (A.x2 < B.x1 || B.x2 < A.x1 || A.y2 < B.y1 || B.y2 < A.y1) continue;
+    const p = PL[a], q = PL[b];
+    for (let i = 0; i < p.length - 1; i++) for (let j = 0; j < q.length - 1; j++) {
+      const c = segX(p[i], p[i + 1], q[j], q[j + 1]); if (!c) continue;
+      const ux = p[i + 1].x - p[i].x, uy = p[i + 1].y - p[i].y, vx = q[j + 1].x - q[j].x, vy = q[j + 1].y - q[j].y;
+      const ang = Math.acos(Math.min(1, Math.abs(ux * vx + uy * vy) / (Math.hypot(ux, uy) * Math.hypot(vx, vy) || 1))) * 180 / Math.PI;
+      X.push({ x: c.x, y: c.y, ang, a, b });
+    }
+  }
+  let thru = 0;
+  G.E.forEach((e, k) => { const pl = PL[k]; for (let v = 0; v < n; v++) { if (v === e.s || v === e.t) continue; const hw = G.D[v].w / 2 + 6, hh = G.D[v].h / 2 + 6;
+    for (let i = 0; i < pl.length - 1; i++) if (O.segBox(pl[i].x - G.P[v].x, pl[i].y - G.P[v].y, pl[i + 1].x - G.P[v].x, pl[i + 1].y - G.P[v].y, hw, hh)) { thru++; thruL.add(k); break; } } });
+  // angle between links at a class: each link's direction where it leaves the box
+  const dirs = Array.from({ length: n }, () => []);
+  G.E.forEach((e, k) => { const pl = PL[k];
+    for (const [v, seq] of [[e.s, pl], [e.t, pl.slice().reverse()]]) { const c = G.P[v], hw = G.D[v].w / 2 + 4, hh = G.D[v].h / 2 + 4;
+      let p = seq.find((q) => Math.abs(q.x - c.x) > hw || Math.abs(q.y - c.y) > hh) || seq[seq.length - 1]; dirs[v].push(Math.atan2(p.y - c.y, p.x - c.x)); } });
+  let tight = 0, arSum = 0, arN = 0; const tightN = new Set();
+  dirs.forEach((ds, v) => { if (ds.length < 2) return; const th = ds.slice().sort((x, y) => x - y); let mn = 2 * Math.PI - (th[th.length - 1] - th[0]); for (let i = 1; i < th.length; i++) mn = Math.min(mn, th[i] - th[i - 1]);
+    arSum += Math.min(1, mn / (2 * Math.PI / ds.length)); arN++; if (mn * 180 / Math.PI < 15) { tight++; tightN.add(v); } });
+  const sharp = X.filter((c) => c.ang < 30).length, meanAng = X.length ? X.reduce((s, c) => s + c.ang, 0) / X.length : 90;
+  const bends = G.H.reduce((s, h) => s + h.length, 0);
+  const all = bbox(G.P.map((p, i) => ({ x: p.x - G.D[i].w / 2, y: p.y - G.D[i].h / 2 })).concat(G.P.map((p, i) => ({ x: p.x + G.D[i].w / 2, y: p.y + G.D[i].h / 2 }))));
+  let boxA = 0; G.D.forEach((d) => (boxA += (d.w + 16) * (d.h + 12)));
+  return { cross: X.length, thru, sharp, meanAng, angres: arN ? arSum / arN : 1, tight, bends, area: (all.x2 - all.x1) * (all.y2 - all.y1) / boxA, X, thruL, tightN };
+}
+const brief = (m) => ({ cross: m.cross, thru: m.thru, sharp: m.sharp, meanAng: +m.meanAng.toFixed(1), angres: +m.angres.toFixed(3), tight: m.tight, bends: m.bends, area: +m.area.toFixed(2) });
+
+// ---------- drawing ----------
+let M = null, lastM = null;
+function draw() {
+  M = measure();
+  const marks = $('marks').checked, showH = $('handles').checked;
+  svg.setAttribute('viewBox', `${view.x} ${view.y} ${view.w} ${view.h}`);
+  let s = '<g>';
+  G.E.forEach((e, k) => { const cls = 'link' + (e.sub ? ' sub' : '') + (marks && M.thruL.has(k) ? ' thru' : '') + (k === G.pick ? ' picked' : '');
+    s += `<path class="${cls}" d="${pathD(k)}"/><path class="hit" data-k="${k}" d="${pathD(k)}"/>`; });
+  s += '</g><g>';
+  if (marks) M.X.forEach((c) => (s += `<circle class="xdot" cx="${c.x}" cy="${c.y}" r="${c.ang < 30 ? 5 : 3.5}" fill="${c.ang < 30 ? 'var(--bad)' : 'var(--warn)'}"><title>crossing at ${c.ang.toFixed(0)}°</title></circle>`));
+  s += '</g><g>';
+  G.P.forEach((p, i) => { const d = G.D[i], cls = 'node' + (G.sel.has(i) ? ' sel' : '') + (marks && M.tightN.has(i) ? ' tight' : '');
+    s += `<g class="${cls}" data-v="${i}" transform="translate(${p.x},${p.y})"><rect x="${-d.w / 2}" y="${-d.h / 2}" width="${d.w}" height="${d.h}" rx="4"/><text text-anchor="middle" y="4">${esc(G.labels[i])}</text></g>`; });
+  s += '</g><g>';
+  if (showH) G.E.forEach((e, k) => handlePts(k).forEach((h, j) => (s += `<circle class="handle" data-k="${k}" data-j="${j}" cx="${h.x}" cy="${h.y}" r="5"/>`)));
+  s += '</g>';
+  if (drag && drag.kind === 'marquee') { const r = drag.r; s += `<rect class="marquee" x="${Math.min(r.x0, r.x1)}" y="${Math.min(r.y0, r.y1)}" width="${Math.abs(r.x1 - r.x0)}" height="${Math.abs(r.y1 - r.y0)}"/>`; }
+  svg.innerHTML = s;
+  const base = S.base || M, cmp = (v, b, lowGood = true) => { const better = lowGood ? v < b : v > b, worse = lowGood ? v > b : v < b; return better ? 'down' : worse ? 'up' : ''; };
+  $('metrics').innerHTML = [
+    ['Crossings', M.cross, base.cross], ['Sharp (&lt;30°)', M.sharp, base.sharp], ['Through classes', M.thru, base.thru],
+    ['Mean crossing angle', M.meanAng.toFixed(0) + '°', null], ['Cramped classes', M.tight, base.tight], ['Bends', M.bends, null], ['Area', M.area.toFixed(1), null]
+  ].map(([l, v, b]) => `<span>${l} <b class="${b == null ? '' : cmp(+v, b)}">${v}</b>${b == null ? '' : `<small> (start ${b})</small>`}</span>`).join('');
+  $('selinfo').textContent = G.sel.size ? `Selected: ${[...G.sel].map((i) => G.labels[i]).join(', ')}` : 'Nothing selected';
+}
+const esc = (t) => String(t).replace(/&/g, '&amp;').replace(/</g, '&lt;');
+
+// ---------- session log ----------
+const snapshot = () => ({ P: G.P.map((p) => [Math.round(p.x * 10) / 10, Math.round(p.y * 10) / 10]), H: G.H.map((h) => h.map((x) => [+x.t.toFixed(4), +x.d.toFixed(1)])) });
+function restore(s) { G.P = s.P.map(([x, y]) => ({ x, y })); G.H = s.H.map((h) => h.map(([t, d]) => ({ t, d }))); }
+function record(kind, detail, before) {
+  const after = measure(), ev = { seq: S.events.length + 1, ms: Math.round(performance.now() - S.started), at: new Date().toISOString(), kind, ...detail };
+  if (before) { ev.before = brief(before); ev.after = brief(after); ev.state = snapshot(); }
+  S.events.push(ev); showEvent(ev); persist();
+}
+function describe(ev) {
+  const m = ev.before ? ` <span class="m">crossings ${ev.before.cross}→${ev.after.cross}, through ${ev.before.thru}→${ev.after.thru}, sharp ${ev.before.sharp}→${ev.after.sharp}, cramped ${ev.before.tight}→${ev.after.tight}</span>` : '';
+  switch (ev.kind) {
+    case 'move': return `<span class="d">Moved ${ev.classes.length === 1 ? esc(ev.classes[0]) : ev.classes.length + ' classes (' + esc(ev.classes.join(', ')) + ')'} by ${ev.dx}, ${ev.dy}</span>` + m;
+    case 'bend-add': return `<span class="d">Bent ${esc(ev.link)}</span>` + m;
+    case 'bend-move': return `<span class="d">Reshaped ${esc(ev.link)}</span>` + m;
+    case 'bend-remove': return `<span class="d">Removed a bend from ${esc(ev.link)}</span>` + m;
+    case 'straighten': return `<span class="d">Straightened ${esc(ev.link)}</span>` + m;
+    case 'select': return `<span class="d">Selected ${ev.classes.length ? esc(ev.classes.join(', ')) : 'nothing'}</span>`;
+    case 'layout': return `<span class="d">Laid out ${esc(ev.graph)} with ${esc(ev.algo)}</span> <span class="m">crossings ${ev.after.cross}, through ${ev.after.thru}, sharp ${ev.after.sharp}, cramped ${ev.after.tight}</span>`;
+    case 'undo': return `<span class="d">Undid step ${ev.undid}</span>` + m;
+    default: return esc(ev.kind);
+  }
+}
+function showEvent(ev) {
+  const d = document.createElement('div'); d.className = 'ev' + (ev.kind === 'note' ? ' note' : '');
+  d.innerHTML = `<span class="t">${ev.seq} · ${(ev.ms / 1000).toFixed(0)} s</span>` + (ev.kind === 'note' ? esc(ev.text) : describe(ev));
+  $('log').appendChild(d); $('log').scrollTop = 1e9;
+}
+let saveT = null;
+function persist() {
+  const body = JSON.stringify({ id: S.id, graph: G.key, algo: $('algo').value, labels: G.labels, links: G.E.map((e) => [e.s, e.t, e.sub ? 1 : 0]), boxes: G.D.map((d) => d.w), events: S.events });
+  try { localStorage.setItem('layout-lab:' + S.id, body); } catch (e) {}
+  clearTimeout(saveT); saveT = setTimeout(() => fetch('http://127.0.0.1:8013/' + S.id + '.json', { method: 'POST', body })
+    .then(() => ($('save').textContent = 'saved ' + new Date().toLocaleTimeString()))
+    .catch(() => ($('save').textContent = 'kept in this browser only')), 400);
+}
+
+// ---------- loading ----------
+async function load(key, algo, logIt = true) {
+  const Md = await MODELS[key].load();
+  G.key = key; G.labels = Md.labels; G.D = Md.labels.map((l) => ({ w: String(l).length * 6.6 + 10, h: 20 }));
+  const edges = Md.edges.filter((e) => e.s !== e.t).map((e) => [e.s, e.t, e.kind === 'sub' ? 2 : 1]);
+  G.E = edges.map(([s, t, w]) => ({ s, t, sub: w === 2 }));
+  const items = G.D.map((d) => ({ w: d.w, h: d.h }));
+  const fn = algo === 'compact' ? O.compact : algo === 'grouped' ? (a, b, c) => O.grouped2(a, b, c) || O.compact(a, b, c) : O.auto;
+  G.P = fn(items, edges, { seed: 1 }).pos.map((p) => ({ x: p.x, y: p.y }));
+  O.sep(G.P, G.D.map((d) => ({ w: d.w + 16, h: d.h + 12 })), 6, 200);
+  G.H = G.E.map(() => []); G.sel.clear(); G.pick = -1; S.undo = [];
+  if (!S.id || logIt === 'new') { S.id = 'lab_' + key + '_' + new Date().toISOString().replace(/[-:]/g, '').replace('T', '-').slice(0, 15); S.events = []; S.started = performance.now(); $('log').innerHTML = ''; }
+  fit(); S.base = measure();
+  record('layout', { graph: key, algo: $('algo').selectedOptions[0].textContent }, S.base);
+  draw();
+}
+function fit() {
+  const b = bbox(G.P.flatMap((p, i) => [{ x: p.x - G.D[i].w / 2, y: p.y - G.D[i].h / 2 }, { x: p.x + G.D[i].w / 2, y: p.y + G.D[i].h / 2 }]));
+  const r = svg.getBoundingClientRect(), pad = 40, w = b.x2 - b.x1 + 2 * pad, h = b.y2 - b.y1 + 2 * pad, ar = r.width / r.height;
+  view = w / h > ar ? { x: b.x1 - pad, w, h: w / ar, y: (b.y1 + b.y2) / 2 - w / ar / 2 } : { y: b.y1 - pad, h, w: h * ar, x: (b.x1 + b.x2) / 2 - h * ar / 2 };
+}
+
+// ---------- interaction ----------
+let drag = null;
+const pt = (ev) => { const p = svg.createSVGPoint(); p.x = ev.clientX; p.y = ev.clientY; return p.matrixTransform(svg.getScreenCTM().inverse()); };
+const linkName = (k) => G.labels[G.E[k].s] + ' — ' + G.labels[G.E[k].t];
+function td(k, p) { const e = G.E[k], A = G.P[e.s], B = G.P[e.t], dx = B.x - A.x, dy = B.y - A.y, L2 = dx * dx + dy * dy || 1, L = Math.sqrt(L2);
+  return { t: Math.max(0.03, Math.min(0.97, ((p.x - A.x) * dx + (p.y - A.y) * dy) / L2)), d: ((p.x - A.x) * -dy + (p.y - A.y) * dx) / L }; }
+svg.addEventListener('pointerdown', (ev) => {
+  const p = pt(ev), tgt = ev.target, node = tgt.closest('.node'), ctrl = ev.ctrlKey || ev.metaKey;
+  svg.setPointerCapture(ev.pointerId);
+  if (tgt.classList.contains('handle')) { drag = { kind: 'handle', k: +tgt.dataset.k, j: +tgt.dataset.j, before: measure(), snap: snapshot(), moved: false }; return; }
+  if (node) {
+    const v = +node.dataset.v, selBefore = [...G.sel].sort().join();
+    // only Ctrl+click (or Shift+drag on empty space) builds a selection; a plain drag moves one class and leaves none selected
+    if (ctrl) { G.sel.has(v) ? G.sel.delete(v) : G.sel.add(v); }
+    else if (!G.sel.has(v)) { G.sel = new Set(); }
+    const group = G.sel.has(v) ? [...G.sel] : [v];
+    drag = { kind: 'nodes', group, p0: p, start: group.map((i) => ({ ...G.P[i] })), before: measure(), snap: snapshot(), moved: false, ctrl, v, selChanged: selBefore !== [...G.sel].sort().join() };
+    draw(); return;
+  }
+  if (tgt.classList.contains('hit')) { drag = { kind: 'link', k: +tgt.dataset.k, p0: p, before: measure(), snap: snapshot(), moved: false }; return; }
+  if (ev.shiftKey) { drag = { kind: 'marquee', r: { x0: p.x, y0: p.y, x1: p.x, y1: p.y }, add: ctrl }; return; }
+  drag = { kind: 'pan', c0: { x: ev.clientX, y: ev.clientY }, v0: { ...view }, moved: false };
+});
+svg.addEventListener('pointermove', (ev) => {
+  if (!drag) return; const p = pt(ev);
+  if (drag.kind === 'pan') { const r = svg.getBoundingClientRect(), s = view.w / r.width; view.x = drag.v0.x - (ev.clientX - drag.c0.x) * s; view.y = drag.v0.y - (ev.clientY - drag.c0.y) * s; drag.moved = true; svg.setAttribute('viewBox', `${view.x} ${view.y} ${view.w} ${view.h}`); return; }
+  if (drag.kind === 'marquee') { drag.r.x1 = p.x; drag.r.y1 = p.y; draw(); return; }
+  if (drag.kind === 'nodes') { const dx = p.x - drag.p0.x, dy = p.y - drag.p0.y; if (!drag.moved && Math.hypot(dx, dy) < 2) return; drag.moved = true; drag.group.forEach((i, j) => { G.P[i] = { x: drag.start[j].x + dx, y: drag.start[j].y + dy }; }); draw(); return; }
+  if (drag.kind === 'link') { if (!drag.moved && Math.hypot(p.x - drag.p0.x, p.y - drag.p0.y) < 3) return;
+    if (!drag.moved) { drag.moved = true; const h = td(drag.k, drag.p0); G.H[drag.k].push(h); G.H[drag.k].sort((a, b) => a.t - b.t); drag.j = G.H[drag.k].indexOf(h); G.pick = drag.k; }
+    G.H[drag.k][drag.j] = td(drag.k, p); draw(); return; }
+  if (drag.kind === 'handle') { drag.moved = true; G.H[drag.k][drag.j] = td(drag.k, p); G.pick = drag.k; draw(); }
+});
+svg.addEventListener('pointerup', () => {
+  const d = drag; drag = null; if (!d) return;
+  if (d.kind === 'pan') { if (!d.moved && G.sel.size) { G.sel.clear(); G.pick = -1; draw(); record('select', { classes: [] }); } else if (!d.moved) { G.pick = -1; draw(); } return; }
+  if (d.kind === 'marquee') { const r = d.r, x1 = Math.min(r.x0, r.x1), x2 = Math.max(r.x0, r.x1), y1 = Math.min(r.y0, r.y1), y2 = Math.max(r.y0, r.y1);
+    if (!d.add) G.sel.clear(); G.P.forEach((q, i) => { if (q.x >= x1 && q.x <= x2 && q.y >= y1 && q.y <= y2) G.sel.add(i); }); draw(); record('select', { classes: [...G.sel].map((i) => G.labels[i]), how: 'area' }); return; }
+  if (d.kind === 'nodes') {
+    if (d.moved) { S.undo.push(d.snap); const dx = Math.round(G.P[d.group[0]].x - d.start[0].x), dy = Math.round(G.P[d.group[0]].y - d.start[0].y);
+      record('move', { classes: d.group.map((i) => G.labels[i]), dx, dy, group: d.group.length > 1 }, d.before); }
+    else if (d.selChanged) record('select', { classes: [...G.sel].map((i) => G.labels[i]), how: d.ctrl ? 'ctrl-click' : 'click' });
+    draw(); return;
+  }
+  // double-clicks are detected here: every redraw replaces the elements, which can swallow the browser's own dblclick
+  const key = d.kind + ':' + d.k + ':' + (d.j ?? ''), now = performance.now(), dbl = !d.moved && lastClick && lastClick.key === key && now - lastClick.t < 400;
+  lastClick = d.moved ? null : { key, t: now };
+  if (d.kind === 'link') {
+    if (d.moved) { S.undo.push(d.snap); record('bend-add', { link: linkName(d.k), bends: G.H[d.k].map((h) => [+h.t.toFixed(3), +h.d.toFixed(1)]) }, d.before); }
+    else if (dbl && G.H[d.k].length) { G.H[d.k] = []; S.undo.push(d.snap); record('straighten', { link: linkName(d.k) }, d.before); lastClick = null; }
+    else G.pick = d.k;
+    draw(); return;
+  }
+  if (d.kind === 'handle') {
+    if (d.moved) { S.undo.push(d.snap); record('bend-move', { link: linkName(d.k), bends: G.H[d.k].map((h) => [+h.t.toFixed(3), +h.d.toFixed(1)]) }, d.before); }
+    else if (dbl) { G.H[d.k].splice(d.j, 1); S.undo.push(d.snap); record('bend-remove', { link: linkName(d.k) }, d.before); lastClick = null; }
+    draw();
+  }
+});
+let lastClick = null;
+svg.addEventListener('wheel', (ev) => { ev.preventDefault(); const p = pt(ev), f = Math.exp(Math.max(-60, Math.min(60, ev.deltaY)) * 0.0015);
+  view = { x: p.x - (p.x - view.x) * f, y: p.y - (p.y - view.y) * f, w: view.w * f, h: view.h * f }; svg.setAttribute('viewBox', `${view.x} ${view.y} ${view.w} ${view.h}`); }, { passive: false });
+function undo() { const s = S.undo.pop(); if (!s) return; const before = measure(), undid = [...S.events].reverse().find((e) => e.state && e.kind !== 'layout' && e.kind !== 'undo' && !e.undone); if (undid) undid.undone = true; restore(s); record('undo', { undid: undid ? undid.seq : null }, before); draw(); }
+$('undo').onclick = undo;
+document.addEventListener('keydown', (ev) => {
+  if (ev.target === $('note')) return;
+  if ((ev.ctrlKey || ev.metaKey) && ev.key.toLowerCase() === 'z') { ev.preventDefault(); undo(); }
+  if (ev.key === 'Escape') { G.sel.clear(); G.pick = -1; draw(); }
+});
+function sendNote() { const text = $('note').value.trim(); if (!text) return; $('note').value = '';
+  const ev = { seq: S.events.length + 1, ms: Math.round(performance.now() - S.started), at: new Date().toISOString(), kind: 'note', text, selected: [...G.sel].map((i) => G.labels[i]), afterStep: S.events.length ? S.events[S.events.length - 1].seq : 0 };
+  S.events.push(ev); showEvent(ev); persist(); }
+$('send').onclick = sendNote;
+$('note').addEventListener('keydown', (ev) => { if (ev.key === 'Enter' && !ev.shiftKey) { ev.preventDefault(); sendNote(); } });
+$('marks').onchange = draw; $('handles').onchange = draw;
+$('relayout').onclick = () => load(G.key, $('algo').value, true);
+$('graph').onchange = () => load($('graph').value, $('algo').value, 'new');
+$('algo').onchange = () => load(G.key, $('algo').value, true);
+window.addEventListener('resize', () => { if (G.P.length) { fit(); draw(); } });
+// graph list: the 15 graphs of the write-up first
+const ORDER = ['prov', 'uni', 'hotel', 'org', 'brewery', 'trial', 'telecom', 'sosa', 'crm', 'schema', 'health', 'fibo', 'pizza', 'bio', 'big'];
+const names = { prov: 'PROV-O (30)', uni: 'University (14)', hotel: 'Hotel booking (13)', org: 'W3C ORG (15)', brewery: 'Brewery IoT (23)', trial: 'Clinical trial (24)', telecom: 'Telecom network (34)', sosa: 'SOSA/SSN (36)', crm: 'Customer 360 (31)', schema: 'schema.org core (49)', health: 'Clinical record, 3 hubs (53)', fibo: 'FIBO-like loans (59)', pizza: 'Pizza taxonomy (90)', bio: 'Biomedical taxonomy (115)', big: 'Bank (179)' };
+ORDER.filter((k) => MODELS[k]).forEach((k) => { const o = document.createElement('option'); o.value = k; o.textContent = names[k] || k; $('graph').appendChild(o); });
+const start = new URLSearchParams(location.search).get('graph') || 'prov'; $('graph').value = start;
+load(start, 'auto', 'new');
+</script>
+</body>
+</html>
