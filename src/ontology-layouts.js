@@ -1,17 +1,6 @@
-      // ── OG: Cluster layout ─────────────
-      // Draws the classes as a few tight groups joined by long links, with as few crossed links as it can find:
-      //  1. Find groups of closely linked classes (Louvain modularity; subclass links count double; groups under 3 classes join a neighbour).
-      //  2. Set aside classes with a single link (and, repeatedly, classes that become single-linked); they come back at the end.
-      //  3. Lay each group out alone with springs, then lay the groups out as large nodes: strong repulsion, springs along the links between them.
-      //  4. Put each group's classes that link to other groups on a ring, each facing the classes it links to (not the other group's middle),
-      //     spaced apart; relax the rest of the group inside, pulled to the side facing away from its neighbours.
-      //  5. Push apart the midpoints of links (an imaginary node on each link), slide whole groups to where the links between groups are
-      //     straighter and further from classes and from each other, swap classes inside a group when that removes crossings,
-      //     push links off classes lying on them (any step that adds a crossing is undone).
-      //  6. Put the single-link classes back beside their neighbour in a spot where their one link crosses nothing, then shrink the whole
-      //     drawing evenly as far as nothing touches (shrinking evenly cannot change a crossing).
-      // Pure geometry, no Cytoscape: items [{w, h}], edges [[i, j, weight]]. Returns { pos: [{x, y}], crossings } or null when the model is
-      // too small to form groups (the caller then uses the force layout).
+      // ── OG: Layout geometry helpers (Compact, Grouped and Auto layouts, below) ──
+      // Seeded random numbers, segment crossings and distances, crossing counts, groups of closely linked classes (Louvain modularity),
+      // and pushing boxes apart. Pure geometry, no Cytoscape.
       function _ogClRng(seed) { let a = seed | 0; return function () { a = a + 0x6D2B79F5 | 0; let t = Math.imul(a ^ a >>> 15, 1 | a); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; }; }
       function _ogClSegX(a, b, c, d) {
         const o = (p, q, r) => (q.x - p.x) * (r.y - p.y) - (q.y - p.y) * (r.x - p.x);
@@ -85,395 +74,11 @@
           if (!moved) break;
         }
       }
-      // Spring layout over some nodes (Fruchterman-Reingold style): springs [a, b, length, strength]; o.anchor(i) may return {x, y, k}.
-      function _ogClRelax(ids, P, N, springs, o, rnd) {
-        const n = ids.length, L = o.L, cut2 = (o.cut || 4 * L) ** 2, K2 = L * L, D = ids.map(() => [0, 0]);
-        const pos = new Map(ids.map((g, k) => [g, k]));
-        const sp = springs.filter((s) => pos.has(s[0]) && pos.has(s[1])).map((s) => [pos.get(s[0]), pos.get(s[1]), s[2], s[3]]);
-        for (let it = 0; it < o.iters; it++) {
-          const t = o.t0 * (1 - it / o.iters) + 0.5;
-          for (let a = 0; a < n; a++) { D[a][0] = 0; D[a][1] = 0; }
-          for (let a = 0; a < n; a++) {
-            const pa = P[ids[a]];
-            for (let b = a + 1; b < n; b++) {
-              const pb = P[ids[b]]; let dx = pa.x - pb.x, dy = pa.y - pb.y, d2 = dx * dx + dy * dy; if (d2 > cut2) continue;
-              if (d2 < 1e-4) { dx = rnd() - 0.5; dy = rnd() - 0.5; d2 = dx * dx + dy * dy; }
-              const d = Math.sqrt(d2), f = K2 / d / d;
-              D[a][0] += dx * f; D[a][1] += dy * f; D[b][0] -= dx * f; D[b][1] -= dy * f;
-            }
-          }
-          sp.forEach(([a, b, len, k]) => {
-            const pa = P[ids[a]], pb = P[ids[b]], dx = pb.x - pa.x, dy = pb.y - pa.y, d = Math.hypot(dx, dy) || 0.01, f = k * (d - len) / d;
-            D[a][0] += dx * f; D[a][1] += dy * f; D[b][0] -= dx * f; D[b][1] -= dy * f;
-          });
-          for (let a = 0; a < n; a++) {
-            const p = P[ids[a]];
-            if (o.anchor) { const an = o.anchor(ids[a]); if (an) { D[a][0] += (an.x - p.x) * an.k; D[a][1] += (an.y - p.y) * an.k; } }
-            else { D[a][0] -= p.x * (o.grav || 0.01); D[a][1] -= p.y * (o.grav || 0.01); }
-            const m = Math.hypot(D[a][0], D[a][1]); if (m > 0) { const s = Math.min(m, t) / m; p.x += D[a][0] * s; p.y += D[a][1] * s; }
-          }
-        }
-      }
-      // Crossings among the links in `inc` (each counted once) plus a tiny preference for short links.
-      function _ogClIncCost(P, EE, inc, incSet, countOnly) {
-        let c = 0, len = 0;
-        for (const i of inc) {
-          const e = EE[i], pa = P[e.s], pb = P[e.t]; len += Math.hypot(pa.x - pb.x, pa.y - pb.y);
-          for (let j = 0; j < EE.length; j++) {
-            if (j === i || (j < i && incSet.has(j))) continue; const f = EE[j];
-            if (e.s === f.s || e.s === f.t || e.t === f.s || e.t === f.t) continue;
-            if (_ogClSegX(pa, pb, P[f.s], P[f.t])) c++;
-          }
-        }
-        return countOnly ? c : c + len * 0.0003;
-      }
-      // Steps 1, 3, 4 and 5 for the classes that were not set aside. N: [{w, h}], edges [[a, b, weight]].
-      function _ogClCore(N, edges, opt, seed) {
-        const n = N.length, L = opt.L, rnd = _ogClRng(seed);
-        const E = edges.filter((e) => e[0] !== e[1]), EE = E.map((e) => ({ s: e[0], t: e[1] }));
-        let com = n > 6 ? _ogClLouvain(n, E) : Array(n).fill(0);
-        com = _ogClMergeSmall(com, E, 3);
-        const nc = Math.max(...com) + 1, groups = Array.from({ length: nc }, () => []);
-        com.forEach((c, i) => groups[c].push(i));
-        if (nc < 2) return null;
-        const P = N.map(() => ({ x: 0, y: 0 }));
-        // Each group on its own, springs inside only
-        const intra = E.filter(([a, b]) => com[a] === com[b]).map(([a, b, w]) => [a, b, L * (w > 1 ? 1 : 1.25), 0.35]);
-        const R = [];
-        groups.forEach((g, c) => {
-          const rr = Math.sqrt(g.length) * L * 0.55;
-          g.forEach((i, k) => { const a = 2 * Math.PI * k / g.length + rnd(), r = rr * (0.4 + rnd() * 0.6); P[i].x = Math.cos(a) * r; P[i].y = Math.sin(a) * r; });
-          _ogClRelax(g, P, N, intra, { L, iters: g.length > 1 ? Math.min(260, 80 + g.length * 6) : 0, t0: L * 0.35, grav: 0.04 }, rnd);
-          _ogClSeparate(g.map((i) => P[i]), g.map((i) => N[i]), 22, 40);
-          let cx = 0, cy = 0; g.forEach((i) => { cx += P[i].x; cy += P[i].y; }); cx /= g.length; cy /= g.length;
-          let r = 0; g.forEach((i) => { P[i].x -= cx; P[i].y -= cy; r = Math.max(r, Math.hypot(P[i].x, P[i].y) + Math.hypot(N[i].w, N[i].h) / 2); });
-          R[c] = r + 18;
-        });
-        // Groups as large nodes: repulsion stronger than anything inside a group (and jumping when two touch), springs along the links between groups
-        const link = new Map();
-        E.forEach(([a, b]) => { if (com[a] !== com[b]) { const x = Math.min(com[a], com[b]), y = Math.max(com[a], com[b]), k = x + "," + y; link.set(k, (link.get(k) || 0) + 1); } });
-        const metaSprings = [...link].map(([k, c]) => { const [x, y] = k.split(",").map(Number); return [x, y, R[x] + R[y] + opt.gap, 0.08 * Math.sqrt(c), c]; });
-        let bestC = null, bestE = Infinity;
-        for (let rs = 0; rs < (nc <= 12 ? 6 : 3); rs++) {
-          const C = groups.map((g, c) => ({ x: Math.cos(2 * Math.PI * c / nc + rs * 1.3 + rnd()) * Math.sqrt(nc) * L * 2, y: Math.sin(2 * Math.PI * c / nc + rs * 1.3 + rnd()) * Math.sqrt(nc) * L * 2 }));
-          const iters = 400;
-          for (let it = 0; it < iters; it++) {
-            const t = L * 2 * (1 - it / iters) + 0.5, D = C.map(() => [0, 0]);
-            for (let a = 0; a < nc; a++) for (let b = a + 1; b < nc; b++) {
-              const dx = C[a].x - C[b].x, dy = C[a].y - C[b].y, d = Math.hypot(dx, dy) || 0.01, s = R[a] + R[b] + opt.gap * 0.6;
-              const mag = opt.metaRep * s * s / d / L * (d < s ? 3 : 1), ux = dx / d, uy = dy / d;
-              D[a][0] += ux * mag; D[a][1] += uy * mag; D[b][0] -= ux * mag; D[b][1] -= uy * mag;
-            }
-            metaSprings.forEach(([a, b, len, k]) => { const dx = C[b].x - C[a].x, dy = C[b].y - C[a].y, d = Math.hypot(dx, dy) || 0.01, f = k * (d - len) / d * (L / 20); D[a][0] += dx * f; D[a][1] += dy * f; D[b][0] -= dx * f; D[b][1] -= dy * f; });
-            C.forEach((c, a) => { D[a][0] -= c.x * 0.002 * L / 10; D[a][1] -= c.y * 0.002 * L / 10; const m = Math.hypot(D[a][0], D[a][1]); if (m > 0) { const s = Math.min(m, t) / m; c.x += D[a][0] * s; c.y += D[a][1] * s; } });
-          }
-          let en = 0; metaSprings.forEach(([a, b, len, , cnt]) => { const d = Math.hypot(C[a].x - C[b].x, C[a].y - C[b].y); en += cnt * Math.abs(d - len); });
-          for (let a = 0; a < nc; a++) for (let b = a + 1; b < nc; b++) { if (Math.hypot(C[a].x - C[b].x, C[a].y - C[b].y) < R[a] + R[b]) en += 1e5; }
-          if (en < bestE) { bestE = en; bestC = C; }
-        }
-        // Linked classes on a ring facing their partners; the rest relaxed inside, pulled away from the neighbours
-        const ext = Array.from({ length: n }, () => []), extN = Array.from({ length: n }, () => []);
-        E.forEach(([a, b]) => { if (com[a] !== com[b]) { ext[a].push(com[b]); ext[b].push(com[a]); extN[a].push(b); extN[b].push(a); } });
-        const doGroup = (g, c, useNodes) => {
-          const C = bestC[c], gw = g.filter((i) => ext[i].length), inner = g.filter((i) => !ext[i].length), th = {}; let ux = 0, uy = 0;
-          gw.forEach((i) => {
-            let dx = 0, dy = 0;
-            if (useNodes) extN[i].forEach((j) => { const vx = P[j].x - C.x, vy = P[j].y - C.y, d = Math.hypot(vx, vy) || 1; dx += vx / d; dy += vy / d; });
-            else ext[i].forEach((o) => { const vx = bestC[o].x - C.x, vy = bestC[o].y - C.y, d = Math.hypot(vx, vy) || 1; dx += vx / d; dy += vy / d; });
-            th[i] = Math.atan2(dy, dx); ux += dx; uy += dy;
-          });
-          const um = Math.hypot(ux, uy) || 1; ux /= um; uy /= um;
-          const sumW = gw.reduce((s, i) => s + N[i].w + 12, 0), rho = Math.max(R[c] * 0.85, sumW / (2 * Math.PI) * 1.1);
-          const ord = gw.slice().sort((a, b) => th[a] - th[b]), ang = ord.map((i) => th[i]);
-          for (let it = 0; it < 80 && ord.length > 1; it++) {
-            for (let k = 0; k < ord.length; k++) {
-              const j = (k + 1) % ord.length; let gp = ang[j] - ang[k]; if (j === 0) gp += 2 * Math.PI;
-              const need = ((N[ord[k]].w + N[ord[j]].w) / 2 + 34) / rho;
-              if (gp < need) { const d = (need - gp) / 2; ang[k] -= d; ang[j] += d; }
-            }
-            ord.forEach((i, k) => { ang[k] += (th[i] - ang[k]) * 0.08; });
-          }
-          ord.forEach((i, k) => { P[i].x = C.x + Math.cos(ang[k]) * rho; P[i].y = C.y + Math.sin(ang[k]) * rho * 0.85; th[i] = ang[k]; });
-          const away = { x: C.x - ux * rho * 0.7, y: C.y - uy * rho * 0.7 };
-          inner.forEach((i) => { P[i].x = away.x + (rnd() - 0.5) * rho * 0.6; P[i].y = away.y + (rnd() - 0.5) * rho * 0.6; });
-          _ogClRelax(g, P, N, intra, { L, iters: Math.min(220, 100 + g.length * 4), t0: L * 0.2, cut: 3 * L,
-            anchor: (i) => ext[i].length ? { x: C.x + Math.cos(th[i]) * rho, y: C.y + Math.sin(th[i]) * rho * 0.85, k: 0.5 } : { x: away.x, y: away.y, k: 0.06 } }, rnd);
-          _ogClSeparate(g.map((i) => P[i]), g.map((i) => N[i]), 14, 40);
-        };
-        for (let rd = 0; rd < 3; rd++) groups.forEach((g, c) => doGroup(g, c, rd > 0));
-        // Groups must not overlap: slide whole groups apart until their outlines clear
-        const box = (g) => { let x1 = 1e9, y1 = 1e9, x2 = -1e9, y2 = -1e9; g.forEach((i) => { x1 = Math.min(x1, P[i].x - N[i].w / 2); x2 = Math.max(x2, P[i].x + N[i].w / 2); y1 = Math.min(y1, P[i].y - N[i].h / 2); y2 = Math.max(y2, P[i].y + N[i].h / 2); }); return { x1, y1, x2, y2 }; };
-        const gap = opt.gap * 0.35 + 20;
-        const sepGroups = () => {
-          for (let it = 0; it < 120; it++) {
-            let moved = false; const B = groups.map(box);
-            for (let a = 0; a < nc; a++) for (let b = a + 1; b < nc; b++) {
-              const ox = Math.min(B[a].x2, B[b].x2) - Math.max(B[a].x1, B[b].x1) + gap, oy = Math.min(B[a].y2, B[b].y2) - Math.max(B[a].y1, B[b].y1) + gap;
-              if (ox <= 0 || oy <= 0) continue; moved = true;
-              const ca = { x: (B[a].x1 + B[a].x2) / 2, y: (B[a].y1 + B[a].y2) / 2 }, cb = { x: (B[b].x1 + B[b].x2) / 2, y: (B[b].y1 + B[b].y2) / 2 };
-              let dx = 0, dy = 0; if (ox < oy) dx = (ca.x <= cb.x ? 1 : -1) * (ox / 2 + 1); else dy = (ca.y <= cb.y ? 1 : -1) * (oy / 2 + 1);
-              groups[a].forEach((i) => { P[i].x -= dx; P[i].y -= dy; }); groups[b].forEach((i) => { P[i].x += dx; P[i].y += dy; });
-            }
-            if (!moved) break;
-          }
-        };
-        sepGroups();
-        const incE = Array.from({ length: n }, () => []); EE.forEach((e, i) => { incE[e.s].push(i); incE[e.t].push(i); });
-        const m = EE.length, t0 = performance.now();
-        // An imaginary node at the middle of every link; they repel each other and push the link's two ends apart
-        if (m <= 2500) {
-          const P0 = P.map((p) => ({ x: p.x, y: p.y })), len0 = EE.map((e) => Math.hypot(P[e.s].x - P[e.t].x, P[e.s].y - P[e.t].y));
-          const cut2 = (2.2 * L) ** 2, K = L * L, iters = 40, mx = new Float64Array(m), my = new Float64Array(m), Dx = new Float64Array(n), Dy = new Float64Array(n);
-          for (let it = 0; it < iters; it++) {
-            const t = L * 0.12 * (1 - it / iters) + 0.3; Dx.fill(0); Dy.fill(0);
-            for (let k = 0; k < m; k++) { const e = EE[k]; mx[k] = (P[e.s].x + P[e.t].x) / 2; my[k] = (P[e.s].y + P[e.t].y) / 2; }
-            for (let a = 0; a < m; a++) for (let b = a + 1; b < m; b++) {
-              const dx = mx[a] - mx[b], dy = my[a] - my[b]; let d2 = dx * dx + dy * dy; if (d2 > cut2) continue; if (d2 < 1) d2 = 1;
-              const f = K / d2 * 0.5, ea = EE[a], eb = EE[b];
-              Dx[ea.s] += dx * f; Dy[ea.s] += dy * f; Dx[ea.t] += dx * f; Dy[ea.t] += dy * f; Dx[eb.s] -= dx * f; Dy[eb.s] -= dy * f; Dx[eb.t] -= dx * f; Dy[eb.t] -= dy * f;
-            }
-            for (let k = 0; k < m; k++) { const e = EE[k], pa = P[e.s], pb = P[e.t], dx = pb.x - pa.x, dy = pb.y - pa.y, d = Math.hypot(dx, dy) || 0.01, f = 0.4 * (d - len0[k]) / d; Dx[e.s] += dx * f; Dy[e.s] += dy * f; Dx[e.t] -= dx * f; Dy[e.t] -= dy * f; }
-            for (let i = 0; i < n; i++) { Dx[i] += (P0[i].x - P[i].x) * 0.03; Dy[i] += (P0[i].y - P[i].y) * 0.03; const mg = Math.hypot(Dx[i], Dy[i]); if (mg > 0) { const s = Math.min(mg, t) / mg; P[i].x += Dx[i] * s; P[i].y += Dy[i] * s; } }
-          }
-          _ogClSeparate(P, N, 26, 60); sepGroups();
-        }
-        // Slide whole groups (rigidly) to where the links between groups are straighter and further from other links and from classes
-        {
-          const tn = performance.now(), thr = (i) => Math.hypot(N[i].w, N[i].h) / 2 * 0.8 + 14, adj = (e, f) => e.s === f.s || e.s === f.t || e.t === f.s || e.t === f.t;
-          const interIdx = []; EE.forEach((e, i) => { if (com[e.s] !== com[e.t]) interIdx.push(i); });
-          const costOf = (c) => {
-            const inter = interIdx.filter((i) => com[EE[i].s] === c || com[EE[i].t] === c), set = new Set(inter); let cost = 0, len = 0;
-            for (const i of inter) {
-              const e = EE[i], a = P[e.s], b = P[e.t]; len += Math.hypot(a.x - b.x, a.y - b.y);
-              for (let j = 0; j < EE.length; j++) { if (j === i || (set.has(j) && j < i)) continue; const f = EE[j]; if (adj(e, f)) continue; if (_ogClSegX(a, b, P[f.s], P[f.t])) cost += 1000; }
-              for (const j of interIdx) { if (j === i || (set.has(j) && j < i)) continue; const f = EE[j]; if (adj(e, f)) continue; const d = _ogClDSS(a, b, P[f.s], P[f.t]); if (d < 70) cost += (70 - d) * 0.8; }
-              for (let u = 0; u < n; u++) { if (u === e.s || u === e.t) continue; const d = _ogClDPS(P[u], a, b), th = thr(u); if (d < th) cost += (th - d) * 1.5 + 10; }
-            }
-            for (const u of groups[c]) for (const j of interIdx) { if (set.has(j)) continue; const f = EE[j]; if (f.s === u || f.t === u) continue; const d = _ogClDPS(P[u], P[f.s], P[f.t]), th = thr(u); if (d < th) cost += (th - d) * 1.5 + 10; }
-            return cost + len * 0.01;
-          };
-          const overlapsOthers = (c) => { const B = box(groups[c]); for (let b = 0; b < nc; b++) { if (b === c) continue; const o = box(groups[b]); if (B.x1 < o.x2 + gap && o.x1 < B.x2 + gap && B.y1 < o.y2 + gap && o.y1 < B.y2 + gap) return true; } return false; };
-          const shift = (c, dx, dy) => { groups[c].forEach((i) => { P[i].x += dx; P[i].y += dy; }); bestC[c].x += dx; bestC[c].y += dy; };
-          const degOf = (c) => interIdx.filter((i) => com[EE[i].s] === c || com[EE[i].t] === c).length;
-          const order = [...Array(nc).keys()].sort((a, b) => degOf(b) - degOf(a));
-          let moved = 0;
-          for (let pass = 0; pass < 3 && performance.now() - tn < opt.nudgeBudget; pass++) {
-            let improved = false;
-            for (const c of order) {
-              if (performance.now() - tn > opt.nudgeBudget) break;
-              const cur = costOf(c); let best = null;
-              for (let k = 0; k < 8; k++) for (const f of [0.3, 0.65, 1.1]) {
-                const a = 2 * Math.PI * k / 8, dx = Math.cos(a) * R[c] * f, dy = Math.sin(a) * R[c] * f; shift(c, dx, dy);
-                if (!overlapsOthers(c)) { const v = costOf(c); if (v < cur - 1e-6 && (!best || v < best.v)) best = { v, dx, dy }; }
-                shift(c, -dx, -dy);
-              }
-              if (best) { shift(c, best.dx, best.dy); improved = true; moved++; }
-            }
-            if (!improved) break;
-          }
-          // the ring positions were chosen for the old group positions: choose them again, and keep that only if it is no worse
-          if (moved) {
-            const snap = P.map((p) => ({ x: p.x, y: p.y })), tot = () => { let s = 0; for (let c = 0; c < nc; c++) s += costOf(c); return s; }, before = tot();
-            groups.forEach((g, c) => doGroup(g, c, true)); sepGroups();
-            if (tot() > before) for (let i = 0; i < n; i++) { P[i].x = snap[i].x; P[i].y = snap[i].y; }
-          }
-        }
-        _ogClSeparate(P, N, 26, 60);
-        // Swap two classes of one group whenever that removes crossings (inside the group or between groups)
-        {
-          const ts = performance.now();
-          for (let pass = 0; pass < 5 && performance.now() - ts < opt.swapBudget; pass++) {
-            let improved = false;
-            for (const g of groups) {
-              if (g.length < 2) continue;
-              for (const v of g) {
-                if (performance.now() - ts > opt.swapBudget) break;
-                const sv = new Set(incE[v]); if (!_ogClIncCost(P, EE, incE[v], sv, true)) continue;
-                for (const u of g) {
-                  if (u === v) continue;
-                  const set = new Set(incE[v]); incE[u].forEach((k) => set.add(k)); const inc = [...set];
-                  const before = _ogClIncCost(P, EE, inc, set), pv = P[v], pu = P[u]; P[v] = pu; P[u] = pv;
-                  const after = _ogClIncCost(P, EE, inc, set);
-                  if (after < before - 1e-9) improved = true; else { P[v] = pv; P[u] = pu; }
-                }
-              }
-            }
-            if (!improved) break;
-          }
-        }
-        // Push links off classes lying on them: the point of the link nearest a class acts as an imaginary node pushing it away
-        if (m <= 2500) {
-          const tp = performance.now(); let cur = _ogClCrossings(P, EE), step = 1;
-          const Dx = new Float64Array(n), Dy = new Float64Array(n);
-          for (let it = 0; it < 30 && performance.now() - tp < opt.spreadBudget; it++) {
-            Dx.fill(0); Dy.fill(0);
-            for (let k = 0; k < m; k++) {
-              const e = EE[k], a = P[e.s], b = P[e.t], ex = b.x - a.x, ey = b.y - a.y, L2 = ex * ex + ey * ey || 1;
-              for (let i = 0; i < n; i++) {
-                if (i === e.s || i === e.t) continue;
-                const p = P[i]; let t = ((p.x - a.x) * ex + (p.y - a.y) * ey) / L2; t = Math.max(0, Math.min(1, t));
-                let dx = p.x - (a.x + t * ex), dy = p.y - (a.y + t * ey); const d = Math.hypot(dx, dy) || 0.01, th = Math.hypot(N[i].w, N[i].h) / 2 * 0.8 + 18;
-                if (d >= th) continue;
-                const push = (th - d) * 0.5; dx /= d; dy /= d;
-                Dx[i] += dx * push; Dy[i] += dy * push; Dx[e.s] -= dx * push * 0.5 * (1 - t); Dy[e.s] -= dy * push * 0.5 * (1 - t); Dx[e.t] -= dx * push * 0.5 * t; Dy[e.t] -= dy * push * 0.5 * t;
-              }
-            }
-            const snap = P.map((p) => ({ x: p.x, y: p.y })); let any = false;
-            for (let i = 0; i < n; i++) { const mg = Math.hypot(Dx[i], Dy[i]); if (mg > 0.01) { any = true; const s = Math.min(mg, 40) / mg * step; P[i].x += Dx[i] * s; P[i].y += Dy[i] * s; } }
-            if (!any) break;
-            _ogClSeparate(P, N, 18, 6); const x = _ogClCrossings(P, EE);
-            if (x > cur) { for (let i = 0; i < n; i++) { P[i].x = snap[i].x; P[i].y = snap[i].y; } step *= 0.5; if (step < 0.1) break; } else cur = x;
-          }
-        }
-        _ogClSeparate(P, N, 26, 60); sepGroups();
-        return { P, com, groups, ms: performance.now() - t0 };
-      }
-      // The whole layout: set aside single-link classes, lay out the rest, put the single-link classes back, shrink evenly.
       // Does the segment (ax,ay)-(bx,by), given relative to a box's centre, touch the box of half-sizes hw, hh?
       function _ogClSegBox(ax, ay, bx, by, hw, hh) {
         let t0 = 0, t1 = 1; const dx = bx - ax, dy = by - ay;
         const clip = (p, q) => { if (p === 0) return q >= 0; const r = q / p; if (p < 0) { if (r > t1) return false; if (r > t0) t0 = r; } else { if (r < t0) return false; if (r < t1) t1 = r; } return true; };
         return clip(-dx, ax + hw) && clip(dx, hw - ax) && clip(-dy, ay + hh) && clip(dy, hh - ay);
-      }
-      function _ogClOnce(items, edges, opt, seed) {
-        const n = items.length, N = items.map((it) => ({ w: it.w, h: it.h }));
-        const nb = Array.from({ length: n }, () => new Set());
-        edges.forEach(([a, b]) => { if (a !== b) { nb[a].add(b); nb[b].add(a); } });
-        const removed = new Array(n).fill(false), order = [], hubOf = new Array(n).fill(-1), deg = nb.map((s) => s.size), q = [];
-        for (let i = 0; i < n; i++) if (deg[i] === 1) q.push(i);
-        while (q.length) {
-          const v = q.pop(); if (removed[v] || deg[v] !== 1) continue;
-          let h = -1; nb[v].forEach((w) => { if (!removed[w]) h = w; }); if (h < 0) continue;
-          removed[v] = true; order.push(v); hubOf[v] = h; deg[h]--; if (deg[h] === 1) q.push(h);
-        }
-        const core = []; for (let i = 0; i < n; i++) if (!removed[i]) core.push(i);
-        if (core.length < 3) return null;
-        const idx = new Map(core.map((g, k) => [g, k]));
-        const cEdges = edges.filter(([a, b]) => idx.has(a) && idx.has(b)).map(([a, b, w]) => [idx.get(a), idx.get(b), w]);
-        const r = _ogClCore(core.map((i) => N[i]), cEdges, opt, seed);
-        if (!r) return null;
-        const allEE = edges.filter(([a, b]) => a !== b).map(([a, b]) => [a, b]);
-        const LG = opt.leafGap, lgOf = new Array(n).fill(0), labLen = new Map();
-        // The room beside a single-link class also has to hold the text on its link.
-        edges.forEach(([a, b, w, len]) => { if (len) { const k = a < b ? a * n + b : b * n + a; labLen.set(k, Math.max(labLen.get(k) || 0, len)); } });
-        const gapFor = (v, h) => Math.max(LG, (labLen.get(v < h ? v * n + h : h * n + v) || 0) + 16);
-        let P = null, com = null, placed = null, maxNeed = 0, S = 1;
-        const rayHit = (h, ux, uy) => {
-          let best = Infinity; const o = P[h];
-          for (const [x, y] of placed) {
-            if (x === h || y === h) continue;
-            const a = P[x], b = P[y], ex = b.x - a.x, ey = b.y - a.y, den = ux * ey - uy * ex; if (Math.abs(den) < 1e-12) continue;
-            const t = ((a.x - o.x) * ey - (a.y - o.y) * ex) / den, s = ((a.x - o.x) * uy - (a.y - o.y) * ux) / den;
-            if (t > 0 && s >= 0 && s <= 1 && t < best) best = t;
-          }
-          return best;
-        };
-        const scaleAbout = (h, s) => { const hx = P[h].x, hy = P[h].y; for (let u = 0; u < n; u++) if (P[u] && u !== h) { P[u].x = hx + (P[u].x - hx) * s; P[u].y = hy + (P[u].y - hy) * s; } };
-        const placeLeaf = (v, h) => {
-          let best = null; const LGv = gapFor(v, h); lgOf[v] = LGv;
-          for (let a = 0; a < 72; a++) {
-            const t = 2 * Math.PI * a / 72 + 0.05, ux = Math.cos(t), uy = Math.sin(t);
-            const need = Math.min(((N[h].w + N[v].w) / 2 + LGv) / Math.max(Math.abs(ux), 1e-6), ((N[h].h + N[v].h) / 2 + LGv) / Math.max(Math.abs(uy), 1e-6));
-            const reach = rayHit(h, ux, uy), want = need + Math.max(N[v].w * Math.abs(ux), N[v].h * Math.abs(uy)) / 2 + 14;
-            let s = Math.max(1, want / reach);
-            const p = { x: P[h].x + ux * need * 1.02, y: P[h].y + uy * need * 1.02 };
-            // no other class (leaves already put back included) may sit on the leaf once everything else is stretched by s
-            const clash = (sc) => {
-              for (let u = 0; u < n; u++) {
-                if (!P[u] || u === h) continue;
-                const dx = (P[u].x - P[h].x) * sc - (p.x - P[h].x), dy = (P[u].y - P[h].y) * sc - (p.y - P[h].y);
-                if (Math.abs(dx) < (N[u].w + N[v].w) / 2 + 12 && Math.abs(dy) < (N[u].h + N[v].h) / 2 + 12) return true;
-              }
-              return false;
-            };
-            // and no link may run through the leaf's box (a link from the hub itself cannot be stretched away, so that direction is rejected)
-            const lineClash = (sc) => {
-              const hx = P[h].x, hy = P[h].y, hw = N[v].w / 2 + 12, hh = N[v].h / 2 + 12;
-              for (const [x, y] of placed) {
-                if (_ogClSegBox(hx + (P[x].x - hx) * sc - p.x, hy + (P[x].y - hy) * sc - p.y, hx + (P[y].x - hx) * sc - p.x, hy + (P[y].y - hy) * sc - p.y, hw, hh)) return true;
-              }
-              return false;
-            };
-            const bad = (sc) => clash(sc) || lineClash(sc);
-            if (bad(s)) { let ok = false; for (const f of [1.1, 1.25, 1.5, 2, 3, 5, 8, 15, 30, 60]) { const s2 = Math.max(s, f); if (!bad(s2)) { s = s2; ok = true; break; } } if (!ok) s = 1e3; }
-            const cost = s + (Number.isFinite(reach) ? 0 : -0.001) - Math.min(reach, 400) * 1e-5;
-            if (!best || cost < best.cost) best = { cost, s, ux, uy, need };
-          }
-          if (best.s > 1.0001) { maxNeed = Math.max(maxNeed, best.s); scaleAbout(h, best.s * 1.03); }
-          P[v] = { x: P[h].x + best.ux * best.need * 1.02, y: P[h].y + best.uy * best.need * 1.02 }; com[v] = com[h]; placed.push([h, v]);
-        };
-        // The core is drawn at scale S about its centre; if the worst leaf needed more room, the next pass starts from a core scaled up by that much.
-        for (let pass = 0; pass < 5; pass++) {
-          P = new Array(n).fill(null); com = new Array(n).fill(0);
-          const ccx = r.P.reduce((s, p) => s + p.x, 0) / r.P.length, ccy = r.P.reduce((s, p) => s + p.y, 0) / r.P.length;
-          core.forEach((g, k) => { P[g] = { x: ccx + (r.P[k].x - ccx) * S, y: ccy + (r.P[k].y - ccy) * S }; com[g] = r.com[k]; });
-          placed = allEE.filter(([a, b]) => P[a] && P[b]); maxNeed = 0;
-          for (let k = order.length - 1; k >= 0; k--) { const v = order[k], h = hubOf[v]; if (P[h]) placeLeaf(v, h); }
-          if (maxNeed <= 1.0001) break; S *= Math.min(maxNeed * 1.04, 3);
-        }
-        for (let i = 0; i < n; i++) if (!P[i]) P[i] = { x: 0, y: 0 };
-        // Shrink evenly (a uniform scale cannot change a crossing) to the tightest size where no more boxes touch than at the start
-        const nGroups = Math.max(...com) + 1, groups = Array.from({ length: nGroups }, () => []); com.forEach((c, i) => groups[c].push(i));
-        const cx = P.reduce((s, p) => s + p.x, 0) / n, cy = P.reduce((s, p) => s + p.y, 0) / n, P1 = P.map((p) => ({ x: p.x, y: p.y })), tp = Math.max(8, LG - 6);
-        const touches = (s) => {
-          const Q = P1.map((p) => ({ x: cx + (p.x - cx) * s, y: cy + (p.y - cy) * s })); let c = 0;
-          for (let i = 0; i < n; i++) for (let j = i + 1; j < n; j++) {
-            const pad = Math.max(tp, removed[i] && hubOf[i] === j ? lgOf[i] - 6 : 0, removed[j] && hubOf[j] === i ? lgOf[j] - 6 : 0);
-            if (Math.abs(Q[i].x - Q[j].x) < (N[i].w + N[j].w) / 2 + pad && Math.abs(Q[i].y - Q[j].y) < (N[i].h + N[j].h) / 2 + pad) c++;
-          }
-          const B = groups.map((g) => { let x1 = 1e9, y1 = 1e9, x2 = -1e9, y2 = -1e9; g.forEach((i) => { x1 = Math.min(x1, Q[i].x - N[i].w / 2); x2 = Math.max(x2, Q[i].x + N[i].w / 2); y1 = Math.min(y1, Q[i].y - N[i].h / 2); y2 = Math.max(y2, Q[i].y + N[i].h / 2); }); return { x1, y1, x2, y2 }; });
-          for (let a = 0; a < B.length; a++) for (let b = a + 1; b < B.length; b++) if (B[a].x1 < B[b].x2 + 34 && B[b].x1 < B[a].x2 + 34 && B[a].y1 < B[b].y2 + 34 && B[b].y1 < B[a].y2 + 34) c++;
-          return c;
-        };
-        { const c1 = touches(1); let lo = 1e-4, hi = 1; for (let k = 0; k < 30; k++) { const mid = Math.sqrt(lo * hi); if (touches(mid) <= c1) hi = mid; else lo = mid; } P1.forEach((p, i) => { P[i].x = cx + (p.x - cx) * hi; P[i].y = cy + (p.y - cy) * hi; }); }
-        return P;
-      }
-      // Several tries from different starts within a time budget; the one with the fewest crossed links is kept.
-      function _ogClusterLayout(items, edges, opts) {
-        const n = items.length; if (n < 8 || !edges.length) return null;
-        const o = opts || {}, sc = o.roomy ? 1.3 : 1;
-        const opt = { L: 95 * sc, gap: 60 * sc, metaRep: 2.2, leafGap: 40 * sc, nudgeBudget: 250, swapBudget: 400, spreadBudget: 250 };
-        const EE = edges.filter(([a, b]) => a !== b).map(([a, b]) => ({ s: a, t: b }));
-        const maxTries = o.tries || (n <= 40 ? 6 : n <= 100 ? 3 : 2), budget = o.budgetMs || 900, t0 = performance.now();
-        let best = null;
-        for (let k = 0; k < maxTries && (k === 0 || performance.now() - t0 < budget); k++) {
-          const P = _ogClOnce(items, edges, opt, 104729 + k * 7919); if (!P) return null;
-          const x = EE.length <= 2500 ? _ogClCrossings(P, EE) : 0;
-          if (!best || x < best.crossings) best = { pos: P, crossings: x };
-          if (!x) break;
-        }
-        return best;
-      }
-      // ── OG: Compact layout and automatic choice ──────────────────────────────
-      // Compact layout: all classes placed at once so that straight distances match link counts (stress majorization, each link a spring;
-      // subclass links a little shorter), best of several starts, then clean-up steps in the order that tested best:
-      // remove overlaps, search for fewer crossings, move classes off links, shorten long links and shrink evenly, move off links once more.
-      // Pure geometry: items [{w, h}], edges [[i, j, weight]]. Returns { pos, crossings } or null.
-      function _ogClStress(ids, P, N, springs, L, rnd) {
-        const n = ids.length, pos = new Map(ids.map((g, k) => [g, k])), adj = Array.from({ length: n }, () => []);
-        springs.forEach(([a, b, len]) => { if (pos.has(a) && pos.has(b)) { adj[pos.get(a)].push([pos.get(b), len]); adj[pos.get(b)].push([pos.get(a), len]); } });
-        const D = Array.from({ length: n }, () => new Float64Array(n).fill(Infinity)); let mx = 0;
-        for (let s0 = 0; s0 < n; s0++) {
-          D[s0][s0] = 0; const done = new Uint8Array(n);
-          for (let it = 0; it < n; it++) {
-            let u = -1, b = Infinity; for (let i = 0; i < n; i++) if (!done[i] && D[s0][i] < b) { b = D[s0][i]; u = i; }
-            if (u < 0) break; done[u] = 1; adj[u].forEach(([v, w]) => { if (D[s0][u] + w < D[s0][v]) D[s0][v] = D[s0][u] + w; });
-          }
-          for (let i = 0; i < n; i++) if (isFinite(D[s0][i])) mx = Math.max(mx, D[s0][i]);
-        }
-        for (let i = 0; i < n; i++) for (let j = 0; j < n; j++) if (!isFinite(D[i][j])) D[i][j] = mx + L;
-        for (let it = 0; it < 120; it++) {
-          for (let i = 0; i < n; i++) {
-            const pi = P[ids[i]]; let nx = 0, ny = 0, den = 0;
-            for (let j = 0; j < n; j++) {
-              if (i === j) continue;
-              const pj = P[ids[j]], d = D[i][j], w = 1 / (d * d); let dx = pi.x - pj.x, dy = pi.y - pj.y, cur = Math.hypot(dx, dy);
-              if (cur < 1e-3) { dx = rnd() - 0.5; dy = rnd() - 0.5; cur = Math.hypot(dx, dy); }
-              nx += w * (pj.x + d * dx / cur); ny += w * (pj.y + d * dy / cur); den += w;
-            }
-            if (den) { pi.x = nx / den; pi.y = ny / den; }
-          }
-        }
       }
       function _ogClFree(P, N, v, p, gap) {
         for (let u = 0; u < P.length; u++) if (u !== v && Math.abs(P[u].x - p.x) < (N[u].w + N[v].w) / 2 + gap && Math.abs(P[u].y - p.y) < (N[u].h + N[v].h) / 2 + gap) return false;
@@ -584,62 +189,280 @@
           if (!ok || all() > h0) { old.forEach((o, i) => { P[i].x = o.x; P[i].y = o.y; }); break; }
         }
       }
-      function _ogCompactLayout(items, edges, opts) {
-        const n = items.length; if (n < 2 || !edges.length) return null;
-        const o = opts || {}, sc = o.roomy ? 1.3 : 1, L = 170 * sc, seed = o.seed || 1;
-        const N = items.map((it) => ({ w: it.w + 16 * sc, h: it.h + 12 * sc }));
-        const EE = edges.filter(([a, b]) => a !== b).map(([a, b, w]) => ({ s: a, t: b, sub: w === 2 }));
-        if (!EE.length) return null;
-        const ids = [...Array(n).keys()], springs = EE.map((e) => [e.s, e.t, L * (e.sub ? 0.9 : 1)]), rnd = _ogClRng(seed * 31 + 7);
-        const budget = o.budgetMs || 1500, t0 = performance.now(), restarts = n <= 30 ? 8 : n <= 80 ? 4 : 2, countX = EE.length <= 2500;
-        let best = null;
-        for (let r = 0; r < restarts && (r === 0 || performance.now() - t0 < budget / 2); r++) {
-          const P = N.map(() => ({ x: (rnd() - 0.5) * 400, y: (rnd() - 0.5) * 400 }));
-          _ogClStress(ids, P, N, springs, L, rnd); _ogClSeparate(P, N, 12, 120);
-          const x = countX ? _ogClCrossings(P, EE) : 0; if (!best || x < best.x) best = { x, P: P.map((p) => ({ x: p.x, y: p.y })) };
+      // ── OG: Compact, Grouped and Auto layouts ────────────────────────────────
+      // All three place every class at once so that straight distances match how many links apart two classes are (stress majorization
+      // from a pivot-MDS start), then clean up: fewer crossings, classes moved off links, long links shortened. They differ in what they feed in:
+      //  - Compact: plain link lengths; the best-scoring of a few variants (one-link classes placed afterwards in free directions, or moved
+      //    there only when that is better; room round classes with many links; several random starts).
+      //  - Grouped: links inside a group of closely linked classes (Louvain) shorter, links between groups longer, so the groups stand apart;
+      //    a class with many links gets a ring wide enough for its neighbours; one-link classes placed afterwards. Best for large or
+      //    hub-heavy models.
+      //  - Auto: runs the variants that suit the size and keeps the best score.
+      // Pure geometry, no Cytoscape: items [{w, h}], edges [[i, j, weight, labelWidth?]] (subclass links weight 2). Results { pos, crossings }.
+      function _ogClPaths(m, adj) {
+        // all-pairs shortest path lengths (Dijkstra with a binary heap); unreachable pairs get a distance a little beyond the longest one
+        const D = Array.from({ length: m }, () => new Float64Array(m).fill(Infinity));
+        for (let s = 0; s < m; s++) {
+          const d = D[s]; d[s] = 0; const h = [[0, s]];
+          while (h.length) {
+            const top = h[0], last = h.pop();
+            if (h.length) { h[0] = last; let i = 0; for (;;) { const l = 2 * i + 1, r = l + 1; let k = i; if (l < h.length && h[l][0] < h[k][0]) k = l; if (r < h.length && h[r][0] < h[k][0]) k = r; if (k === i) break; const t = h[i]; h[i] = h[k]; h[k] = t; i = k; } }
+            const du = top[0], u = top[1]; if (du > d[u]) continue;
+            for (const [v, w] of adj[u]) { const nd = du + w; if (nd < d[v]) { d[v] = nd; h.push([nd, v]); let i = h.length - 1; while (i > 0) { const p = (i - 1) >> 1; if (h[p][0] <= h[i][0]) break; const t = h[p]; h[p] = h[i]; h[i] = t; i = p; } } }
+          }
         }
-        const P = best.P, left = () => Math.max(50, budget - (performance.now() - t0));
-        if (countX) {
-          _ogClFinCross(P, N, EE, n <= 30 ? 150 : 300, seed); _ogClSeparate(P, N, 12, 120);
-          _ogClFinThru(P, N, EE, 12, 10, left() / 3); _ogClFinTight(P, N, EE, 12, 26 * sc, left() / 2); _ogClFinThru(P, N, EE, 8, 10, left());
-        } else _ogClFinTight(P, N, EE, 6, 26 * sc, left());
+        let mx = 0; for (let i = 0; i < m; i++) for (let j = 0; j < m; j++) if (isFinite(D[i][j])) mx = Math.max(mx, D[i][j]);
+        for (let i = 0; i < m; i++) for (let j = 0; j < m; j++) if (!isFinite(D[i][j])) D[i][j] = mx * 0.6 + 200;
+        return D;
+      }
+      // Pivot MDS start: a good, repeatable first placement (no random start needed).
+      function _ogClPivotMDS(D, n, rnd) {
+        const k = Math.min(n, 60), piv = [Math.min(n - 1, Math.floor(rnd() * n))], mind = new Float64Array(n).fill(Infinity);
+        while (piv.length < k) { const p = piv[piv.length - 1]; let b = -1, bi = 0; for (let i = 0; i < n; i++) { mind[i] = Math.min(mind[i], D[p][i]); if (mind[i] > b) { b = mind[i]; bi = i; } } piv.push(bi); }
+        const C = Array.from({ length: n }, (_, i) => piv.map((p) => D[i][p] * D[i][p]));
+        const rm = new Float64Array(n), cm = new Float64Array(k); let all = 0;
+        for (let i = 0; i < n; i++) for (let j = 0; j < k; j++) { rm[i] += C[i][j] / k; cm[j] += C[i][j] / n; all += C[i][j] / (n * k); }
+        for (let i = 0; i < n; i++) for (let j = 0; j < k; j++) C[i][j] = -0.5 * (C[i][j] - rm[i] - cm[j] + all);
+        const M = Array.from({ length: k }, () => new Float64Array(k));
+        for (let a = 0; a < k; a++) for (let b = 0; b < k; b++) { let s = 0; for (let i = 0; i < n; i++) s += C[i][a] * C[i][b]; M[a][b] = s; }
+        const vecs = [];
+        for (let e = 0; e < 2; e++) {
+          let v = Array.from({ length: k }, () => rnd() - 0.5);
+          for (let it = 0; it < 200; it++) {
+            const w = new Float64Array(k); for (let a = 0; a < k; a++) { let s = 0; for (let b = 0; b < k; b++) s += M[a][b] * v[b]; w[a] = s; }
+            vecs.forEach((u) => { let dt = 0; for (let a = 0; a < k; a++) dt += w[a] * u[a]; for (let a = 0; a < k; a++) w[a] -= dt * u[a]; });
+            let nr = 0; for (let a = 0; a < k; a++) nr += w[a] * w[a]; nr = Math.sqrt(nr) || 1; v = Array.from(w, (x) => x / nr);
+          }
+          vecs.push(v);
+        }
+        return Array.from({ length: n }, (_, i) => { let x = 0, y = 0; for (let j = 0; j < k; j++) { x += C[i][j] * vecs[0][j]; y += C[i][j] * vecs[1][j]; } return { x, y }; });
+      }
+      // Stress majorization: each pair of classes pulled toward its target distance D, near pairs weighted most (1/d²).
+      function _ogClStress(P, D, iters, rnd) {
+        const n = P.length;
+        for (let it = 0; it < iters; it++) {
+          let moved = 0;
+          for (let i = 0; i < n; i++) {
+            const pi = P[i], Di = D[i]; let nx = 0, ny = 0, den = 0;
+            for (let j = 0; j < n; j++) {
+              if (i === j) continue;
+              const pj = P[j], d = Di[j], w = 1 / (d * d); let dx = pi.x - pj.x, dy = pi.y - pj.y, cur = Math.sqrt(dx * dx + dy * dy);
+              if (cur < 1e-3) { dx = rnd() - 0.5; dy = rnd() - 0.5; cur = Math.sqrt(dx * dx + dy * dy); }
+              nx += w * (pj.x + d * dx / cur); ny += w * (pj.y + d * dy / cur); den += w;
+            }
+            const qx = nx / den, qy = ny / den; moved += Math.abs(qx - pi.x) + Math.abs(qy - pi.y); pi.x = qx; pi.y = qy;
+          }
+          if (moved / n < 0.05) break;
+        }
+      }
+      // Classes linked to one other class only (two links to the same class count as one), whose neighbour has other links
+      // (a pair of classes linked only to each other stays together).
+      function _ogClLeaves(n, EE) {
+        const nb = Array.from({ length: n }, () => new Set()); EE.forEach((e) => { nb[e.s].add(e.t); nb[e.t].add(e.s); });
+        const deg = nb.map((x) => x.size);
+        const leafOf = new Array(n).fill(-1);
+        EE.forEach((e) => { if (deg[e.s] === 1 && deg[e.t] > 1) leafOf[e.s] = e.t; else if (deg[e.t] === 1 && deg[e.s] > 1) leafOf[e.t] = e.s; });
+        return leafOf;
+      }
+      // Put one-link classes beside their neighbour, in the direction where the new link crosses nothing and no link runs through the class,
+      // at least gapOf[v] px from the neighbour's box (room for the link's text). improve: every class is placed already; move one only
+      // when the new spot is better than where it is.
+      function _ogClPlaceLeaves(P, N, EE, leafOf, gapOf, L, gap, improve, deadline) {
+        const n = P.length, kids = new Map();
+        leafOf.forEach((p, v) => { if (p >= 0) { if (!kids.has(p)) kids.set(p, []); kids.get(p).push(v); } });
+        const placed = new Uint8Array(n); for (let v = 0; v < n; v++) if (improve || leafOf[v] < 0) placed[v] = 1;
+        const freeAt = (v, p, c) => {
+          for (let u = 0; u < n; u++) {
+            if (u === v || !placed[u]) continue; const g = u === p ? gapOf[v] : gap;
+            if (Math.abs(P[u].x - c.x) < (N[u].w + N[v].w) / 2 + g && Math.abs(P[u].y - c.y) < (N[u].h + N[v].h) / 2 + g) return false;
+          }
+          return true;
+        };
+        const costAt = (v, p, c, cur) => {
+          let x = 0, t = 0;
+          for (const e of cur) {
+            if (_ogClSegBox(P[e.s].x - c.x, P[e.s].y - c.y, P[e.t].x - c.x, P[e.t].y - c.y, N[v].w / 2 + 4, N[v].h / 2 + 4)) t++;
+            if (e.s === p || e.t === p) continue; if (_ogClSegX(P[p], c, P[e.s], P[e.t])) x++;
+          }
+          for (let u = 0; u < n; u++) if (placed[u] && u !== p && u !== v && _ogClSegBox(P[p].x - P[u].x, P[p].y - P[u].y, c.x - P[u].x, c.y - P[u].y, N[u].w / 2 + 4, N[u].h / 2 + 4)) t++;
+          return 100 * x + 80 * t + Math.hypot(c.x - P[p].x, c.y - P[p].y);
+        };
+        const order = [...kids.keys()].sort((a, b) => kids.get(b).length - kids.get(a).length);
+        for (const p of order) {
+          for (const v of kids.get(p).sort((a, b) => N[b].w - N[a].w)) {
+            const late = deadline && performance.now() > deadline, dirs = late ? 16 : 48;
+            const cur = EE.filter((e) => placed[e.s] && placed[e.t] && e.s !== v && e.t !== v);
+            let best = improve ? (freeAt(v, p, P[v]) ? { cost: costAt(v, p, P[v], cur) - 6, c: P[v] } : null) : null;
+            if (improve && late) { placed[v] = 1; continue; }
+            for (let a = 0; a < dirs; a++) {
+              const th = a * 2 * Math.PI / dirs, ux = Math.cos(th), uy = Math.sin(th) * 0.75;
+              // nearest distance in this direction at which the boxes are gapOf apart
+              const r0 = Math.min(((N[p].w + N[v].w) / 2 + gapOf[v] + 1) / Math.max(Math.abs(ux), 1e-6), ((N[p].h + N[v].h) / 2 + gapOf[v] + 1) / Math.max(Math.abs(uy), 1e-6));
+              let tries = 0;
+              for (let r = r0; r < r0 + L * 3 && tries < (late ? 2 : 6) && !(best && best.cost < 100 && r > best.cost); r += 18) {
+                const c = { x: P[p].x + ux * r, y: P[p].y + uy * r };
+                if (!freeAt(v, p, c)) continue;
+                tries++;
+                const cost = costAt(v, p, c, cur);
+                if (!best || cost < best.cost) best = { cost, c };
+                if (cost < 100) break;
+              }
+            }
+            if (best && best.cost >= 100 && !improve) {
+              // every nearby spot crosses a link or has one running through it: look further out, all round
+              for (let a = 0; a < 72; a++) {
+                const th = a * 2 * Math.PI / 72, ux = Math.cos(th), uy = Math.sin(th) * 0.75;
+                const r0 = Math.min(((N[p].w + N[v].w) / 2 + gapOf[v] + 1) / Math.max(Math.abs(ux), 1e-6), ((N[p].h + N[v].h) / 2 + gapOf[v] + 1) / Math.max(Math.abs(uy), 1e-6));
+                for (let r = r0; r < r0 + L * 1.5 && !(best.cost < 100 && r > best.cost); r += 24) {
+                  const c = { x: P[p].x + ux * r, y: P[p].y + uy * r };
+                  if (!freeAt(v, p, c)) continue;
+                  const cost = costAt(v, p, c, cur);
+                  if (cost < best.cost) best = { cost, c };
+                  if (cost < 100) break;
+                }
+              }
+            }
+            if (best) P[v] = best.c; placed[v] = 1;
+          }
+        }
+      }
+      // One layout run. cfg: { L, init: "pmds", leaves, leafFix, hub, pods, restarts, budget }.
+      function _ogStressLayout(items, edges, cfg, opts) {
+        const n = items.length; if (n < 2 || !edges.length) return null;
+        const o = opts || {}, sc = o.roomy ? 1.3 : 1, L = (cfg.L || 170) * sc, seed = o.seed || 1, rnd = _ogClRng(seed * 31 + 7);
+        const N = items.map((it) => ({ w: it.w + 16 * sc, h: it.h + 12 * sc }));
+        const EE = edges.filter(([a, b]) => a !== b).map(([a, b, w, lab]) => ({ s: a, t: b, sub: w === 2, lab: lab || 0 }));
+        if (!EE.length) return null;
+        const t0 = performance.now(), budget = cfg.budget || 1500, left = () => Math.max(20, budget - (performance.now() - t0));
+        const leafAll = _ogClLeaves(n, EE), leafOf = cfg.leaves ? leafAll : new Array(n).fill(-1);
+        // room beside a one-link class: at least 40 px, more when its link carries text
+        const gapOf = new Array(n).fill(40 * sc); EE.forEach((e) => { [e.s, e.t].forEach((v) => { if (leafAll[v] >= 0) gapOf[v] = Math.max(gapOf[v], e.lab + 16); }); });
+        const core = [...Array(n).keys()].filter((v) => leafOf[v] < 0), ci = new Map(core.map((v, k) => [v, k])), m = core.length;
+        const nb = Array.from({ length: n }, () => new Set()); EE.forEach((e) => { nb[e.s].add(e.t); nb[e.t].add(e.s); });
+        // a class with k links needs a ring of radius about k × (box width + gap) / 2π to hold its neighbours side by side
+        const ring = new Array(n).fill(0);
+        if (cfg.hub) for (let v = 0; v < n; v++) { let s = 0; nb[v].forEach((u) => (s += Math.max(N[u].w, N[u].h * 2.5) + cfg.hub)); ring[v] = s / (2 * Math.PI); }
+        let com = null;
+        if (cfg.pods) { const E3 = EE.map((e) => [e.s, e.t, 1]); com = _ogClMergeSmall(_ogClLouvain(n, E3), E3, 4); }
+        const adj = Array.from({ length: m }, () => []);
+        EE.forEach((e) => {
+          if (!ci.has(e.s) || !ci.has(e.t)) return;
+          let len = L * (e.sub ? 0.9 : 1);
+          if (cfg.hub) len = Math.max(len, Math.min(3 * L, Math.max(ring[e.s], ring[e.t])));
+          if (com) len *= com[e.s] === com[e.t] ? 0.85 : cfg.pods;
+          if (e.lab) len = Math.max(len, (N[e.s].w + N[e.t].w) / 2 + e.lab + 24);
+          adj[ci.get(e.s)].push([ci.get(e.t), len]); adj[ci.get(e.t)].push([ci.get(e.s), len]);
+        });
+        const D = _ogClPaths(m, adj);
+        const NC = core.map((v) => N[v]), EC = EE.filter((e) => ci.has(e.s) && ci.has(e.t)).map((e) => ({ s: ci.get(e.s), t: ci.get(e.t) }));
+        const restarts = cfg.restarts != null ? cfg.restarts : (m <= 30 ? 8 : m <= 80 ? 4 : 2), countX = EC.length <= 2500;
+        let best = null;
+        for (let r = 0; r < Math.max(1, restarts) && (r === 0 || performance.now() - t0 < budget * 0.4); r++) {
+          const PC = cfg.init === "pmds" && r === 0 && m > 2 ? _ogClPivotMDS(D, m, rnd) : NC.map(() => ({ x: (rnd() - 0.5) * 400, y: (rnd() - 0.5) * 400 }));
+          _ogClStress(PC, D, 120, rnd); _ogClSeparate(PC, NC, 12, 120);
+          const x = countX ? _ogClCrossings(PC, EC) : 0; if (!best || x < best.x) best = { x, P: PC };
+        }
+        const PC = best.P;
+        if (countX && EC.length) {
+          _ogClFinCross(PC, NC, EC, Math.min(m <= 30 ? 150 : 300, left() / 3), seed); _ogClSeparate(PC, NC, 12, 120);
+          _ogClFinThru(PC, NC, EC, 12, 10, left() / 3); _ogClFinTight(PC, NC, EC, 12, 26 * sc, left() / 2); _ogClFinThru(PC, NC, EC, 8, 10, left() / 2);
+        } else if (EC.length) _ogClFinTight(PC, NC, EC, 6, 26 * sc, left() / 2);
+        const P = new Array(n); core.forEach((v, k) => (P[v] = PC[k]));
+        for (let v = 0; v < n; v++) if (!P[v]) P[v] = { x: 0, y: 0 };
+        const deadline = t0 + budget;
+        if (cfg.leaves) {
+          _ogClPlaceLeaves(P, N, EE, leafOf, gapOf, L, 10, false, deadline);
+          _ogClFinThru(P, N, EE, 6, 10, left() / 2); _ogClFinTight(P, N, EE, 6, 26 * sc, left());
+        }
+        if (cfg.leaves || cfg.leafFix) {
+          // clean-up may have pulled a one-link class closer than its room allows, or a better spot may be free now
+          const short = leafAll.map((p, v) => p >= 0 && Math.max(Math.abs(P[v].x - P[p].x) - (N[v].w + N[p].w) / 2, Math.abs(P[v].y - P[p].y) - (N[v].h + N[p].h) / 2) < gapOf[v] - 0.5 ? p : -1);
+          if (short.some((p) => p >= 0)) _ogClPlaceLeaves(P, N, EE, short, gapOf, L, 10, false, deadline);
+          // and the clean-up may have moved a link across a one-link class's link or through its box: put those classes back once more
+          const isBad = (v, p) => {
+            for (const e of EE) {
+              if (e.s === v || e.t === v) continue;
+              if (_ogClSegBox(P[e.s].x - P[v].x, P[e.s].y - P[v].y, P[e.t].x - P[v].x, P[e.t].y - P[v].y, N[v].w / 2 + 2, N[v].h / 2 + 2)) return true;
+              if (e.s !== p && e.t !== p && _ogClSegX(P[p], P[v], P[e.s], P[e.t])) return true;
+            }
+            for (let u = 0; u < n; u++) if (u !== v && u !== p && _ogClSegBox(P[p].x - P[u].x, P[p].y - P[u].y, P[v].x - P[u].x, P[v].y - P[u].y, N[u].w / 2 + 2, N[u].h / 2 + 2)) return true;
+            return false;
+          };
+          for (let pass = 0; pass < 2 && performance.now() < deadline + budget / 4; pass++) {
+            const bad = leafAll.map((p, v) => (p >= 0 && isBad(v, p) ? p : -1));
+            if (!bad.some((p) => p >= 0)) break;
+            _ogClPlaceLeaves(P, N, EE, bad, gapOf, L, 10, false, deadline);
+          }
+          if (cfg.leafFix) _ogClPlaceLeaves(P, N, EE, leafAll, gapOf, L, 10, true, deadline);
+        }
         return { pos: P, crossings: countX ? _ogClCrossings(P, EE) : 0 };
       }
+      // The variants the layouts choose from (tested on 28 model shapes, 9 to 540 classes).
+      const _OG_VARIANTS = {
+        stress: { family: "compact" },
+        mds: { family: "compact", init: "pmds", leafFix: true },
+        hubs: { family: "compact", init: "pmds", hub: 20, leaves: true },
+        leaves: { family: "compact", init: "pmds", leaves: true },
+        groups: { family: "grouped", init: "pmds", pods: 1.6, hub: 20, leaves: true }
+      };
+      // Run each variant (sharing the time budget), score each, keep the best. Returns { pos, crossings, algo, variant, scores } or null.
+      function _ogBestOf(items, edges, opts, list, total) {
+        const n = items.length, o = opts || {}, sc = o.roomy ? 1.3 : 1, N = items.map((it) => ({ w: it.w + 16 * sc, h: it.h + 12 * sc }));
+        const EE = edges.filter(([a, b]) => a !== b).map(([a, b]) => ({ s: a, t: b }));
+        const t0 = performance.now(), scores = {}; let best = null;
+        list.forEach((cfg, k) => {
+          const spent = performance.now() - t0; if (k && spent > total) return;
+          let r = null; try { r = _ogStressLayout(items, edges, { ...cfg, budget: Math.max(150, (total - spent) / (list.length - k)) }, o); } catch (err) { r = null; }
+          if (!r) return;
+          const P = r.pos.map((p) => ({ x: p.x, y: p.y })); _ogClSeparate(P, N, 6, 40);
+          const s = _ogPlacementScore(_ogPlacementMetrics(P, N, EE)), fam = cfg.family;
+          if (scores[fam] === undefined || s < scores[fam]) scores[fam] = s;
+          if (!best || s < best.score) best = { score: s, pos: r.pos, crossings: r.crossings, algo: fam, variant: cfg.name };
+        });
+        return best && { pos: best.pos, crossings: best.crossings, algo: best.algo, variant: best.variant, scores };
+      }
+      const _ogV = (k, extra) => ({ ..._OG_VARIANTS[k], name: k, ...(extra || {}) });
+      // Small models are cheap, so several variants are tried; larger ones give the whole time to fewer (sharing it starves the clean-up).
+      const _ogCompactVariants = (n) => n <= 30 ? [_ogV("mds"), _ogV("stress"), _ogV("hubs"), _ogV("leaves")] : n <= 60 ? [_ogV("mds"), _ogV("stress"), _ogV("leaves")] : [_ogV("mds")];
+      function _ogCompactLayout(items, edges, opts) {
+        const n = items.length;
+        return _ogBestOf(items, edges, opts, _ogCompactVariants(n), (opts && opts.budgetMs) || 1500);
+      }
+      // Grouped needs enough classes to form groups; smaller models go to the force layout.
+      function _ogGroupedLayout(items, edges, opts) {
+        const n = items.length; if (n < 8 || !edges.length) return null;
+        return _ogBestOf(items, edges, opts, [_ogV("groups", { L: n >= 100 ? 260 : 170 })], (opts && opts.budgetMs) || (n >= 100 ? 1500 : 1200));
+      }
       // How good a placement is, for choosing among layouts: crossed links, links through classes, near-touching links, touching classes,
-      // mean link length and the area taken. P: [{x, y}], N: [{w, h}], EE: [{s, t}].
+      // mean link length, links much longer than the typical link, and the area taken per unit of class area.
+      // P: [{x, y}], N: [{w, h}], EE: [{s, t}].
       function _ogPlacementMetrics(P, N, EE) {
-        const n = P.length; let near = 0, thru = 0, ov = 0, len = 0;
+        const n = P.length; let near = 0, thru = 0, ov = 0, len = 0, boxArea = 0;
         const cross = EE.length <= 2500 ? _ogClCrossings(P, EE) : 0;
         if (EE.length <= 1500) for (let i = 0; i < EE.length; i++) for (let j = i + 1; j < EE.length; j++) {
           const e = EE[i], f = EE[j]; if (e.s === f.s || e.s === f.t || e.t === f.s || e.t === f.t) continue;
           if (_ogClDSS(P[e.s], P[e.t], P[f.s], P[f.t]) < 30) near++;
         }
-        for (const e of EE) { len += Math.hypot(P[e.s].x - P[e.t].x, P[e.s].y - P[e.t].y); for (let i = 0; i < n; i++) { if (i === e.s || i === e.t) continue; if (_ogClSegBox(P[e.s].x - P[i].x, P[e.s].y - P[i].y, P[e.t].x - P[i].x, P[e.t].y - P[i].y, N[i].w / 2 + 6, N[i].h / 2 + 6)) thru++; } }
+        const lens = [];
+        for (const e of EE) { const l = Math.hypot(P[e.s].x - P[e.t].x, P[e.s].y - P[e.t].y); len += l; lens.push(l); for (let i = 0; i < n; i++) { if (i === e.s || i === e.t) continue; if (_ogClSegBox(P[e.s].x - P[i].x, P[e.s].y - P[i].y, P[e.t].x - P[i].x, P[e.t].y - P[i].y, N[i].w / 2 + 6, N[i].h / 2 + 6)) thru++; } }
+        lens.sort((a, b) => a - b); const med = lens[lens.length >> 1] || 1; let lout = 0; lens.forEach((l) => (lout += Math.max(0, l / med - 1.8)));
         let x1 = 1e9, x2 = -1e9, y1 = 1e9, y2 = -1e9;
         for (let i = 0; i < n; i++) {
+          boxArea += N[i].w * N[i].h;
           x1 = Math.min(x1, P[i].x - N[i].w / 2); x2 = Math.max(x2, P[i].x + N[i].w / 2); y1 = Math.min(y1, P[i].y - N[i].h / 2); y2 = Math.max(y2, P[i].y + N[i].h / 2);
           for (let j = i + 1; j < n; j++) if (Math.abs(P[i].x - P[j].x) < (N[i].w + N[j].w) / 2 && Math.abs(P[i].y - P[j].y) < (N[i].h + N[j].h) / 2) ov++;
         }
-        return { cross, near, thru, ov, len: len / Math.max(1, EE.length), area: (x2 - x1) * (y2 - y1) };
+        const area = (x2 - x1) * (y2 - y1);
+        return { n, cross, near, thru, ov, len: len / Math.max(1, EE.length), lout, area, fill: area / Math.max(1, boxArea) };
       }
-      function _ogPlacementScore(m) { return 10 * m.cross + 6 * m.thru + 2 * m.near + 30 * m.ov + m.len / 10 + Math.max(0, m.len - 350) / 2 + Math.sqrt(m.area) / 40; }
-      // Automatic choice: lay the classes out with each algorithm that suits the size, score each result, keep the best.
-      // Returns { pos, crossings, algo, scores: { compact, grouped } } or null.
+      function _ogPlacementScore(m) {
+        return 10 * m.cross + 8 * m.thru + 2 * m.near + 40 * m.ov + m.len / 10 + Math.max(0, m.len - 350) / 2 + Math.max(0, (m.fill || 0) - 8) * 4 * Math.sqrt(m.n || 1) + 25 * (m.lout || 0);
+      }
+      // Automatic choice: the variants that suit the size, best score kept. Returns { pos, crossings, algo, scores } or null.
       function _ogAutoLayout(items, edges, opts) {
-        const n = items.length, o = opts || {}, sc = o.roomy ? 1.3 : 1;
-        const N = items.map((it) => ({ w: it.w + 16 * sc, h: it.h + 12 * sc })), EE = edges.filter(([a, b]) => a !== b).map(([a, b]) => ({ s: a, t: b }));
-        const cands = [], scores = {};
-        const attempt = (algo, fn) => {
-          let r = null; try { r = fn(items, edges, o); } catch (err) { r = null; }
-          if (!r) return;
-          const P = r.pos.map((p) => ({ x: p.x, y: p.y })); _ogClSeparate(P, N, 6, 40);
-          const score = _ogPlacementScore(_ogPlacementMetrics(P, N, EE)); scores[algo] = Math.round(score * 10) / 10;
-          cands.push({ algo, pos: r.pos, crossings: r.crossings, score });
-        };
-        if (n <= 150) attempt("compact", _ogCompactLayout);
-        if (n >= 8) attempt("grouped", _ogClusterLayout);
-        if (!cands.length) return null;
-        cands.sort((a, b) => a.score - b.score);
-        return { pos: cands[0].pos, crossings: cands[0].crossings, algo: cands[0].algo, scores };
+        const n = items.length, list = n <= 100 ? _ogCompactVariants(n) : [];
+        if (n >= 8) list.push(_ogV("groups", { L: n >= 100 ? 260 : 170 }));
+        if (!list.length) list.push(_ogV("mds"));
+        return _ogBestOf(items, edges, opts, list, (opts && opts.budgetMs) || (n <= 30 ? 1500 : n <= 100 ? 2200 : 1500));
       }
       // ── end of the layouts ──

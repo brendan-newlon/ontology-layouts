@@ -1,3 +1,5 @@
+> **Superseded (2026-11-05).** The library no longer contains this algorithm; Grouped is now the stress-based layout with groups described in `ONTOLOGY-LAYOUT-ALGORITHMS.md`. Kept as a record of what was tried.
+
 # Cluster-aware graph layout with few crossed links
 
 A layout algorithm for medium-sized graphs (tens to a few hundred nodes, up to about a thousand links) that have visible communities, such as ontologies, schemas, service maps and dependency graphs. It draws the graph as a handful of tight clusters joined by long, mostly straight links, and works to keep links from crossing each other or passing through nodes. It is deterministic given a seed, needs no dependencies, and runs in 10 ms to 1 s on a laptop in JavaScript.
