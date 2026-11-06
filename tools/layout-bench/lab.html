@@ -33,6 +33,10 @@ aside h2 { font-size: 13px; margin: 0; padding: 8px 12px; border-bottom: 1px sol
 .ev .m { font-variant-numeric: tabular-nums; }
 .ev.note { background: var(--note); color: var(--ink); border-left-color: var(--warn); border-radius: 6px; padding: 6px 8px; font-size: 13px; white-space: pre-wrap; }
 .ev .t { float: right; font-size: 11px; color: var(--muted); }
+.ev.undone, .ev.ignored { opacity: 0.45; }
+.ev.undone .d, .ev.ignored .d { text-decoration: line-through; }
+.ev .ign { float: right; margin-left: 6px; font-size: 10px; padding: 0 5px; line-height: 1.5; opacity: 0; }
+.ev:hover .ign, .ev.ignored .ign { opacity: 1; }
 #compose { border-top: 1px solid var(--rule); padding: 8px; display: grid; gap: 6px; }
 #note { width: 100%; min-height: 64px; resize: vertical; font: inherit; padding: 6px 8px; border: 1px solid var(--rule); border-radius: 6px; background: var(--bg); color: var(--ink); }
 #compose .row { display: flex; justify-content: space-between; align-items: center; color: var(--muted); font-size: 12px; }
@@ -67,7 +71,7 @@ aside h2 { font-size: 13px; margin: 0; padding: 8px 12px; border-bottom: 1px sol
 <main>
   <div id="stage">
     <svg id="svg"></svg>
-    <div id="help">Drag a class to move it. Ctrl+click classes to select several, then drag one to move them together; Shift+drag on empty space selects an area. Drag on a link to pull a bend into it; drag a bend to reshape; double-click a bend to remove it, or a link to straighten it. Drag empty space to pan, wheel to zoom.</div>
+    <div id="help">Drag a class to move it. Ctrl+click classes to select several, then drag one to move them together; Shift+drag on empty space selects an area. Drag on a link to pull a bend into it; drag a bend to reshape; double-click a bend to remove it, or a link to straighten it. Drag empty space to pan, wheel to zoom. Ctrl+Z undoes the last step and greys it out as a trial; "ignore" on any step leaves it out of the analysis. Coming back to a graph continues where you left it; "Lay out again" starts that graph over.</div>
   </div>
   <aside>
     <h2>Steps and reasoning <span id="save">not saved yet</span></h2>
@@ -204,15 +208,23 @@ function describe(ev) {
     case 'straighten': return `<span class="d">Straightened ${esc(ev.link)}</span>` + m;
     case 'select': return `<span class="d">Selected ${ev.classes.length ? esc(ev.classes.join(', ')) : 'nothing'}</span>`;
     case 'layout': return `<span class="d">Laid out ${esc(ev.graph)} with ${esc(ev.algo)}</span> <span class="m">crossings ${ev.after.cross}, through ${ev.after.thru}, sharp ${ev.after.sharp}, cramped ${ev.after.tight}</span>`;
-    case 'undo': return `<span class="d">Undid step ${ev.undid}</span>` + m;
+    case 'undo': return `<span class="d">Undid step ${ev.undid} (a trial)</span>` + m;
+    case 'resume': return `<span class="d">Came back to ${esc(ev.graph)}, continuing from where you left it</span>`;
     default: return esc(ev.kind);
   }
 }
+const QUIET = new Set(['view', 'toggle']); // recorded, but not listed
 function showEvent(ev) {
-  const d = document.createElement('div'); d.className = 'ev' + (ev.kind === 'note' ? ' note' : '');
-  d.innerHTML = `<span class="t">${ev.seq} · ${(ev.ms / 1000).toFixed(0)} s</span>` + (ev.kind === 'note' ? esc(ev.text) : describe(ev));
+  if (QUIET.has(ev.kind)) return;
+  const d = document.createElement('div'); d.className = 'ev' + (ev.kind === 'note' ? ' note' : '') + (ev.undone ? ' undone' : '') + (ev.ignored ? ' ignored' : ''); d.dataset.seq = ev.seq;
+  const ign = ev.kind === 'note' || ev.kind === 'resume' ? '' : `<button class="ign" data-seq="${ev.seq}" title="Mark this step as a test to leave out of the analysis">${ev.ignored ? 'keep' : 'ignore'}</button>`;
+  d.innerHTML = ign + `<span class="t">${ev.seq} · ${(ev.ms / 1000).toFixed(0)} s</span>` + (ev.kind === 'note' ? esc(ev.text) : describe(ev));
   $('log').appendChild(d); $('log').scrollTop = 1e9;
 }
+$('log').addEventListener('click', (e) => {
+  const b = e.target.closest('.ign'); if (!b) return; const ev = S.events.find((x) => x.seq === +b.dataset.seq); if (!ev) return;
+  ev.ignored = !ev.ignored; ev.ignoredAt = new Date().toISOString(); b.textContent = ev.ignored ? 'keep' : 'ignore'; b.parentElement.classList.toggle('ignored', ev.ignored); persist();
+});
 let saveT = null;
 function persist() {
   const body = JSON.stringify({ id: S.id, graph: G.key, algo: $('algo').value, labels: G.labels, links: G.E.map((e) => [e.s, e.t, e.sub ? 1 : 0]), boxes: G.D.map((d) => d.w), events: S.events });
@@ -223,6 +235,27 @@ function persist() {
 }
 
 // ---------- loading ----------
+// The latest session for a graph, so that coming back to a graph continues it instead of starting over
+function latestSession(key) {
+  try { const ks = Object.keys(localStorage).filter((k) => k.startsWith('layout-lab:lab_' + key + '_')).sort();
+    return ks.length ? JSON.parse(localStorage.getItem(ks[ks.length - 1])) : null; } catch (e) { return null; }
+}
+function resume(sess) {
+  const last = sess && sess.labels && sess.labels.length === G.labels.length && [...sess.events].reverse().find((e) => e.state);
+  if (!last) return false;
+  S.id = sess.id; S.events = sess.events; S.started = performance.now() - (sess.events[sess.events.length - 1].ms || 0) - 1000;
+  restore(last.state);
+  const first = sess.events.find((e) => e.kind === 'layout' && e.after); S.base = first ? first.after : measure();
+  $('log').innerHTML = ''; S.events.forEach(showEvent);
+  fit(); record('resume', { graph: G.key }, measure()); draw(); return true;
+}
+// One journal across all graphs: which graph was open when, and in which session file
+function journal(action) {
+  let J = []; try { J = JSON.parse(localStorage.getItem('layout-lab:journal') || '[]'); } catch (e) {}
+  J.push({ at: new Date().toISOString(), action, graph: G.key, session: S.id });
+  const body = JSON.stringify(J); try { localStorage.setItem('layout-lab:journal', body); } catch (e) {}
+  fetch('http://127.0.0.1:8013/lab_journal.json', { method: 'POST', body }).catch(() => {});
+}
 async function load(key, algo, logIt = true) {
   const Md = await MODELS[key].load();
   G.key = key; G.labels = Md.labels; G.D = Md.labels.map((l) => ({ w: String(l).length * 6.6 + 10, h: 20 }));
@@ -233,10 +266,11 @@ async function load(key, algo, logIt = true) {
   G.P = fn(items, edges, { seed: 1 }).pos.map((p) => ({ x: p.x, y: p.y }));
   O.sep(G.P, G.D.map((d) => ({ w: d.w + 16, h: d.h + 12 })), 6, 200);
   G.H = G.E.map(() => []); G.sel.clear(); G.pick = -1; S.undo = [];
-  if (!S.id || logIt === 'new') { S.id = 'lab_' + key + '_' + new Date().toISOString().replace(/[-:]/g, '').replace('T', '-').slice(0, 15); S.events = []; S.started = performance.now(); $('log').innerHTML = ''; }
+  if (logIt === 'open' && resume(latestSession(key))) { journal('resume'); return; }
+  if (!S.id || logIt === 'new' || logIt === 'open') { S.id = 'lab_' + key + '_' + new Date().toISOString().replace(/[-:]/g, '').replace('T', '-').slice(0, 15); S.events = []; S.started = performance.now(); $('log').innerHTML = ''; }
   fit(); S.base = measure();
   record('layout', { graph: key, algo: $('algo').selectedOptions[0].textContent }, S.base);
-  draw();
+  draw(); journal(logIt === 'open' || logIt === 'new' ? 'new' : 'relayout');
 }
 function fit() {
   const b = bbox(G.P.flatMap((p, i) => [{ x: p.x - G.D[i].w / 2, y: p.y - G.D[i].h / 2 }, { x: p.x + G.D[i].w / 2, y: p.y + G.D[i].h / 2 }]));
@@ -279,7 +313,7 @@ svg.addEventListener('pointermove', (ev) => {
 });
 svg.addEventListener('pointerup', () => {
   const d = drag; drag = null; if (!d) return;
-  if (d.kind === 'pan') { if (!d.moved && G.sel.size) { G.sel.clear(); G.pick = -1; draw(); record('select', { classes: [] }); } else if (!d.moved) { G.pick = -1; draw(); } return; }
+  if (d.kind === 'pan') { lastPan = d.moved; if (!d.moved && G.sel.size) { G.sel.clear(); G.pick = -1; draw(); record('select', { classes: [] }); } else if (!d.moved) { G.pick = -1; draw(); } return; }
   if (d.kind === 'marquee') { const r = d.r, x1 = Math.min(r.x0, r.x1), x2 = Math.max(r.x0, r.x1), y1 = Math.min(r.y0, r.y1), y2 = Math.max(r.y0, r.y1);
     if (!d.add) G.sel.clear(); G.P.forEach((q, i) => { if (q.x >= x1 && q.x <= x2 && q.y >= y1 && q.y <= y2) G.sel.add(i); }); draw(); record('select', { classes: [...G.sel].map((i) => G.labels[i]), how: 'area' }); return; }
   if (d.kind === 'nodes') {
@@ -306,21 +340,29 @@ svg.addEventListener('pointerup', () => {
 let lastClick = null;
 svg.addEventListener('wheel', (ev) => { ev.preventDefault(); const p = pt(ev), f = Math.exp(Math.max(-60, Math.min(60, ev.deltaY)) * 0.0015);
   view = { x: p.x - (p.x - view.x) * f, y: p.y - (p.y - view.y) * f, w: view.w * f, h: view.h * f }; svg.setAttribute('viewBox', `${view.x} ${view.y} ${view.w} ${view.h}`); }, { passive: false });
-function undo() { const s = S.undo.pop(); if (!s) return; const before = measure(), undid = [...S.events].reverse().find((e) => e.state && e.kind !== 'layout' && e.kind !== 'undo' && !e.undone); if (undid) undid.undone = true; restore(s); record('undo', { undid: undid ? undid.seq : null }, before); draw(); }
+function undo() { const s = S.undo.pop(); if (!s) return; const before = measure(), undid = [...S.events].reverse().find((e) => e.state && e.kind !== 'layout' && e.kind !== 'undo' && !e.undone); if (undid) { undid.undone = true; const el = $('log').querySelector(`.ev[data-seq="${undid.seq}"]`); if (el) el.classList.add('undone'); } restore(s); record('undo', { undid: undid ? undid.seq : null }, before); draw(); }
 $('undo').onclick = undo;
 document.addEventListener('keydown', (ev) => {
   if (ev.target === $('note')) return;
   if ((ev.ctrlKey || ev.metaKey) && ev.key.toLowerCase() === 'z') { ev.preventDefault(); undo(); }
-  if (ev.key === 'Escape') { G.sel.clear(); G.pick = -1; draw(); }
+  if (ev.key === 'Escape' && G.sel.size) { G.sel.clear(); G.pick = -1; draw(); record('select', { classes: [], how: 'escape' }); }
 });
+// Ctrl+Z in an empty note box undoes the last step too, so it works right after typing a note
+$('note').addEventListener('keydown', (ev) => { if ((ev.ctrlKey || ev.metaKey) && ev.key.toLowerCase() === 'z' && !$('note').value) { ev.preventDefault(); undo(); } });
+// pans, zooms and toggles are recorded (not listed), so the session shows where you were looking
+let viewT = null;
+function noteView() { clearTimeout(viewT); viewT = setTimeout(() => record('view', { box: [view.x, view.y, view.w, view.h].map((v) => Math.round(v)) }), 800); }
+svg.addEventListener('wheel', noteView); svg.addEventListener('pointerup', () => { if (lastPan) { lastPan = false; noteView(); } });
+let lastPan = false;
 function sendNote() { const text = $('note').value.trim(); if (!text) return; $('note').value = '';
   const ev = { seq: S.events.length + 1, ms: Math.round(performance.now() - S.started), at: new Date().toISOString(), kind: 'note', text, selected: [...G.sel].map((i) => G.labels[i]), afterStep: S.events.length ? S.events[S.events.length - 1].seq : 0 };
   S.events.push(ev); showEvent(ev); persist(); }
 $('send').onclick = sendNote;
 $('note').addEventListener('keydown', (ev) => { if (ev.key === 'Enter' && !ev.shiftKey) { ev.preventDefault(); sendNote(); } });
-$('marks').onchange = draw; $('handles').onchange = draw;
+$('marks').onchange = () => { draw(); record('toggle', { marks: $('marks').checked }); };
+$('handles').onchange = () => { draw(); record('toggle', { bends: $('handles').checked }); };
 $('relayout').onclick = () => load(G.key, $('algo').value, true);
-$('graph').onchange = () => load($('graph').value, $('algo').value, 'new');
+$('graph').onchange = () => load($('graph').value, $('algo').value, 'open');
 $('algo').onchange = () => load(G.key, $('algo').value, true);
 window.addEventListener('resize', () => { if (G.P.length) { fit(); draw(); } });
 // graph list: the 15 graphs of the write-up first
@@ -328,7 +370,7 @@ const ORDER = ['prov', 'uni', 'hotel', 'org', 'brewery', 'trial', 'telecom', 'so
 const names = { prov: 'PROV-O (30)', uni: 'University (14)', hotel: 'Hotel booking (13)', org: 'W3C ORG (15)', brewery: 'Brewery IoT (23)', trial: 'Clinical trial (24)', telecom: 'Telecom network (34)', sosa: 'SOSA/SSN (36)', crm: 'Customer 360 (31)', schema: 'schema.org core (49)', health: 'Clinical record, 3 hubs (53)', fibo: 'FIBO-like loans (59)', pizza: 'Pizza taxonomy (90)', bio: 'Biomedical taxonomy (115)', big: 'Bank (179)' };
 ORDER.filter((k) => MODELS[k]).forEach((k) => { const o = document.createElement('option'); o.value = k; o.textContent = names[k] || k; $('graph').appendChild(o); });
 const start = new URLSearchParams(location.search).get('graph') || 'prov'; $('graph').value = start;
-load(start, 'auto', 'new');
+load(start, 'auto', 'open');
 </script>
 </body>
 </html>
