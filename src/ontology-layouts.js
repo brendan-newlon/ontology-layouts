@@ -278,19 +278,23 @@
           }
           return true;
         };
-        const costAt = (v, p, c, cur) => {
-          let x = 0, t = 0;
+        // cost of a spot; gives up (Infinity) as soon as it cannot beat limit
+        const costAt = (v, p, c, cur, limit) => {
+          let cost = Math.hypot(c.x - P[p].x, c.y - P[p].y); const lim = limit === undefined ? Infinity : limit;
+          if (cost >= lim) return Infinity;
           for (const e of cur) {
-            if (_ogClSegBox(P[e.s].x - c.x, P[e.s].y - c.y, P[e.t].x - c.x, P[e.t].y - c.y, N[v].w / 2 + 4, N[v].h / 2 + 4)) t++;
-            if (e.s === p || e.t === p) continue; if (_ogClSegX(P[p], c, P[e.s], P[e.t])) x++;
+            if (_ogClSegBox(P[e.s].x - c.x, P[e.s].y - c.y, P[e.t].x - c.x, P[e.t].y - c.y, N[v].w / 2 + 4, N[v].h / 2 + 4)) cost += 80;
+            if (e.s !== p && e.t !== p && _ogClSegX(P[p], c, P[e.s], P[e.t])) cost += 100;
+            if (cost >= lim) return Infinity;
           }
-          for (let u = 0; u < n; u++) if (placed[u] && u !== p && u !== v && _ogClSegBox(P[p].x - P[u].x, P[p].y - P[u].y, c.x - P[u].x, c.y - P[u].y, N[u].w / 2 + 4, N[u].h / 2 + 4)) t++;
-          return 100 * x + 80 * t + Math.hypot(c.x - P[p].x, c.y - P[p].y);
+          for (let u = 0; u < n; u++) if (placed[u] && u !== p && u !== v && _ogClSegBox(P[p].x - P[u].x, P[p].y - P[u].y, c.x - P[u].x, c.y - P[u].y, N[u].w / 2 + 4, N[u].h / 2 + 4)) { cost += 80; if (cost >= lim) return Infinity; }
+          return cost;
         };
         const order = [...kids.keys()].sort((a, b) => kids.get(b).length - kids.get(a).length);
         for (const p of order) {
           for (const v of kids.get(p).sort((a, b) => N[b].w - N[a].w)) {
-            const late = deadline && performance.now() > deadline, dirs = late ? 16 : 48;
+            // placing is cheap below a few hundred classes, so only very large models ever search less once the time is up
+            const late = deadline && n > 300 && performance.now() > deadline, dirs = late ? 16 : 48;
             const cur = EE.filter((e) => placed[e.s] && placed[e.t] && e.s !== v && e.t !== v);
             let best = improve ? (freeAt(v, p, P[v]) ? { cost: costAt(v, p, P[v], cur) - 6, c: P[v] } : null) : null;
             if (improve && late) { placed[v] = 1; continue; }
@@ -303,7 +307,7 @@
                 const c = { x: P[p].x + ux * r, y: P[p].y + uy * r };
                 if (!freeAt(v, p, c)) continue;
                 tries++;
-                const cost = costAt(v, p, c, cur);
+                const cost = costAt(v, p, c, cur, best ? best.cost : Infinity);
                 if (!best || cost < best.cost) best = { cost, c };
                 if (cost < 100) break;
               }
@@ -316,7 +320,7 @@
                 for (let r = r0; r < r0 + L * 1.5 && !(best.cost < 100 && r > best.cost); r += 24) {
                   const c = { x: P[p].x + ux * r, y: P[p].y + uy * r };
                   if (!freeAt(v, p, c)) continue;
-                  const cost = costAt(v, p, c, cur);
+                  const cost = costAt(v, p, c, cur, best.cost);
                   if (cost < best.cost) best = { cost, c };
                   if (cost < 100) break;
                 }
@@ -388,7 +392,7 @@
             for (let u = 0; u < n; u++) if (u !== v && u !== p && _ogClSegBox(P[p].x - P[u].x, P[p].y - P[u].y, P[v].x - P[u].x, P[v].y - P[u].y, N[u].w / 2 + 2, N[u].h / 2 + 2)) return true;
             return false;
           };
-          for (let pass = 0; pass < 2 && performance.now() < deadline + budget / 4; pass++) {
+          for (let pass = 0; pass < 2 && (n <= 300 || performance.now() < deadline + budget / 4); pass++) {
             const bad = leafAll.map((p, v) => (p >= 0 && isBad(v, p) ? p : -1));
             if (!bad.some((p) => p >= 0)) break;
             _ogClPlaceLeaves(P, N, EE, bad, gapOf, L, 10, false, deadline);
@@ -431,7 +435,7 @@
       // Grouped needs enough classes to form groups; smaller models go to the force layout.
       function _ogGroupedLayout(items, edges, opts) {
         const n = items.length; if (n < 8 || !edges.length) return null;
-        return _ogBestOf(items, edges, opts, [_ogV("groups", { L: n >= 100 ? 260 : 170 })], (opts && opts.budgetMs) || (n >= 100 ? 1500 : 1200));
+        return _ogBestOf(items, edges, opts, [_ogV("groups", { L: n >= 100 ? 260 : 170 })], (opts && opts.budgetMs) || 1000);
       }
       // How good a placement is, for choosing among layouts: crossed links, links through classes, near-touching links, touching classes,
       // mean link length, links much longer than the typical link, and the area taken per unit of class area.
@@ -460,9 +464,10 @@
       }
       // Automatic choice: the variants that suit the size, best score kept. Returns { pos, crossings, algo, scores } or null.
       function _ogAutoLayout(items, edges, opts) {
-        const n = items.length, list = n <= 100 ? _ogCompactVariants(n) : [];
+        // dense models (more than two links per class) give their time to fewer variants, or the clean-up of each is starved
+        const n = items.length, dense = n > 30 && edges.length > 2 * n, list = n > 100 ? [] : dense ? [_ogV("mds")] : _ogCompactVariants(n);
         if (n >= 8) list.push(_ogV("groups", { L: n >= 100 ? 260 : 170 }));
         if (!list.length) list.push(_ogV("mds"));
-        return _ogBestOf(items, edges, opts, list, (opts && opts.budgetMs) || (n <= 30 ? 1500 : n <= 100 ? 2200 : 1500));
+        return _ogBestOf(items, edges, opts, list, (opts && opts.budgetMs) || (n <= 30 ? 1500 : n <= 100 ? 2200 : 1000));
       }
       // ── end of the layouts ──
