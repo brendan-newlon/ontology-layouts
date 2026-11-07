@@ -16,7 +16,24 @@ function x3FlowOf(n, EE, map) {
   EE.forEach((e) => { if (!e.sub) return; const c = map ? map.get(e.s) : e.s, p = map ? map.get(e.t) : e.t; if (c === undefined || p === undefined) return; par[c].push(p); kid[p].push(c); });
   return { par, kid, g: X3.gap };
 }
+// X3.mode 'mirror': a child above its parent's level is reflected to below it (same distance), parents first, so a parent's
+// children keep their fan around it instead of being squashed into one row just below. X3.lambda < 1 moves only that share
+// of the way each sweep (a soft constraint, as in an energy term λ·max(0, violation)²).
+function x3Order(f) {
+  if (f.order) return f.order;
+  const n = f.par.length, depth = new Array(n).fill(-1), q = [];
+  for (let v = 0; v < n; v++) if (!f.par[v].length) { depth[v] = 0; q.push(v); }
+  for (let i = 0; i < q.length; i++) for (const k of f.kid[q[i]]) if (depth[k] < 0) { depth[k] = depth[q[i]] + 1; q.push(k); }
+  for (let v = 0; v < n; v++) if (depth[v] < 0) q.push(v);
+  return (f.order = q);
+}
 function x3Project(P, f, rounds) {
+  if (X3.mode === 'mirror') {
+    const lam = X3.lambda == null ? 1 : X3.lambda;
+    for (const c of x3Order(f)) { let top = -Infinity, py = 0; for (const p of f.par[c]) if (P[p].y + f.g > top) { top = P[p].y + f.g; py = P[p].y; }
+      if (top > -Infinity && P[c].y < top) { const want = py + Math.max(f.g, py - P[c].y); P[c].y += lam * (want - P[c].y); } }
+    return;
+  }
   for (let r = 0; r < rounds; r++) {
     let worst = 0;
     f.par.forEach((ps, c) => ps.forEach((p) => { const v = P[p].y + f.g - P[c].y; if (v > 0) { P[c].y += v / 2; P[p].y -= v / 2; worst = Math.max(worst, v); } }));
@@ -192,7 +209,12 @@ const EXP3 = {
   autoF10: x3Wrap((a, b, c) => _ogAutoLayout(a, b, c), 10)
 };
 const x3Wrap2 = (fn, gap, squash) => (it, ed, o) => { X3.squash = squash; try { return x3Wrap(fn, gap)(it, ed, o); } finally { X3.squash = 0.75; } };
-EXP3.autoFs5 = x3Wrap2((a, b, c) => _ogAutoLayout(a, b, c), 40, 0.5);
+const x3Mode = (fn, gap, mode, lambda) => (it, ed, o) => { X3.mode = mode; X3.lambda = lambda; try { return x3Wrap(fn, gap)(it, ed, o); } finally { X3.mode = null; X3.lambda = null; } };
+EXP3.autoM = x3Mode((a, b, c) => _ogAutoLayout(a, b, c), 30, 'mirror', 1);
+EXP3.autoMs = x3Mode((a, b, c) => _ogAutoLayout(a, b, c), 30, 'mirror', 0.3);
+EXP3.compactM = x3Mode((a, b, c) => _ogCompactLayout(a, b, c), 30, 'mirror', 1);
+EXP3.groupedM = x3Mode((a, b, c) => _ogGroupedLayout(a, b, c), 30, 'mirror', 1);
+EXP3.autoFs5 =x3Wrap2((a, b, c) => _ogAutoLayout(a, b, c), 40, 0.5);
 EXP3.autoFs35 = x3Wrap2((a, b, c) => _ogAutoLayout(a, b, c), 40, 0.35);
 // Experiment: no moves off links (the clean-up step that moves classes off links running through them is skipped),
 // to measure what that step costs in area and what it saves in links through classes.

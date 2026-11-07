@@ -3,7 +3,8 @@
 //   1. clock: the layout code reads no wall clock except inside the work clock, so a drawing does not depend on the computer;
 //   2. grid: the clean-up's spatial grid gives the same costs as checking every pair (its checkIndex mode compares the two
 //      on every evaluation and throws on a difference);
-//   3. repeatable: the same model laid out and cleaned up twice gives the same drawing.
+//   3. repeatable: the same model laid out and cleaned up twice gives the same drawing;
+//   4. tree: a pure taxonomy drawn as a tree, and cleaned up keeping it top-down, has no problem and every subclass below.
 // node tests/check_ontology_layout.mjs            -> "ontology layout clean" or the failures
 // node tests/check_ontology_layout.mjs --self-test -> runs each check on a deliberately broken copy and confirms it fails
 import fs from 'node:fs';
@@ -15,7 +16,7 @@ function layoutCode(src) {
   return src.slice(a, b).replace(/\r\n/g, '\n');
 }
 function load(code) {
-  const api = 'return { auto: _ogAutoLayout, cleanUp: _ogLayoutCleanUp, tidy: _ogHandTidy, now: _ogNow, sep: _ogClSeparate };';
+  const api = 'return { auto: _ogAutoLayout, tree: _ogTreeLayout, cleanUp: _ogLayoutCleanUp, tidy: _ogHandTidy, now: _ogNow, sep: _ogClSeparate };';
   return new Function('window', 'document', 'state', 'log', code + '\n' + api)({}, {}, { ui: {} }, () => {});
 }
 // small generated models: a few taxonomies with property links between them, fixed seeds
@@ -39,8 +40,10 @@ function checkGrid(L) {
   const bad = [];
   MODELS.forEach((m, i) => {
     const P = L.auto(m.D, m.edges, { seed: 1 }).pos.map((p) => ({ x: p.x, y: p.y })), E = m.edges.map(([s, t]) => ({ s, t }));
-    try { L.tidy.run(P, m.D, E, { budgetMs: 300, checkIndex: true }); }
-    catch (err) { bad.push('model ' + i + ': ' + err.message); }
+    for (const down of [undefined, m.edges.filter((e) => e[2] === 2).map(([c, p]) => [c, p])]) {
+      try { L.tidy.run(P, m.D, E, { budgetMs: 300, checkIndex: true, down }); }
+      catch (err) { bad.push('model ' + i + (down ? ' (kept top-down)' : '') + ': ' + err.message); }
+    }
   });
   return bad;
 }
@@ -52,9 +55,23 @@ function checkRepeatable(L) {
   });
   return bad;
 }
+// 4. tree: a pure taxonomy (wide fans, three levels) drawn by the tree layout and cleaned up keeping it top-down has no crossed
+//    links, no link through a class, and every subclass below its superclass
+function checkTree(L) {
+  const bad = [], labels = [], edges = [];
+  labels.push('Thing'); for (let i = 0; i < 4; i++) { const a = labels.length; labels.push('Category' + i); edges.push([a, 0, 2]);
+    for (let j = 0; j < 3 + 3 * i; j++) { const b = labels.length; labels.push('Kind' + i + 'Member' + j); edges.push([b, a, 2]); if (j < 2) for (let k = 0; k < 3; k++) { labels.push('Leaf' + i + j + k); edges.push([labels.length - 1, b, 2]); } } }
+  const D = labels.map((l) => ({ w: l.length * 6.6 + 10, h: 20 })), E = edges.map(([s, t]) => ({ s, t }));
+  const t0 = L.now(), P = L.tree(D, edges, {}).pos.map((p) => ({ x: p.x, y: p.y })); L.sep(P, D.map((d) => ({ w: d.w + 16, h: d.h + 12 })), 6, 40);
+  for (const [name, Q] of [['tree', P], ['tree after clean-up', L.cleanUp(P, D, edges, t0, true)]]) {
+    const m = L.tidy.measure(Q, D, E), up = edges.filter(([c, p]) => Q[c].y <= Q[p].y).length;
+    if (m.cross || m.thru || up) bad.push(`${name}: ${m.cross} crossed, ${m.thru} through classes, ${up} subclass links not pointing down`);
+  }
+  return bad;
+}
 function runAll(code) {
   const out = { clock: checkClock(code) }, L = load(code);
-  out.grid = checkGrid(L); out.repeatable = checkRepeatable(L);
+  out.grid = checkGrid(L); out.repeatable = checkRepeatable(L); out.tree = checkTree(L);
   return out;
 }
 
@@ -64,7 +81,8 @@ if (process.argv.includes('--self-test')) {
   const fixtures = [
     ['clock', 'a wall-clock read in a layout function', code.replace('function _ogClCrossings(P, EE) {', 'function _ogClCrossings(P, EE) { const _t = performance.now();')],
     ['grid', 'the grid skips every third cell along a link', code.replace('f(cy * G.cols + cx);', 'if ((cx + cy) % 3) f(cy * G.cols + cx);')],
-    ['repeatable', 'the layout depends on the wall clock', code.replace('function _ogNow() {', 'function _ogNow() { return performance.now() * 37 % 1e9;')]
+    ['repeatable', 'the layout depends on the wall clock', code.replace('function _ogNow() {', 'function _ogNow() { return performance.now() * 37 % 1e9;')],
+    ['tree', 'the tree gap ignores the lines to far children', code.replace('if (room > 1) G = Math.max(G,', 'if (room > 1e9) G = Math.max(G,')]
   ];
   let ok = true;
   for (const [check, what, broken] of fixtures) {

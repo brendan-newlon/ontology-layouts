@@ -5,11 +5,12 @@ const { MODELS, OURS: O } = await import('./_bundle.mjs');
 const stdMetrics = new Function(fs.readFileSync(new URL('./stdmetrics.js', import.meta.url), 'utf8') + '\nreturn stdMetrics;')();
 const arg = process.argv[2], seed = +(process.argv[4] || 1);
 const keys = arg.includes(',') ? arg.split(',') : Object.keys(MODELS).filter((k) => k.startsWith(arg));
-const withCleanUp = (f) => (it, ed, s, N) => { const t0 = O.now(), P = f(it, ed, s).map((p) => ({ x: p.x, y: p.y })); O.sep(P, N, 6, 200); return O.cleanUp(P, it, ed, t0); };
+// f returns positions, or a layout result whose algo says whether the drawing is the top-down tree
+const withCleanUp = (f) => (it, ed, s, N) => { const t0 = O.now(), r = f(it, ed, s), P = (r.pos || r).map((p) => ({ x: p.x, y: p.y })); O.sep(P, N, 6, 200); return O.cleanUp(P, it, ed, t0, r.algo === 'tree'); };
 const ALGOS = {
   'Tidy Stress (ours)': withCleanUp((it, ed, s) => O.compact(it, ed, { seed: s }).pos),
   'Mycelium (ours)': withCleanUp((it, ed, s) => (O.grouped2(it, ed, { seed: s }) || O.compact(it, ed, { seed: s })).pos),
-  'Best Read (ours)': withCleanUp((it, ed, s) => O.auto(it, ed, { seed: s }).pos),
+  'Best Read (ours)': withCleanUp((it, ed, s) => O.auto(it, ed, { seed: s })),
   'Tidy Stress, no clean-up (ours)': (it, ed, s) => O.compact(it, ed, { seed: s }).pos,
   'Mycelium, no clean-up (ours)': (it, ed, s) => (O.grouped2(it, ed, { seed: s }) || O.compact(it, ed, { seed: s })).pos,
   'Best Read, no clean-up (ours)': (it, ed, s) => O.auto(it, ed, { seed: s }).pos

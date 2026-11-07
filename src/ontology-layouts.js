@@ -467,7 +467,7 @@
           if (!r) return;
           // the drawing that is scored is the one returned: separated so that no boxes touch
           const P = r.pos.map((p) => ({ x: p.x, y: p.y })); _ogClSeparate(P, N, 6, 40);
-          const s = _ogPlacementScore(_ogPlacementMetrics(P, N, EE)), fam = cfg.family;
+          const s = _ogChoiceScore(_ogPlacementMetrics(P, N, EE)), fam = cfg.family;
           if (scores[fam] === undefined || s < scores[fam]) scores[fam] = s;
           if (!best || s < best.score) best = { score: s, pos: P, crossings: r.crossings, algo: fam, variant: cfg.name };
         });
@@ -525,14 +525,70 @@
       function _ogPlacementScore(m) {
         return 10 * m.cross + 8 * m.thru + 2 * m.near + 40 * m.ov + m.len / 10 + Math.max(0, m.len - 350) / 2 + Math.max(0, (m.fill || 0) - 8) * 4 * Math.sqrt(m.n || 1) + 25 * (m.lout || 0);
       }
+      // Top-down tree for models made mostly of subclass links. Each class hangs under its shallowest superclass; subtrees sit
+      // side by side under their parent, and the gap down to a row of children is made deep enough that no straight line from
+      // the parent to a child clips a sibling's box. The tree itself then has no crossing and no link through a class; only the
+      // other links (second superclasses, relationships) can. items [{w, h}], edges [[i, j, weight]] -> { pos } (classes with
+      // no link go in a row underneath).
+      function _ogTreeLayout(items, edges, opts) {
+        const n = items.length, sc = opts && opts.roomy ? 1.3 : 1, SIB = 18 * sc, MINGAP = 50 * sc;
+        const N = items.map((it) => ({ w: it.w + 16 * sc, h: it.h + 12 * sc }));
+        const par = Array.from({ length: n }, () => []), kidsAll = Array.from({ length: n }, () => []), linked = new Uint8Array(n);
+        edges.forEach(([a, b, w]) => { if (a === b) return; linked[a] = linked[b] = 1; if (w === 2) { par[a].push(b); kidsAll[b].push(a); } });
+        // depth below the roots (classes without a superclass), breadth first; a class in a subclass cycle becomes a root
+        const depth = new Array(n).fill(-1), q = [];
+        const down = (from) => { for (let i = from; i < q.length; i++) for (const k of kidsAll[q[i]]) if (depth[k] < 0) { depth[k] = depth[q[i]] + 1; q.push(k); } };
+        for (let v = 0; v < n; v++) if (!par[v].length && linked[v]) { depth[v] = 0; q.push(v); }
+        down(0);
+        for (let v = 0; v < n; v++) if (depth[v] < 0 && linked[v]) { const f = q.length; depth[v] = 0; q.push(v); down(f); }
+        const tp = new Array(n).fill(-1), kids = Array.from({ length: n }, () => []);
+        for (let v = 0; v < n; v++) { let b = -1; for (const p of par[v]) if (depth[p] >= 0 && depth[p] < depth[v] && (b < 0 || depth[p] < depth[b])) b = p; if (b >= 0) { tp[v] = b; kids[b].push(v); } }
+        const size = new Array(n).fill(1); for (let i = q.length - 1; i >= 0; i--) if (tp[q[i]] >= 0) size[tp[q[i]]] += size[q[i]];
+        // a balanced fan: small subtrees at the two ends, large ones toward the middle
+        const fan = (ks) => { const out = []; ks.slice().sort((a, b) => size[a] - size[b] || a - b).forEach((v, i) => (i % 2 ? out.push(v) : out.unshift(v))); return out; };
+        function lay(v) {
+          const ks = fan(kids[v]); if (!ks.length) return { pts: [[v, 0, 0]], l: -N[v].w / 2, r: N[v].w / 2 };
+          const subs = ks.map(lay), X = []; let x = 0;
+          subs.forEach((s, i) => { if (i) x += SIB; x -= s.l; X.push(x); x += s.r; });
+          const mid = (X[0] + X[X.length - 1]) / 2; for (let i = 0; i < X.length; i++) X[i] -= mid;
+          // the line to child i, from the parent's center, clears neighbor j's box (j nearer the parent) at depth G when
+          // G ≥ |X_i| · (h_j/2 + 4) / (|X_i − X_j| − w_j/2)
+          let G = MINGAP + (N[v].h + Math.max(...ks.map((k) => N[k].h))) / 2;
+          ks.forEach((k, i) => [i - 1, i + 1].forEach((j) => { if (j < 0 || j >= ks.length || Math.abs(X[j]) >= Math.abs(X[i])) return;
+            const room = Math.abs(X[i] - X[j]) - N[ks[j]].w / 2; if (room > 1) G = Math.max(G, Math.abs(X[i]) * (N[ks[j]].h / 2 + 4) / room); }));
+          _ogWorkN[2] += ks.length * 2;
+          const pts = [[v, 0, 0]]; let l = -N[v].w / 2, r = N[v].w / 2;
+          subs.forEach((s, i) => { s.pts.forEach(([u, dx, dy]) => pts.push([u, X[i] + dx, G + dy])); l = Math.min(l, X[i] + s.l); r = Math.max(r, X[i] + s.r); });
+          return { pts, l, r };
+        }
+        const P = new Array(n); let x = 0, maxY = 0;
+        fan(q.filter((v) => tp[v] < 0)).forEach((v) => { const s = lay(v); x -= s.l; s.pts.forEach(([u, dx, dy]) => { P[u] = { x: x + dx, y: dy }; maxY = Math.max(maxY, dy); }); x += s.r + 3 * SIB; });
+        let ux = 0; for (let v = 0; v < n; v++) if (!P[v]) { P[v] = { x: ux + N[v].w / 2, y: maxY + 80 * sc }; ux += N[v].w + SIB; }
+        return { pos: P, crossings: 0 };
+      }
+      // The score Best Read chooses by: the readability score without its penalties for long links (mean length beyond 350 px
+      // and links much longer than the typical one). Those penalties made it pass over pod layouts with fewer crossings; on the
+      // 15 development graphs, choosing without them gave 6.5% fewer crossings plus links through classes for 7% more area.
+      function _ogChoiceScore(m) { return 10 * m.cross + 8 * m.thru + 2 * m.near + 40 * m.ov + m.len / 10 + Math.max(0, (m.fill || 0) - 8) * 4 * Math.sqrt(m.n || 1); }
       // Automatic choice: the variants that suit the size, best score kept. Returns { pos, crossings, algo, scores } or null.
+      // When most links are subclass links, the top-down tree is tried too and kept if it costs nothing: no crossing, no link
+      // through a class, and at most 1.5 times the area of the best other drawing (algo "tree"; its clean-up keeps it top-down).
       function _ogAutoLayout(items, edges, opts) {
         // dense models (more than two links per class) give their time to fewer variants, or the clean-up of each is starved.
         // The time limits leave the clean-up after the layout its share of 1.5 s (0.9 s up to 100 classes, 0.6 s above).
         const n = items.length, dense = n > 30 && edges.length > 2 * n, list = n > 100 ? [] : dense ? [_ogV("mds")] : _ogCompactVariants(n);
         if (n >= 8) list.push(_ogV("groups", { L: n >= 100 ? 260 : 170 }));
         if (!list.length) list.push(_ogV("mds"));
-        return _ogClocked(() => _ogBestOf(items, edges, opts, list, (opts && opts.budgetMs) || (n <= 30 ? 1500 : n <= 100 ? 900 : 600)));
+        return _ogClocked(() => {
+          const best = _ogBestOf(items, edges, opts, list, (opts && opts.budgetMs) || (n <= 30 ? 1500 : n <= 100 ? 900 : 600));
+          const links = edges.filter(([a, b]) => a !== b), subs = links.filter((e) => e[2] === 2).length;
+          if (!best || !links.length || subs < links.length / 2) return best;
+          const sc = opts && opts.roomy ? 1.3 : 1, N = items.map((it) => ({ w: it.w + 16 * sc, h: it.h + 12 * sc })), EE = links.map(([a, b]) => ({ s: a, t: b }));
+          const T = _ogTreeLayout(items, edges, opts).pos; _ogClSeparate(T, N, 6, 40);
+          // links through classes counted against the boxes as drawn (3 px margin, as the benchmark counts them); area on the padded boxes
+          const B = items.map((it) => ({ w: it.w + 6, h: it.h + 6 })), mt = _ogPlacementMetrics(T, N, EE), mb = _ogPlacementMetrics(best.pos, N, EE);
+          return mt.cross === 0 && _ogPlacementMetrics(T, B, EE).thru === 0 && mt.fill <= 1.5 * mb.fill ?{ ...best, pos: T, crossings: 0, algo: "tree", variant: "tree" } : best;
+        });
       }
       // ── Clean-up after a layout ──
       // Generalized from recorded sessions of a person tidying these layouts by hand. It runs after a layout, on its positions:
@@ -572,7 +628,7 @@
           }
           return true;
         }
-        const DEF = { budgetMs: 2000, unitSize: 4, clearance: 8, groupDepth: 4, groups: true, spread: true, spreadRepair: true, finish: true, order: ['single', 'unit', 'spread', 'group'], cell: 0.3, repReach: 1.8, repOpen: 12, repCap: 99, crowdMax: 10, groupTop: 2, W: { cross: 6, sharp: 3, thru: 10, tight: 1, ov: 1000, area: 6 } };
+        const DEF = { budgetMs: 2000, unitSize: 4, clearance: 8, groupDepth: 4, groups: true, spread: true, spreadRepair: true, finish: true, order: ['single', 'unit', 'spread', 'group'], cell: 0.3, repReach: 1.8, repOpen: 12, repCap: 99, crowdMax: 10, groupTop: 2, downGap: 20, W: { cross: 6, sharp: 3, thru: 10, tight: 1, ov: 1000, area: 6 } };
 
         function Model(P0, D, E0, o) {
           const n = P0.length, seen = new Set(), E = [];
@@ -588,8 +644,14 @@
             vSeen: new Int32Array(n), eSeen: new Int32Array(E.length), qStamp: 0, eStamp: new Int32Array(E.length), isMovedE: new Uint8Array(E.length), isMovedN: new Uint8Array(n) };
           const ls = E.map((e) => Math.hypot(M.P[e.s].x - M.P[e.t].x, M.P[e.s].y - M.P[e.t].y)).sort((a, b) => a - b);
           M.medLen = ls[ls.length >> 1] || 150; M.A0 = bboxArea(M);
+          // opts.down [[subclass, superclass]]: keep each subclass at least opts.downGap px below its superclass (a drawing that
+          // starts top-down stays top-down); a link drawn upward costs as much as an overlap
+          M.dn = null; if (o.down && o.down.length) { M.dn = Array.from({ length: n }, () => []); o.down.forEach(([c, p]) => { if (c !== p) { M.dn[c].push([p, 1]); M.dn[p].push([c, -1]); } }); }
           return M;
         }
+        const upward = (M, v, u, dir) => (dir > 0 ? M.P[v].y < M.P[u].y + M.o.downGap : M.P[u].y < M.P[v].y + M.o.downGap);
+        function upCost(M, S, mN) { let c = 0; for (const v of S) for (const [u, dir] of M.dn[v]) if ((!mN[u] || u > v) && upward(M, v, u, dir)) c += M.W.ov; return c; }
+        function upAll(M) { let c = 0; if (M.dn) M.o.down.forEach(([v, u]) => { if (v !== u && upward(M, v, u, 1)) c += M.W.ov; }); return c; }
         function bboxArea(M) {
           let x1 = 1e18, y1 = 1e18, x2 = -1e18, y2 = -1e18;
           M.P.forEach((p, i) => { const w = M.D[i].w / 2, h = M.D[i].h / 2; if (p.x - w < x1) x1 = p.x - w; if (p.x + w > x2) x2 = p.x + w; if (p.y - h < y1) y1 = p.y - h; if (p.y + h > y2) y2 = p.y + h; });
@@ -698,6 +760,7 @@
           movedL.forEach((k) => (isMovedE[k] = 0)); movedN.forEach((v) => (isMovedN[v] = 0));
           const T = new Set(S); S.forEach((v) => M.adj[v].forEach((u) => T.add(u)));
           T.forEach((v) => { if (minAngle(M, v) < 15) c += W.tight; });
+          if (M.dn) c += upCost(M, S, mN);
           S.forEach((v) => (mN[v] = 0)); A.forEach((k) => (mE[k] = 0));
           if (M.o.checkIndex) { const b = localAll(M, S); if (Math.abs(b - c) > 1e-6) throw new Error('grid check: local ' + c + ' vs ' + b + ' for ' + S.join(',')); }
           return c;
@@ -717,6 +780,7 @@
           }
           const T = new Set(S); S.forEach((v) => M.adj[v].forEach((u) => T.add(u)));
           T.forEach((v) => { if (minAngle(M, v) < 15) c += W.tight; });
+          if (M.dn) c += upCost(M, S, mN);
           S.forEach((v) => (mN[v] = 0)); A.forEach((k) => (mE[k] = 0));
           return c;
         }
@@ -736,7 +800,7 @@
           for (let u = 0; u < n; u++) { const q = ++M.qStamp; boxCells(G, M.P[u], M.ex[u], M.ey[u], (cell) => { for (const v of G.nodes[cell]) if (v > u && vSeen[v] !== q) { vSeen[v] = q; if (overlaps(M, u, v)) c += W.ov; } }); }
           const issues = wantIssues ? cr.concat(th) : null;
           for (let v = 0; v < n; v++) if (minAngle(M, v) < 15) { c += W.tight; if (wantIssues) issues.push({ kind: 'tight', edges: [], q: { ...M.P[v] }, nodes: [v, ...M.adj[v]] }); }
-          c += areaPen(M);
+          c += upAll(M) + areaPen(M);
           if (M.o.checkIndex) { const b = totalAll(M, true); if (Math.abs(b.c - c) > 1e-6 || (wantIssues && b.issues.length !== issues.length)) throw new Error('grid check: total ' + c + ' vs ' + b.c); }
           return wantIssues ? { c, issues } : c;
         }
@@ -746,7 +810,7 @@
           for (let k = 0; k < m; k++) for (let v = 0; v < n; v++) if (thruCost(M, k, v)) { c += W.thru; if (wantIssues) issues.push({ kind: 'thru', edges: [k], q: { ...M.P[v] }, nodes: [v, E[k].s, E[k].t] }); }
           for (let u = 0; u < n; u++) for (let v = u + 1; v < n; v++) if (overlaps(M, u, v)) c += W.ov;
           for (let v = 0; v < n; v++) if (minAngle(M, v) < 15) { c += W.tight; if (wantIssues) issues.push({ kind: 'tight', edges: [], q: { ...M.P[v] }, nodes: [v, ...M.adj[v]] }); }
-          c += areaPen(M);
+          c += upAll(M) + areaPen(M);
           return wantIssues ? { c, issues } : c;
         }
         // Try candidate positions for the classes S; apply the best one if it lowers the cost by more than eps. Returns the gain.
@@ -1086,10 +1150,12 @@
       })();
       // The clean-up as the layouts use it: whatever is left of 1.5 s after the layout (on the work clock), at most 500 ms.
       // With less than 100 ms left it is skipped: it would change too little.
-      function _ogLayoutCleanUp(pos, items, edges, startedAt) {
+      // topDown: the layout drew subclasses below their superclasses (the tree), and the clean-up keeps them there.
+      function _ogLayoutCleanUp(pos, items, edges, startedAt, topDown) {
         const budgetMs = Math.min(500, 1500 - (_ogNow() - startedAt));
         if (budgetMs < 100) return pos;
-        return _ogClocked(() => _ogHandTidy.run(pos, items, edges.map((e) => ({ s: e[0], t: e[1] })), { budgetMs }).P);
+        const down = topDown ? edges.filter((e) => e[2] === 2 && e[0] !== e[1]).map((e) => [e[0], e[1]]) : null;
+        return _ogClocked(() => _ogHandTidy.run(pos, items, edges.map((e) => ({ s: e[0], t: e[1] })), { budgetMs, down }).P);
       }
       // ── end of the clean-up ──
       // ── end of the layouts ──
