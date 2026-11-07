@@ -88,7 +88,7 @@ aside h2 { font-size: 13px; margin: 0; padding: 8px 12px; border-bottom: 1px sol
 <header>
   <h1>Layout Lab</h1>
   <select id="graph" title="Graph"></select>
-  <select id="algo" title="Starting layout"><option value="auto">Best Read</option><option value="compact">Tidy Stress</option><option value="grouped">Mycelium</option><option value="auto-soft">Best Read, subclasses below where cheap</option><option value="auto-down">Best Read, subclasses always below</option></select>
+  <select id="algo" title="Starting layout"><option value="auto">Best Read</option><option value="compact">Tidy Stress</option><option value="grouped">Mycelium</option></select>
   <button id="relayout">Lay out again</button>
   <button id="undo" title="Ctrl+Z">Undo</button>
   <button id="tidy" title="Clean up the drawing the way the recorded hand sessions did: single moves into open space, leaf units, crowds spread outward, group moves with look-ahead, a last leaf pass">Clean up</button>
@@ -103,7 +103,7 @@ aside h2 { font-size: 13px; margin: 0; padding: 8px 12px; border-bottom: 1px sol
 <main>
   <div id="stage">
     <svg id="svg"></svg>
-    <div id="help">Drag a class to move it. Ctrl+click classes to select several, then drag one to move them together; Shift+drag on empty space selects an area. Drag on a link to pull a bend into it; drag a bend to reshape; double-click a bend to remove it, or a link to straighten it. Drag empty space to pan, wheel to zoom. Ctrl+Z undoes the last step and greys it out as a trial; "ignore" on any step leaves it out of the analysis. Coming back to a graph continues where you left it; "Lay out again" starts that graph over.</div>
+    <div id="help">Drag a class to move it. Ctrl+click classes to select several, then drag one to move them together; Shift+drag on empty space selects an area. Drag on a link to pull a bend into it; drag a bend to reshape; double-click a bend to remove it, or a link to straighten it. Drag empty space to pan, wheel to zoom. Ctrl+Z undoes the last step and grays it out as a trial; "ignore" on any step leaves it out of the analysis. Coming back to a graph continues where you left it; "Lay out again" starts that graph over.</div>
   </div>
   <aside>
     <h2>Steps and reasoning <span id="save">not saved yet</span></h2>
@@ -326,7 +326,7 @@ async function load(key, algo, logIt = true) {
 // The starting layout of the current graph, as "Lay out again" draws it
 function freshLayout(algo) {
   const items = G.D.map((d) => ({ w: d.w, h: d.h })), edges = G.E.map((e) => [e.s, e.t, e.sub ? 2 : 1]);
-  const fn = algo === 'compact' ? O.compact : algo === 'grouped' ? (a, b, c) => O.grouped2(a, b, c) || O.compact(a, b, c) : algo === 'auto-down' ? EXP3.autoF : O.auto;
+  const fn = algo === 'compact' ? O.compact : algo === 'grouped' ? (a, b, c) => O.grouped2(a, b, c) || O.compact(a, b, c) : O.auto;
   const P = fn(items, edges, { seed: 1 }).pos.map((p) => ({ x: p.x, y: p.y }));
   O.sep(P, G.D.map((d) => ({ w: d.w + 16, h: d.h + 12 })), 6, 200);
   return P;
@@ -420,11 +420,6 @@ function sendNote() { const text = $('note').value.trim(); if (!text) return; $(
   if (W) { const f = W.frames[W.i]; ev.walk = { walk: W.seq, step: W.i + 1, where: frameWhere(f), about: $('wWhat').textContent }; }
   S.events.push(ev); showEvent(ev); persist(); }
 $('send').onclick = sendNote;
-// Subclasses below their superclass: "always" starts from the top-down layout and the clean-up keeps every subclass at least
-// 20 px below; "where cheap" starts from Best Read and the clean-up turns a subclass link downward when that costs little
-// (an upward link costs 3, half a crossing)
-const downOpt = () => { const a = $('algo').value, down = G.E.filter((e) => e.sub).map((e) => [e.s, e.t]);
-  return a === 'auto-down' ? { down, downGap: 20 } : a === 'auto-soft' ? { down, downGap: 20, W: { up: 3 } } : {}; };
 // Clean up: the hand-style post-layout steps (handtidy.js), as one undoable step
 $('tidyT').oninput = () => ($('tidyTv').textContent = $('tidyT').value + ' s');
 $('tidyLA').oninput = () => ($('tidyLAv').textContent = $('tidyLA').value);
@@ -433,7 +428,7 @@ $('tidy').onclick = () => {
   const b = $('tidy'); b.disabled = true; b.textContent = 'Cleaning up…';
   setTimeout(() => {
     const before = measure(), snap = snapshot(), budgetMs = +$('tidyT').value * 1000, groupDepth = +$('tidyLA').value;
-    const r = HandTidy.run(G.P, G.D, G.E.map((e) => ({ s: e.s, t: e.t })), { budgetMs, groupDepth, ...downOpt() });
+    const r = HandTidy.run(G.P, G.D, G.E.map((e) => ({ s: e.s, t: e.t })), { budgetMs, groupDepth });
     G.P = r.P; S.undo.push(snap);
     record('cleanup', { budgetMs, groupDepth, ms: r.stats.ms, steps: r.log.map((l) => ({ kind: l.kind, classes: l.nodes.map((i) => G.labels[i]), anchor: l.anchor != null ? G.labels[l.anchor] : undefined, gain: l.gain })) }, before);
     draw(); b.disabled = false; b.textContent = 'Clean up';
@@ -445,7 +440,7 @@ let W = null;
 const STAGE = {
   single: ['Moves into open space', 'Each class at the end of a crossed link, or with a link running through it, tries the open cells near it (green) and a few small nudges. The best spot is kept if the drawing gets better.'],
   unit: ['Leaf units turned', 'A leaf, a short leaf chain or a leaf triangle hangs off one class (its anchor). It is turned, mirrored, reordered or resized around that anchor.'],
-  spread: ['Crowds spread outward', 'A grid lies over the drawing; cells holding at least twice the average number of classes and links are crowded (orange). Around each crowd\'s centre the space is cut into 8 pizza slices. Classes in the crowd move outward, neighbours further out are pushed less, and slices with more open space beyond them move further. A few repair moves follow, and the step is kept only if the drawing ends up better.'],
+  spread: ['Crowds spread outward', 'A grid lies over the drawing; cells holding at least twice the average number of classes and links are crowded (orange). Around each crowd\'s center the space is cut into 8 pizza slices. Classes in the crowd move outward, neighbors further out are pushed less, and slices with more open space beyond them move further. A few repair moves follow, and the step is kept only if the drawing ends up better.'],
   finish: ['Final leaf pass', 'One last pass over leaf units and single classes still in a problem. It runs even when the time is up, because it is quick.'],
   group: ['Group moves with look-ahead','For each problem left, the crowd on one side of the problem moves together away from the line, then a few single repair moves follow. The whole step is kept only if the drawing ends up better.'],
 };
@@ -568,7 +563,7 @@ $('walkBtn').onclick = () => {
     const budgetMs = +$('tidyT').value * 1000, groupDepth = +$('tidyLA').value, E = G.E.map((e) => ({ s: e.s, t: e.t }));
     // "from the starting layout" leaves your drawing alone: the walk-through runs on a fresh layout, and Close brings yours back
     const from = $('walkFrom').value, home = { P: toP(G.P), H: G.H }, P0 = from === 'start' ? freshLayout($('algo').value) : toP(G.P);
-    const r = HandTidy.run(P0, G.D, E, { budgetMs, groupDepth, record: true, ...downOpt() });
+    const r = HandTidy.run(P0, G.D, E, { budgetMs, groupDepth, record: true });
     G.P = P0; _med = null; medLen(); G.P = home.P; // link length of the walked drawing, for telling a nudge from a move
     W = { P0, home, from, final: toP(r.P), stages: buildWalk(r, P0), i: 0, budgetMs, groupDepth, ms: r.stats.ms };
     W.frames = walkFrames(); G.sel.clear(); G.pick = -1;

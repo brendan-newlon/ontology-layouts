@@ -1,6 +1,6 @@
-// Standard drawing measures from the graph-drawing literature, none of which our layouts optimise directly.
+// Standard drawing measures from the graph-drawing literature, none of which our layouts optimize directly.
 // P: [{x, y}], E: [{s, t, sub}] (sub: s is the subclass, t its parent). Returns:
-//  nstress  normalised stress against hop distance, at the best uniform scale (Gansner, Koren, North 2004; scale-free form
+//  nstress  normalized stress against hop distance, at the best uniform scale (Gansner, Koren, North 2004; scale-free form
 //           as in Kruiger et al. 2017). Lower is better: straight-line distances follow graph distances.
 //  elcv     coefficient of variation of link lengths. Lower is better: links of even length.
 //  xang     mean crossing angle in degrees, 90 when nothing crosses (Huang, Eades, Hong 2008). Higher is better.

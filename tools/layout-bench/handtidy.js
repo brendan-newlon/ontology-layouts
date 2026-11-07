@@ -20,14 +20,14 @@ function _ogClocked(fn) {
   try { return fn(); } finally { const end = _ogNow(); if (--_ogClk.depth === 0) { const v = _ogWorkMs(); if (end > v) _ogClk.lag += end - v; } }
 }
 // ── Clean-up after a layout ──
-// Generalised from recorded sessions of a person tidying these layouts by hand. It runs after a layout, on its positions:
+// Generalized from recorded sessions of a person tidying these layouts by hand. It runs after a layout, on its positions:
 //   1. single moves: a class at the end of a crossed link, or one a link runs through, moves into nearby open space (a grid
 //      over the drawing whose cells hold no class and no link) or is nudged a little; link length is not a goal;
 //   2. leaf units: a leaf, a short leaf chain, a leaf triangle or loop hangs off the rest of the graph by one class (its anchor),
 //      so it can always be turned around that anchor, stretched, mirrored or reordered until it crosses nothing; a single
 //      leaf with a long label tries sideways spots first, since a long label reads best on a link that runs sideways;
 //   3. crowd spreading: problems are counted on a grid of cells one link long; the regions with the most problems are spread
-//      outward in 8 slices around their centre, more where open space lies beyond, pushing the neighbours further out a
+//      outward in 8 slices around their center, more where open space lies beyond, pushing the neighbors further out a
 //      little too; a few single moves then repair, and the step is kept only if the drawing ends up better;
 //   4. group moves: the classes on one side of a remaining problem move together away from the line, with a few repair moves;
 //   5. a last pass over leaf units and single classes, which can be left on a line by the moves before.
@@ -47,7 +47,7 @@ const _ogHandTidy = (function () {
     const ux = b.x - a.x, uy = b.y - a.y, vx = d.x - c.x, vy = d.y - c.y;
     return Math.acos(Math.min(1, Math.abs(ux * vx + uy * vy) / (Math.hypot(ux, uy) * Math.hypot(vx, vy) || 1))) * 180 / Math.PI;
   }
-  function segBox(a, b, c, hw, hh) { // Liang-Barsky: does segment a-b touch the box of half-size hw, hh centred on c?
+  function segBox(a, b, c, hw, hh) { // Liang-Barsky: does segment a-b touch the box of half-size hw, hh centered on c?
     let t0 = 0, t1 = 1; const dx = b.x - a.x, dy = b.y - a.y;
     const p = [-dx, dx, -dy, dy], q = [a.x - (c.x - hw), c.x + hw - a.x, a.y - (c.y - hh), c.y + hh - a.y];
     for (let i = 0; i < 4; i++) {
@@ -57,7 +57,7 @@ const _ogHandTidy = (function () {
     }
     return true;
   }
-  const DEF = { budgetMs: 2000, unitSize: 4, clearance: 8, groupDepth: 4, groups: true, spread: true, spreadRepair: true, finish: true, order: ['single', 'unit', 'spread', 'group'], cell: 0.3, repReach: 1.8, repOpen: 12, repCap: 99, crowdMax: 10, groupTop: 2, downGap: 20, W: { cross: 6, sharp: 3, thru: 10, tight: 1, ov: 1000, area: 6, up: 1000 } };
+  const DEF = { budgetMs: 2000, unitSize: 4, clearance: 8, groupDepth: 4, groups: true, spread: true, spreadRepair: true, finish: true, order: ['single', 'unit', 'spread', 'group'], cell: 0.3, repReach: 1.8, repOpen: 12, repCap: 99, crowdMax: 10, groupTop: 2, W: { cross: 6, sharp: 3, thru: 10, tight: 1, ov: 1000, area: 6 } };
 
   function Model(P0, D, E0, o) {
     const n = P0.length, seen = new Set(), E = [];
@@ -73,17 +73,7 @@ const _ogHandTidy = (function () {
       vSeen: new Int32Array(n), eSeen: new Int32Array(E.length), qStamp: 0, eStamp: new Int32Array(E.length), isMovedE: new Uint8Array(E.length), isMovedN: new Uint8Array(n) };
     const ls = E.map((e) => Math.hypot(M.P[e.s].x - M.P[e.t].x, M.P[e.s].y - M.P[e.t].y)).sort((a, b) => a - b);
     M.medLen = ls[ls.length >> 1] || 150; M.A0 = bboxArea(M);
-    // subclasses below their superclass, when asked (opts.down: [[subclass, superclass]]): each subclass at least
-    // opts.downGap px lower; a link drawn upward costs W.up, by default as much as an overlap, so the clean-up keeps the hierarchy
-    M.dn = null; if (o.down && o.down.length) { M.dn = Array.from({ length: n }, () => []); o.down.forEach(([c, p]) => { if (c === p) return; M.dn[c].push([p, 1]); M.dn[p].push([c, -1]); }); }
     return M;
-  }
-  // a subclass link drawn upward (or too flat) when the hierarchy is kept top-down
-  const upward = (M, v, u, dir) => dir > 0 ? M.P[v].y < M.P[u].y + M.o.downGap : M.P[u].y < M.P[v].y + M.o.downGap;
-  function upCost(M, S, mN) {
-    let c = 0;
-    for (const v of S) for (const [u, dir] of M.dn[v]) if ((!mN[u] || u > v) && upward(M, v, u, dir)) c += M.W.up;
-    return c;
   }
   function bboxArea(M) {
     let x1 = 1e18, y1 = 1e18, x2 = -1e18, y2 = -1e18;
@@ -113,15 +103,18 @@ const _ogHandTidy = (function () {
   // with has moved: it and its links are checked directly, and the grid is rebuilt once many classes have moved. The
   // grid's bounds hold every class when it is built, so nothing outside them can be missed. Same results as checking all.
   function buildGrid(M) {
-    const s = M.medLen, ex = M.ex, ey = M.ey; let x1 = 1e18, y1 = 1e18, x2 = -1e18, y2 = -1e18;
+    const ex = M.ex, ey = M.ey; let x1 = 1e18, y1 = 1e18, x2 = -1e18, y2 = -1e18;
     M.P.forEach((p, i) => { x1 = Math.min(x1, p.x - ex[i]); x2 = Math.max(x2, p.x + ex[i]); y1 = Math.min(y1, p.y - ey[i]); y2 = Math.max(y2, p.y + ey[i]); });
-    x1 -= s; y1 -= s; x2 += s; y2 += s;
+    const s = cellSize(M.medLen, x1, y1, x2, y2); x1 -= s; y1 -= s; x2 += s; y2 += s;
     const cols = Math.max(1, Math.ceil((x2 - x1) / s)), rows = Math.max(1, Math.ceil((y2 - y1) / s));
     const G = { s, x1, y1, x2: x1 + cols * s, y2: y1 + rows * s, cols, rows, nodes: Array.from({ length: cols * rows }, () => []), edges: Array.from({ length: cols * rows }, () => []), ref: M.P.slice(), stamp: 0 };
     M.P.forEach((p, i) => boxCells(G, p, ex[i], ey[i], (c) => G.nodes[c].push(i)));
     M.E.forEach((e, k) => segCells(G, M.P[e.s], M.P[e.t], (c) => G.edges[c].push(k)));
     M.grid = G; M.gridBuilds = (M.gridBuilds || 0) + 1; return G;
   }
+  // A cell is never smaller than 1/256 of the drawing's width or height (nor than 1 px), so stacked classes or one class
+  // far away cannot make a grid of millions of cells
+  const cellSize = (base, x1, y1, x2, y2) => Math.max(base, Math.max(x2 - x1, y2 - y1) / 256, 1);
   const cellX = (G, x) => Math.min(G.cols - 1, Math.max(0, Math.floor((x - G.x1) / G.s))), cellY = (G, y) => Math.min(G.rows - 1, Math.max(0, Math.floor((y - G.y1) / G.s)));
   function boxCells(G, p, hw, hh, f) {
     const a = cellX(G, p.x - hw), b = cellX(G, p.x + hw), c = cellY(G, p.y - hh), d = cellY(G, p.y + hh);
@@ -147,21 +140,23 @@ const _ogHandTidy = (function () {
       if (cx < 0 || cy < 0 || cx >= G.cols || cy >= G.rows) break;
     }
   }
-  // The grid, rebuilt when too many classes have moved since it was built; and the moved classes and their links
+  // The grid, rebuilt when too many classes have moved since it was built; and the moved classes and their links. The
+  // classes being evaluated (marked in M.mN) are checked directly anyway, so they never count as moved: a spread of many
+  // classes would otherwise rebuild the grid for every candidate.
   function freshGrid(M) {
     let G = M.grid, moved = [];
-    if (G) { for (let v = 0; v < M.n; v++) if (M.P[v] !== G.ref[v]) moved.push(v); }
+    if (G) { for (let v = 0; v < M.n; v++) if (M.P[v] !== G.ref[v] && !M.mN[v]) moved.push(v); }
     if (!G || moved.length > Math.max(12, M.n / 12)) { G = buildGrid(M); moved = []; }
     const movedE = []; if (moved.length) { G.stamp++; const st = M.eStamp; moved.forEach((v) => M.inc[v].forEach((k) => { if (st[k] !== G.stamp) { st[k] = G.stamp; movedE.push(k); } })); }
     return { G, moved, movedE };
   }
-  // Cost of everything that involves the classes in S (their links, their boxes, their neighbours' angles)
+  // Cost of everything that involves the classes in S (their links, their boxes, their neighbors' angles)
   function local(M, S) {
     _ogWorkN[5]++; _ogWorkN[2] += M.n;
     if (M.o.index === false) return localAll(M, S);
-    const { mN, mE, W } = M, A = [], { G, moved, movedE } = freshGrid(M), vSeen = M.vSeen, eSeen = M.eSeen;
+    const { mN, mE, W } = M, A = [], vSeen = M.vSeen, eSeen = M.eSeen;
     S.forEach((v) => (mN[v] = 1)); S.forEach((v) => M.inc[v].forEach((k) => { if (!mE[k]) { mE[k] = 1; A.push(k); } }));
-    const movedN = moved.filter((v) => !mN[v]), movedL = movedE.filter((k) => !mE[k]), isMovedE = M.isMovedE, isMovedN = M.isMovedN;
+    const { G, moved: movedN, movedE } = freshGrid(M), movedL = movedE.filter((k) => !mE[k]), isMovedE = M.isMovedE, isMovedN = M.isMovedN;
     movedL.forEach((k) => (isMovedE[k] = 1)); movedN.forEach((v) => (isMovedN[v] = 1));
     let c = 0;
     for (const a of A) {
@@ -188,7 +183,6 @@ const _ogHandTidy = (function () {
     movedL.forEach((k) => (isMovedE[k] = 0)); movedN.forEach((v) => (isMovedN[v] = 0));
     const T = new Set(S); S.forEach((v) => M.adj[v].forEach((u) => T.add(u)));
     T.forEach((v) => { if (minAngle(M, v) < 15) c += W.tight; });
-    if (M.dn) c += upCost(M, S, mN);
     S.forEach((v) => (mN[v] = 0)); A.forEach((k) => (mE[k] = 0));
     if (M.o.checkIndex) { const b = localAll(M, S); if (Math.abs(b - c) > 1e-6) throw new Error('grid check: local ' + c + ' vs ' + b + ' for ' + S.join(',')); }
     return c;
@@ -208,7 +202,6 @@ const _ogHandTidy = (function () {
     }
     const T = new Set(S); S.forEach((v) => M.adj[v].forEach((u) => T.add(u)));
     T.forEach((v) => { if (minAngle(M, v) < 15) c += W.tight; });
-    if (M.dn) c += upCost(M, S, mN);
     S.forEach((v) => (mN[v] = 0)); A.forEach((k) => (mE[k] = 0));
     return c;
   }
@@ -228,7 +221,6 @@ const _ogHandTidy = (function () {
     for (let u = 0; u < n; u++) { const q = ++M.qStamp; boxCells(G, M.P[u], M.ex[u], M.ey[u], (cell) => { for (const v of G.nodes[cell]) if (v > u && vSeen[v] !== q) { vSeen[v] = q; if (overlaps(M, u, v)) c += W.ov; } }); }
     const issues = wantIssues ? cr.concat(th) : null;
     for (let v = 0; v < n; v++) if (minAngle(M, v) < 15) { c += W.tight; if (wantIssues) issues.push({ kind: 'tight', edges: [], q: { ...M.P[v] }, nodes: [v, ...M.adj[v]] }); }
-    c += upAll(M, issues);
     c += areaPen(M);
     if (M.o.checkIndex) { const b = totalAll(M, true); if (Math.abs(b.c - c) > 1e-6 || (wantIssues && b.issues.length !== issues.length)) throw new Error('grid check: total ' + c + ' vs ' + b.c); }
     return wantIssues ? { c, issues } : c;
@@ -239,15 +231,8 @@ const _ogHandTidy = (function () {
     for (let k = 0; k < m; k++) for (let v = 0; v < n; v++) if (thruCost(M, k, v)) { c += W.thru; if (wantIssues) issues.push({ kind: 'thru', edges: [k], q: { ...M.P[v] }, nodes: [v, E[k].s, E[k].t] }); }
     for (let u = 0; u < n; u++) for (let v = u + 1; v < n; v++) if (overlaps(M, u, v)) c += W.ov;
     for (let v = 0; v < n; v++) if (minAngle(M, v) < 15) { c += W.tight; if (wantIssues) issues.push({ kind: 'tight', edges: [], q: { ...M.P[v] }, nodes: [v, ...M.adj[v]] }); }
-    c += upAll(M, wantIssues ? issues : null);
     c += areaPen(M);
     return wantIssues ? { c, issues } : c;
-  }
-  // every subclass link drawn upward, as problems for the single moves to fix
-  function upAll(M, issues) {
-    if (!M.dn) return 0; let c = 0;
-    M.o.down.forEach(([v, u]) => { if (v !== u && upward(M, v, u, 1)) { c += M.W.up; if (issues) issues.push({ kind: 'up', edges: [], q: { x: (M.P[v].x + M.P[u].x) / 2, y: (M.P[v].y + M.P[u].y) / 2 }, nodes: [v, u] }); } });
-    return c;
   }
   // Try candidate positions for the classes S; apply the best one if it lowers the cost by more than eps. Returns the gain.
   function best(M, S, cands, eps = 0.01) {
@@ -321,9 +306,9 @@ const _ogHandTidy = (function () {
   // Open space: a grid over the drawing with cells about half a link long. A cell is open when no class box and no link
   // passes through it. Single moves try the open cells near a class (plus small nudges) instead of a fixed ring of spots.
   function openGrid(M) {
-    const s = M.medLen * (M.o.cell || 0.5); let x1 = 1e18, y1 = 1e18, x2 = -1e18, y2 = -1e18;
+    let x1 = 1e18, y1 = 1e18, x2 = -1e18, y2 = -1e18;
     M.P.forEach((p, i) => { x1 = Math.min(x1, p.x - M.hw[i]); x2 = Math.max(x2, p.x + M.hw[i]); y1 = Math.min(y1, p.y - M.hh[i]); y2 = Math.max(y2, p.y + M.hh[i]); });
-    const cols = Math.max(1, Math.ceil((x2 - x1) / s)), rows = Math.max(1, Math.ceil((y2 - y1) / s)), busy = new Uint8Array(cols * rows);
+    const s = cellSize(M.medLen * (M.o.cell || 0.5), x1, y1, x2, y2), cols = Math.max(1, Math.ceil((x2 - x1) / s)), rows = Math.max(1, Math.ceil((y2 - y1) / s)), busy = new Uint8Array(cols * rows);
     const cellOf = (x, y) => [Math.min(cols - 1, Math.max(0, ((x - x1) / s) | 0)), Math.min(rows - 1, Math.max(0, ((y - y1) / s) | 0))];
     M.P.forEach((p, i) => { const [a, b] = cellOf(p.x - M.hw[i], p.y - M.hh[i]), [c, d] = cellOf(p.x + M.hw[i], p.y + M.hh[i]); for (let x = a; x <= c; x++) for (let y = b; y <= d; y++) busy[y * cols + x] = 1; });
     M.E.forEach((e) => { const A = M.P[e.s], B = M.P[e.t], k = Math.max(1, Math.ceil(Math.hypot(B.x - A.x, B.y - A.y) / (s / 3))); for (let j = 0; j <= k; j++) { const [x, y] = cellOf(A.x + (B.x - A.x) * j / k, A.y + (B.y - A.y) * j / k); busy[y * cols + x] = 1; } });
@@ -344,11 +329,11 @@ const _ogHandTidy = (function () {
     return out;
   }
   // Crowds, from a density grid over the drawing (cells half a link long): a class counts 1 in its cell, a link 0.25 in each
-  // cell it passes. Cells at least twice the average density, touching each other, form a crowd around its centre of weight.
+  // cell it passes. Cells at least twice the average density, touching each other, form a crowd around its center of weight.
   function crowdsOf(M) {
-    const s = M.medLen * 0.5; let x1 = 1e18, y1 = 1e18, x2 = -1e18, y2 = -1e18;
+    let x1 = 1e18, y1 = 1e18, x2 = -1e18, y2 = -1e18;
     M.P.forEach((p) => { x1 = Math.min(x1, p.x); x2 = Math.max(x2, p.x); y1 = Math.min(y1, p.y); y2 = Math.max(y2, p.y); });
-    const cols = Math.max(1, Math.ceil((x2 - x1) / s) + 1), rows = Math.max(1, Math.ceil((y2 - y1) / s) + 1), dens = new Float32Array(cols * rows);
+    const s = cellSize(M.medLen * 0.5, x1, y1, x2, y2), cols = Math.max(1, Math.ceil((x2 - x1) / s) + 1), rows = Math.max(1, Math.ceil((y2 - y1) / s) + 1), dens = new Float32Array(cols * rows);
     const ci = (x, y) => Math.min(rows - 1, Math.max(0, ((y - y1) / s) | 0)) * cols + Math.min(cols - 1, Math.max(0, ((x - x1) / s) | 0));
     M.P.forEach((p) => (dens[ci(p.x, p.y)] += 1));
     M.E.forEach((e) => { const A = M.P[e.s], B = M.P[e.t], k = Math.max(1, Math.ceil(Math.hypot(B.x - A.x, B.y - A.y) / (s / 3))), seen = new Set(); for (let j = 1; j < k; j++) seen.add(ci(A.x + (B.x - A.x) * j / k, A.y + (B.y - A.y) * j / k)); seen.forEach((c) => (dens[c] += 0.25)); });
@@ -367,11 +352,11 @@ const _ogHandTidy = (function () {
   }
   // Problem regions: a crowd worth spreading is one with problems in it. Problems (crossings, links through classes) are
   // counted on a grid of cells one link long. Hot cells hold at least 2 problems and at least half as many as the worst
-  // cell; touching hot cells form a region, the regions with the most problems come first, and each is centred on the
+  // cell; touching hot cells form a region, the regions with the most problems come first, and each is centered on the
   // mean of its problems, with a radius of at most one and a half cells, so that a spread stays local.
   function problemCrowds(M, issues) {
     const s = M.medLen, cells = new Map();
-    issues.forEach((is) => { if (is.kind === 'tight' || is.kind === 'up') return; const k = Math.floor(is.q.x / s) + ',' + Math.floor(is.q.y / s); if (!cells.has(k)) cells.set(k, []); cells.get(k).push(is); });
+    issues.forEach((is) => { if (is.kind === 'tight') return; const k = Math.floor(is.q.x / s) + ',' + Math.floor(is.q.y / s); if (!cells.has(k)) cells.set(k, []); cells.get(k).push(is); });
     let most = 0; cells.forEach((l) => (most = Math.max(most, l.length)));
     const hotMin = Math.max(2, Math.ceil(most / 2));
     for (const [k, l] of [...cells]) if (l.length < hotMin) cells.delete(k);
@@ -387,9 +372,9 @@ const _ogHandTidy = (function () {
     }
     return out.sort((a, b) => b.weight - a.weight);
   }
-  // Pizza slices: the drawing around a crowd's centre is cut into 8 slices. Classes inside the crowd move outward in
-  // proportion to their distance from the centre, classes beyond it are pushed less the further out they are, so the room
-  // is made by shifting the neighbours too. "room" weights each slice by how much low-density space lies beyond it.
+  // Pizza slices: the drawing around a crowd's center is cut into 8 slices. Classes inside the crowd move outward in
+  // proportion to their distance from the center, classes beyond it are pushed less the further out they are, so the room
+  // is made by shifting the neighbors too. "room" weights each slice by how much low-density space lies beyond it.
   function spreadCands(M, dg, C) {
     const L = M.medLen, R = 3 * C.r0, room = new Array(8).fill(0), S = [];
     for (let v = 0; v < M.n; v++) if (Math.hypot(M.P[v].x - C.c.x, M.P[v].y - C.c.y) < R) S.push(v);
@@ -452,12 +437,13 @@ const _ogHandTidy = (function () {
     const tick = (k) => { if (tally) tally[k]++; };
     let gained = 0;
     // 1. single classes at the end of a crossed link or under a link: move into open space
-    const doSingle = () => {
-      stage('single');
+    // up: when to stop; own: a stage of its own (false in the finish, which is one stage for both passes)
+    const doSingle = (up = timeUp, own = true) => {
+      if (own) stage('single');
       const { issues } = total(M, true), hot = new Set(); issues.forEach((is) => is.nodes.forEach((v) => hot.add(v)));
       grid = openGrid(M);
       for (const v of hot) {
-        if (timeUp()) break;
+        if (up()) break;
         if (failedV.has(v) && quietSince(M.P[v], reach, failedV.get(v))) { stats.skipped++; tick('skipped'); continue; }
         tick('tried');
         const from = rec ? cp([v], M) : null;
@@ -465,20 +451,20 @@ const _ogHandTidy = (function () {
         if (g > 0) { gained += g; stats.singleMoves++; tick('kept'); moved([v]); failedV.delete(v); step({ kind: 'move', nodes: [v], from, to: rec ? cp([v], M) : null, gain: +g.toFixed(1) }); }
         else failedV.set(v, clock);
       }
-      lap('single');
+      if (own) lap('single');
     };
     // 2. leaf units involved in a problem (the easy fixes): turn, mirror or reorder them around their anchor, then stretch or shrink
-    const doUnit = () => {
-      stage('unit');
+    const doUnit = (up = timeUp, own = true) => {
+      if (own) stage('unit');
       const { issues } = total(M, true), hot = new Set(); issues.forEach((is) => is.nodes.forEach((v) => hot.add(v)));
       for (const U of units) {
-        if (timeUp()) break;
+        if (up()) break;
         if (!U.nodes.some((v) => hot.has(v)) && !hot.has(U.anchor)) continue;
         const from = rec ? cp(U.nodes, M) : null; tick('tried');
         const g = best(M, U.nodes, unitCands(M, U)) + best(M, U.nodes, unitScale(M, U));
         if (g > 0) { gained += g; stats.unitMoves++; tick('kept'); moved(U.nodes); step({ kind: 'unit', anchor: U.anchor, nodes: U.nodes.slice(), from, to: rec ? cp(U.nodes, M) : null, gain: +g.toFixed(1) }); }
       }
-      lap('unit');
+      if (own) lap('unit');
     };
     // 3. spread the regions with the most problems: cut the space around each into slices and shift them outward, toward open space
     const doSpread = () => {
@@ -565,13 +551,7 @@ const _ogHandTidy = (function () {
     if (o.finish) {
       rounds++; stage('finish');
       const hardUp = () => _ogNow() - t0 > o.budgetMs;
-      const hot = new Set(); total(M, true).issues.forEach((is) => is.nodes.forEach((v) => hot.add(v)));
-      for (const U of units) { if (hardUp()) break; if (!U.nodes.some((v) => hot.has(v)) && !hot.has(U.anchor)) continue; tick('tried');
-        const from = rec ? cp(U.nodes, M) : null, g = best(M, U.nodes, unitCands(M, U)) + best(M, U.nodes, unitScale(M, U));
-        if (g > 0) { stats.unitMoves++; tick('kept'); moved(U.nodes); step({ kind: 'unit', anchor: U.anchor, nodes: U.nodes.slice(), from, to: rec ? cp(U.nodes, M) : null, gain: +g.toFixed(1) }); } }
-      hot.clear(); total(M, true).issues.forEach((is) => is.nodes.forEach((v) => hot.add(v))); grid = openGrid(M);
-      for (const v of hot) { if (hardUp()) break; tick('tried'); const from = rec ? cp([v], M) : null, g = best(M, [v], openCands(M, v, grid, 1.8, 12));
-        if (g > 0) { stats.singleMoves++; tick('kept'); moved([v]); step({ kind: 'move', nodes: [v], from, to: rec ? cp([v], M) : null, gain: +g.toFixed(1) }); } }
+      doUnit(hardUp, false); doSingle(hardUp, false);
     }
     stage(null); stats.end = total(M); stats.rounds = rounds; stats.ms = _ogNow() - t0; stats.evals = M.evals;
     return { P: M.P, log, stats };

@@ -2,7 +2,7 @@
 // "// ── end of the layouts ──"):
 //   1. clock: the layout code reads no wall clock except inside the work clock, so a drawing does not depend on the computer;
 //   2. grid: the clean-up's spatial grid gives the same costs as checking every pair (its checkIndex mode compares the two
-//      on every evaluation and throws on a difference), with and without subclasses kept below;
+//      on every evaluation and throws on a difference);
 //   3. repeatable: the same model laid out and cleaned up twice gives the same drawing.
 // node tests/check_ontology_layout.mjs            -> "ontology layout clean" or the failures
 // node tests/check_ontology_layout.mjs --self-test -> runs each check on a deliberately broken copy and confirms it fails
@@ -39,10 +39,8 @@ function checkGrid(L) {
   const bad = [];
   MODELS.forEach((m, i) => {
     const P = L.auto(m.D, m.edges, { seed: 1 }).pos.map((p) => ({ x: p.x, y: p.y })), E = m.edges.map(([s, t]) => ({ s, t }));
-    for (const down of [undefined, m.edges.filter((e) => e[2] === 2).map(([c, p]) => [c, p])]) {
-      try { L.tidy.run(P, m.D, E, { budgetMs: 300, checkIndex: true, down }); }
-      catch (err) { bad.push('model ' + i + (down ? ' (subclasses below)' : '') + ': ' + err.message); }
-    }
+    try { L.tidy.run(P, m.D, E, { budgetMs: 300, checkIndex: true }); }
+    catch (err) { bad.push('model ' + i + ': ' + err.message); }
   });
   return bad;
 }
