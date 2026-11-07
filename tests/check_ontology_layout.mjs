@@ -67,6 +67,11 @@ function checkTree(L) {
     const m = L.tidy.measure(Q, D, E), up = edges.filter(([c, p]) => Q[c].y <= Q[p].y).length;
     if (m.cross || m.thru || up) bad.push(`${name}: ${m.cross} crossed, ${m.thru} through classes, ${up} subclass links not pointing down`);
   }
+  // multiple superclasses (one of them deep in another branch) and a subclass cycle: every subclass link points down except
+  // the one that closes the cycle
+  const L2 = ['Thing', 'A', 'B', 'B1', 'B2', 'B3', 'C', 'Cyc1', 'Cyc2', 'Cyc3'], E2 = [[1, 0, 2], [2, 0, 2], [3, 2, 2], [4, 3, 2], [5, 4, 2], [6, 1, 2], [6, 5, 2], [7, 0, 2], [8, 7, 2], [9, 8, 2], [7, 9, 2]];
+  const D2 = L2.map((l) => ({ w: l.length * 6.6 + 10, h: 20 })), Q2 = L.tree(D2, E2, {}).pos, up2 = E2.filter(([c, p]) => Q2[c].y <= Q2[p].y).length;
+  if (up2 !== 1) bad.push(`tree with multiple superclasses and a cycle: ${up2} subclass links not pointing down (expected 1, the cycle's)`);
   return bad;
 }
 function runAll(code) {
@@ -82,7 +87,8 @@ if (process.argv.includes('--self-test')) {
     ['clock', 'a wall-clock read in a layout function', code.replace('function _ogClCrossings(P, EE) {', 'function _ogClCrossings(P, EE) { const _t = performance.now();')],
     ['grid', 'the grid skips every third cell along a link', code.replace('f(cy * G.cols + cx);', 'if ((cx + cy) % 3) f(cy * G.cols + cx);')],
     ['repeatable', 'the layout depends on the wall clock', code.replace('function _ogNow() {', 'function _ogNow() { return performance.now() * 37 % 1e9;')],
-    ['tree', 'the tree gap ignores the lines to far children', code.replace('if (room > 1) G = Math.max(G,', 'if (room > 1e9) G = Math.max(G,')]
+    ['tree', 'the tree gap ignores the lines to far children', code.replace('if (room > 1) G = Math.max(G,', 'if (room > 1e9) G = Math.max(G,')],
+    ['tree', 'levels by the shallowest superclass, not the deepest', code.replace('atLeast[k] = Math.max(atLeast[k], level[v] + 1);', 'atLeast[k] = atLeast[k] || level[v] + 1;')]
   ];
   let ok = true;
   for (const [check, what, broken] of fixtures) {

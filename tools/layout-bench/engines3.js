@@ -27,7 +27,24 @@ function x3Order(f) {
   for (let v = 0; v < n; v++) if (depth[v] < 0) q.push(v);
   return (f.order = q);
 }
+// X3.mode 'energy': the hierarchy as a term of the stress energy itself, E = stress + λ·Σ max(0, y_parent + δ − y_child)²,
+// minimized by the same majorization: in each node's update, a violated subclass link adds a target y with weight λ·(mean
+// stress weight of that node), the way DIG-CoLa adds its hierarchy energy. No projection afterwards: the result can stay
+// slightly violated, which is what a soft constraint means.
+function x3StressH(P, D, rnd, f, lam) {
+  const n = P.length; _ogWorkN[3] += n * n;
+  for (let i = 0; i < n; i++) {
+    const pi = P[i], Di = D[i]; let nx = 0, ny = 0, den = 0;
+    for (let j = 0; j < n; j++) { if (i === j) continue; const pj = P[j], d = Di[j], w = 1 / (d * d); let dx = pi.x - pj.x, dy = pi.y - pj.y, cur = Math.sqrt(dx * dx + dy * dy);
+      if (cur < 1e-3) { dx = rnd() - 0.5; dy = rnd() - 0.5; cur = Math.sqrt(dx * dx + dy * dy); } nx += w * (pj.x + d * dx / cur); ny += w * (pj.y + d * dy / cur); den += w; }
+    let hy = 0, hw = 0; const wl = lam * den / (n - 1 || 1);
+    for (const p of f.par[i] || []) if (pi.y < P[p].y + f.g) { hy += wl * (P[p].y + f.g); hw += wl; }
+    for (const k of f.kid[i] || []) if (P[k].y < pi.y + f.g) { hy += wl * (P[k].y - f.g); hw += wl; }
+    pi.x = nx / den; pi.y = (ny + hy) / (den + hw);
+  }
+}
 function x3Project(P, f, rounds) {
+  if (X3.mode === 'energy') return;
   if (X3.mode === 'mirror') {
     const lam = X3.lambda == null ? 1 : X3.lambda;
     for (const c of x3Order(f)) { let top = -Infinity, py = 0; for (const p of f.par[c]) if (P[p].y + f.g > top) { top = P[p].y + f.g; py = P[p].y; }
@@ -172,12 +189,12 @@ _ogStressLayout = function (items, edges, cfg, opts) {
   for (let r = 0; r < Math.max(1, restarts) && (r === 0 || performance.now() - t0 < budget * 0.4); r++) {
     const PC = cfg.init === "pmds" && r === 0 && m > 2 ? _ogClPivotMDS(D, m, rnd) : NC.map(() => ({ x: (rnd() - 0.5) * 400, y: (rnd() - 0.5) * 400 }));
     x3Project(PC, fC, 30);
-    for (let it = 0; it < 120; it++) { const before = PC.map((p) => p.x + p.y); _ogClStress(PC, D, 1, rnd); x3Project(PC, fC, 10); let mv = 0; PC.forEach((p, i) => (mv += Math.abs(p.x + p.y - before[i]))); if (mv / m < 0.05) break; }
+    for (let it = 0; it < 120; it++) { const before = PC.map((p) => p.x + p.y); if (X3.mode === 'energy') x3StressH(PC, D, rnd, fC, X3.lambda); else _ogClStress(PC, D, 1, rnd); x3Project(PC, fC, 10); let mv = 0; PC.forEach((p, i) => (mv += Math.abs(p.x + p.y - before[i]))); if (mv / m < 0.05) break; }
     _ogClSeparate(PC, NC, 12, 120); x3Project(PC, fC, 30); _ogClSeparate(PC, NC, 12, 60);
     const x = countX ? _ogClCrossings(PC, EC) : 0; if (!best || x < best.x) best = { x, P: PC };
   }
   const PC = best.P;
-  X3.flow = fC;
+  X3.flow = X3.mode === 'energy' ? null : fC;
   if (countX && EC.length) {
     _ogClFinCross(PC, NC, EC, Math.min(m <= 30 ? 150 : 300, left() / 3), seed); _ogClSeparate(PC, NC, 12, 120);
     _ogClFinThru(PC, NC, EC, 12, 10, left() / 3); _ogClFinTight(PC, NC, EC, 12, 26 * sc, left() / 2); _ogClFinThru(PC, NC, EC, 8, 10, left() / 2);
@@ -185,7 +202,7 @@ _ogStressLayout = function (items, edges, cfg, opts) {
   const P = new Array(n); core.forEach((v, k) => (P[v] = PC[k]));
   for (let v = 0; v < n; v++) if (!P[v]) P[v] = { x: 0, y: 0 };
   const deadline = t0 + budget;
-  X3.flow = fA;
+  X3.flow = X3.mode === 'energy' ? null : fA;
   if (cfg.leaves) {
     _ogClPlaceLeaves(P, N, EE, leafOf, gapOf, L, 10, false, deadline);
     _ogClFinThru(P, N, EE, 6, 10, left() / 2); _ogClFinTight(P, N, EE, 6, 26 * sc, left());
@@ -210,6 +227,9 @@ const EXP3 = {
 };
 const x3Wrap2 = (fn, gap, squash) => (it, ed, o) => { X3.squash = squash; try { return x3Wrap(fn, gap)(it, ed, o); } finally { X3.squash = 0.75; } };
 const x3Mode = (fn, gap, mode, lambda) => (it, ed, o) => { X3.mode = mode; X3.lambda = lambda; try { return x3Wrap(fn, gap)(it, ed, o); } finally { X3.mode = null; X3.lambda = null; } };
+EXP3.autoE1 = x3Mode((a, b, c) => _ogAutoLayout(a, b, c), 30, 'energy', 1);
+EXP3.autoE4 = x3Mode((a, b, c) => _ogAutoLayout(a, b, c), 30, 'energy', 4);
+EXP3.autoE16 = x3Mode((a, b, c) => _ogAutoLayout(a, b, c), 30, 'energy', 16);
 EXP3.autoM = x3Mode((a, b, c) => _ogAutoLayout(a, b, c), 30, 'mirror', 1);
 EXP3.autoMs = x3Mode((a, b, c) => _ogAutoLayout(a, b, c), 30, 'mirror', 0.3);
 EXP3.compactM = x3Mode((a, b, c) => _ogCompactLayout(a, b, c), 30, 'mirror', 1);

@@ -2,7 +2,8 @@
 // Compares: layout as shipped (moves, straight links) vs the same layout without the move step plus bends.
 // Run: node route.mjs [models] — prints crossings, links through classes, bends and area for both.
 import { execSync } from 'node:child_process';
-execSync('node build_base.mjs'); execSync('node mkbundle.mjs');
+const here = new URL('.', import.meta.url).pathname.replace(/^\/([A-Za-z]:)/, '$1');
+execSync('node build_base.mjs', { cwd: here }); execSync('node mkbundle.mjs', { cwd: here });
 const { MODELS, OURS, EXP3, _ogClSegBox } = await import('./_bundle.mjs?' + Date.now());
 const segX = OURS.segX;
 const dims = (labels) => labels.map((l) => ({ w: String(l).length * 6.6 + 10, h: 20 }));
@@ -39,13 +40,15 @@ function routeAll(P, B, EE) {
   }
   return R;
 }
-const keys = (process.argv[2] || 'uni,trial,org,brewery,prov,sosa,crm,supply,retail,schema,fibo,telecom,pizza,bio,big').split(',');
+const keys = (process.argv[2] || 'uni,hotel,org,brewery,trial,prov,telecom,sosa,crm,schema,health,fibo,pizza,bio,big').split(',');
 const tot = { a: { cross: 0, thru: 0, bends: 0, fill: 0 }, b: { cross: 0, thru: 0, bends: 0, fill: 0 }, c: { cross: 0, thru: 0, bends: 0, fill: 0 } };
 for (const key of keys) {
   const M = await MODELS[key].load(), D = dims(M.labels), items = D.map((d) => ({ w: d.w, h: d.h }));
   const edges = M.edges.filter((e) => e.s !== e.t).map((e) => [e.s, e.t, e.kind === 'sub' ? 2 : 1]), EE = edges.map(([s, t]) => ({ s, t }));
-  const run = (fn) => { const P = fn(items, edges, { seed: 1 }).pos.map((p) => ({ ...p })); OURS.sep(P, D.map((d) => ({ w: d.w + 16, h: d.h + 12 })), 6, 200); return P; };
-  const Pa = run(OURS.auto), Pb = run(EXP3.autoNT);
+  // a: Best Read as shipped (layout, then the clean-up that moves classes); b: the layout without its steps that move classes off
+  // links and without the clean-up, links bent around the classes in their way instead; c: as shipped, then bends for what is left
+  const run = (fn, tidy) => { const t0 = OURS.now(), r = fn(items, edges, { seed: 1 }); let P = r.pos.map((p) => ({ ...p })); OURS.sep(P, D.map((d) => ({ w: d.w + 16, h: d.h + 12 })), 6, 200); if (tidy) P = OURS.cleanUp(P, items, edges, t0, r.algo === 'tree').map((p) => ({ x: p.x, y: p.y })); return P; };
+  const Pa = run(OURS.auto, true), Pb = run(EXP3.autoNT, false);
   const a = pm(Pa, D, EE, EE.map((e) => [Pa[e.s], Pa[e.t]])), b = pm(Pb, D, EE, routeAll(Pb, D, EE)), c = pm(Pa, D, EE, routeAll(Pa, D, EE));
   console.log(key.padEnd(8), 'moves:', JSON.stringify(a), '| no moves + bends:', JSON.stringify(b), '| moves + bends:', JSON.stringify(c));
   for (const [t, m] of [['a', a], ['b', b], ['c', c]]) for (const f in m) tot[t][f] += m[f] / keys.length;

@@ -70,13 +70,20 @@ const _ogHandTidy = (function () {
       ow: D.map((d) => d.w / 2 + 8), oh: D.map((d) => d.h / 2 + 6), mN: new Uint8Array(n), mE: new Uint8Array(E.length),
       // for the grid: the extent a class is listed with (its larger box plus a pixel), and scratch marks
       ex: D.map((d) => d.w / 2 + Math.max(o.clearance, 8) + 1), ey: D.map((d) => d.h / 2 + Math.max(o.clearance, 6) + 1),
-      vSeen: new Int32Array(n), eSeen: new Int32Array(E.length), qStamp: 0, eStamp: new Int32Array(E.length), isMovedE: new Uint8Array(E.length), isMovedN: new Uint8Array(n) };
+      vSeen: new Int32Array(n), eSeen: new Int32Array(E.length), tSeen: new Int32Array(n), sSeen: new Int32Array(n), qStamp: 0, eStamp: new Int32Array(E.length), isMovedE: new Uint8Array(E.length), isMovedN: new Uint8Array(n) };
     const ls = E.map((e) => Math.hypot(M.P[e.s].x - M.P[e.t].x, M.P[e.s].y - M.P[e.t].y)).sort((a, b) => a - b);
     M.medLen = ls[ls.length >> 1] || 150; M.A0 = bboxArea(M);
     // opts.down [[subclass, superclass]]: keep each subclass at least opts.downGap px below its superclass (a drawing that
     // starts top-down stays top-down); a link drawn upward costs as much as an overlap
     M.dn = null; if (o.down && o.down.length) { M.dn = Array.from({ length: n }, () => []); o.down.forEach(([c, p]) => { if (c !== p) { M.dn[c].push([p, 1]); M.dn[p].push([c, -1]); } }); }
     return M;
+  }
+  // cramped classes among S and their neighbors, each counted once (a stamp per evaluation instead of a new Set)
+  function tightAround(M, S) {
+    const q = ++M.qStamp, seen = M.tSeen; let c = 0;
+    const one = (v) => { if (seen[v] !== q) { seen[v] = q; if (minAngle(M, v) < 15) c += M.W.tight; } };
+    for (const v of S) { one(v); for (const u of M.adj[v]) one(u); }
+    return c;
   }
   const upward = (M, v, u, dir) => (dir > 0 ? M.P[v].y < M.P[u].y + M.o.downGap : M.P[u].y < M.P[v].y + M.o.downGap);
   function upCost(M, S, mN) { let c = 0; for (const v of S) for (const [u, dir] of M.dn[v]) if ((!mN[u] || u > v) && upward(M, v, u, dir)) c += M.W.ov; return c; }
@@ -187,8 +194,7 @@ const _ogHandTidy = (function () {
       for (const u of S) if (u > v && overlaps(M, u, v)) c += W.ov;
     }
     movedL.forEach((k) => (isMovedE[k] = 0)); movedN.forEach((v) => (isMovedN[v] = 0));
-    const T = new Set(S); S.forEach((v) => M.adj[v].forEach((u) => T.add(u)));
-    T.forEach((v) => { if (minAngle(M, v) < 15) c += W.tight; });
+    c += tightAround(M, S);
     if (M.dn) c += upCost(M, S, mN);
     S.forEach((v) => (mN[v] = 0)); A.forEach((k) => (mE[k] = 0));
     if (M.o.checkIndex) { const b = localAll(M, S); if (Math.abs(b - c) > 1e-6) throw new Error('grid check: local ' + c + ' vs ' + b + ' for ' + S.join(',')); }
@@ -207,8 +213,7 @@ const _ogHandTidy = (function () {
       for (let f = 0; f < m; f++) if (!mE[f]) c += thruCost(M, f, v);
       for (let u = 0; u < n; u++) if (u !== v && !(mN[u] && u < v) && overlaps(M, u, v)) c += W.ov;
     }
-    const T = new Set(S); S.forEach((v) => M.adj[v].forEach((u) => T.add(u)));
-    T.forEach((v) => { if (minAngle(M, v) < 15) c += W.tight; });
+    c += tightAround(M, S);
     if (M.dn) c += upCost(M, S, mN);
     S.forEach((v) => (mN[v] = 0)); A.forEach((k) => (mE[k] = 0));
     return c;
@@ -246,8 +251,8 @@ const _ogHandTidy = (function () {
   function best(M, S, cands, eps = 0.01) {
     M.evals = (M.evals || 0) + cands.length + 1; _ogWorkN[2] += M.n;
     // the area of everything but S is the same for every candidate: measure it once, then add S's boxes per candidate
-    const inS = new Set(S); let x1 = 1e18, y1 = 1e18, x2 = -1e18, y2 = -1e18;
-    M.P.forEach((p, i) => { if (inS.has(i)) return; const w = M.D[i].w / 2, h = M.D[i].h / 2; if (p.x - w < x1) x1 = p.x - w; if (p.x + w > x2) x2 = p.x + w; if (p.y - h < y1) y1 = p.y - h; if (p.y + h > y2) y2 = p.y + h; });
+    const sq = ++M.qStamp, inS = M.sSeen; for (const v of S) inS[v] = sq; let x1 = 1e18, y1 = 1e18, x2 = -1e18, y2 = -1e18;
+    M.P.forEach((p, i) => { if (inS[i] === sq) return; const w = M.D[i].w / 2, h = M.D[i].h / 2; if (p.x - w < x1) x1 = p.x - w; if (p.x + w > x2) x2 = p.x + w; if (p.y - h < y1) y1 = p.y - h; if (p.y + h > y2) y2 = p.y + h; });
     const pen = () => { let a = x1, b = y1, c = x2, d = y2; for (const v of S) { const p = M.P[v], w = M.D[v].w / 2, h = M.D[v].h / 2; if (p.x - w < a) a = p.x - w; if (p.x + w > c) c = p.x + w; if (p.y - h < b) b = p.y - h; if (p.y + h > d) d = p.y + h; } return M.W.area * 100 * Math.max(0, (c - a) * (d - b) / M.A0 - 1); };
     const before = local(M, S) + pen(), old = S.map((v) => M.P[v]);
     let bestD = -eps, bestC = null;

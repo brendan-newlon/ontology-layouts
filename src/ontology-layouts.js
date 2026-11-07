@@ -269,12 +269,21 @@
           }
           vecs.push(v);
         }
-        return Array.from({ length: n }, (_, i) => { let x = 0, y = 0; for (let j = 0; j < k; j++) { x += C[i][j] * vecs[0][j]; y += C[i][j] * vecs[1][j]; } return { x, y }; });
+        const P = Array.from({ length: n }, (_, i) => { let x = 0, y = 0; for (let j = 0; j < k; j++) { x += C[i][j] * vecs[0][j]; y += C[i][j] * vecs[1][j]; } return { x, y }; });
+        // The projection gives the right shape at an arbitrary scale and offset (on a 3,000-class model, millions of px away).
+        // Stress keeps any offset and needs many sweeps from a wrong scale, so center the drawing and scale it so that the
+        // distances to the pivots best match their targets (least squares).
+        let mx = 0, my = 0; P.forEach((p) => { mx += p.x / n; my += p.y / n; }); P.forEach((p) => { p.x -= mx; p.y -= my; });
+        let num = 0, den = 0;
+        for (let i = 0; i < n; i++) for (const p of piv) { const d = Math.hypot(P[i].x - P[p].x, P[i].y - P[p].y); if (isFinite(D[i][p])) { num += D[i][p] * d; den += d * d; } }
+        const s = den > 0 ? num / den : 1; P.forEach((p) => { p.x *= s; p.y *= s; });
+        return P;
       }
       // Stress majorization: each pair of classes pulled toward its target distance D, near pairs weighted most (1/d²).
-      function _ogClStress(P, D, iters, rnd) {
+      // deadline (work clock, optional): stop sweeping once it has passed; very large models get fewer sweeps, not a longer wait
+      function _ogClStress(P, D, iters, rnd, deadline) {
         const n = P.length;
-        for (let it = 0; it < iters; it++) {
+        for (let it = 0; it < iters && !(deadline && it && _ogNow() > deadline); it++) {
           let moved = 0; _ogWorkN[3] += n * n;
           for (let i = 0; i < n; i++) {
             const pi = P[i], Di = D[i]; let nx = 0, ny = 0, den = 0;
@@ -371,6 +380,12 @@
                 }
               }
             }
+            // no free spot near the neighbor (a crowded hub on a very large model): look further out, ring by ring, and in the
+            // end take the outermost spot tried, so a class is never left where it started
+            if (!best) for (let r = 4, done = false; r <= 12 && !done; r += 2) for (let a = 0; a < 16; a++) {
+              const th = a * Math.PI / 8, c = { x: P[p].x + Math.cos(th) * r * L, y: P[p].y + Math.sin(th) * r * L * 0.75 };
+              if (freeAt(v, p, c) || r === 12) { best = { cost: 0, c }; done = true; break; }
+            }
             if (best) P[v] = best.c; placed[v] = 1;
           }
         }
@@ -408,7 +423,7 @@
         let best = null;
         for (let r = 0; r < Math.max(1, restarts) && (r === 0 || _ogNow() - t0 < budget * 0.4); r++) {
           const PC = cfg.init === "pmds" && r === 0 && m > 2 ? _ogClPivotMDS(D, m, rnd) : NC.map(() => ({ x: (rnd() - 0.5) * 400, y: (rnd() - 0.5) * 400 }));
-          _ogClStress(PC, D, 120, rnd); _ogClSeparate(PC, NC, 12, 120);
+          _ogClStress(PC, D, 120, rnd, t0 + budget * 0.4); _ogClSeparate(PC, NC, 12, 120);
           const x = countX ? _ogClCrossings(PC, EC) : 0; if (!best || x < best.x) best = { x, P: PC };
         }
         const PC = best.P;
@@ -523,47 +538,59 @@
         return { n, cross, near, thru, ov, len: len / Math.max(1, EE.length), lout, area, fill: area / Math.max(1, boxArea) };
       }
       function _ogPlacementScore(m) {
-        return 10 * m.cross + 8 * m.thru + 2 * m.near + 40 * m.ov + m.len / 10 + Math.max(0, m.len - 350) / 2 + Math.max(0, (m.fill || 0) - 8) * 4 * Math.sqrt(m.n || 1) + 25 * (m.lout || 0);
+        return _ogChoiceScore(m) + Math.max(0, m.len - 350) / 2 + 25 * (m.lout || 0);
       }
-      // Top-down tree for models made mostly of subclass links. Each class hangs under its shallowest superclass; subtrees sit
-      // side by side under their parent, and the gap down to a row of children is made deep enough that no straight line from
-      // the parent to a child clips a sibling's box. The tree itself then has no crossing and no link through a class; only the
-      // other links (second superclasses, relationships) can. items [{w, h}], edges [[i, j, weight]] -> { pos } (classes with
-      // no link go in a row underneath).
+      // Top-down tree for models made mostly of subclass links. Classes stand on levels: each class one level below its deepest
+      // superclass (the longest chain of subclass links from a root), so every superclass is on a higher level than its
+      // subclasses, second superclasses included. Each class hangs under one superclass on the level just above; subtrees sit
+      // side by side under it, and each level sits deep enough below the one above that no straight line from a parent to its
+      // child clips a sibling's box. The tree itself then has no crossing and no link through a class; only second
+      // superclasses and relationships can cross. In a subclass cycle, the link that closes the cycle is the only one that
+      // points up. items [{w, h}], edges [[i, j, weight]] -> { pos } (classes with no link go in a row underneath).
       function _ogTreeLayout(items, edges, opts) {
         const n = items.length, sc = opts && opts.roomy ? 1.3 : 1, SIB = 18 * sc, MINGAP = 50 * sc;
         const N = items.map((it) => ({ w: it.w + 16 * sc, h: it.h + 12 * sc }));
         const par = Array.from({ length: n }, () => []), kidsAll = Array.from({ length: n }, () => []), linked = new Uint8Array(n);
         edges.forEach(([a, b, w]) => { if (a === b) return; linked[a] = linked[b] = 1; if (w === 2) { par[a].push(b); kidsAll[b].push(a); } });
-        // depth below the roots (classes without a superclass), breadth first; a class in a subclass cycle becomes a root
-        const depth = new Array(n).fill(-1), q = [];
-        const down = (from) => { for (let i = from; i < q.length; i++) for (const k of kidsAll[q[i]]) if (depth[k] < 0) { depth[k] = depth[q[i]] + 1; q.push(k); } };
-        for (let v = 0; v < n; v++) if (!par[v].length && linked[v]) { depth[v] = 0; q.push(v); }
-        down(0);
-        for (let v = 0; v < n; v++) if (depth[v] < 0 && linked[v]) { const f = q.length; depth[v] = 0; q.push(v); down(f); }
+        // levels by the longest chain (a class is placed once all its superclasses are); a class left in a cycle is released
+        // with the level its placed superclasses give it
+        const level = new Array(n).fill(-1), atLeast = new Array(n).fill(0), waiting = par.map((ps) => ps.length), order = [];
+        let head = 0;
+        const expand = () => { for (; head < order.length; head++) { const v = order[head];
+          for (const k of kidsAll[v]) { if (level[k] >= 0) continue; atLeast[k] = Math.max(atLeast[k], level[v] + 1); if (--waiting[k] === 0) { level[k] = atLeast[k]; order.push(k); } } } };
+        for (let v = 0; v < n; v++) if (linked[v] && !waiting[v]) { level[v] = 0; order.push(v); }
+        expand();
+        for (let v = 0; v < n; v++) if (level[v] < 0 && linked[v]) { level[v] = atLeast[v]; order.push(v); expand(); }
+        // each class hangs under a superclass on the level just above (there is one unless the class starts a level-0 tree)
         const tp = new Array(n).fill(-1), kids = Array.from({ length: n }, () => []);
-        for (let v = 0; v < n; v++) { let b = -1; for (const p of par[v]) if (depth[p] >= 0 && depth[p] < depth[v] && (b < 0 || depth[p] < depth[b])) b = p; if (b >= 0) { tp[v] = b; kids[b].push(v); } }
-        const size = new Array(n).fill(1); for (let i = q.length - 1; i >= 0; i--) if (tp[q[i]] >= 0) size[tp[q[i]]] += size[q[i]];
+        for (const v of order) { const p = par[v].find((u) => level[u] === level[v] - 1); if (p !== undefined) { tp[v] = p; kids[p].push(v); } }
+        const size = new Array(n).fill(1); for (let i = order.length - 1; i >= 0; i--) if (tp[order[i]] >= 0) size[tp[order[i]]] += size[order[i]];
         // a balanced fan: small subtrees at the two ends, large ones toward the middle
         const fan = (ks) => { const out = []; ks.slice().sort((a, b) => size[a] - size[b] || a - b).forEach((v, i) => (i % 2 ? out.push(v) : out.unshift(v))); return out; };
-        function lay(v) {
-          const ks = fan(kids[v]); if (!ks.length) return { pts: [[v, 0, 0]], l: -N[v].w / 2, r: N[v].w / 2 };
+        const gap = []; // gap[d]: how far level d sits below level d − 1, the largest any parent on level d − 1 needs
+        function lay(v) { // x offsets of the subtree of v from v, and its extents
+          const ks = fan(kids[v]); if (!ks.length) return { pts: [[v, 0]], l: -N[v].w / 2, r: N[v].w / 2 };
           const subs = ks.map(lay), X = []; let x = 0;
           subs.forEach((s, i) => { if (i) x += SIB; x -= s.l; X.push(x); x += s.r; });
           const mid = (X[0] + X[X.length - 1]) / 2; for (let i = 0; i < X.length; i++) X[i] -= mid;
           // the line to child i, from the parent's center, clears neighbor j's box (j nearer the parent) at depth G when
-          // G ≥ |X_i| · (h_j/2 + 4) / (|X_i − X_j| − w_j/2)
+          // G ≥ |X_i| · (h_j/2 + 4) / (|X_i − X_j| − w_j/2); a deeper level only clears it more
           let G = MINGAP + (N[v].h + Math.max(...ks.map((k) => N[k].h))) / 2;
           ks.forEach((k, i) => [i - 1, i + 1].forEach((j) => { if (j < 0 || j >= ks.length || Math.abs(X[j]) >= Math.abs(X[i])) return;
             const room = Math.abs(X[i] - X[j]) - N[ks[j]].w / 2; if (room > 1) G = Math.max(G, Math.abs(X[i]) * (N[ks[j]].h / 2 + 4) / room); }));
           _ogWorkN[2] += ks.length * 2;
-          const pts = [[v, 0, 0]]; let l = -N[v].w / 2, r = N[v].w / 2;
-          subs.forEach((s, i) => { s.pts.forEach(([u, dx, dy]) => pts.push([u, X[i] + dx, G + dy])); l = Math.min(l, X[i] + s.l); r = Math.max(r, X[i] + s.r); });
+          const d = level[v] + 1; gap[d] = Math.max(gap[d] || 0, G);
+          const pts = [[v, 0]]; let l = -N[v].w / 2, r = N[v].w / 2;
+          subs.forEach((s, i) => { s.pts.forEach(([u, dx]) => pts.push([u, X[i] + dx])); l = Math.min(l, X[i] + s.l); r = Math.max(r, X[i] + s.r); });
           return { pts, l, r };
         }
-        const P = new Array(n); let x = 0, maxY = 0;
-        fan(q.filter((v) => tp[v] < 0)).forEach((v) => { const s = lay(v); x -= s.l; s.pts.forEach(([u, dx, dy]) => { P[u] = { x: x + dx, y: dy }; maxY = Math.max(maxY, dy); }); x += s.r + 3 * SIB; });
-        let ux = 0; for (let v = 0; v < n; v++) if (!P[v]) { P[v] = { x: ux + N[v].w / 2, y: maxY + 80 * sc }; ux += N[v].w + SIB; }
+        const X = new Array(n); let x = 0;
+        fan(order.filter((v) => tp[v] < 0)).forEach((v) => { const s = lay(v); x -= s.l; s.pts.forEach(([u, dx]) => (X[u] = x + dx)); x += s.r + 3 * SIB; });
+        const Y = [0]; let top = 0; for (let d = 1; d < gap.length || d <= Math.max(0, ...level); d++) Y[d] = Y[d - 1] + (gap[d] || MINGAP + 40 * sc);
+        level.forEach((d) => { if (d > top) top = d; });
+        const P = new Array(n); let ux = 0;
+        for (let v = 0; v < n; v++) if (X[v] !== undefined) P[v] = { x: X[v], y: Y[level[v]] };
+        for (let v = 0; v < n; v++) if (!P[v]) { P[v] = { x: ux + N[v].w / 2, y: Y[top] + 80 * sc }; ux += N[v].w + SIB; }
         return { pos: P, crossings: 0 };
       }
       // The score Best Read chooses by: the readability score without its penalties for long links (mean length beyond 350 px
@@ -586,8 +613,11 @@
           const sc = opts && opts.roomy ? 1.3 : 1, N = items.map((it) => ({ w: it.w + 16 * sc, h: it.h + 12 * sc })), EE = links.map(([a, b]) => ({ s: a, t: b }));
           const T = _ogTreeLayout(items, edges, opts).pos; _ogClSeparate(T, N, 6, 40);
           // links through classes counted against the boxes as drawn (3 px margin, as the benchmark counts them); area on the padded boxes
-          const B = items.map((it) => ({ w: it.w + 6, h: it.h + 6 })), mt = _ogPlacementMetrics(T, N, EE), mb = _ogPlacementMetrics(best.pos, N, EE);
-          return mt.cross === 0 && _ogPlacementMetrics(T, B, EE).thru === 0 && mt.fill <= 1.5 * mb.fill ?{ ...best, pos: T, crossings: 0, algo: "tree", variant: "tree" } : best;
+          // (cheapest test first: a crossing rules the tree out before anything else is measured)
+          if (_ogClCrossings(T, EE)) return best;
+          const B = items.map((it) => ({ w: it.w + 6, h: it.h + 6 }));
+          if (_ogPlacementMetrics(T, B, EE).thru) return best;
+          return _ogPlacementMetrics(T, N, EE).fill <= 1.5 * _ogPlacementMetrics(best.pos, N, EE).fill ? { ...best, pos: T, crossings: 0, algo: "tree", variant: "tree" } : best;
         });
       }
       // ── Clean-up after a layout ──
@@ -641,13 +671,20 @@
             ow: D.map((d) => d.w / 2 + 8), oh: D.map((d) => d.h / 2 + 6), mN: new Uint8Array(n), mE: new Uint8Array(E.length),
             // for the grid: the extent a class is listed with (its larger box plus a pixel), and scratch marks
             ex: D.map((d) => d.w / 2 + Math.max(o.clearance, 8) + 1), ey: D.map((d) => d.h / 2 + Math.max(o.clearance, 6) + 1),
-            vSeen: new Int32Array(n), eSeen: new Int32Array(E.length), qStamp: 0, eStamp: new Int32Array(E.length), isMovedE: new Uint8Array(E.length), isMovedN: new Uint8Array(n) };
+            vSeen: new Int32Array(n), eSeen: new Int32Array(E.length), tSeen: new Int32Array(n), sSeen: new Int32Array(n), qStamp: 0, eStamp: new Int32Array(E.length), isMovedE: new Uint8Array(E.length), isMovedN: new Uint8Array(n) };
           const ls = E.map((e) => Math.hypot(M.P[e.s].x - M.P[e.t].x, M.P[e.s].y - M.P[e.t].y)).sort((a, b) => a - b);
           M.medLen = ls[ls.length >> 1] || 150; M.A0 = bboxArea(M);
           // opts.down [[subclass, superclass]]: keep each subclass at least opts.downGap px below its superclass (a drawing that
           // starts top-down stays top-down); a link drawn upward costs as much as an overlap
           M.dn = null; if (o.down && o.down.length) { M.dn = Array.from({ length: n }, () => []); o.down.forEach(([c, p]) => { if (c !== p) { M.dn[c].push([p, 1]); M.dn[p].push([c, -1]); } }); }
           return M;
+        }
+        // cramped classes among S and their neighbors, each counted once (a stamp per evaluation instead of a new Set)
+        function tightAround(M, S) {
+          const q = ++M.qStamp, seen = M.tSeen; let c = 0;
+          const one = (v) => { if (seen[v] !== q) { seen[v] = q; if (minAngle(M, v) < 15) c += M.W.tight; } };
+          for (const v of S) { one(v); for (const u of M.adj[v]) one(u); }
+          return c;
         }
         const upward = (M, v, u, dir) => (dir > 0 ? M.P[v].y < M.P[u].y + M.o.downGap : M.P[u].y < M.P[v].y + M.o.downGap);
         function upCost(M, S, mN) { let c = 0; for (const v of S) for (const [u, dir] of M.dn[v]) if ((!mN[u] || u > v) && upward(M, v, u, dir)) c += M.W.ov; return c; }
@@ -758,8 +795,7 @@
             for (const u of S) if (u > v && overlaps(M, u, v)) c += W.ov;
           }
           movedL.forEach((k) => (isMovedE[k] = 0)); movedN.forEach((v) => (isMovedN[v] = 0));
-          const T = new Set(S); S.forEach((v) => M.adj[v].forEach((u) => T.add(u)));
-          T.forEach((v) => { if (minAngle(M, v) < 15) c += W.tight; });
+          c += tightAround(M, S);
           if (M.dn) c += upCost(M, S, mN);
           S.forEach((v) => (mN[v] = 0)); A.forEach((k) => (mE[k] = 0));
           if (M.o.checkIndex) { const b = localAll(M, S); if (Math.abs(b - c) > 1e-6) throw new Error('grid check: local ' + c + ' vs ' + b + ' for ' + S.join(',')); }
@@ -778,8 +814,7 @@
             for (let f = 0; f < m; f++) if (!mE[f]) c += thruCost(M, f, v);
             for (let u = 0; u < n; u++) if (u !== v && !(mN[u] && u < v) && overlaps(M, u, v)) c += W.ov;
           }
-          const T = new Set(S); S.forEach((v) => M.adj[v].forEach((u) => T.add(u)));
-          T.forEach((v) => { if (minAngle(M, v) < 15) c += W.tight; });
+          c += tightAround(M, S);
           if (M.dn) c += upCost(M, S, mN);
           S.forEach((v) => (mN[v] = 0)); A.forEach((k) => (mE[k] = 0));
           return c;
@@ -817,8 +852,8 @@
         function best(M, S, cands, eps = 0.01) {
           M.evals = (M.evals || 0) + cands.length + 1; _ogWorkN[2] += M.n;
           // the area of everything but S is the same for every candidate: measure it once, then add S's boxes per candidate
-          const inS = new Set(S); let x1 = 1e18, y1 = 1e18, x2 = -1e18, y2 = -1e18;
-          M.P.forEach((p, i) => { if (inS.has(i)) return; const w = M.D[i].w / 2, h = M.D[i].h / 2; if (p.x - w < x1) x1 = p.x - w; if (p.x + w > x2) x2 = p.x + w; if (p.y - h < y1) y1 = p.y - h; if (p.y + h > y2) y2 = p.y + h; });
+          const sq = ++M.qStamp, inS = M.sSeen; for (const v of S) inS[v] = sq; let x1 = 1e18, y1 = 1e18, x2 = -1e18, y2 = -1e18;
+          M.P.forEach((p, i) => { if (inS[i] === sq) return; const w = M.D[i].w / 2, h = M.D[i].h / 2; if (p.x - w < x1) x1 = p.x - w; if (p.x + w > x2) x2 = p.x + w; if (p.y - h < y1) y1 = p.y - h; if (p.y + h > y2) y2 = p.y + h; });
           const pen = () => { let a = x1, b = y1, c = x2, d = y2; for (const v of S) { const p = M.P[v], w = M.D[v].w / 2, h = M.D[v].h / 2; if (p.x - w < a) a = p.x - w; if (p.x + w > c) c = p.x + w; if (p.y - h < b) b = p.y - h; if (p.y + h > d) d = p.y + h; } return M.W.area * 100 * Math.max(0, (c - a) * (d - b) / M.A0 - 1); };
           const before = local(M, S) + pen(), old = S.map((v) => M.P[v]);
           let bestD = -eps, bestC = null;

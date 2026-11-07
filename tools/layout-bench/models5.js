@@ -63,6 +63,8 @@ const HELD_OUT = {
   hx_rome90: { name: 'Held-out: sparse, Rome style (90)', load: async () => hxSparse(107, 90, 1.3) },
   hx_tax: { name: 'Held-out: deep taxonomy (110)', load: async () => hxMultiDomain(108, [40, 35, 30], ['Thing', 'Agent', 'Place', 'Event'], 0.05, 2) },
   hx_md160: { name: 'Held-out: multi-domain (164)', load: async () => hxMultiDomain(109, [22, 18, 25, 15, 20, 24, 16, 20], ['Person', 'Organization', 'Location', 'Document'], 0.25, 8) },
-  hx_md300: { name: 'Held-out: multi-domain (304)', load: async () => hxMultiDomain(110, [30, 25, 40, 35, 28, 32, 22, 38, 26, 24], ['Person', 'Organization', 'Location', 'Document'], 0.25, 14) }
+  hx_md300: { name: 'Held-out: multi-domain (304)', load: async () => hxMultiDomain(110, [30, 25, 40, 35, 28, 32, 22, 38, 26, 24], ['Person', 'Organization', 'Location', 'Document'], 0.25, 14) },
+  // added 2026-11-07, seed and sizes fixed before any run: the scale test at about 1,200 classes
+  hx_md1200: { name: 'Held-out: multi-domain (about 1,200)', load: async () => hxMultiDomain(111, [100, 90, 110, 95, 105, 85, 100, 95, 110, 90, 120, 100], ['Person', 'Organization', 'Location', 'Document'], 0.25, 50) }
 };
 Object.assign(MODELS, HELD_OUT);

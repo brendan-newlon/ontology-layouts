@@ -88,6 +88,7 @@ for key, name, fn in [
     ('pb_dul', 'DOLCE+DnS Ultralite', lambda: from_rdf(os.path.join(DL, 'onto/dul.owl'), 'turtle')),
     ('pb_saref', 'SAREF core', lambda: from_rdf(os.path.join(DL, 'onto/saref.ttl'), 'turtle')),
     ('pb_gr', 'GoodRelations', lambda: from_rdf(os.path.join(DL, 'onto/gr.owl'), 'xml')),
+    ('pb_cl', 'Cell Ontology', lambda: from_obo(os.path.join(DL, 'onto/cl-basic.obo'))),
 ]:
     labels, edges = fn()
     models[key] = {'name': f'Public: {name} ({len(labels)})', 'labels': labels, 'edges': edges}
@@ -106,7 +107,7 @@ for k, m in models.items(): print(k, len(m['labels']), 'classes', len(m['edges']
 js = ['// Public benchmark graphs, held out like models5.js: never opened in the layout lab and never used to tune.',
       '// Converted on 2026-11-06 by a script from the Rome graphs (graphdrawing.org: two graphs per size, 20 to 100 nodes, the',
       '// lowest graph numbers) and from published ontologies (FOAF, Dublin Core terms, OWL-Time, DCAT 3, BFO 2020, DOLCE+DnS',
-      '// Ultralite, SAREF core, GoodRelations): named classes; subclass links; a link from domain to range for each object property (unions expanded;',
+      '// Ultralite, SAREF core, GoodRelations, and the Cell Ontology in OBO form: is_a and relationships between its own terms): named classes; subclass links; a link from domain to range for each object property (unions expanded;',
       '// rdfs:Resource, owl:Thing and literal ranges left out).',
       'const PUBLIC_RAW = ' + json.dumps(models, separators=(',', ':')) + ';',
       'for (const [k, m] of Object.entries(PUBLIC_RAW)) MODELS[k] = { name: m.name, load: async () => ({ labels: m.labels, edges: m.edges.map(([s, t, w]) => ({ s, t, kind: w === 2 ? \'sub\' : \'prop\' })) }) };', '']
