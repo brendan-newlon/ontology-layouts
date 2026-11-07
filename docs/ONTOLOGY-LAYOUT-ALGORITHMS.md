@@ -23,13 +23,13 @@ Over 15 development graphs of 13 to 179 classes, one run each, ours with the cle
 
 | Result | Detail |
 |---|---|
-| **About half the crossings** | Best Read 461 against 960 for tuned `neato` and 971 for tuned WebCola |
-| **A fifth of the links through classes of tuned WebCola** | 63 against 307. Tuned `neato` draws 81, in about 13 times the area |
-| **First on the five measures** | Mean rank among 13 layouts: Tidy Stress 3.3, Mycelium 4.4; next WebCola 5.4 and `neato` 5.5. Best Read, ranked in their place, 3.0 |
-| **Per graph** | Best Read has the fewest crossed links plus links through classes, or ties, on 14 of 15 graphs |
-| **Under a second** | Median 0.5 s, clean-up included; at most about 1.3 s up to 537 classes; the same drawing on any computer |
+| **About half the crossings** | Best Read 450 against 960 for tuned `neato` and 971 for tuned WebCola |
+| **A fifth of the links through classes of tuned WebCola** | 60 against 307. Tuned `neato` draws 81, in about 13 times the area |
+| **First on the five measures** | Mean rank among 13 layouts: Tidy Stress 3.1, Mycelium 4.7; next WebCola 5.4 and `neato` 5.5. Best Read, ranked in their place, 2.9 |
+| **Per graph** | Best Read has the fewest crossed links plus links through classes, or ties, on all 15 graphs |
+| **Under a second** | Median 0.6 s, clean-up included; at most about 1.3 s up to 537 classes; the same drawing on any computer |
 
-**Graphs never seen during development** (10 held-out graphs, 8 published ontologies, 18 Rome benchmark graphs): Best Read 1,473 crossed links and 135 links through classes, against 2,160 / 212 for tuned `neato` (in eight times the area) and 2,429 / 780 for tuned WebCola; fewest of both, or tied, on 34 of 36 graphs (the exceptions: two big hubs, and BFO, where the free tree was 1.67 times the area, over the 1.5 limit). Mean rank: Tidy Stress 3.5, Mycelium 3.7, `neato` 5.3, WebCola 5.6; Best Read in their place 2.9. Best Read chooses without the long-link penalties of the readability score (decided on the development graphs).
+**Graphs never seen during development** (10 held-out graphs, 8 published ontologies, 18 Rome benchmark graphs): Best Read 1,593 crossed links and 156 links through classes, against 2,160 / 212 for tuned `neato` (in eight times the area) and 2,429 / 780 for tuned WebCola; fewest of both, or tied, on 35 of 36 graphs (the exception: two big hubs). Mean rank: Tidy Stress 3.5, Mycelium 3.6, `neato` 5.4, WebCola 5.6; Best Read in their place 2.9. Best Read chooses without the long-link penalties of the readability score (decided on the development graphs).
 
 What they give up: they are not the most compact (Cytoscape `cose` and dagre pack tighter), and they are slower than Graphviz at general settings: for one graph under 100 classes about 0.3 to 0.6 s against 20 to 50 ms, which a person opening one diagram does not notice; for 100 graphs of about 70 classes, about a minute against about 5 seconds.
 
@@ -46,18 +46,18 @@ The open-source layouts were Graphviz `neato`, `fdp` and `sfdp`, ELK stress, for
   - region spreading: the regions where problems pile up are pushed outward in 8 slices, more toward open space, then repaired;
   - group moves with look-ahead, and a last leaf pass.
 
-  It uses what is left of 1.5 s, at most 0.5 s; above 100 classes the layout gets 0.6 s so the clean-up keeps its share. Effect on Best Read over the 15 graphs: links through classes 122 → 63, crossings 472 → 461, area unchanged, median time 0.2 → 0.5 s.
+  It uses what is left of 1.5 s, at most 0.5 s; above 100 classes the layout gets 0.6 s so the clean-up keeps its share. Effect on Best Read over the 15 graphs: links through classes 124 → 60, crossings 484 → 450, area unchanged, median time 0.3 → 0.6 s.
 - **Time limits count work, not seconds.** A computer up to 2.5 times slower takes longer and draws the same picture.
 
 ## Experiments not in the layouts
 - **Subclass links top-down in the stress layouts.** Not free: as hard constraints with the clean-up, crossings +27% and links through classes fourfold over the 15 graphs; as a soft hierarchy term in the placement (λ·max(0, violation)², after DIG-CoLa), 94% down but crossings 203 → 262 and links through classes 91 → 166 on eight graphs; as a tie-breaker in the clean-up, links through classes 55 → 67. Hence the separate tree for taxonomies.
 - **Hierarchy as a stress energy term** (DIG-CoLa style, λ up to 16): the share of subclass links pointing down rises only from 46% to 54%, with 14% more links through classes; the tidy-up steps after the stress solve decide most directions.
 - **Bent links instead of moves** (simple router, current layouts, per graph): placement plus bends 27.5 crossings, 3.9 through, 18 bends, 9% less area; as shipped 34.7, 1.8, no bends; as shipped plus bends for what is left 33.5, 0.4, 2 bends.
-- **ELK layered with its own routed links**, instead of straight ones: no links through classes, but 1,322 crossed pairs over the 15 graphs against Best Read's 461, with about 165 bends per graph (a different trade-off, not a defect; no comparison with a dedicated obstacle router was made).
+- **ELK layered with its own routed links**, instead of straight ones: no links through classes, but 1,322 crossed pairs over the 15 graphs against Best Read's 450, with about 165 bends per graph (a different trade-off, not a defect; no comparison with a dedicated obstacle router was made).
 
 ## Limits
 - No study with people reading the diagrams; which measures matter most is a judgment backed by Purchase's studies of crossings. A task-based study is the missing evidence.
-- At 1,204 classes Best Read still has the fewest problems (1.4 s, against 19–21 s for Graphviz); at 3,335 (Cell Ontology) d3-force draws far fewer, and Graphviz `sfdp` did not finish in ten minutes. Thousands of classes need a multilevel placement.
+- At 1,204 classes Best Read still has the fewest problems (1.6 s, against 19–21 s for Graphviz); at 3,335 (Cell Ontology) d3-force draws fewer (60k crossings against 75k, 12k links through classes against 27k), and Graphviz `sfdp` did not finish in ten minutes. Thousands of classes need a multilevel placement.
 - The layouts and the clean-up were developed on 15 graphs; the 36 unseen graphs check that the lead carries over. The clean-up's principles come from one person.
 - The layouts use a random seed; totals over the 15 graphs differ by a few percent between seeds. Every result uses seed 1.
 - The tuned settings are a reasonable search, not an exhaustive one. All drawings are measured with straight links.

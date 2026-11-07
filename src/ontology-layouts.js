@@ -271,12 +271,14 @@
         }
         const P = Array.from({ length: n }, (_, i) => { let x = 0, y = 0; for (let j = 0; j < k; j++) { x += C[i][j] * vecs[0][j]; y += C[i][j] * vecs[1][j]; } return { x, y }; });
         // The projection gives the right shape at an arbitrary scale and offset (on a 3,000-class model, millions of px away).
-        // Stress keeps any offset and needs many sweeps from a wrong scale, so center the drawing and scale it so that the
-        // distances to the pivots best match their targets (least squares).
+        // Stress keeps any offset and needs many sweeps from a wrong scale, so center the drawing and scale it to five times the
+        // size whose distances to the pivots best match their targets (least squares): stress then unfolds the drawing rather
+        // than pressing it together, which on the 15 development graphs gave as many crossed links and fewer links through
+        // classes than starting at the matching size.
         let mx = 0, my = 0; P.forEach((p) => { mx += p.x / n; my += p.y / n; }); P.forEach((p) => { p.x -= mx; p.y -= my; });
         let num = 0, den = 0;
         for (let i = 0; i < n; i++) for (const p of piv) { const d = Math.hypot(P[i].x - P[p].x, P[i].y - P[p].y); if (isFinite(D[i][p])) { num += D[i][p] * d; den += d * d; } }
-        const s = den > 0 ? num / den : 1; P.forEach((p) => { p.x *= s; p.y *= s; });
+        const s = (den > 0 ? num / den : 1) * 5; P.forEach((p) => { p.x *= s; p.y *= s; });
         return P;
       }
       // Stress majorization: each pair of classes pulled toward its target distance D, near pairs weighted most (1/d²).
