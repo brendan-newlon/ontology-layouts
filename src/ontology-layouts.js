@@ -420,12 +420,19 @@
           adj[ci.get(e.s)].push([ci.get(e.t), len]); adj[ci.get(e.t)].push([ci.get(e.s), len]);
         });
         const D = _ogClPaths(m, adj);
+        // halo (cfg.halo, off by default): a class that hides k one-link classes stands apart from the rest by sqrt(k) × L / π, as if it were a disc
+        if (cfg.halo) {
+          const nl = new Array(m).fill(0); leafOf.forEach((p, v) => { if (p >= 0 && ci.has(p)) nl[ci.get(p)]++; });
+          // cfg.haloMin2: only a class hiding two or more leaves gets a halo, of sqrt(k - 1) × L / π
+          const R = nl.map((k) => (cfg.haloMin2 ? (k >= 2 ? Math.sqrt(k - 1) : 0) : Math.sqrt(k)) * cfg.halo * L / Math.PI);
+          for (let i = 0; i < m; i++) for (let j = 0; j < m; j++) if (i !== j) D[i][j] += R[i] + R[j];
+        }
         const NC = core.map((v) => N[v]), EC = EE.filter((e) => ci.has(e.s) && ci.has(e.t)).map((e) => ({ s: ci.get(e.s), t: ci.get(e.t) }));
         const restarts = cfg.restarts != null ? cfg.restarts : (m <= 30 ? 8 : m <= 80 ? 4 : 2), countX = EC.length <= 2500;
         let best = null;
         for (let r = 0; r < Math.max(1, restarts) && (r === 0 || _ogNow() - t0 < budget * 0.4); r++) {
           const PC = cfg.init === "pmds" && r === 0 && m > 2 ? _ogClPivotMDS(D, m, rnd) : NC.map(() => ({ x: (rnd() - 0.5) * 400, y: (rnd() - 0.5) * 400 }));
-          _ogClStress(PC, D, 120, rnd, t0 + budget * 0.4); _ogClSeparate(PC, NC, 12, 120);
+          _ogClStress(PC, D, cfg.sweeps || 120, rnd, t0 + budget * 0.4); _ogClSeparate(PC, NC, 12, 120);
           const x = countX ? _ogClCrossings(PC, EC) : 0; if (!best || x < best.x) best = { x, P: PC };
         }
         const PC = best.P;
@@ -490,7 +497,8 @@
         });
         return best && { pos: best.pos, crossings: best.crossings, algo: best.algo, variant: best.variant, scores };
       }
-      const _ogV = (k, extra) => ({ ..._OG_VARIANTS[k], name: k, ...(extra || {}) });
+      const _OG_TUNE = {}; // experiments only: settings merged into every variant (the benchmark sets them; empty in use)
+      const _ogV = (k, extra) => ({ ..._OG_VARIANTS[k], ..._OG_TUNE, name: k, ...(extra || {}) });
       // Small models are cheap, so several variants are tried; larger ones give the whole time to fewer (sharing it starves the clean-up).
       const _ogCompactVariants = (n) => n <= 30 ? [_ogV("mds"), _ogV("stress"), _ogV("hubs"), _ogV("leaves")] : n <= 60 ? [_ogV("mds"), _ogV("stress"), _ogV("leaves")] : [_ogV("mds")];
       function _ogCompactLayout(items, edges, opts) {
@@ -608,6 +616,8 @@
         const n = items.length, dense = n > 30 && edges.length > 2 * n, list = n > 100 ? [] : dense ? [_ogV("mds")] : _ogCompactVariants(n);
         if (n >= 8) list.push(_ogV("groups", { L: n >= 100 ? 260 : 170 }));
         if (!list.length) list.push(_ogV("mds"));
+        if (_OG_TUNE.addHalo && n >= 8) list.push(_ogV("hubs", { halo: 1, name: "hubs+halo" }));
+        if (_OG_TUNE.addHaloGroups && n >= 8) list.push(_ogV("groups", { L: n >= 100 ? 260 : 170, halo: 1, name: "groups+halo" }));
         return _ogClocked(() => {
           const best = _ogBestOf(items, edges, opts, list, (opts && opts.budgetMs) || (n <= 30 ? 1500 : n <= 100 ? 900 : 600));
           const links = edges.filter(([a, b]) => a !== b), subs = links.filter((e) => e[2] === 2).length;
