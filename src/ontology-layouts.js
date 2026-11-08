@@ -615,6 +615,8 @@
         const n = items.length, dense = n > 30 && edges.length > 2 * n, list = n > 100 ? [] : dense ? [_ogV("mds")] : _ogCompactVariants(n);
         if (n >= 8) list.push(_ogV("groups", { L: n >= 100 ? 260 : 170 }));
         if (!list.length) list.push(_ogV("mds"));
+        if (_OG_TUNE.addHalo && n >= 8) list.push(_ogV("hubs", { halo: 1, name: "hubs+halo" }));
+        if (_OG_TUNE.addHaloGroups && n >= 8) list.push(_ogV("groups", { L: n >= 100 ? 260 : 170, halo: 1, name: "groups+halo" }));
         return _ogClocked(() => {
           const best = _ogBestOf(items, edges, opts, list, (opts && opts.budgetMs) || (n <= 30 ? 1500 : n <= 100 ? 900 : 600));
           const links = edges.filter(([a, b]) => a !== b), subs = links.filter((e) => e[2] === 2).length;

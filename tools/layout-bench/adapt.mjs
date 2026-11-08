@@ -12,7 +12,7 @@ for (const set of process.argv[3].split(',')) {
   for (const key of SETS[set]) {
     const M = await MODELS[key].load(), D = M.labels.map((l) => ({ w: String(l).length * 6.6 + 10, h: 20 })), items = D.map((d) => ({ ...d })), N = D.map((d) => ({ w: d.w + 16, h: d.h + 12 }));
     const edges = M.edges.filter((e) => e.s !== e.t).map((e) => [e.s, e.t, e.kind === 'sub' ? 2 : 1]), E = edges.map(([s, t]) => ({ s, t }));
-    for (const [name, f] of Object.entries(ALGOS)) {
+    for (const [name, f] of Object.entries(ALGOS).filter(([k]) => !process.env.ONLY || process.env.ONLY.split(',').includes(k))) {
       const t0 = performance.now(); let P = f(items, edges, +(process.argv[4] || 1), N); const ms = performance.now() - t0; P = P.map((p) => ({ x: p.x, y: p.y })); O.sep(P, N, 6, 200);
       const m = O.pmetrics(P, D.map((d) => ({ w: d.w + 6, h: d.h + 6 })), E), ml = O.pmetrics(P, N, E), t = (tot[name] ||= { cross: 0, thru: 0, area: 0, ms: 0, score: 0 });
       t.cross += m.cross; t.thru += m.thru; t.area += ml.area / 1e6; t.ms += ms; t.score += O.pscore(ml);
