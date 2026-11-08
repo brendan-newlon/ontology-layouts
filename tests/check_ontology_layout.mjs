@@ -22,7 +22,7 @@ function layoutCode(src) {
   return src.slice(a, b).replace(/\r\n/g, '\n');
 }
 function load(code) {
-  const api = 'return { auto: _ogAutoLayout, tree: _ogTreeLayout, cleanUp: _ogLayoutCleanUp, tidy: _ogHandTidy, now: _ogNow, sep: _ogClSeparate, route: _ogRouteLinks, routeMetrics: _ogRouteMetrics, tune: _OG_TUNE, segX: _ogClSegX, segBox: _ogClSegBox };';
+  const api = 'return { auto: _ogAutoLayout, tree: _ogTreeLayout, cleanUp: _ogLayoutCleanUp, tidy: _ogHandTidy, now: _ogNow, sep: _ogClSeparate, route: _ogRouteLinks, routeMetrics: _ogRouteMetrics, tune: _OG_TUNE, segX: _ogClSegX, segBox: _ogClSegBox, api: OntologyLayouts };';
   return new Function('window', 'document', 'state', 'log', code + '\n' + api)({}, {}, { ui: {} }, () => {});
 }
 // small generated models: a few taxonomies with property links between them, fixed seeds
@@ -149,9 +149,33 @@ function checkPull(L) {
   });
   return bad;
 }
+// the public entry points: all present, and draw() hands back positions, routes and paths that belong together
+function checkApi(L) {
+  const bad = [], A = L.api || {};
+  ['draw', 'bestRead', 'tidyStress', 'mycelium', 'cleanUp', 'routeLinks', 'routePaths', 'groups', 'routeMetrics', 'metrics', 'score', 'setTimeLimit', 'now'].forEach((k) => { if (typeof A[k] !== 'function') bad.push('OntologyLayouts.' + k + ' missing'); });
+  if (bad.length) return bad;
+  const onBorder = (p, c, d) => { const ex = Math.abs(Math.abs(p.x - c.x) - d.w / 2), ey = Math.abs(Math.abs(p.y - c.y) - d.h / 2), inX = Math.abs(p.x - c.x) <= d.w / 2 + 0.5, inY = Math.abs(p.y - c.y) <= d.h / 2 + 0.5;
+    return (ex < 0.5 && inY) || (ey < 0.5 && inX); };
+  // the last two are dense enough that the routing pushes classes off links (seeds found by trying)
+  MODELS.concat([model(5, 20, 20), model(36, 30, 40)]).forEach((m, i) => {
+    const D = m.D.map((d) => ({ w: d.w + 16, h: d.h + 12 })), E = m.edges.map((e, k) => [e[0], e[1], e[2], e[2] === 1 ? 40 + (k % 3) * 20 : 0]);
+    const r = A.draw(D, E, { arrow: 8 }), n = D.length;
+    if (r.pos.length !== n || r.paths.length !== E.length || r.groups.length !== n) { bad.push(`model ${i}: draw() returned the wrong number of positions, paths or groups`); return; }
+    const ids = [...new Set(r.groups)].sort((a, b) => a - b); if (ids.some((g, j) => g !== j)) bad.push(`model ${i}: group numbers are not 0, 1, 2…`);
+    let off = 0, gap = 0;
+    E.forEach(([s, t], k) => { if (s === t) return; const p = r.paths[k], pts = p.points, last = pts[pts.length - 1];
+      if (Math.abs(r.pos[s].x - r.pos[t].x) < (D[s].w + D[t].w) / 2 && Math.abs(r.pos[s].y - r.pos[t].y) < (D[s].h + D[t].h) / 2) return; // overlapping boxes: centers
+      if (!onBorder(pts[0], r.pos[s], D[s]) || !onBorder(p.tip, r.pos[t], D[t])) off++;
+      const L0 = pts.reduce((a, q, j) => a + (j ? Math.hypot(q.x - pts[j - 1].x, q.y - pts[j - 1].y) : 0), 0);
+      if (L0 > 20 && Math.abs(Math.hypot(p.tip.x - last.x, p.tip.y - last.y) - 8) > 0.5 && pts.length === 2) gap++; });
+    if (off) bad.push(`model ${i}: ${off} paths do not start and end on the borders of the classes at the returned positions`);
+    if (gap) bad.push(`model ${i}: ${gap} paths do not stop an arrowhead's length short of their end class`);
+  });
+  return bad;
+}
 function runAll(code) {
   const out = { clock: checkClock(code) }, L = load(code);
-  out.grid = checkGrid(L); out.repeatable = checkRepeatable(L); out.tree = checkTree(L); out.routes = checkRoutes(L); out.moves = checkMoves(L); out.pull = checkPull(L);
+  out.grid = checkGrid(L); out.repeatable = checkRepeatable(L); out.tree = checkTree(L); out.routes = checkRoutes(L); out.moves = checkMoves(L); out.pull = checkPull(L); out.api = checkApi(L);
   return out;
 }
 
@@ -174,6 +198,10 @@ if (process.argv.includes('--self-test')) {
     ['moves', 'a leaf moved to the spot with the most problems', code.replace('if (x >= now) continue;', 'if (x > 1e9) continue;').replace('const sc = x * 200 - room(v, c) + 0.2 * r;', 'const sc = -x * 200;')],
     ['pull', 'a part pulled in even when that adds problems', code.replace('if (c1.c <= c0.c) {', 'if (true) {').replace("if ((!best || sc > best.sc) && cost(S, inS).c <= c0.c)", "if (!best || sc > best.sc)")],
     ['pull', 'parts pulled in on top of other classes', code.replace('if (!clash(S, inS, o.room) && (sc === 1 || gapsOk(S))) {', 'if (sc === 1 || gapsOk(S)) {').replace('if (inward > 30 && !clash(S, inS, o.groupRoom, true)) {', 'if (inward > 30) {')],
+    ['api', 'routeLinks left out of OntologyLayouts', code.replace('routeLinks: _ogRouteLinks,', '')],
+    ['api', 'paths not clipped at the start class', code.replace('if (i < pl.length - 1 && inside(pl[i], A, items[s])) pl =', 'if (false) pl =')],
+    ['api', 'draw() returns the positions before the routing moved classes', code.replace('return { pos: rr.pos, routes: rr.routes,', 'return { pos: clean, routes: rr.routes,')],
+    ['api', 'no room left for the arrowhead', code.replace('let rem = Math.min(o.arrow,', 'let rem = Math.min(0,')],
   ];
   let ok = true;
   for (const [check, what, broken] of fixtures) {

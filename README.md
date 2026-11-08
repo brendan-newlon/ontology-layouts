@@ -19,7 +19,8 @@ Same input, same drawing on any computer: time limits count units of work, not w
 | `docs/ONTOLOGY-LAYOUT-ALGORITHMS.md` | Summary of the algorithms and results. |
 | `docs/ONTOLOGY-LAYOUT-ALGORITHMS.html` | The full write-up: interactive, self-contained, with drawings side by side against eleven open-source layouts. |
 | `docs/PLAYBACK-AND-LAB.md` | The Layout Playback and Layout Lab as a reusable pattern: watch any step-by-step algorithm work, switch steps off, reorder them, edit by hand and record why, then turn the demonstrations into rules. How to adapt it to another algorithm. |
-| `tests/check_ontology_layout.mjs` | Checks on the layout code (work clock only, clean-up grid equals checking every pair, same drawing twice, tree stays top-down, link routing, the passes after the clean-up, pulling in from the edge); `--self-test` proves each check fires. |
+| `docs/BEYOND-LAYOUT.md` | For discussion: which of these methods could carry over to other optimization problems (warehouse slotting, scheduling, bin packing, routing, dependency solving), and which would not. |
+| `tests/check_ontology_layout.mjs` | Checks on the layout code (work clock only, clean-up grid equals checking every pair, same drawing twice, tree stays top-down, link routing, the passes after the clean-up, pulling in from the edge, the public entry points); `--self-test` proves each check fires. |
 | `tools/layout-bench/` | Benchmark graphs, the Node and browser benches, the hands-on lab, recorded results and the script that builds the write-up. See its README. |
 | `tools/recv.py` | Local receiver for the lab: saves posted sessions into `_temp/`. |
 | `Start Layout Lab.cmd` | Double-click (Windows) to open the playback and the lab: starts a page server for this folder (first free port from 8611; one already serving this folder is reused) and the receiver (port 8613) in small windows; close them to stop. |
@@ -41,7 +42,19 @@ Apache License 2.0: see `LICENSE` and `NOTICE`. The benchmark graphs converted f
 
 ## Using the code
 
-The layout functions take boxes `[{w, h}]` and links `[[a, b, kind]]` (kind 2 for a subclass link, 1 otherwise) and return positions. `_ogRouteLinks(positions, boxes, links)` then returns one route per link (`[a, b, kind, nameWidth]`; self-links and repeated links welcome): bends `{t, d}`, port offsets, a loop, a name position, plus `pos`, the positions the routes belong to (classes may have been pushed off links; pass `{ settle: false }` to keep every class where it is). `_ogSetTimeLimit(ms)` sets how long the layouts, clean-up and routing may work together (default 1500, on the work clock). The function names carry the prefix `_og` (ontology graph).
+The file defines `OntologyLayouts`, the entry points. Most callers need one call:
+```js
+const d = OntologyLayouts.draw(boxes, links, { arrow: 8 });
+// boxes [{w, h}] as drawn; links [[s, t, kind, nameWidth?]], kind 2 for a subclass link, 1 otherwise
+// d.pos: where to draw each class (final: see below); d.paths: [{ points, tip, angle }] from box border to box border,
+// stopping 8 px short of the end class for an arrowhead; d.routes: the routes those paths come from (bends, ports, loop,
+// name position); d.groups: a group number per class, for hulls or background areas round related classes
+```
+Or step by step: `bestRead` (or `tidyStress`, `mycelium`), `cleanUp`, `routeLinks`, `routePaths`; the [write-up](docs/ONTOLOGY-LAYOUT-ALGORITHMS.html#code) shows each call. Self-links and repeated links are welcome.
+
+**Draw the classes at the positions the routing returns.** `routeLinks` returns `pos` with the routes: a class that a drawn link still runs through is pushed off it, and the routes belong to those positions. Pass `{ settle: false }` to keep every class where it is.
+
+The function names inside carry the prefix `_og` (ontology graph).
 
 ### Settings worth changing
 Measured over the 51 test graphs (15 development, 10 held-out, 26 public), Best Read with the clean-up and the link routing:
@@ -52,4 +65,4 @@ Measured over the 51 test graphs (15 development, 10 held-out, 26 public), Best 
 | `_ogRouteLinks(..., { labels, labelSide })` | `true`, `true` | `labels: false` when links carry no names. |
 | `_ogRouteLinks(..., { bends, crossBends })` | `true`, `true` | `false` for straight links only (arcs for parallel links and loops stay). |
 
-The experiment switches in `_OG_TUNE` (`noSwap`, `noFence`, `noNudge`, `noPull`, `skip`, `order`, `pmdsScale`) are for the benchmarks and the playback and are empty in use. The code expects a `log(level, message)` function in scope; `tests/check_ontology_layout.mjs` shows how to load it.
+The experiment switches in `_OG_TUNE` (`noSwap`, `noFence`, `noNudge`, `noPull`, `skip`, `order`, `pmdsScale`) are for the benchmarks and the playback and are empty in use. Links through classes count within 9 px of a box in `routeMetrics`, and within 3 px in `metrics` and in the ranking tables, as published comparisons of layouts do. The code expects a `log(level, message)` function in scope; `tests/check_ontology_layout.mjs` shows how to load it.

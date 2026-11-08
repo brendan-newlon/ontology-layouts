@@ -42,22 +42,10 @@ code = code.split('\n').map((l) => l.replace(/^      /, '')).join('\n')
   .replace(/Pure geometry, no Cytoscape:/g, 'Pure geometry, no dependencies:')
   .replace(/smaller models go to the force layout\./, 'it returns null for fewer than 8 classes.');
 code = `// Tidy Stress, Mycelium and Best Read: reference implementation. Plain JavaScript, no dependencies.
-// Entry points are collected in OntologyLayouts at the end. Internal names: compact = Tidy Stress, grouped = Mycelium, auto = Best Read.
+// Entry points are collected in OntologyLayouts at the end; OntologyLayouts.draw runs the whole pipeline. Internal names: compact = Tidy Stress, grouped = Mycelium, auto = Best Read.
 
 ` + code;
-code = code.trimEnd() + `
-
-// ── Public entry points ──
-const OntologyLayouts = {
-  tidyStress: _ogCompactLayout,  // (boxes, links, options) -> { pos: [{x, y}], crossings, algo: "compact" | "grouped", variant, scores }
-  mycelium: _ogGroupedLayout,    // same, or null for fewer than 8 classes
-  bestRead: _ogAutoLayout,       // the more readable of the two
-  cleanUp: _ogLayoutCleanUp,     // (pos, boxes, links, startedAt) -> [{x, y}]: the clean-up after a layout
-  now: _ogNow,                   // () -> ms on the work clock: pass a reading taken before the layout to cleanUp as startedAt
-  metrics: _ogPlacementMetrics,  // (pos, boxes, links as [{s, t}]) -> { cross, thru, near, ov, len, lout, area, fill }
-  score: _ogPlacementScore       // (metrics) -> number, lower is more readable
-};
-`;
+code = code.trimEnd() + '\n';
 const esc = (t) => t.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 // tables from tables.mjs, the worked example from gen_example.mjs
 execSync('node tables.mjs', { cwd: here });

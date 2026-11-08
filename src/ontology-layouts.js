@@ -288,9 +288,9 @@
         // Stress keeps any offset and needs many sweeps from a wrong scale, so center the drawing and scale it to five times the
         // size whose distances to the pivots best match their targets (least squares): stress then unfolds the drawing rather
         // than pressing it together, which on the 15 development graphs gave as many crossed links and fewer links through
-        // classes than starting at the matching size. Retested on 2026-11-08 over 51 graphs with the clean-up and the link routing:
-        // the matching size (1x) draws 2% fewer crossed links and fewer links through classes, but twice the sharp crossings
-        // (59 against 29, all on the two densest public ontologies), so 5x stays; _OG_TUNE.pmdsScale sets it for experiments.
+        // classes than starting at the matching size. Retested on 2026-11-08 over 51 graphs and three seeds with the clean-up,
+        // the pull-in and the link routing: 1x, 2x, 3x and 5x all within 0.5% on crossings, links through classes and sharp
+        // crossings together (the spread between seeds), so 5x stays; _OG_TUNE.pmdsScale sets it for experiments.
         let mx = 0, my = 0; P.forEach((p) => { mx += p.x / n; my += p.y / n; }); P.forEach((p) => { p.x -= mx; p.y -= my; });
         let num = 0, den = 0;
         for (let i = 0; i < n; i++) for (const p of piv) { const d = Math.hypot(P[i].x - P[p].x, P[i].y - P[p].y); if (isFinite(D[i][p])) { num += D[i][p] * d; den += d * d; } }
@@ -1702,4 +1702,66 @@
         return { cross, sharp, thru, hidden, ends, labelOver, labelCrossed, bends, area: (x2 - x1) * (y2 - y1) / boxA };
       }
       // ── end of the link routing ──
+      // ── Drawing helpers and public entry points ──
+      // Groups of closely linked classes (Louvain modularity, groups under 4 classes merged into their best-linked neighbor),
+      // numbered 0, 1, 2… in order of first appearance: the groups Mycelium keeps together and the pull-in slides, for a
+      // renderer that draws hulls or background areas round related classes. Same input, same groups.
+      function _ogGroups(n, edges) {
+        const E3 = edges.filter((e) => e[0] !== e[1]).map((e) => [e[0], e[1], 1]), com = E3.length ? _ogClMergeSmall(_ogClLouvain(n, E3), E3, 4) : [...Array(n).keys()];
+        const id = new Map(); return com.map((c) => { if (!id.has(c)) id.set(c, id.size); return id.get(c); });
+      }
+      // Each route as points ready to draw: from the border of the start box to the border of the end box (the routes run
+      // between centers or ports). arrow > 0: the path stops that many px short of the end box along its last direction, so
+      // an arrowhead of that length drawn from the path's end to `tip` touches the border without entering the box; `angle`
+      // (radians) is the arrowhead's direction. Boxes that overlap give the straight line between centers.
+      // -> [{ points: [{x, y}], tip: {x, y}, angle }], one per edge.
+      function _ogRoutePaths(pos, items, edges, routes, opts) {
+        const o = { arrow: 0, samples: 8, ...(opts || {}) };
+        const inside = (p, c, it) => Math.abs(p.x - c.x) <= it.w / 2 + 1e-6 && Math.abs(p.y - c.y) <= it.h / 2 + 1e-6;
+        const leave = (a, b, c, it) => { // a inside the box, b outside: where a-b crosses the border
+          let lo = 0, hi = 1; for (let i = 0; i < 40; i++) { const m = (lo + hi) / 2; if (inside({ x: a.x + (b.x - a.x) * m, y: a.y + (b.y - a.y) * m }, c, it)) lo = m; else hi = m; }
+          return { x: a.x + (b.x - a.x) * hi, y: a.y + (b.y - a.y) * hi }; };
+        return edges.map(([s, t], k) => {
+          const A = pos[s], B = pos[t], r = routes ? routes[k] : null; let pl = _ogRoutePoly(A, B, r, o.samples), i = 0;
+          while (i < pl.length - 1 && inside(pl[i + 1], A, items[s])) i++;
+          if (i < pl.length - 1 && inside(pl[i], A, items[s])) pl = [leave(pl[i], pl[i + 1], A, items[s]), ...pl.slice(i + 1)];
+          let j = pl.length - 1; while (j > 0 && inside(pl[j - 1], B, items[t])) j--;
+          if (j > 0 && inside(pl[j], B, items[t])) pl = [...pl.slice(0, j), leave(pl[j], pl[j - 1], B, items[t])];
+          if (pl.length < 2 || inside(pl[0], B, items[t]) && s !== t) pl = [{ x: A.x, y: A.y }, { x: B.x, y: B.y }];
+          const tip = pl[pl.length - 1]; let rem = Math.min(o.arrow, _ogPolyLen(pl) / 2);
+          if (rem > 0) for (let q = pl.length - 1; q > 0; q--) {
+            const a = pl[q - 1], b = pl[q], l = Math.hypot(b.x - a.x, b.y - a.y);
+            if (l >= rem) { pl = [...pl.slice(0, q), { x: b.x - (b.x - a.x) * rem / l, y: b.y - (b.y - a.y) * rem / l }]; break; }
+            rem -= l; }
+          const e = pl[pl.length - 1], f = rem > 0 ? e : pl[pl.length - 2];
+          return { points: pl, tip, angle: Math.atan2(tip.y - f.y, tip.x - f.x) };
+        });
+      }
+      // The whole pipeline in one call: Best Read, the clean-up, the link routing, the groups and the paths to draw.
+      // boxes [{w, h}] as drawn; links [[s, t, kind, nameWidth?]] (kind 2 for a subclass link, 1 otherwise);
+      // opts: { seed, roomy, arrow (px, 0 = no arrowheads), route: options for _ogRouteLinks }.
+      // -> { pos, routes, paths, groups, algo }. pos is the final position of every class: the link routing may push a class
+      // off a link (settle), so draw the classes at pos, never at the layout's positions, or the paths will miss them.
+      function _ogDraw(boxes, links, opts) {
+        const o = opts || {}, t0 = _ogNow(), lay = _ogAutoLayout(boxes, links, { seed: o.seed, roomy: o.roomy });
+        const clean = _ogLayoutCleanUp(lay.pos, boxes, links, t0, lay.algo === "tree");
+        const rr = _ogRouteLinks(clean, boxes, links, o.route);
+        return { pos: rr.pos, routes: rr.routes, paths: _ogRoutePaths(rr.pos, boxes, links, rr.routes, { arrow: o.arrow || 0 }), groups: _ogGroups(boxes.length, links), algo: lay.algo };
+      }
+      // Loaded as a script, this is the library's one global; as a module, import it (see README, "Using the code").
+      const OntologyLayouts = {
+        draw: _ogDraw,                 // (boxes, links, opts) -> { pos, routes, paths, groups, algo }: everything below in one call
+        bestRead: _ogAutoLayout,       // (boxes, links, { seed, roomy }) -> { pos, algo, ... }: the more readable of the two
+        tidyStress: _ogCompactLayout,  // same
+        mycelium: _ogGroupedLayout,    // same, or null for fewer than 8 classes
+        cleanUp: _ogLayoutCleanUp,     // (pos, boxes, links, startedAt) -> [{x, y}]; startedAt: now() read before the layout
+        routeLinks: _ogRouteLinks,     // (pos, boxes, links, opts) -> { routes, pos, stats }: draw the classes at the returned pos
+        routePaths: _ogRoutePaths,     // (pos, boxes, links, routes, { arrow }) -> [{ points, tip, angle }]
+        groups: _ogGroups,             // (n, links) -> a group number per class
+        routeMetrics: _ogRouteMetrics, // (pos, boxes, links, routes, pad = 9) -> { cross, thru, sharp, labelOver, labelCrossed, bends, area, ... }
+        metrics: _ogPlacementMetrics,  // (pos, boxes, links as [{s, t}]) -> straight-line measures with a 3 px margin, as ranked
+        score: _ogPlacementScore,      // (metrics) -> number, lower is more readable
+        setTimeLimit: _ogSetTimeLimit, // (ms) -> previous limit; default 1500, on the work clock
+        now: _ogNow                    // () -> ms on the work clock
+      };
       // ── end of the layouts ──

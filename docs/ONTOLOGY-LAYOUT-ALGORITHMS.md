@@ -57,7 +57,8 @@ The open-source layouts were Graphviz `neato`, `fdp` and `sfdp`, ELK stress, for
 - **Hierarchy as a stress energy term** (DIG-CoLa style, λ up to 16): the share of subclass links pointing down rises only from 46% to 54%, with 14% more links through classes; the tidy-up steps after the stress solve decide most directions.
 - **Bent links instead of moves** (simple router, current layouts, per graph): placement plus bends 27.5 crossings, 3.9 through, 18 bends, 9% less area; as shipped 34.7, 1.8, no bends; as shipped plus bends for what is left 33.5, 0.4, 2 bends. This became the link routing above. Routing the drawing before the clean-up instead of after leaves twice the links through classes for no smaller area, so the clean-up stays.
 - **Also tested for the review of 2026-11-07, not adopted** (`tools/layout-bench/ekgbench.mjs`): a half or quarter area penalty in the clean-up and a deeper look-ahead for group moves (within about 1% on problems, up to 6% more area); giving the layout the link names' widths (fewer name overlaps on unseen graphs, but 15% more crossings on the development graphs and up to 30% more area).
-- **Start at the matching size instead of five times too large** (retested 2026-11-08 with the clean-up and routing, 51 graphs): 2% fewer crossed links and fewer links through classes, but twice the sharp crossings (59 against 29), all on the two densest public ontologies. Not adopted for now.
+- **Start at the matching size, or two or three times it, instead of five times too large** (retested 2026-11-08 with the clean-up, the pull-in and the routing, 51 graphs, three seeds): all four within 0.5% on crossed links, links through classes and sharp crossings together, which is the spread between seeds. Five times stays.
+- **Arrow ends spread further apart where two or more arrows meet one side** (for `routePaths` with arrowheads): no drawing changed on the 15 development graphs; where arrowheads crowd it is at a hub with more incoming links than its side has room for, and spacing them out adds crossings.
 - **ELK layered with its own routed links**, instead of straight ones: no links through classes, but 1,322 crossed pairs over the 15 graphs against Best Read's 452, with about 165 bends per graph (a different trade-off, not a defect; no comparison with a dedicated obstacle router was made).
 
 ## Limits
@@ -78,6 +79,8 @@ The open-source layouts were Graphviz `neato`, `fdp` and `sfdp`, ELK stress, for
   - `_ogRouteLinks` draws the links after that, `_ogRoutePoly` gives a route's curve, `_ogRouteMetrics` measures on the curves;
   - `_ogLeafSwap` runs the passes after the clean-up, `_ogPullIn` pulls parts and groups in from the edge; `_ogSetTimeLimit` sets the time limit;
   - `_ogTraced` reports every step of a layout, for the playback;
-  - `_ogNow` is the work clock every time limit reads.
+  - `_ogNow` is the work clock every time limit reads;
+  - `OntologyLayouts`, at the end, collects the entry points; `OntologyLayouts.draw` runs the whole pipeline and returns the final positions, routes, paths from border to border (with room for arrowheads) and a group number per class (`_ogDraw`, `_ogRoutePaths`, `_ogGroups`).
+- **Two margins:** links through classes count within 3 px of a box in the rankings, as published comparisons do, and within 9 px in everything about the routing (`_ogRouteMetrics`, the passes after the clean-up), the clearance a drawn line with an arrowhead needs. The same drawing therefore shows more links through classes in the routing tables.
 - **Playback and Lab:** `docs/PLAYBACK-AND-LAB.md`: watch every step, switch steps off, edit by hand; reusable for other step-by-step algorithms.
 - **Benchmark:** `tools/layout-bench/`. Its README explains how to rerun it and how to rebuild the HTML page.
