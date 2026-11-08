@@ -171,6 +171,86 @@ function chemotaxis(items, edges, seed, N, prm) {
   return { pos: Q, st };
 }
 
+
+// ── Variant B ("halo hopping"): pruned core, inflated distances D' = D + R(i) + R(j), 25 stress sweeps, vacancy hops for the top 5%
+// conflicted classes (delta cost < 0 only), sprouting into the halos, one 50 ms clean-up. Spec pasted by the user, 2026-11-07. ──
+function haloHop(items, edges, seed, N, prm) {
+  const o = { L: 170, K: 4, sweeps: 25, top: 0.05, clear: 1.2, cleanMs: 50, hop: true, inflate: true, ...prm }, n = items.length, L = o.L, rnd = O.rng(seed * 31 + 7), st = {};
+  const EE = edges.filter(([a, b]) => a !== b).map(([a, b]) => ({ s: a, t: b }));
+  let t = performance.now();
+  const { alive, parent, mass } = prune(n, EE, o.K);
+  const core = [...Array(n).keys()].filter((v) => alive[v]), ci = new Map(core.map((v, k) => [v, k])), m = core.length;
+  const CE = EE.filter((e) => alive[e.s] && alive[e.t]).map((e) => ({ s: ci.get(e.s), t: ci.get(e.t) })), CN = core.map((v) => N[v]);
+  const adj = Array.from({ length: m }, () => []); CE.forEach((e) => { adj[e.s].push(e.t); adj[e.t].push(e.s); });
+  const R = core.map((v) => (o.inflate ? Math.sqrt(mass[v] - 1) * L / Math.PI : 0));
+  const D = Array.from({ length: m }, () => new Float64Array(m)); let mx = 0;
+  for (let s0 = 0; s0 < m; s0++) { const d = new Float64Array(m).fill(-1); d[s0] = 0; const q = [s0]; for (let i = 0; i < q.length; i++) for (const w of adj[q[i]]) if (d[w] < 0) { d[w] = d[q[i]] + 1; q.push(w); } for (let j = 0; j < m; j++) { D[s0][j] = d[j]; if (d[j] > mx) mx = d[j]; } }
+  for (let i = 0; i < m; i++) for (let j = 0; j < m; j++) D[i][j] = i === j ? 0 : (D[i][j] < 0 ? mx + 2 : D[i][j]) * L + R[i] + R[j];
+  const k = Math.min(m, 50), piv = [Math.floor(rnd() * m)], mind = new Float64Array(m).fill(Infinity);
+  while (piv.length < k) { const p = piv[piv.length - 1]; let b = -1, bi = 0; for (let i = 0; i < m; i++) { mind[i] = Math.min(mind[i], D[p][i]); if (mind[i] > b) { b = mind[i]; bi = i; } } if (b <= 0) break; piv.push(bi); }
+  const kk = piv.length, C = Array.from({ length: m }, (_, i) => piv.map((p) => D[i][p] * D[i][p])), rm = new Float64Array(m), cm = new Float64Array(kk); let all = 0;
+  for (let i = 0; i < m; i++) for (let j = 0; j < kk; j++) { rm[i] += C[i][j] / kk; cm[j] += C[i][j] / m; all += C[i][j] / (m * kk); }
+  for (let i = 0; i < m; i++) for (let j = 0; j < kk; j++) C[i][j] = -0.5 * (C[i][j] - rm[i] - cm[j] + all);
+  const M = Array.from({ length: kk }, () => new Float64Array(kk));
+  for (let a = 0; a < kk; a++) for (let b = 0; b < kk; b++) { let q = 0; for (let i = 0; i < m; i++) q += C[i][a] * C[i][b]; M[a][b] = q; }
+  const vecs = [];
+  for (let e = 0; e < 2; e++) {
+    let v = Array.from({ length: kk }, () => rnd() - 0.5);
+    for (let it = 0; it < 200; it++) { const w = new Float64Array(kk); for (let a = 0; a < kk; a++) { let q = 0; for (let b = 0; b < kk; b++) q += M[a][b] * v[b]; w[a] = q; }
+      vecs.forEach((u) => { let dt = 0; for (let a = 0; a < kk; a++) dt += w[a] * u[a]; for (let a = 0; a < kk; a++) w[a] -= dt * u[a]; });
+      let nr = 0; for (let a = 0; a < kk; a++) nr += w[a] * w[a]; nr = Math.sqrt(nr) || 1; v = Array.from(w, (x) => x / nr); }
+    vecs.push(v);
+  }
+  const P = Array.from({ length: m }, (_, i) => { let x = 0, y = 0; for (let j = 0; j < kk; j++) { x += C[i][j] * vecs[0][j]; y += C[i][j] * vecs[1][j]; } return { x, y }; });
+  { let num = 0, den = 0; for (let i = 0; i < m; i++) for (const p of piv) { const d = Math.hypot(P[i].x - P[p].x, P[i].y - P[p].y); num += D[i][p] * d; den += d * d; } const sc = den > 0 ? num / den : 1; P.forEach((p) => { p.x *= sc; p.y *= sc; }); }
+  for (let it = 0; it < o.sweeps; it++) for (let i = 0; i < m; i++) { let nx = 0, ny = 0, dn = 0; for (let j = 0; j < m; j++) { if (i === j) continue; const d = D[i][j], w = 1 / (d * d), ex = P[i].x - P[j].x, ey = P[i].y - P[j].y, l = Math.hypot(ex, ey) || 1e-6; nx += w * (P[j].x + d * ex / l); ny += w * (P[j].y + d * ey / l); dn += w; } if (dn) { P[i].x = nx / dn; P[i].y = ny / dn; } }
+  st.stress = +(performance.now() - t).toFixed(1); t = performance.now();
+  let hops = 0, tried = 0;
+  if (o.hop && m > 3) {
+    const incident = Array.from({ length: m }, () => []); CE.forEach((e, k2) => { incident[e.s].push(k2); incident[e.t].push(k2); });
+    const cost = (v, pos) => {   // 10 x crossings(v) + 8 x through(v) + 0.1 x length(v), with v at pos
+      const old = P[v]; P[v] = pos; let c = 0, th = 0, len = 0;
+      for (const k2 of incident[v]) {
+        const e = CE[k2], A = P[e.s], B = P[e.t]; len += Math.hypot(A.x - B.x, A.y - B.y);
+        for (let k3 = 0; k3 < CE.length; k3++) { const f = CE[k3]; if (k3 === k2 || f.s === e.s || f.s === e.t || f.t === e.s || f.t === e.t) continue; if (O.segX(A, B, P[f.s], P[f.t])) c++; }
+        for (let i = 0; i < m; i++) { if (i === e.s || i === e.t) continue; const hw = CN[i].w / 2 + 6, hh = CN[i].h / 2 + 6, ax = A.x - P[i].x, ay = A.y - P[i].y, bx = B.x - P[i].x, by = B.y - P[i].y; if ((ax < -hw && bx < -hw) || (ax > hw && bx > hw) || (ay < -hh && by < -hh) || (ay > hh && by > hh)) continue; if (O.segBox(ax, ay, bx, by, hw, hh)) th++; }
+      }
+      const hw = CN[v].w / 2 + 6, hh = CN[v].h / 2 + 6;
+      CE.forEach((f) => { if (f.s === v || f.t === v) return; const A = P[f.s], B = P[f.t], ax = A.x - pos.x, ay = A.y - pos.y, bx = B.x - pos.x, by = B.y - pos.y; if ((ax < -hw && bx < -hw) || (ax > hw && bx > hw) || (ay < -hh && by < -hh) || (ay > hh && by > hh)) return; if (O.segBox(ax, ay, bx, by, hw, hh)) th++; });
+      P[v] = old; return 10 * c + 8 * th + 0.1 * len;
+    };
+    const Pi = problems(P, CN, CE), top = [...Array(m).keys()].sort((a, b) => Pi[b] - Pi[a]).slice(0, Math.max(3, Math.ceil(o.top * m))).filter((v) => Pi[v] > 0);
+    const grid = new Grid(P, CN, CE, 0.5 * L, 3 * L);
+    for (const v of top) {
+      let cx = 0, cy = 0; adj[v].forEach((u) => { cx += P[u].x / adj[v].length; cy += P[u].y / adj[v].length; });
+      const cand = [];
+      for (let gy = 0; gy < grid.H; gy++) for (let gx = 0; gx < grid.W; gx++) {
+        const x = grid.x0 + (gx + 0.5) * grid.c, y = grid.y0 + (gy + 0.5) * grid.c; let ok = true;
+        for (let i = 0; i < m && ok; i++) if (i !== v && Math.hypot(P[i].x - x, P[i].y - y) < o.clear * L) ok = false;
+        if (ok) cand.push({ x, y, d: Math.hypot(x - cx, y - cy) });
+      }
+      cand.sort((a, b) => a.d - b.d); let bc = cost(v, P[v]), best = null;
+      for (const c of cand.slice(0, 24)) { tried++; const cc = cost(v, c); if (cc < bc) { bc = cc; best = c; } }
+      if (best) { P[v] = { x: best.x, y: best.y }; hops++; }
+    }
+  }
+  st.hop = +(performance.now() - t).toFixed(1); st.hops = hops + '/' + tried; t = performance.now();
+  const Q = new Array(n); core.forEach((v, k2) => (Q[v] = { x: P[k2].x, y: P[k2].y }));
+  const childrenOf = Array.from({ length: n }, () => []); for (let v = 0; v < n; v++) if (!alive[v]) childrenOf[parent[v]].push(v);
+  const grid2 = new Grid(core.map((v) => Q[v]), CN, CE, 0.5 * L, 3 * L); grid2.bake(1);
+  const order = core.slice(); for (let i = 0; i < order.length; i++) for (const c of childrenOf[order[i]]) order.push(c);
+  for (const u of order) for (const c of childrenOf[u]) {
+    let best = 0, bs = -1;
+    for (let a = 0; a < 16; a++) { const ang = Math.PI * a / 8; let sc = 0; for (let r = 0.4; r <= 1.6; r += 0.4) sc += grid2.food(grid2.gx(Q[u].x + Math.cos(ang) * r * L), grid2.gy(Q[u].y + Math.sin(ang) * r * L), 1) * (2 - r / 1.6); if (sc > bs) { bs = sc; best = ang; } }
+    const hw = (N[u].w + N[c].w) / 2, hh = (N[u].h + N[c].h) / 2, ca = Math.abs(Math.cos(best)), sa = Math.abs(Math.sin(best)), reach = Math.min(ca > 1e-6 ? hw / ca : Infinity, sa > 1e-6 ? hh / sa : Infinity) + 40;
+    Q[c] = { x: Q[u].x + Math.cos(best) * reach, y: Q[u].y + Math.sin(best) * reach }; grid2.stamp(Q[c], N[c]);
+  }
+  O.sep(Q, N, 6, 200);
+  st.sprout = +(performance.now() - t).toFixed(1);
+  if (o.cleanMs) { const E2 = edges.map(([a, b]) => ({ s: a, t: b })); return { pos: O.tidy.run(Q, items, E2, { budgetMs: o.cleanMs }).P, st }; }
+  return { pos: Q, st };
+}
+
 // ── harness ──
 const SETS = { dev: ['prov', 'uni', 'hotel', 'org', 'brewery', 'trial', 'telecom', 'sosa', 'crm', 'schema', 'health', 'fibo', 'pizza', 'bio', 'big'], held: ['hx_small', 'hx_mesh', 'hx_rome40', 'hx_rings', 'hx_hubs', 'hx_md70', 'hx_rome90', 'hx_tax', 'hx_md160', 'hx_md300'], public: ['pb_foaf', 'pb_time', 'pb_bfo', 'pb_dul', 'pb_saref', 'pb_gr', 'pb_rome1233', 'pb_rome7797'], big: ['huge', 'sf250', 'sf400', 'hx_md1200'] };
 const arg = process.argv[2] || 'dev', keys = SETS[arg] || arg.split(','), prm = process.env.CH_PARAMS ? JSON.parse(process.env.CH_PARAMS) : {};
@@ -181,6 +261,9 @@ const ALGOS = {
   'Best Read': (it, ed, s) => O.auto(it, ed, { seed: s }).pos,
   'Chemo': (it, ed, s, N) => chemotaxis(it, ed, s, N, prm).pos,
   'BestRead>Chemo(polish)': (it, ed, s, N) => { const S = O.auto(it, ed, { seed: s }).pos.map((p) => ({ x: p.x, y: p.y })); O.sep(S, N, 6, 200); return chemotaxis(it, ed, s, N, { ...prm, start: S, K: 0, eta: 0.1, gamma: 0.01, maxStep: 0.15, beta: 0 }).pos; },
+  'HaloHop (spec B)': (it, ed, s, N) => haloHop(it, ed, s, N, prm).pos,
+  'HaloHop no-hop': (it, ed, s, N) => haloHop(it, ed, s, N, { ...prm, hop: false }).pos,
+  'HaloHop no-inflate': (it, ed, s, N) => haloHop(it, ed, s, N, { ...prm, inflate: false }).pos,
   'PruneMDS (no chemo)': (it, ed, s, N) => chemotaxis(it, ed, s, N, { ...prm, chemo: false }).pos
 };
 const rows = [];
