@@ -58,3 +58,28 @@ node build_doc_html.mjs
 - Every layout is measured by the same functions as the library (`_ogPlacementMetrics`, `_ogPlacementScore`).
 - Open-source layouts run with general settings (the "default" rows), and again with tuned settings: each library tries several settings and seeds, its default run included, and keeps the run with the fewest crossed links plus links through classes. That choice uses standard measures, not our readability score. Layered layouts get subclass links oriented parent to child.
 - A browser tab that is not in front throttles timers. `contenders.html` runs zero-delay timers through a message channel so that ELK and WebCola are neither slowed nor cut short; the bench still runs best in a tab in front.
+
+## Tried and not adopted: targeted swaps and a crossing sieve (2026-11-07)
+Best Read, 33 graphs, mean of seeds 1-3 (as shipped: 1,752 crossed, 218 through classes, 472 on the 15 development graphs):
+- **Swap only with the ends of links that cross** (instead of with every class, in the crossing clean-up): identical results to the shipped code, since the swaps that help are those. Giving that step 4 times the time changed nothing either (1,752 / 218 / 471), so it is not time-limited.
+- **Six Pivot-MDS starts, 10 sweeps each, keep the fewest crossings**: 1,743 crossed, 199 through classes, 483 on the development graphs. All within the roughly 5% run-to-run noise; no clear gain.
+
+## Origin of the hidden-leaf-mass idea: from a person's description to code (2026-11-07)
+The `halo` setting (see `adapt.mjs`) began as a sentence in the author's opening prompt to an LLM, not as a formula. The text below is the LLM's own account of how it translated that description, kept here as part of the project's history of a person describing an idea and an LLM turning it into a program.
+
+Your Original Metaphor
+From your opening prompt:
+"[...] but the branch node that the leaf attached to remembers the weight of how much leaf (many nodes) it must re-sprout later."
+and:
+"[...] branch nodes feel the hunger of all of their (still hidden) leaf nodes and exert repulsion against other nodes with strength proportional to the number of leaf nodes they will sprout later."
+The Translation: From Metaphor to Math and Code
+
+1. The Intuition:
+You envisioned a pruned graph where parent nodes "remember" the spatial footprint of their unsprouted leaves and push surrounding nodes away before those leaves are drawn, avoiding post-hoc crowding.
+2. The Mathematical Formalization:
+Instead of physical particles repelling dynamically (which failed due to topological snagging), the memory was embedded directly into the geodesic target distance matrix D used during stress majorization:
+R(b) = sqrt(k) * L / pi
+D'_ij = D_ij + R(i) + R(j)
+where k is the number of hidden leaves and L is target link length.
+
+What became of it in our code (measured, see the `adapt.mjs` row above): the repulsion-by-particles form was not used; the distance form is the `halo` setting of the stress layouts. As a global setting it lowered links through classes (217 to 164) but raised crossings on the development graphs (472 to about 505), so it is **off by default**. It is available as an extra variant for Best Read to choose from (`addHalo`, `addHaloGroups`), also off by default, and gave at most 10% fewer links through classes. Best Read's shipped results do not depend on it.
