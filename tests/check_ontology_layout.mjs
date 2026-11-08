@@ -4,7 +4,10 @@
 //   2. grid: the clean-up's spatial grid gives the same costs as checking every pair (its checkIndex mode compares the two
 //      on every evaluation and throws on a difference);
 //   3. repeatable: the same model laid out and cleaned up twice gives the same drawing;
-//   4. tree: a pure taxonomy drawn as a tree, and cleaned up keeping it top-down, has no problem and every subclass below.
+//   4. tree: a pure taxonomy drawn as a tree, and cleaned up keeping it top-down, has no problem and every subclass below;
+//   5. routes: the link routing after a layout leaves no parallel link hidden on another, gives every self-link a loop,
+//      never makes a drawing worse than straight links (10 per link through a class, 6 per crossing), gives the same routes
+//      twice, and counts its work on the work clock (so its time limit holds).
 // node tests/check_ontology_layout.mjs            -> "ontology layout clean" or the failures
 // node tests/check_ontology_layout.mjs --self-test -> runs each check on a deliberately broken copy and confirms it fails
 import fs from 'node:fs';
@@ -16,7 +19,7 @@ function layoutCode(src) {
   return src.slice(a, b).replace(/\r\n/g, '\n');
 }
 function load(code) {
-  const api = 'return { auto: _ogAutoLayout, tree: _ogTreeLayout, cleanUp: _ogLayoutCleanUp, tidy: _ogHandTidy, now: _ogNow, sep: _ogClSeparate };';
+  const api = 'return { auto: _ogAutoLayout, tree: _ogTreeLayout, cleanUp: _ogLayoutCleanUp, tidy: _ogHandTidy, now: _ogNow, sep: _ogClSeparate, route: _ogRouteLinks, routeMetrics: _ogRouteMetrics };';
   return new Function('window', 'document', 'state', 'log', code + '\n' + api)({}, {}, { ui: {} }, () => {});
 }
 // small generated models: a few taxonomies with property links between them, fixed seeds
@@ -74,9 +77,30 @@ function checkTree(L) {
   if (up2 !== 1) bad.push(`tree with multiple superclasses and a cycle: ${up2} subclass links not pointing down (expected 1, the cycle's)`);
   return bad;
 }
+// 5. routes
+function checkRoutes(L) {
+  const bad = [];
+  // reciprocal pairs, three links between two classes and a self-link, on top of each test model
+  MODELS.forEach((m, i) => {
+    const n = m.D.length, edges = m.edges.map((e) => [...e, 60]).concat([[0, 1, 1, 70], [1, 0, 1, 80], [2, 3, 1, 50], [2, 3, 1, 50], [3, 2, 1, 90], [4, 4, 1, 40]]);
+    const t0 = L.now(), P = L.auto(m.D, edges, { seed: 1 }).pos.map((p) => ({ x: p.x, y: p.y })); L.sep(P, m.D.map((d) => ({ w: d.w + 16, h: d.h + 12 })), 6, 200);
+    const Q = L.cleanUp(P, m.D, edges, t0).map((p) => ({ x: p.x, y: p.y }));
+    const w0 = performance.now(), r = L.route(Q, m.D, edges), wall = performance.now() - w0, r2 = L.route(Q, m.D, edges);
+    const st = L.routeMetrics(Q, m.D, edges, edges.map(() => null)), ro = L.routeMetrics(Q, m.D, edges, r.routes), cost = (x) => 10 * x.thru + 6 * x.cross;
+    if (ro.hidden) bad.push(`model ${i}: ${ro.hidden} parallel links hidden on another`);
+    if (edges.some(([s, t], k) => s === t && !r.routes[k].loop)) bad.push(`model ${i}: a self-link without a loop`);
+    if (cost(ro) > cost(st)) bad.push(`model ${i}: routed links worse than straight (${ro.cross} crossed, ${ro.thru} through classes against ${st.cross}, ${st.thru})`);
+    if (JSON.stringify(r.routes) !== JSON.stringify(r2.routes)) bad.push(`model ${i}: two different routings`);
+    // the work clock may run ahead of the wall clock but not far behind it: work done and not counted would let the time limit slip
+  });
+  // the work counted must keep up with the time taken, on a dense model where routing has plenty to do
+  const d = model(4, 90, 140), Pd = L.auto(d.D, d.edges, { seed: 1 }).pos, w0 = performance.now(), rd = L.route(Pd, d.D, d.edges), wall = performance.now() - w0;
+  if (wall > 2 * rd.stats.work + 25) bad.push(`dense model: routing took ${Math.round(wall)} ms but counted ${Math.round(rd.stats.work)} ms of work`);
+  return bad;
+}
 function runAll(code) {
   const out = { clock: checkClock(code) }, L = load(code);
-  out.grid = checkGrid(L); out.repeatable = checkRepeatable(L); out.tree = checkTree(L);
+  out.grid = checkGrid(L); out.repeatable = checkRepeatable(L); out.tree = checkTree(L); out.routes = checkRoutes(L);
   return out;
 }
 
@@ -88,7 +112,12 @@ if (process.argv.includes('--self-test')) {
     ['grid', 'the grid skips every third cell along a link', code.replace('f(cy * G.cols + cx);', 'if ((cx + cy) % 3) f(cy * G.cols + cx);')],
     ['repeatable', 'the layout depends on the wall clock', code.replace('function _ogNow() {', 'function _ogNow() { return performance.now() * 37 % 1e9;')],
     ['tree', 'the tree gap ignores the lines to far children', code.replace('if (room > 1) G = Math.max(G,', 'if (room > 1e9) G = Math.max(G,')],
-    ['tree', 'levels by the shallowest superclass, not the deepest', code.replace('atLeast[k] = Math.max(atLeast[k], level[v] + 1);', 'atLeast[k] = atLeast[k] || level[v] + 1;')]
+    ['tree', 'levels by the shallowest superclass, not the deepest', code.replace('atLeast[k] = Math.max(atLeast[k], level[v] + 1);', 'atLeast[k] = atLeast[k] || level[v] + 1;')],
+    ['routes', 'parallel links all on the straight line', code.replace('off: ks.map((_, i) => (i - (ks.length - 1) / 2) * o.sep)', 'off: ks.map(() => 0)')],
+    ['routes', 'self-links left without a loop', code.replace('R[k].loop = [{', 'R[k].nope = [{')],
+    ['routes', 'bends kept even when they make things worse', code.replace('if (r.c < best.c - 0.5) { best = r; bestW = w; }', 'if (r.c > best.c) { best = r; bestW = w; }').replace('if (bestW !== b.way && best.c < c0 - 0.5) {', 'if (bestW !== b.way) {')],
+    ['routes', 'the routing checks not counted on the work clock', code.replace('_ogWorkN[2] += 14 * (n + m) + pl.length * 28; _ogWorkN[5]++;', '').replace('_ogClSegX(a, b, cc, d)', '_ogFreeX(a, b, cc, d)').replace('if (_ogClSegBox(ax, ay, bx, by, hw, hh)) return true;', 'if (_ogFreeBox(ax, ay, bx, by, hw, hh)) return true;')
+      + '\nfunction _ogFreeX(a, b, c, d) { const w = _ogWorkN[0], r = _ogClSegX(a, b, c, d); _ogWorkN[0] = w; return r; }\nfunction _ogFreeBox(a, b, c, d, e, f) { const w = _ogWorkN[1], r = _ogClSegBox(a, b, c, d, e, f); _ogWorkN[1] = w; return r; }\n']
   ];
   let ok = true;
   for (const [check, what, broken] of fixtures) {

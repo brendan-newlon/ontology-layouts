@@ -589,7 +589,7 @@ function _ogLayoutCleanUp(pos, items, edges, startedAt, topDown) {
   const budgetMs = Math.min(500, 1500 - (_ogNow() - startedAt));
   if (budgetMs < 100) return pos;
   const down = topDown ? edges.filter((e) => e[2] === 2 && e[0] !== e[1]).map((e) => [e[0], e[1]]) : null;
-  return _ogClocked(() => _ogHandTidy.run(pos, items, edges.map((e) => ({ s: e[0], t: e[1] })), { budgetMs, down }).P);
+  return _ogClocked(() => _ogHandTidy.run(pos, items, edges.map((e) => ({ s: e[0], t: e[1] })), { budgetMs, down, ...(_OG_TUNE.cleanup || {}) }).P);
 }
 root.HandTidy = _ogHandTidy; root.HandTidy.cleanUp = _ogLayoutCleanUp;
 })(typeof window !== 'undefined' ? window : globalThis);

@@ -22,6 +22,13 @@
         try { return fn(); } finally { const end = _ogNow(); if (--_ogClk.depth === 0) { const v = _ogWorkMs(); if (end > v) _ogClk.lag += end - v; } }
       }
       // ── end of the work clock ──
+      // ── Trace (playback in the Layout Lab) ──
+      // Off unless _ogTraced runs a layout: then each step that moves classes reports the positions after it, so the lab can
+      // replay the layout step by step. Reporting only copies positions; the drawing is the same with or without it.
+      let _ogTr = null;
+      function _ogTraced(sink, fn) { const prev = _ogTr; _ogTr = sink; try { return fn(); } finally { _ogTr = prev; } }
+      // experiments and the lab: steps of the layouts left out (_OG_TUNE.skip = { cross, thru, tight })
+      const _ogSkip = (k) => !!(_OG_TUNE.skip && _OG_TUNE.skip[k]);
       function _ogClSegX(a, b, c, d) {
         _ogWorkN[0]++;
         const o = (p, q, r) => (q.x - p.x) * (r.y - p.y) - (q.y - p.y) * (r.x - p.x);
@@ -154,7 +161,7 @@
               P[v] = c; const after = _ogClCrossSet(P, EE, inc[v]); P[v] = keep;
               if (after < before && (!best || after - before < best.d)) best = { kind: "move", c2: c, d: after - before, c: after };
             }
-            if (best) { if (best.kind === "swap") { const pv = P[v]; P[v] = P[best.u]; P[best.u] = pv; } else P[v] = best.c2; improved = true; }
+            if (best) { if (best.kind === "swap") { const pv = P[v]; P[v] = P[best.u]; P[best.u] = pv; } else P[v] = best.c2; improved = true; if (_ogTr) _ogTr.snap("cross", P); }
           }
         }
       }
@@ -183,7 +190,7 @@
               if (b1 < b0 && _ogClCrossSet(P, EE, inc[v]) <= x0 && (!best || b1 < best.b || (b1 === best.b && d < best.d))) best = { c, b: b1, d };
               P[v] = keep;
             }
-            if (best) { P[v] = best.c; moved = true; }
+            if (best) { P[v] = best.c; moved = true; if (_ogTr) _ogTr.snap("thru", P); }
           }
           if (!moved) break;
         }
@@ -209,7 +216,7 @@
               if (l1 < l0 - 4 && (!best || l1 < best.l) && _ogClCrossSet(P, EE, inc[v]) <= x0 && _ogClThruCount(P, N, EE, inc, v, 8) <= h0) best = { c, l: l1 };
               P[v] = keep;
             }
-            if (best) { P[v] = best.c; moved = true; }
+            if (best) { P[v] = best.c; moved = true; if (_ogTr) _ogTr.snap("tight", P); }
           }
           if (!moved) break;
         }
@@ -221,6 +228,7 @@
           let ok = true;
           for (let i = 0; i < n && ok; i++) for (let j = i + 1; j < n; j++) if (Math.abs(P[i].x - P[j].x) < (N[i].w + N[j].w) / 2 + gap && Math.abs(P[i].y - P[j].y) < (N[i].h + N[j].h) / 2 + gap) { ok = false; break; }
           if (!ok || all() > h0) { old.forEach((o, i) => { P[i].x = o.x; P[i].y = o.y; }); break; }
+          if (_ogTr) _ogTr.snap("tight", P);
         }
       }
       // ── OG: Compact, Grouped and Auto layouts ────────────────────────────────
@@ -297,6 +305,7 @@
             }
             const qx = nx / den, qy = ny / den; moved += Math.abs(qx - pi.x) + Math.abs(qy - pi.y); pi.x = qx; pi.y = qy;
           }
+          if (_ogTr) _ogTr.snap("stress", P);
           if (moved / n < 0.05) break;
         }
       }
@@ -312,7 +321,7 @@
       // Put one-link classes beside their neighbor, in the direction where the new link crosses nothing and no link runs through the class,
       // at least gapOf[v] px from the neighbor's box (room for the link's text). improve: every class is placed already; move one only
       // when the new spot is better than where it is.
-      function _ogClPlaceLeaves(P, N, EE, leafOf, gapOf, L, gap, improve, deadline) {
+      function _ogClPlaceLeaves(P, N, EE, leafOf, gapOf, L, gap, improve, deadline, stage) {
         const n = P.length, kids = new Map();
         leafOf.forEach((p, v) => { if (p >= 0) { if (!kids.has(p)) kids.set(p, []); kids.get(p).push(v); } });
         const placed = new Uint8Array(n); for (let v = 0; v < n; v++) if (improve || leafOf[v] < 0) placed[v] = 1;
@@ -389,6 +398,7 @@
               if (freeAt(v, p, c) || r === 12) { best = { cost: 0, c }; done = true; break; }
             }
             if (best) P[v] = best.c; placed[v] = 1;
+            if (_ogTr) _ogTr.snap(stage || "leaves", P, { v, p });
           }
         }
       }
@@ -430,27 +440,35 @@
         const NC = core.map((v) => N[v]), EC = EE.filter((e) => ci.has(e.s) && ci.has(e.t)).map((e) => ({ s: ci.get(e.s), t: ci.get(e.t) }));
         const restarts = cfg.restarts != null ? cfg.restarts : (m <= 30 ? 8 : m <= 80 ? 4 : 2), countX = EC.length <= 2500;
         let best = null;
+        if (_ogTr) { _ogTr.begin(cfg.name, n, core, leafOf); _ogTr.map = core; }
         for (let r = 0; r < Math.max(1, restarts) && (r === 0 || _ogNow() - t0 < budget * 0.4); r++) {
           const PC = cfg.init === "pmds" && r === 0 && m > 2 ? _ogClPivotMDS(D, m, rnd) : NC.map(() => ({ x: (rnd() - 0.5) * 400, y: (rnd() - 0.5) * 400 }));
+          if (_ogTr) { _ogTr.restart(r); _ogTr.snap(cfg.init === "pmds" && r === 0 && m > 2 ? "start" : "restart", PC); }
           _ogClStress(PC, D, cfg.sweeps || 120, rnd, t0 + budget * 0.4); _ogClSeparate(PC, NC, 12, 120);
-          const x = countX ? _ogClCrossings(PC, EC) : 0; if (!best || x < best.x) best = { x, P: PC };
+          if (_ogTr) _ogTr.snap("separate", PC);
+          const x = countX ? _ogClCrossings(PC, EC) : 0; if (!best || x < best.x) best = { x, P: PC, r };
         }
+        if (_ogTr) _ogTr.keepRestart(best.r);
         const PC = best.P;
         if (countX && EC.length) {
-          _ogClFinCross(PC, NC, EC, Math.min(m <= 30 ? 150 : 300, left() / 3), seed); _ogClSeparate(PC, NC, 12, 120);
-          _ogClFinThru(PC, NC, EC, 12, 10, left() / 3); _ogClFinTight(PC, NC, EC, 12, 26 * sc, left() / 2); _ogClFinThru(PC, NC, EC, 8, 10, left() / 2);
-        } else if (EC.length) _ogClFinTight(PC, NC, EC, 6, 26 * sc, left() / 2);
+          if (!_ogSkip("cross")) { _ogClFinCross(PC, NC, EC, Math.min(m <= 30 ? 150 : 300, left() / 3), seed); _ogClSeparate(PC, NC, 12, 120); if (_ogTr) _ogTr.snap("separate", PC); }
+          if (!_ogSkip("thru")) _ogClFinThru(PC, NC, EC, 12, 10, left() / 3);
+          if (!_ogSkip("tight")) _ogClFinTight(PC, NC, EC, 12, 26 * sc, left() / 2);
+          if (!_ogSkip("thru")) _ogClFinThru(PC, NC, EC, 8, 10, left() / 2);
+        } else if (EC.length && !_ogSkip("tight")) _ogClFinTight(PC, NC, EC, 6, 26 * sc, left() / 2);
         const P = new Array(n); core.forEach((v, k) => (P[v] = PC[k]));
         for (let v = 0; v < n; v++) if (!P[v]) P[v] = { x: 0, y: 0 };
+        if (_ogTr) _ogTr.map = null;
         const deadline = t0 + budget;
         if (cfg.leaves) {
           _ogClPlaceLeaves(P, N, EE, leafOf, gapOf, L, 10, false, deadline);
-          _ogClFinThru(P, N, EE, 6, 10, left() / 2); _ogClFinTight(P, N, EE, 6, 26 * sc, left());
+          if (!_ogSkip("thru")) _ogClFinThru(P, N, EE, 6, 10, left() / 2);
+          if (!_ogSkip("tight")) _ogClFinTight(P, N, EE, 6, 26 * sc, left());
         }
         if (cfg.leaves || cfg.leafFix) {
           // clean-up may have pulled a one-link class closer than its room allows, or a better spot may be free now
           const short = leafAll.map((p, v) => p >= 0 && Math.max(Math.abs(P[v].x - P[p].x) - (N[v].w + N[p].w) / 2, Math.abs(P[v].y - P[p].y) - (N[v].h + N[p].h) / 2) < gapOf[v] - 0.5 ? p : -1);
-          if (short.some((p) => p >= 0)) _ogClPlaceLeaves(P, N, EE, short, gapOf, L, 10, false, deadline);
+          if (short.some((p) => p >= 0)) _ogClPlaceLeaves(P, N, EE, short, gapOf, L, 10, false, deadline, "leaffix");
           // and the clean-up may have moved a link across a one-link class's link or through its box: put those classes back once more
           const isBad = (v, p) => {
             for (const e of EE) {
@@ -464,9 +482,9 @@
           for (let pass = 0; pass < 2 && (n <= 300 || _ogNow() < deadline + budget / 4); pass++) {
             const bad = leafAll.map((p, v) => (p >= 0 && isBad(v, p) ? p : -1));
             if (!bad.some((p) => p >= 0)) break;
-            _ogClPlaceLeaves(P, N, EE, bad, gapOf, L, 10, false, deadline);
+            _ogClPlaceLeaves(P, N, EE, bad, gapOf, L, 10, false, deadline, "leaffix");
           }
-          if (cfg.leafFix) _ogClPlaceLeaves(P, N, EE, leafAll, gapOf, L, 10, true, deadline);
+          if (cfg.leafFix) _ogClPlaceLeaves(P, N, EE, leafAll, gapOf, L, 10, true, deadline, "leaffix");
         }
         return { pos: P, crossings: countX ? _ogClCrossings(P, EE) : 0 };
       }
@@ -491,10 +509,13 @@
           if (!r) return;
           // the drawing that is scored is the one returned: separated so that no boxes touch
           const P = r.pos.map((p) => ({ x: p.x, y: p.y })); _ogClSeparate(P, N, 6, 40);
+          if (_ogTr) _ogTr.snap("separate", P);
           const s = _ogChoiceScore(_ogPlacementMetrics(P, N, EE)), fam = cfg.family;
+          if (_ogTr) _ogTr.score(cfg.name, s);
           if (scores[fam] === undefined || s < scores[fam]) scores[fam] = s;
           if (!best || s < best.score) best = { score: s, pos: P, crossings: r.crossings, algo: fam, variant: cfg.name };
         });
+        if (_ogTr && best) _ogTr.chosen(best.variant);
         return best && { pos: best.pos, crossings: best.crossings, algo: best.algo, variant: best.variant, scores };
       }
       const _OG_TUNE = {}; // experiments only: settings merged into every variant (the benchmark sets them; empty in use)
@@ -608,8 +629,10 @@
       // 15 development graphs, choosing without them gave 6.5% fewer crossings plus links through classes for 7% more area.
       function _ogChoiceScore(m) { return 10 * m.cross + 8 * m.thru + 2 * m.near + 40 * m.ov + m.len / 10 + Math.max(0, (m.fill || 0) - 8) * 4 * Math.sqrt(m.n || 1); }
       // Automatic choice: the variants that suit the size, best score kept. Returns { pos, crossings, algo, scores } or null.
-      // When most links are subclass links, the top-down tree is tried too and kept if it costs nothing: no crossing, no link
-      // through a class, and at most 1.5 times the area of the best other drawing (algo "tree"; its clean-up keeps it top-down).
+      // (Until 2026-11-07 it also drew the top-down tree when most links were subclass links. Over the 51 benchmark graphs the
+      // tree was kept once, on Dublin Core terms, where the drawing kept without it has no crossing and no link through a class
+      // either; these layouts are for business models joined mostly by relationships, so it was dropped. _ogTreeLayout is still
+      // there for an app that wants a taxonomy drawn as a tree.)
       function _ogAutoLayout(items, edges, opts) {
         // dense models (more than two links per class) give their time to fewer variants, or the clean-up of each is starved.
         // The time limits leave the clean-up after the layout its share of 1.5 s (0.9 s up to 100 classes, 0.6 s above).
@@ -618,19 +641,7 @@
         if (!list.length) list.push(_ogV("mds"));
         if (_OG_TUNE.addHalo && n >= 8) list.push(_ogV("hubs", { halo: 1, name: "hubs+halo" }));
         if (_OG_TUNE.addHaloGroups && n >= 8) list.push(_ogV("groups", { L: n >= 100 ? 260 : 170, halo: 1, name: "groups+halo" }));
-        return _ogClocked(() => {
-          const best = _ogBestOf(items, edges, opts, list, (opts && opts.budgetMs) || (n <= 30 ? 1500 : n <= 100 ? 900 : 600));
-          const links = edges.filter(([a, b]) => a !== b), subs = links.filter((e) => e[2] === 2).length;
-          if (!best || !links.length || subs < links.length / 2) return best;
-          const sc = opts && opts.roomy ? 1.3 : 1, N = items.map((it) => ({ w: it.w + 16 * sc, h: it.h + 12 * sc })), EE = links.map(([a, b]) => ({ s: a, t: b }));
-          const T = _ogTreeLayout(items, edges, opts).pos; _ogClSeparate(T, N, 6, 40);
-          // links through classes counted against the boxes as drawn (3 px margin, as the benchmark counts them); area on the padded boxes
-          // (cheapest test first: a crossing rules the tree out before anything else is measured)
-          if (_ogClCrossings(T, EE)) return best;
-          const B = items.map((it) => ({ w: it.w + 6, h: it.h + 6 }));
-          if (_ogPlacementMetrics(T, B, EE).thru) return best;
-          return _ogPlacementMetrics(T, N, EE).fill <= 1.5 * _ogPlacementMetrics(best.pos, N, EE).fill ? { ...best, pos: T, crossings: 0, algo: "tree", variant: "tree" } : best;
-        });
+        return _ogClocked(() => _ogBestOf(items, edges, opts, list, (opts && opts.budgetMs) || (n <= 30 ? 1500 : n <= 100 ? 900 : 600)));
       }
       // ── Clean-up after a layout ──
       // Generalized from recorded sessions of a person tidying these layouts by hand. It runs after a layout, on its positions:
@@ -1202,7 +1213,250 @@
         const budgetMs = Math.min(500, 1500 - (_ogNow() - startedAt));
         if (budgetMs < 100) return pos;
         const down = topDown ? edges.filter((e) => e[2] === 2 && e[0] !== e[1]).map((e) => [e[0], e[1]]) : null;
-        return _ogClocked(() => _ogHandTidy.run(pos, items, edges.map((e) => ({ s: e[0], t: e[1] })), { budgetMs, down }).P);
+        return _ogClocked(() => _ogHandTidy.run(pos, items, edges.map((e) => ({ s: e[0], t: e[1] })), { budgetMs, down, ...(_OG_TUNE.cleanup || {}) }).P);
       }
       // ── end of the clean-up ──
+      // ── Link routing after a layout ──
+      // The layouts place classes; this draws the links between them, on the final positions, without moving any class:
+      //   1. parallel links: two or more links between the same two classes (a link and its reverse, or two relationships)
+      //      become arcs spread evenly on both sides of the straight line, so none hides another and each name has room;
+      //   2. self-links: a loop beside the class, on its emptiest side;
+      //   3. bends: a link that still runs through a class (or, if that pays off, crosses another) gets one or two bends that
+      //      take it round the obstacle, kept only when the drawing gets better counting the extra length;
+      //   4. ports: at a class with three or more links, link ends that would meet the box closer than portGap px apart are
+      //      spread along the side of the box they reach, in the same order, so each link meets the box at its own point;
+      //   5. names: each link's name is placed on its path where it covers no class, no other name and as few links as can be.
+      // A route is { bends: [{t, d}], ports: [start, end] offsets from the class centers or null, loop, label }. A bend lies at
+      // fraction t along the line between the two centers and d px to its left (d < 0: right); the path is a Catmull-Rom curve
+      // from the start through the bends to the end (_ogRoutePoly). Same input, same routes: the time limit is on the work clock.
+      // items [{w, h}] as drawn, edges [[s, t, kind, nameWidth?]] -> { routes (one per edge), stats }.
+      const _OG_ROUTE = { sep: 24, pad: 9, samples: 8, bends: true, crossBends: true, ports: 3, portGap: 10, labels: true, labelH: 14, budgetMs: 250, W: { thru: 10, cross: 6, sharp: 3, len: 5, bend: 1.5, turn: 3 } };
+      function _ogRoutePts(A, B, bends) {
+        const dx = B.x - A.x, dy = B.y - A.y, L = Math.hypot(dx, dy) || 1, nx = -dy / L, ny = dx / L;
+        return bends.map((h) => ({ x: A.x + h.t * dx + h.d * nx, y: A.y + h.t * dy + h.d * ny }));
+      }
+      // The drawn path as points: straight from end to end, or the Catmull-Rom curve sampled with `samples` segments per piece.
+      // A, B: the class centers; pa, pb: port offsets from them (or null); loop: absolute points of a self-link's loop.
+      function _ogRoutePoly(A, B, r, samples) {
+        const s = samples || 8, a = r && r.ports && r.ports[0] ? { x: A.x + r.ports[0].x, y: A.y + r.ports[0].y } : A, b = r && r.ports && r.ports[1] ? { x: B.x + r.ports[1].x, y: B.y + r.ports[1].y } : B;
+        const mid = r && r.loop ? r.loop.map((p) => ({ x: A.x + p.x, y: A.y + p.y })) : r && r.bends && r.bends.length ? _ogRoutePts(A, B, r.bends) : [];
+        if (!mid.length) return [a, b];
+        const pts = [a, ...mid, b], out = [a];
+        for (let i = 0; i < pts.length - 1; i++) {
+          const p0 = pts[Math.max(0, i - 1)], p1 = pts[i], p2 = pts[i + 1], p3 = pts[Math.min(pts.length - 1, i + 2)];
+          const c1 = { x: p1.x + (p2.x - p0.x) / 6, y: p1.y + (p2.y - p0.y) / 6 }, c2 = { x: p2.x - (p3.x - p1.x) / 6, y: p2.y - (p3.y - p1.y) / 6 };
+          for (let j = 1; j <= s; j++) { const t = j / s, u = 1 - t; out.push({ x: u * u * u * p1.x + 3 * u * u * t * c1.x + 3 * u * t * t * c2.x + t * t * t * p2.x, y: u * u * u * p1.y + 3 * u * u * t * c1.y + 3 * u * t * t * c2.y + t * t * t * p2.y }); }
+        }
+        return out;
+      }
+      const _ogPolyBox = (pl) => { let x1 = 1e18, y1 = 1e18, x2 = -1e18, y2 = -1e18; for (const p of pl) { if (p.x < x1) x1 = p.x; if (p.x > x2) x2 = p.x; if (p.y < y1) y1 = p.y; if (p.y > y2) y2 = p.y; } return { x1, y1, x2, y2 }; };
+      const _ogPolyLen = (pl) => { let s = 0; for (let i = 1; i < pl.length; i++) s += Math.hypot(pl[i].x - pl[i - 1].x, pl[i].y - pl[i - 1].y); return s; };
+      // crossings between two paths (each crossing point once), and how many of them are sharp (under 30°)
+      function _ogPolyCross(p, q, bp, bq) {
+        if (bp.x2 < bq.x1 || bq.x2 < bp.x1 || bp.y2 < bq.y1 || bq.y2 < bp.y1) return [0, 0];
+        let c = 0, sh = 0;
+        for (let i = 0; i < p.length - 1; i++) {
+          const a = p[i], b = p[i + 1];
+          if (Math.max(a.x, b.x) < bq.x1 || Math.min(a.x, b.x) > bq.x2 || Math.max(a.y, b.y) < bq.y1 || Math.min(a.y, b.y) > bq.y2) continue;
+          for (let j = 0; j < q.length - 1; j++) {
+            const cc = q[j], d = q[j + 1];
+            if (Math.max(a.x, b.x) < Math.min(cc.x, d.x) || Math.max(cc.x, d.x) < Math.min(a.x, b.x) || Math.max(a.y, b.y) < Math.min(cc.y, d.y) || Math.max(cc.y, d.y) < Math.min(a.y, b.y)) continue;
+            if (_ogClSegX(a, b, cc, d)) { c++; const ux = b.x - a.x, uy = b.y - a.y, vx = d.x - cc.x, vy = d.y - cc.y; if (Math.abs(ux * vx + uy * vy) / (Math.hypot(ux, uy) * Math.hypot(vx, vy) || 1) > 0.866) sh++; }
+          }
+        }
+        return [c, sh];
+      }
+      // does the path touch the box of class v (half-sizes plus pad)?
+      function _ogPolyThru(pl, bb, P, N, v, pad) {
+        const c = P[v], hw = N[v].w / 2 + pad, hh = N[v].h / 2 + pad;
+        if (bb.x2 < c.x - hw || bb.x1 > c.x + hw || bb.y2 < c.y - hh || bb.y1 > c.y + hh) return false;
+        for (let i = 0; i < pl.length - 1; i++) {
+          const ax = pl[i].x - c.x, ay = pl[i].y - c.y, bx = pl[i + 1].x - c.x, by = pl[i + 1].y - c.y;
+          if ((ax < -hw && bx < -hw) || (ax > hw && bx > hw) || (ay < -hh && by < -hh) || (ay > hh && by > hh)) continue;
+          if (_ogClSegBox(ax, ay, bx, by, hw, hh)) return true;
+        }
+        return false;
+      }
+      function _ogRouteLinks(pos, items, edges, opts) { const w0 = _ogWorkMs(); return _ogClocked(() => { const r = _ogRouteRun(pos, items, edges, opts); r.stats.work = _ogWorkMs() - w0; return r; }); }
+      function _ogRouteRun(pos, items, edges, opts) {
+        const o = { ..._OG_ROUTE, ...(opts || {}), W: { ..._OG_ROUTE.W, ...((opts && opts.W) || {}) } }, P = pos, N = items, n = P.length, t0 = _ogNow();
+        const E = edges.map(([s, t, w, lab]) => ({ s, t, sub: w === 2, lab: lab || 0 })), m = E.length;
+        const R = E.map(() => ({ bends: [], ports: null, loop: null, label: null }));
+        const stats = { parallel: 0, loops: 0, bent: 0, bends: 0, ported: 0, labels: 0, ms: 0 };
+        // 1. parallel links: bundles of links between the same two classes, spread sep px apart, the middle one straight when odd
+        const bundles = new Map();
+        E.forEach((e, k) => { if (e.s === e.t) return; const key = Math.min(e.s, e.t) + ',' + Math.max(e.s, e.t); if (!bundles.has(key)) bundles.set(key, []); bundles.get(key).push(k); });
+        const B = [...bundles.values()].map((ks) => { const lo = Math.min(E[ks[0]].s, E[ks[0]].t), hi = Math.max(E[ks[0]].s, E[ks[0]].t);
+          return { lo, hi, ks, off: ks.map((_, i) => (i - (ks.length - 1) / 2) * o.sep), way: [] }; });
+        // a bundle's centerline bends (in the lo -> hi frame) plus each member's offset give the member's bends in its own frame
+        const memberBends = (b, i) => {
+          const k = b.ks[i], flip = E[k].s !== b.lo, off = b.off[i];
+          let w = b.way.length ? b.way.map((h) => ({ t: h.t, d: h.d + off })) : off ? [{ t: 0.5, d: off }] : [];
+          if (flip) w = w.map((h) => ({ t: 1 - h.t, d: -h.d })).reverse();
+          return w;
+        };
+        B.forEach((b) => { if (b.ks.length > 1) stats.parallel += b.ks.length; b.ks.forEach((k, i) => (R[k].bends = memberBends(b, i))); });
+        // 2. self-links: a loop on the side of the class with the fewest links leaving it
+        const dirs = Array.from({ length: n }, () => []);
+        E.forEach((e) => { if (e.s === e.t) return; const a = Math.atan2(P[e.t].y - P[e.s].y, P[e.t].x - P[e.s].x); dirs[e.s].push(a); dirs[e.t].push(a + Math.PI); });
+        const loopsAt = new Array(n).fill(0);
+        E.forEach((e, k) => {
+          if (e.s !== e.t) return; const v = e.s, hw = N[v].w / 2, hh = N[v].h / 2;
+          // the four corners, the one with the fewest link directions within 45° first
+          const cs = [[1, -1], [1, 1], [-1, 1], [-1, -1]].map(([sx, sy]) => { const a = Math.atan2(sy * hh, sx * hw); let c = 0; dirs[v].forEach((d) => { let x = Math.abs(((d - a) % (2 * Math.PI) + 3 * Math.PI) % (2 * Math.PI) - Math.PI); if (x < Math.PI / 4) c++; }); return { sx, sy, c }; });
+          cs.sort((p, q) => p.c - q.c); const c = cs[loopsAt[v]++ % 4], r = 22 + 8 * Math.floor((loopsAt[v] - 1) / 4);
+          R[k].loop = [{ x: c.sx * (hw + r * 0.3), y: c.sy * (hh + r) }, { x: c.sx * (hw + r), y: c.sy * (hh + r * 0.3) }];
+          R[k].ports = [{ x: c.sx * hw * 0.55, y: c.sy * hh }, { x: c.sx * hw, y: c.sy * hh * 0.2 }];
+          stats.loops++;
+        });
+        // current paths of every link, for the checks below
+        const PL = E.map((e, k) => _ogRoutePoly(P[e.s], P[e.t], R[k], o.samples)), BB = PL.map(_ogPolyBox);
+        // 3. bends round classes in the way
+        const costOf = (k, pl, bb, skip) => { // problems on one link's path: through classes, crossings with links outside skip
+          const e = E[k]; let c = 0, x = 0; _ogWorkN[2] += 14 * (n + m) + pl.length * 28; _ogWorkN[5]++;
+          for (let v = 0; v < n; v++) if (v !== e.s && v !== e.t && _ogPolyThru(pl, bb, P, N, v, o.pad)) c += o.W.thru;
+          for (let f = 0; f < m; f++) {
+            if (skip.has(f)) continue; const g = E[f]; if (e.s === g.s || e.s === g.t || e.t === g.s || e.t === g.t) continue;
+            const [cx, sh] = _ogPolyCross(pl, PL[f], bb, BB[f]); x += cx; c += cx * o.W.cross + sh * o.W.sharp;
+          }
+          return c;
+        };
+        const bundleCost = (b, way) => {
+          const keep = b.way; b.way = way; const skip = new Set(b.ks); let c = 0, len = 0;
+          const pls = b.ks.map((k, i) => { const pl = _ogRoutePoly(P[E[k].s], P[E[k].t], { bends: memberBends(b, i), ports: R[k].ports }, o.samples); return pl; });
+          pls.forEach((pl, i) => { const bb = _ogPolyBox(pl); c += costOf(b.ks[i], pl, bb, skip); len += _ogPolyLen(pl); });
+          // members of one bundle never cross each other (they share their ends), so only the outside counts
+          b.way = keep;
+          const straight = Math.hypot(P[b.hi].x - P[b.lo].x, P[b.hi].y - P[b.lo].y) || 1;
+          let turn = 0; if (way.length) { const pts = [P[b.lo], ..._ogRoutePts(P[b.lo], P[b.hi], way), P[b.hi]];
+            for (let i = 1; i < pts.length - 1; i++) { const ux = pts[i].x - pts[i - 1].x, uy = pts[i].y - pts[i - 1].y, vx = pts[i + 1].x - pts[i].x, vy = pts[i + 1].y - pts[i].y; if (ux * vx + uy * vy < 0) turn++; } }
+          return { c: c + o.W.len * Math.max(0, len / b.ks.length / straight - 1) + o.W.bend * way.length + o.W.turn * turn, pls };
+        };
+        if (o.bends && m) {
+          const deadline = t0 + o.budgetMs;
+          const problems = (b) => { let c = 0, th = 0; b.ks.forEach((k) => { c += costOf(k, PL[k], BB[k], new Set(b.ks)); for (let v = 0; v < n; v++) if (v !== b.lo && v !== b.hi && _ogPolyThru(PL[k], BB[k], P, N, v, o.pad)) th++; }); return [c, th]; };
+          // links through classes first (the time may run out on a dense model), then the most problems first
+          const work = B.map((b) => { const [c, th] = problems(b); return { b, c, th }; }).filter((x) => x.th || (o.crossBends && x.c >= o.W.cross)).sort((p, q) => (q.th > 0) - (p.th > 0) || q.c - p.c);
+          // a second pass for links still through a class: the bends made since may have opened a way round
+          const again = () => work.filter((x) => x.th && problems(x.b)[1]);
+          const routeBundle = (b) => {
+            if (_ogNow() > deadline) return;
+            const A = P[b.lo], Bq = P[b.hi], dx = Bq.x - A.x, dy = Bq.y - A.y, L2 = dx * dx + dy * dy || 1, L = Math.sqrt(L2);
+            const td = (p) => ({ t: ((p.x - A.x) * dx + (p.y - A.y) * dy) / L2, d: ((p.x - A.x) * -dy + (p.y - A.y) * dx) / L });
+            const spread = Math.max(...b.off.map(Math.abs));
+            // obstacles: classes the bundle runs through, and the ends of links it crosses
+            // obstacles: classes the bundle runs through, and for each link it crosses, that link's end nearer the crossing
+            // (going round it removes the crossing); at most four such ends, the nearest to the bundle's middle
+            const obst = new Set(), near = new Map(), mid = { x: (P[b.lo].x + P[b.hi].x) / 2, y: (P[b.lo].y + P[b.hi].y) / 2 };
+            b.ks.forEach((k) => { _ogWorkN[2] += n + m; for (let v = 0; v < n; v++) if (v !== b.lo && v !== b.hi && _ogPolyThru(PL[k], BB[k], P, N, v, o.pad)) obst.add(v);
+              if (o.crossBends) for (let f = 0; f < m; f++) { const g = E[f]; if (b.ks.includes(f) || g.s === b.lo || g.s === b.hi || g.t === b.lo || g.t === b.hi) continue;
+                if (_ogPolyCross(PL[k], PL[f], BB[k], BB[f])[0]) { const v = Math.hypot(P[g.s].x - mid.x, P[g.s].y - mid.y) < Math.hypot(P[g.t].x - mid.x, P[g.t].y - mid.y) ? g.s : g.t; near.set(v, Math.hypot(P[v].x - mid.x, P[v].y - mid.y)); } } });
+            const ends = [...near].sort((p, q) => p[1] - q[1]).slice(0, 4).map((x) => x[0]).filter((v) => !obst.has(v));
+            const around = (v, mg) => { const out = [], hw = N[v].w / 2 + mg, hh = N[v].h / 2 + mg; for (const [sx, sy] of [[-1, -1], [1, -1], [1, 1], [-1, 1]]) out.push(td({ x: P[v].x + sx * hw, y: P[v].y + sy * hh }));
+              const q = td(P[v]), ext = (Math.abs(-dy / L) * N[v].w + Math.abs(dx / L) * N[v].h) / 2 + mg; out.push({ t: q.t, d: q.d + ext }, { t: q.t, d: q.d - ext }); return out; };
+            const ok = (h) => h.t > 0.04 && h.t < 0.96, sp = [];
+            [...obst].slice(0, 6).forEach((v) => sp.push(...around(v, o.pad + 10 + spread).filter(ok))); ends.forEach((v) => sp.push(...around(v, o.pad + 10 + spread).filter(ok)));
+            const cands = sp.map((h) => [h]);
+            for (const t of [0.5, 0.33, 0.67]) for (const f of [0.18, 0.32, 0.5, 0.75]) for (const sg of [1, -1]) cands.push([{ t, d: sg * f * L }]);
+            // two bends: pairs on the same side, in order along the link (at most 60)
+            const pairs = []; for (let i = 0; i < sp.length; i++) for (let j = 0; j < sp.length; j++) if (sp[i].t < sp[j].t - 0.05 && Math.sign(sp[i].d) === Math.sign(sp[j].d)) pairs.push([sp[i], sp[j]]);
+            pairs.sort((p, q) => Math.abs(p[0].d) + Math.abs(p[1].d) - Math.abs(q[0].d) - Math.abs(q[1].d)); cands.push(...pairs.slice(0, 60));
+            let best = bundleCost(b, b.way), bestW = b.way; const c0 = best.c;
+            for (const w of cands) { if (_ogNow() > deadline) break; const r = bundleCost(b, w); if (r.c < best.c - 0.5) { best = r; bestW = w; } }
+            if (bestW !== b.way && best.c < c0 - 0.5) {
+              b.way = bestW; stats.bent += b.ks.length; stats.bends += bestW.length * b.ks.length;
+              b.ks.forEach((k, i) => { R[k].bends = memberBends(b, i); PL[k] = best.pls[i]; BB[k] = _ogPolyBox(PL[k]); });
+            }
+          };
+          work.forEach((x) => routeBundle(x.b));
+          again().forEach((x) => routeBundle(x.b));
+        }
+        // 4. ports: spread link ends that would meet a crowded box at nearly the same point
+        if (o.ports) {
+          const endsAt = Array.from({ length: n }, () => []);
+          E.forEach((e, k) => { if (e.s === e.t) return; endsAt[e.s].push([k, 0]); endsAt[e.t].push([k, 1]); });
+          for (let v = 0; v < n; v++) {
+            if (endsAt[v].length < o.ports) continue; const hw = N[v].w / 2, hh = N[v].h / 2, faces = [[], [], [], []];
+            endsAt[v].forEach(([k, which]) => {
+              const e = E[k], pts = _ogRoutePts(P[e.s], P[e.t], R[k].bends), toward = which === 0 ? (pts[0] || P[e.t]) : (pts[pts.length - 1] || P[e.s]);
+              const ux = toward.x - P[v].x, uy = toward.y - P[v].y, sx = Math.abs(ux) > 1e-9 ? hw / Math.abs(ux) : Infinity, sy = Math.abs(uy) > 1e-9 ? hh / Math.abs(uy) : Infinity;
+              if (sx <= sy) faces[ux > 0 ? 1 : 3].push({ k, which, at: uy * sx }); else faces[uy > 0 ? 2 : 0].push({ k, which, at: ux * sy });
+            });
+            faces.forEach((f, fi) => {
+              if (f.length < 2) return; f.sort((a, b) => a.at - b.at);
+              const half = (fi % 2 ? hh : hw) - 3, gap = Math.min(o.portGap, 2 * half / (f.length - 1 || 1));
+              let clash = false; for (let i = 1; i < f.length; i++) if (f[i].at - f[i - 1].at < gap - 0.01) clash = true;
+              if (!clash) return;
+              // keep the order, push apart to the gap, then centre the run on where the ends wanted to be, inside the side
+              const want = f.map((x) => x.at), at = want.slice(); for (let i = 1; i < at.length; i++) at[i] = Math.max(at[i], at[i - 1] + gap);
+              const shift = (want.reduce((s, x) => s + x, 0) - at.reduce((s, x) => s + x, 0)) / at.length; for (let i = 0; i < at.length; i++) at[i] += shift;
+              const lo = -half - at[0], hi = half - at[at.length - 1]; const sh = lo > 0 ? lo : hi < 0 ? hi : 0; for (let i = 0; i < at.length; i++) at[i] = Math.max(-half, Math.min(half, at[i] + sh));
+              // kept only if these links get no more crossings or links through classes than before
+              const ks = new Set(f.map((x) => x.k)), before = [...ks].reduce((s, k) => s + costOf(k, PL[k], BB[k], ks), 0), old = f.map((x) => R[x.k].ports && R[x.k].ports.slice());
+              f.forEach((x, i) => { const p = fi === 0 ? { x: at[i], y: -hh } : fi === 2 ? { x: at[i], y: hh } : fi === 1 ? { x: hw, y: at[i] } : { x: -hw, y: at[i] };
+                if (!R[x.k].ports) R[x.k].ports = [null, null]; R[x.k].ports[x.which] = p; });
+              const NP = new Map([...ks].map((k) => { const pl = _ogRoutePoly(P[E[k].s], P[E[k].t], R[k], o.samples); return [k, [pl, _ogPolyBox(pl)]]; }));
+              const after = [...ks].reduce((s, k) => s + costOf(k, NP.get(k)[0], NP.get(k)[1], ks), 0);
+              if (after > before + 0.01) { f.forEach((x, i) => (R[x.k].ports = old[i])); return; }
+              NP.forEach(([pl, bb], k) => { PL[k] = pl; BB[k] = bb; }); stats.ported += f.length;
+            });
+          }
+        }
+        // 5. names: on the path, where they cover no class and no other name, and as few links as possible
+        if (o.labels) {
+          const H = o.labelH, placed = [], order = E.map((e, k) => k).filter((k) => E[k].lab > 0).sort((a, b) => E[b].lab - E[a].lab);
+          const at = (pl, f) => { const L = _ogPolyLen(pl) * f; let s = 0; for (let i = 1; i < pl.length; i++) { const l = Math.hypot(pl[i].x - pl[i - 1].x, pl[i].y - pl[i - 1].y); if (s + l >= L) { const u = l ? (L - s) / l : 0; return { x: pl[i - 1].x + u * (pl[i].x - pl[i - 1].x), y: pl[i - 1].y + u * (pl[i].y - pl[i - 1].y) }; } s += l; } return pl[pl.length - 1]; };
+          for (const k of order) {
+            const w = E[k].lab; let best = null;
+            for (const f of [0.5, 0.42, 0.58, 0.34, 0.66, 0.26, 0.74]) {
+              const c = at(PL[k], f), bx = { x1: c.x - w / 2, x2: c.x + w / 2, y1: c.y - H / 2, y2: c.y + H / 2 }; let cost = Math.abs(f - 0.5) * 4; _ogWorkN[2] += n + placed.length;
+              for (let v = 0; v < n; v++) if (Math.abs(P[v].x - c.x) < (N[v].w + w) / 2 + 2 && Math.abs(P[v].y - c.y) < (N[v].h + H) / 2 + 2) cost += 10;
+              for (const q of placed) if (bx.x1 < q.x2 + 2 && q.x1 < bx.x2 + 2 && bx.y1 < q.y2 + 1 && q.y1 < bx.y2 + 1) cost += 8;
+              for (let g = 0; g < m && cost < (best ? best.cost : Infinity); g++) { if (g === k) continue; const b = BB[g]; if (b.x2 < bx.x1 || b.x1 > bx.x2 || b.y2 < bx.y1 || b.y1 > bx.y2) continue;
+                const pl = PL[g]; for (let i = 0; i < pl.length - 1; i++) { const cx = (bx.x1 + bx.x2) / 2, cy = (bx.y1 + bx.y2) / 2; if (_ogClSegBox(pl[i].x - cx, pl[i].y - cy, pl[i + 1].x - cx, pl[i + 1].y - cy, w / 2, H / 2)) { cost += 1.5; break; } } }
+              if (!best || cost < best.cost) best = { cost, f, c, bx };
+            }
+            R[k].label = { x: best.c.x, y: best.c.y, w, h: H, at: best.f }; placed.push(best.bx); stats.labels++;
+          }
+        }
+        stats.ms = _ogNow() - t0;
+        return { routes: R, stats };
+      }
+      // The measures on the drawn paths: crossings (each crossing point), sharp crossings, links through classes (box plus pad),
+      // links hidden on top of another (parallel links drawn on the same line), link ends meeting a box closer than 4 px to
+      // another end, names over a class or another name, names with a link across them, bends.
+      function _ogRouteMetrics(pos, items, edges, routes, pad) {
+        const P = pos, N = items, n = P.length, E = edges.map(([s, t, w, lab]) => ({ s, t, lab: lab || 0 })), m = E.length, R = routes || E.map(() => null), pd = pad == null ? 9 : pad;
+        const PL = E.map((e, k) => (e.s === e.t && !(R[k] && R[k].loop) ? null : _ogRoutePoly(P[e.s], P[e.t], R[k], 8))), BB = PL.map((p) => p && _ogPolyBox(p));
+        let cross = 0, sharp = 0, thru = 0, hidden = 0, ends = 0, labelOver = 0, labelCrossed = 0, bends = 0;
+        for (let a = 0; a < m; a++) { if (!PL[a]) continue; bends += R[a] && R[a].bends ? R[a].bends.length : 0;
+          for (let b = a + 1; b < m; b++) { if (!PL[b]) continue; const e = E[a], f = E[b];
+            if (e.s === f.s || e.s === f.t || e.t === f.s || e.t === f.t) { // shares an end: hidden if it lies on the same line
+              if (e.s !== e.t && f.s !== f.t && Math.min(e.s, e.t) === Math.min(f.s, f.t) && Math.max(e.s, e.t) === Math.max(f.s, f.t)) {
+                const q = PL[b], p = PL[a], mp = p[p.length >> 1], mq = q[q.length >> 1], same = (p.length === 2 && q.length === 2) || Math.hypot(mp.x - mq.x, mp.y - mq.y) < 4; if (same) hidden++; }
+              continue; }
+            const [c, s] = _ogPolyCross(PL[a], PL[b], BB[a], BB[b]); cross += c; sharp += s; }
+          for (let v = 0; v < n; v++) if (v !== E[a].s && v !== E[a].t && _ogPolyThru(PL[a], BB[a], P, N, v, pd)) thru++;
+        }
+        // where each link meets each end's box
+        const meet = Array.from({ length: n }, () => []);
+        E.forEach((e, k) => { if (!PL[k] || e.s === e.t) return; for (const [v, seq] of [[e.s, PL[k]], [e.t, PL[k].slice().reverse()]]) {
+          const c = P[v], hw = N[v].w / 2, hh = N[v].h / 2, i = seq.findIndex((q) => Math.abs(q.x - c.x) > hw || Math.abs(q.y - c.y) > hh); if (i <= 0) { meet[v].push(seq[0]); continue; }
+          const a = seq[i - 1], b = seq[i]; let lo = 0, hi = 1; for (let it = 0; it < 20; it++) { const md = (lo + hi) / 2, x = a.x + md * (b.x - a.x), y = a.y + md * (b.y - a.y); if (Math.abs(x - c.x) > hw || Math.abs(y - c.y) > hh) hi = md; else lo = md; }
+          meet[v].push({ x: a.x + hi * (b.x - a.x), y: a.y + hi * (b.y - a.y) }); } });
+        meet.forEach((l) => { for (let i = 0; i < l.length; i++) for (let j = i + 1; j < l.length; j++) if (Math.hypot(l[i].x - l[j].x, l[i].y - l[j].y) < 4) ends++; });
+        const L = R.map((r, k) => (r && r.label ? { k, x1: r.label.x - r.label.w / 2, x2: r.label.x + r.label.w / 2, y1: r.label.y - r.label.h / 2, y2: r.label.y + r.label.h / 2 } : null)).filter(Boolean);
+        L.forEach((q, i) => {
+          for (let v = 0; v < n; v++) if (q.x1 < P[v].x + N[v].w / 2 && P[v].x - N[v].w / 2 < q.x2 && q.y1 < P[v].y + N[v].h / 2 && P[v].y - N[v].h / 2 < q.y2) labelOver++;
+          for (let j = i + 1; j < L.length; j++) { const r = L[j]; if (q.x1 < r.x2 && r.x1 < q.x2 && q.y1 < r.y2 && r.y1 < q.y2) labelOver++; }
+          const cx = (q.x1 + q.x2) / 2, cy = (q.y1 + q.y2) / 2, hw = (q.x2 - q.x1) / 2, hh = (q.y2 - q.y1) / 2;
+          for (let g = 0; g < m; g++) { if (g === q.k || !PL[g]) continue; const pl = PL[g]; for (let i2 = 0; i2 < pl.length - 1; i2++) if (_ogClSegBox(pl[i2].x - cx, pl[i2].y - cy, pl[i2 + 1].x - cx, pl[i2 + 1].y - cy, hw, hh)) { labelCrossed++; break; } }
+        });
+        let x1 = 1e18, y1 = 1e18, x2 = -1e18, y2 = -1e18, boxA = 0;
+        P.forEach((p, i) => { x1 = Math.min(x1, p.x - N[i].w / 2); x2 = Math.max(x2, p.x + N[i].w / 2); y1 = Math.min(y1, p.y - N[i].h / 2); y2 = Math.max(y2, p.y + N[i].h / 2); boxA += (N[i].w + 16) * (N[i].h + 12); });
+        PL.forEach((pl) => pl && pl.forEach((p) => { x1 = Math.min(x1, p.x); x2 = Math.max(x2, p.x); y1 = Math.min(y1, p.y); y2 = Math.max(y2, p.y); }));
+        L.forEach((q) => { x1 = Math.min(x1, q.x1); x2 = Math.max(x2, q.x2); y1 = Math.min(y1, q.y1); y2 = Math.max(y2, q.y2); });
+        return { cross, sharp, thru, hidden, ends, labelOver, labelCrossed, bends, area: (x2 - x1) * (y2 - y1) / boxA };
+      }
+      // ── end of the link routing ──
       // ── end of the layouts ──
