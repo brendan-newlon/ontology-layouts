@@ -139,7 +139,7 @@ label.tog { display: inline-flex; gap: 6px; align-items: center; cursor: pointer
 <li><strong>Crossing angle and angular resolution come next.</strong> A shallow crossing is harder to follow than a square one, and links that leave a class in almost the same direction are hard to tell apart.</li>
 <li><strong>Area matters,</strong> but less than all four.</li>
 </ul>
-<p>Two common measures are left out on purpose: how faithfully drawn distance follows graph distance (normalized stress), and how even the link lengths are. A business ontology often joins several domains, such as sales, finance and operations, each linked back to shared classes like Person or Organization. Drawing every related class close would pull the domains into each other; keeping each domain together, even when that makes a link to a shared class long, is the point. Length and distance are therefore not goals here, and the main rankings leave them out. Readers who value them, or a top-down hierarchy, can add them with the tabs above each ranking table; our layouts do poorly on distance and length.</p>
+<p>Two common measures are left out on purpose: how faithfully drawn distance follows graph distance (normalized stress), and how even the link lengths are. A business ontology often joins several domains, such as sales, finance and operations, each linked back to shared classes like Person or Organization. Drawing every related class close would pull the domains into each other; keeping each domain together, even when that makes a link to a shared class long, is the point. Length and distance are therefore not goals here, and the main rankings leave them out. Readers who value them, or a top-down hierarchy, can add them with the tabs above each ranking table; our layouts do poorly on distance and length. Measured over the 51 graphs: normalized stress is 0.085 after the stress placement alone, 0.132 after Tidy Stress's search, 0.146 for Best Read and 0.159 after the clean-up and the routing. Global distances are therefore about half as faithful. Local closeness is not lost: the share of a class's linked classes that are among its nearest classes is 55.8% after the stress placement and 55.6% at the end. A reader can still take nearness as linked; they should not read a long distance as unrelated.</p>
 <p>Below, a 179-class banking ontology: eleven class hierarchies joined by relationships. On the left is the open-source layout with the fewest crossed links plus links through classes on this ontology; on the right, ours. <em>Mark problems</em> shows every crossing (dot) and every link that runs through a class (red).</p>
 </div>
 
@@ -312,6 +312,7 @@ label.tog { display: inline-flex; gap: 6px; align-items: center; cursor: pointer
 <li><strong>Moving one class to a better spot</strong> to remove crossings is an established heuristic: Radermacher, Reichard, Rutter and Wagner (2018) move a vertex into its crossing-minimal region. The single moves here sample open cells instead of computing regions, and count links through classes and angles as well as crossings.</li>
 <li><strong>Turning what hangs off one class.</strong> Cut vertices and the parts of a graph they separate are classical (Hopcroft and Tarjan, 1973), and a tree hanging off one vertex can always be drawn without crossings. Using this as a repair after a layout, with the label-aware choice of side, is ours.</li>
 <li><strong>Spreading a region in slices.</strong> A push outward from a point that fades with distance resembles a local fisheye distortion (Sarkar and Brown, 1992), and evening out density resembles density-equalizing maps (Gastner and Newman, 2004). We have not seen it used this way: the point chosen from a count of readability problems after the layout, each slice weighted by the open space beyond it, and the push kept only if a few repair moves then make the drawing better.</li>
+<li><strong>Judged as graph drawing theory, nothing here is new:</strong> no new model, no bounds. The building blocks were chosen because they are the established best for the job, not as stand-ins for something to write from scratch. Stress placement is the standard for general undirected drawings and Pivot MDS its usual start. The new parts are applied: the clean-up and its passes, the routing joined to the placement, the work clock, and the evaluation against eleven libraries on graphs never seen during development.</li>
 <li><strong>Learning the procedure from a person.</strong> Interactive optimization with user hints is established (do Nascimento and Eades, 2005), but there the person guides one run. Here the person's principles, taught once, became a fixed procedure that runs without them on graphs they never saw.</li>
 </ul>
 </div>
@@ -632,7 +633,7 @@ clean:  rounds of single moves → leaf units → region spreading → group mov
 <li><strong>No study with people.</strong> The rankings use geometric measures only. A task-based study (find the common superclass of two classes, name a relationship's domain and range), timed and scored against tuned Graphviz, WebCola and a commercial engine with orthogonal routing, would settle which drawings read best; it has not been done.</li>
 <li><strong>Test graphs.</strong> The 15 development graphs are reconstructions and inventions of typical shapes. The graphs never seen during development add eight published ontologies and 18 Rome graphs, but not a large corpus such as the OBO Foundry or the Manchester OWL corpus, and the ontologies were drawn as classes with subclass and domain-to-range links only. Commercial engines (yFiles, Tom Sawyer) were not tested.</li>
 <li><strong>Very large graphs.</strong> Best Read leads up to the 1,204-class graph tested; at 3,335 classes d3-force draws far fewer problems (see <a href="#verylarge">Graphs of over a thousand classes</a>). Models of thousands of classes need a multilevel placement, which these layouts do not have. At 537 classes, tuned WebCola matches Mycelium's crossings (2,005 against 2,012), with more links through classes, after three minutes against Mycelium's one second.</li>
-<li><strong>Greedy local search and hand-set weights.</strong> The tidy-up and the clean-up keep only moves that improve the drawing, so they stop at local optima, and their weights (a crossed link costs 6, a link through a class 10) were set by benchmark on the development graphs, not derived. The unseen graphs show the settings carry over; they are not shown to be optimal.</li>
+<li><strong>Greedy local search and hand-set weights.</strong> The tidy-up and the clean-up keep only moves that improve the drawing, so they stop at local optima, and their weights (a crossed link costs 6, a link through a class 10) were set by benchmark on the development graphs, not derived. The unseen graphs show the settings carry over; they are not shown to be optimal. Two tests since: with every class name three times as long (15 development graphs) and on dense random graphs (40 to 150 classes, 6 to 10 links per class), every run finished within its time limit, gave the same drawing twice, and the clean-up still improved the drawing by its own weights. With long names it trades crossings for links through classes: 439 → 499 crossed links, 107 → 35 links through classes. On the dense graphs it reduced both in total (crossed links 27,920 → 25,600, links through classes 2,874 → 2,250). Turning or mirroring a whole branch round the one class that joins it to the rest (the move a greedy search cannot make one class at a time) was tried; see <a href="#tried">What did not work</a>.</li>
 <li><strong>The clean-up was taught by one person.</strong> Its principles come from one expert, shown on eight ontologies. Another reader may tidy differently, and the ideas not yet built in (curving links around hubs, tightening loops) may matter more elsewhere.</li>
 <li><strong>Seed-to-seed variation.</strong> The time limits count work rather than seconds, so a model gets the same drawing on any computer up to 2.5 times slower than the one the layouts were tuned on. The layouts do use a random seed, and different seeds give different drawings: over five seeds, totals over the 15 graphs differ by a few percent. Every result on this page uses seed 1.</li>
 <li><strong>Hub-heavy graphs stay hard.</strong> On the clinical-record graph, a 20-second exhaustive search reaches only about 150 crossings, against Mycelium's 164 with the clean-up. Large further gains need a different kind of drawing, such as bundled links or showing a hub more than once.</li>
@@ -654,6 +655,7 @@ clean:  rounds of single moves → leaf units → region spreading → group mov
 <li><strong>Clean-up: spreading every dense region.</strong> Spreading regions by density alone, problems or not, was never kept: it disturbed parts of the drawing that already read well.</li>
 <li><strong>Clean-up: judging a spread on its own.</strong> Without repair moves after it, no spread was ever kept, because pushing classes apart first adds crossings at the edge of the region.</li>
 <li><strong>Clean-up: regions that grow without limit.</strong> When every cell with a problem joined a region, the region covered the whole drawing and the spread became a zoom of everything. Regions are now only the hottest cells, at most one and a half link lengths across.</li>
+<li><strong>Turning or mirroring whole branches.</strong> A branch joined to the rest through one class only (by any number of links), turned round that class or mirrored, kept when its problems drop. It found a better place on 4 of 64 graphs and changed nothing in total over 51 graphs and three seeds (5,199 against 5,202 crossed links): the stress placement and the leaf-unit moves already leave no branch on the wrong side of its hub.</li>
 <li><strong>Clean-up: turning larger groups.</strong> Turning the parts hanging off a class as one piece, up to 12 classes, made no measurable difference over the limit of 4.</li>
 </ul></div>
 
@@ -685,8 +687,23 @@ const { routes, pos: finalPos } = OntologyLayouts.routeLinks(cleanPos, boxes, li
 const paths = OntologyLayouts.routePaths(finalPos, boxes, links, routes, { arrow: 8 });
 // options: bestRead(…, { roomy: true }) leaves 30% more space; routeLinks(…, { settle: false }) never moves a class;
 // OntologyLayouts.setTimeLimit(ms) sets the time for all three steps together (default 1500).
+// After an edit: pass the earlier drawing's positions (null for each new class) to keep the reader's picture.
+const d2 = OntologyLayouts.draw(boxes2, links2, { keep: oldPos });               // old classes move a few percent
+const d3 = OntologyLayouts.draw(boxes2, links2, { keep: oldPos, exact: true });  // old classes do not move at all
+// A relationship modelled as a class (reified, or an association class): mark it, and it is drawn on the line between the two.
+boxes2[7].between = [2, 5];                                                       // class 7 relates class 2 to class 5
 // Mycelium returns null for fewer than 8 classes; Best Read then uses Tidy Stress.</code></pre>
-<div class="prose"><p>The entry points are collected at the end of the code in <code>OntologyLayouts</code>: <code>draw</code>, <code>bestRead</code>, <code>tidyStress</code>, <code>mycelium</code>, <code>cleanUp</code>, <code>routeLinks</code>, <code>routePaths</code>, <code>groups</code>, <code>routeMetrics</code>, <code>metrics</code>, <code>score</code>, <code>setTimeLimit</code> and <code>now</code>.</p>
+<div class="prose"><p>The entry points are collected at the end of the code in <code>OntologyLayouts</code>: <code>draw</code>, <code>bestRead</code>, <code>tidyStress</code>, <code>mycelium</code>, <code>cleanUp</code>, <code>routeLinks</code>, <code>routePaths</code>, <code>groups</code>, <code>routeMetrics</code>, <code>metrics</code>, <code>score</code>, <code>setTimeLimit</code>, <code>now</code>, <code>placeNew</code> and <code>inline</code>.</p>
+<p><strong>Keeping the picture after an edit.</strong> Redrawing a model after an edit moves the classes a reader already knows: with 10% more classes, a redraw moves the old ones by about a third of the drawing's diagonal on average (25 graphs). <code>draw(…, { keep })</code> takes the earlier positions, with <code>null</code> for each new class. It places the new classes round the classes they link to, then lets the clean-up and the routing make local moves. With <code>exact: true</code> no old class moves at all, which suits a drawing arranged by hand. Over the 15 development and 10 held-out graphs:</p>
+<div class="tbl"><table>
+<thead><tr><th class="l">Classes added</th><th class="l">Drawing</th><th>Crossed links</th><th>Links through classes</th><th>Old classes moved</th><th>Mean time</th></tr></thead>
+<tbody>
+<tr><td class="l" rowspan="3">3% (54)</td><td class="l">keep, exact</td><td>834</td><td>44</td><td>none</td><td>26 ms</td></tr>
+<tr><td class="l">keep</td><td>807</td><td>18</td><td>2.3% of the diagonal</td><td>219 ms</td></tr>
+<tr><td class="l">redraw</td><td>685</td><td>13</td><td>30%</td><td>453 ms</td></tr>
+</tbody></table></div>
+<p>Keeping costs crossings, because the new links have to cross a picture that was not made for them; redrawing from time to time remains the way to a clean drawing. These numbers are the hard case: the added classes were picked at random, hubs included, where an edit usually adds a few classes in one place.</p>
+<p><strong>Relation classes.</strong> A relationship modelled as a class (RDF reification, an association class, an n-ary relation pattern) reads best on the line between the two classes it relates. Give its box <code>between: [subject, object]</code>, and after the clean-up it moves onto that line, as near the middle as there is room, when that costs it at most one crossing. On the 15 development graphs with every third relationship made a class (225 relation classes): relation classes bent by more than 45 degrees 100 → 66, mean angle at the relation class 129° → 147°, crossed links 521 → 507, links through classes 16 → 12. Without the hint a relation class is an ordinary class, because which classes are relationships is a modelling decision the links alone do not show.</p>
 <p><strong>Draw the classes where the routing leaves them.</strong> <code>routeLinks</code> returns <code>pos</code> as well as the routes: when a drawn link still runs through a class, the class is pushed off it and the links are routed again, and the result is kept only if it has fewer problems. Those positions are the final ones. A renderer that keeps the earlier positions draws routes that miss their classes. Pass <code>{ settle: false }</code> to keep every class where it is.</p>
 <p><strong>Arrowheads.</strong> <code>routePaths</code> turns each route into points from the border of one box to the border of the other. With <code>arrow</code>, each path stops that many pixels short of its end class along its last direction, so an arrowhead drawn from there to <code>tip</code>, at <code>angle</code>, touches the box without entering it. Spreading the arrow ends further apart on a shared side was tried and not kept: on the 15 development graphs it changed no drawing. Where arrowheads crowd, it is at a hub with more incoming links than its side has room for, and spacing them further adds crossings.</p>
 <p><strong>Groups.</strong> <code>groups</code>, and <code>draw</code>'s <code>groups</code>, give each class the number of its group of closely linked classes. These are the groups that Mycelium keeps together and the pull-in slides inward, for a renderer that draws hulls, swimlanes or background areas round related classes.</p>
@@ -1919,10 +1936,76 @@ const _ogHandTidy = (function () {
 function _ogLayoutCleanUp(pos, items, edges, startedAt, topDown) {
   const budgetMs = Math.min(500, 1500 - (_ogNow() - startedAt));
   const swap0 = (P) =&gt; (_OG_TUNE.noSwap ? P : _ogClocked(() =&gt; _ogLeafSwap(P, items, edges)));
-  const swap = (P) =&gt; { const Q = swap0(P); return _OG_TUNE.noPull || topDown ? Q : _ogClocked(() =&gt; _ogPullIn(Q, items, edges, _OG_TUNE.pull)); }; // a top-down tree keeps its levels
+  const swap1 = (P) =&gt; { const Q = swap0(P); return _OG_TUNE.noPull || topDown ? Q : _ogClocked(() =&gt; _ogPullIn(Q, items, edges, _OG_TUNE.pull)); }; // a top-down tree keeps its levels
+  const swap = (P) =&gt; { const Q = swap1(P); return topDown || !items.some((d) =&gt; d &amp;&amp; d.between) ? Q : _ogClocked(() =&gt; _ogInline(Q, items, edges)); };
   if (budgetMs &lt; 100) return swap(pos);
   const down = topDown ? edges.filter((e) =&gt; e[2] === 2 &amp;&amp; e[0] !== e[1]).map((e) =&gt; [e[0], e[1]]) : null;
   return swap(_ogClocked(() =&gt; _ogHandTidy.run(pos, items, edges.map((e) =&gt; ({ s: e[0], t: e[1] })), { budgetMs, down, ...(_OG_TUNE.cleanup || {}) }).P));
+}
+// Problems that involve class v: its links through other boxes (10 each, with a pad px margin) and across other links
+// (6 each), and other links through its box (10 each). Classes without a position yet (P[u] null) and their links are left out.
+function _ogVCost(P, items, EE, inc, v, pad) {
+  const n = P.length, m = EE.length; let c = 0; _ogWorkN[1] += n + m; _ogWorkN[0] += m * inc[v].length;
+  for (const k of inc[v]) { const e = EE[k], a = P[e.s], b = P[e.t]; if (!a || !b) continue;
+    for (let u = 0; u &lt; n; u++) if (u !== e.s &amp;&amp; u !== e.t &amp;&amp; P[u] &amp;&amp; _ogClSegBox(a.x - P[u].x, a.y - P[u].y, b.x - P[u].x, b.y - P[u].y, items[u].w / 2 + pad, items[u].h / 2 + pad)) c += 10;
+    for (let f = 0; f &lt; m; f++) { const g = EE[f]; if (g.s === e.s || g.s === e.t || g.t === e.s || g.t === e.t || !P[g.s] || !P[g.t]) continue; if (_ogClSegX(a, b, P[g.s], P[g.t])) c += 6; } }
+  for (let f = 0; f &lt; m; f++) { const g = EE[f]; if (g.s === v || g.t === v || !P[g.s] || !P[g.t]) continue; if (_ogClSegBox(P[g.s].x - P[v].x, P[g.s].y - P[v].y, P[g.t].x - P[v].x, P[g.t].y - P[v].y, items[v].w / 2 + pad, items[v].h / 2 + pad)) c += 10; }
+  return c;
+}
+// Keep a drawing the reader knows: classes with a position in keep ([{x, y}] or null per class) stay exactly there, and
+// each new class (null) goes where it has the fewest problems, then the shortest links, round the classes it links to
+// (or beside the drawing if it links to none yet), on a free spot. A second round reconsiders each new class once all
+// are placed. For redrawing a model after a small edit without moving what the reader has seen. Positions out.
+function _ogPlaceNew(keep, items, edges) {
+  const n = items.length, P = Array.from({ length: n }, (_, v) =&gt; (keep &amp;&amp; keep[v] &amp;&amp; isFinite(keep[v].x) &amp;&amp; isFinite(keep[v].y) ? { x: keep[v].x, y: keep[v].y } : null));
+  const fresh = []; for (let v = 0; v &lt; n; v++) if (!P[v]) fresh.push(v);
+  if (!fresh.length) return P;
+  const EE = edges.filter((e) =&gt; e[0] !== e[1]).map((e) =&gt; ({ s: e[0], t: e[1] })), inc = _ogClIncidence(n, EE), N = items.map((d) =&gt; ({ w: d.w + 16, h: d.h + 12 }));
+  const nbr = (v) =&gt; inc[v].map((k) =&gt; (EE[k].s === v ? EE[k].t : EE[k].s)).filter((u) =&gt; P[u]);
+  const free = (v, p) =&gt; { _ogWorkN[2] += n; for (let u = 0; u &lt; n; u++) if (u !== v &amp;&amp; P[u] &amp;&amp; Math.abs(P[u].x - p.x) &lt; (N[u].w + N[v].w) / 2 + 14 &amp;&amp; Math.abs(P[u].y - p.y) &lt; (N[u].h + N[v].h) / 2 + 14) return false; return true; };
+  const beside = (v) =&gt; { let x2 = -1e18, y1 = 1e18, y2 = -1e18, any = false; P.forEach((p, u) =&gt; { if (!p) return; any = true; x2 = Math.max(x2, p.x + N[u].w / 2); y1 = Math.min(y1, p.y); y2 = Math.max(y2, p.y); }); return any ? { x: x2 + N[v].w, y: (y1 + y2) / 2 } : { x: 0, y: 0 }; };
+  const place = (v) =&gt; { const nb = nbr(v); let c;
+    if (nb.length) { c = { x: 0, y: 0 }; nb.forEach((u) =&gt; { c.x += P[u].x / nb.length; c.y += P[u].y / nb.length; }); } else c = beside(v);
+    let best = null;
+    for (const r of [0, 70, 100, 140, 190, 250, 320, 400, 500, 620, 760, 920]) for (let k = 0; k &lt; (r ? 24 : 1); k++) {
+      const p = { x: c.x + r * Math.cos(k * Math.PI / 12), y: c.y + r * 0.7 * Math.sin(k * Math.PI / 12) }; if (!free(v, p)) continue;
+      P[v] = p; let len = 0; nb.forEach((u) =&gt; (len += Math.hypot(P[u].x - p.x, P[u].y - p.y)));
+      const sc = _ogVCost(P, items, EE, inc, v, 9) * 1e4 + len; P[v] = null; if (!best || sc &lt; best.sc) best = { sc, p }; }
+    P[v] = best ? best.p : c; };
+  // the new class with the most placed neighbours goes first
+  const todo = new Set(fresh);
+  while (todo.size) { let pick = -1, most = -1; for (const v of todo) { const c = nbr(v).length; if (c &gt; most) { most = c; pick = v; } } todo.delete(pick); place(pick); }
+  for (const v of fresh) { P[v] = null; place(v); }
+  if (_ogTr) _ogTr.snap("place", P);
+  return P;
+}
+// Relation classes (a relationship modelled as a class, as with reification or an association class): a box with
+// between: [subject, object] moves onto the line between those two classes, as near its middle as there is room, when that
+// costs it at most one crossing more than where it is (a link through a box counts 10, a crossing 6). Measured on the 15
+// development graphs with every third relationship made a class: relation classes bent by more than 45 degrees 100 -&gt; 66
+// of 225, with fewer crossed links and links through classes in total. Positions in, new positions out.
+function _ogInline(pos, items, edges) {
+  const n = pos.length, P = pos.map((p) =&gt; ({ x: p.x, y: p.y })), EE = edges.filter((e) =&gt; e[0] !== e[1]).map((e) =&gt; ({ s: e[0], t: e[1] })), m = EE.length;
+  const R = []; items.forEach((d, v) =&gt; { const b = d &amp;&amp; d.between; if (b &amp;&amp; b.length === 2 &amp;&amp; b[0] !== b[1] &amp;&amp; b.every((u) =&gt; u &gt;= 0 &amp;&amp; u &lt; n &amp;&amp; u !== v)) R.push(v); });
+  if (!R.length || n &gt; 1500) return P;
+  const inc = _ogClIncidence(n, EE), pad = 9;
+  const cost = (v) =&gt; _ogVCost(P, items, EE, inc, v, pad);
+  const clash = (v) =&gt; { _ogWorkN[2] += n; for (let u = 0; u &lt; n; u++) if (u !== v &amp;&amp; Math.abs(P[u].x - P[v].x) &lt; (items[u].w + items[v].w) / 2 + 10 &amp;&amp; Math.abs(P[u].y - P[v].y) &lt; (items[u].h + items[v].h) / 2 + 10) return true; return false; };
+  // how far a point lies off the line between the two classes, as a share of their distance
+  const off = (v, p) =&gt; { const [a, b] = items[v].between, A = P[a], B = P[b], L = Math.hypot(B.x - A.x, B.y - A.y) || 1; return Math.abs((B.x - A.x) * (p.y - A.y) - (B.y - A.y) * (p.x - A.x)) / L / L; };
+  let moved = 0;
+  for (let pass = 0; pass &lt; 2; pass++) for (const v of R) {
+    const [a, b] = items[v].between, A = P[a], B = P[b], dx = B.x - A.x, dy = B.y - A.y, L = Math.hypot(dx, dy) || 1, nx = -dy / L, ny = dx / L;
+    const old = P[v], f0 = off(v, old); if (f0 &lt; 0.05) continue;
+    const c0 = cost(v); let best = null;
+    for (const t of [0.5, 0.42, 0.58, 0.34, 0.66, 0.26, 0.74]) for (const d of [0, 12, -12, 24, -24, 40, -40]) {
+      const p = { x: A.x + dx * t + nx * d, y: A.y + dy * t + ny * d }; if (off(v, p) &gt;= f0 * 0.7) continue;
+      P[v] = p; if (!clash(v)) { const c1 = cost(v); if (c1 &lt;= c0 + 6) { const sc = c1 * 100 + off(v, p) * 50 + Math.abs(t - 0.5); if (!best || sc &lt; best.sc) best = { sc, p }; } }
+      P[v] = old; }
+    if (best) { P[v] = best.p; moved++; }
+  }
+  if (_ogTr &amp;&amp; moved) _ogTr.snap("inline", P);
+  return P;
 }
 // Two one-link classes of the same class trade places when that leaves fewer problems: a link through a box (with a
 // 9 px margin, as the drawing is measured) counts 10, a crossing 6. A long name beside a link that passes close by is
@@ -1933,12 +2016,7 @@ function _ogLeafSwap(pos, items, edges) {
   const leafOf = _ogClLeaves(n, EE), kids = new Map(), inc = _ogClIncidence(n, EE), pad = 9;
   leafOf.forEach((p, v) =&gt; { if (p &gt;= 0) { if (!kids.has(p)) kids.set(p, []); kids.get(p).push(v); } });
   // problems that involve class v: its links (crossings, through boxes) and links through its box
-  const cost = (v) =&gt; { let c = 0; _ogWorkN[1] += n + m; _ogWorkN[0] += m * inc[v].length;
-    for (const k of inc[v]) { const e = EE[k], a = P[e.s], b = P[e.t];
-      for (let u = 0; u &lt; n; u++) if (u !== e.s &amp;&amp; u !== e.t &amp;&amp; _ogClSegBox(a.x - P[u].x, a.y - P[u].y, b.x - P[u].x, b.y - P[u].y, items[u].w / 2 + pad, items[u].h / 2 + pad)) c += 10;
-      for (let f = 0; f &lt; m; f++) { const g = EE[f]; if (g.s === e.s || g.s === e.t || g.t === e.s || g.t === e.t) continue; if (_ogClSegX(a, b, P[g.s], P[g.t])) c += 6; } }
-    for (let f = 0; f &lt; m; f++) { const g = EE[f]; if (g.s === v || g.t === v) continue; if (_ogClSegBox(P[g.s].x - P[v].x, P[g.s].y - P[v].y, P[g.t].x - P[v].x, P[g.t].y - P[v].y, items[v].w / 2 + pad, items[v].h / 2 + pad)) c += 10; }
-    return c; };
+  const cost = (v) =&gt; _ogVCost(P, items, EE, inc, v, pad);
   let swaps = 0;
   kids.forEach((ks) =&gt; {
     if (ks.length &lt; 2 || ks.length &gt; 40) return;
@@ -2439,14 +2517,20 @@ function _ogRoutePaths(pos, items, edges, routes, opts) {
 // -&gt; { pos, routes, paths, groups, algo }. pos is the final position of every class: the link routing may push a class
 // off a link (settle), so draw the classes at pos, never at the layout's positions, or the paths will miss them.
 function _ogDraw(boxes, links, opts) {
-  const o = opts || {}, t0 = _ogNow(), lay = _ogAutoLayout(boxes, links, { seed: o.seed, roomy: o.roomy });
-  const clean = _ogLayoutCleanUp(lay.pos, boxes, links, t0, lay.algo === "tree");
-  const rr = _ogRouteLinks(clean, boxes, links, o.route);
+  const o = opts || {}, t0 = _ogNow();
+  // keep: an earlier drawing's positions (null for new classes). The new classes are placed round the old ones, then the
+  // clean-up and the routing make local moves (old classes move a few percent of the drawing, a redraw about a third).
+  // exact: true keeps every old class exactly where it was (no clean-up, the routing moves no class).
+  const ex = o.keep &amp;&amp; o.exact, lay = o.keep ? { pos: _ogClocked(() =&gt; _ogPlaceNew(o.keep, boxes, links)), algo: "keep" } : _ogAutoLayout(boxes, links, { seed: o.seed, roomy: o.roomy });
+  const clean = ex ? lay.pos : _ogLayoutCleanUp(lay.pos, boxes, links, t0, lay.algo === "tree");
+  const rr = _ogRouteLinks(clean, boxes, links, ex ? { settle: false, ...(o.route || {}) } : o.route);
   return { pos: rr.pos, routes: rr.routes, paths: _ogRoutePaths(rr.pos, boxes, links, rr.routes, { arrow: o.arrow || 0 }), groups: _ogGroups(boxes.length, links), algo: lay.algo };
 }
 // Loaded as a script, this is the library's one global; as a module, import it (see README, "Using the code").
 const OntologyLayouts = {
-  draw: _ogDraw,                 // (boxes, links, opts) -&gt; { pos, routes, paths, groups, algo }: everything below in one call
+  draw: _ogDraw,                 // (boxes, links, { arrow, seed, keep, exact, route }) -&gt; { pos, routes, paths, groups, algo }: everything below in one call
+  placeNew: _ogPlaceNew,         // (keep, boxes, links) -&gt; [{x, y}]: classes in keep stay, the others (null) are placed round them
+  inline: _ogInline,             // (pos, boxes, links) -&gt; [{x, y}]: boxes with between: [a, b] onto the line from a to b (cleanUp does this)
   bestRead: _ogAutoLayout,       // (boxes, links, { seed, roomy }) -&gt; { pos, algo, ... }: the more readable of the two
   tidyStress: _ogCompactLayout,  // same
   mycelium: _ogGroupedLayout,    // same, or null for fewer than 8 classes

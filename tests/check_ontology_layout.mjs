@@ -11,6 +11,10 @@
 //      them (settle), the moved drawing overlaps no class and has no more problems than the one routed without moving;
 //   6. moves: the passes after the clean-up (leaf swaps, leaves to open space, classes pushed off a link) never leave more
 //      problems on straight links (10 per link through a class with a 9 px margin, 6 per crossing) than without them.
+//   7. pull and api: pulling in never adds problems or overlaps; the public entry points exist and draw() returns paths that
+//      start and end on the boxes at the returned positions;
+//   8. keep: keeping an earlier drawing moves no old class (exact) or little (soft), puts no new class on another, and
+//      relation classes (between: [a, b]) go onto their line at a cost of at most one crossing each.
 // node tests/check_ontology_layout.mjs            -> "ontology layout clean" or the failures
 // node tests/check_ontology_layout.mjs --self-test -> runs each check on a deliberately broken copy and confirms it fails
 import fs from 'node:fs';
@@ -173,9 +177,44 @@ function checkApi(L) {
   });
   return bad;
 }
+// 8. keeping a drawing and relation classes: draw(..., { keep, exact: true }) leaves every old class exactly where it was and puts
+//    no new class on another; draw(..., { keep }) moves old classes less than a tenth of the drawing; a relation class
+//    (between: [a, b]) off the line with room on it goes onto the line, and inline() never adds more than one crossing per class
+function checkKeep(L) {
+  const bad = [], A = L.api || {};
+  if (typeof A.placeNew !== 'function' || typeof A.inline !== 'function') return ['OntologyLayouts.placeNew or .inline missing'];
+  const problems = (P, D, E) => { let c = 0;
+    E.forEach(([s, t], k) => { if (s === t) return; D.forEach((d, u) => { if (u !== s && u !== t && L.segBox(P[s].x - P[u].x, P[s].y - P[u].y, P[t].x - P[u].x, P[t].y - P[u].y, d.w / 2 + 9, d.h / 2 + 9)) c += 10; });
+      E.forEach(([a, b], f) => { if (f > k && a !== b && a !== s && a !== t && b !== s && b !== t && L.segX(P[s], P[t], P[a], P[b])) c += 6; }); });
+    return c; };
+  MODELS.forEach((m, i) => {
+    const n = m.D.length, isNew = (v) => v % 5 === 2, old = [...Array(n).keys()].filter((v) => !isNew(v)), at = new Map(old.map((v, j) => [v, j]));
+    const E1 = m.edges.filter((e) => !isNew(e[0]) && !isNew(e[1])).map((e) => [at.get(e[0]), at.get(e[1]), e[2]]);
+    const d1 = A.draw(old.map((v) => m.D[v]), E1, {}), keep = Array.from({ length: n }, (_, v) => (isNew(v) ? null : d1.pos[at.get(v)]));
+    const ex = A.draw(m.D, m.edges, { keep, exact: true }).pos;
+    if (old.some((v) => ex[v].x !== keep[v].x || ex[v].y !== keep[v].y)) bad.push(`model ${i}: exact keeping moved an old class`);
+    for (let u = 0; u < n; u++) for (let v = u + 1; v < n; v++) if ((isNew(u) || isNew(v)) && Math.abs(ex[u].x - ex[v].x) < (m.D[u].w + m.D[v].w) / 2 && Math.abs(ex[u].y - ex[v].y) < (m.D[u].h + m.D[v].h) / 2) { bad.push(`model ${i}: a new class placed on another`); u = v = 1e9; }
+    const so = A.draw(m.D, m.edges, { keep }).pos; let x1 = 1e18, x2 = -1e18, y1 = 1e18, y2 = -1e18, mv = 0;
+    old.forEach((v) => { x1 = Math.min(x1, keep[v].x); x2 = Math.max(x2, keep[v].x); y1 = Math.min(y1, keep[v].y); y2 = Math.max(y2, keep[v].y); mv += Math.hypot(so[v].x - keep[v].x, so[v].y - keep[v].y); });
+    if (mv / old.length > 0.1 * Math.hypot(x2 - x1, y2 - y1)) bad.push(`model ${i}: keeping moved the old classes by more than a tenth of the drawing`);
+  });
+  // a relation class pulled off its line, with room on the line
+  { const D = [{ w: 80, h: 30 }, { w: 80, h: 30 }, { w: 90, h: 30, between: [0, 1] }, { w: 80, h: 30 }], E = [[0, 2, 1], [2, 1, 1], [3, 0, 1]];
+    const P = A.inline([{ x: 0, y: 0 }, { x: 500, y: 0 }, { x: 250, y: 220 }, { x: -200, y: 0 }], D, E);
+    if (Math.abs(P[2].y) > 20) bad.push(`a relation class with room on its line stayed ${Math.round(P[2].y)} px off it`); }
+  // every third relationship made a class: inline adds at most one crossing (6) per relation class
+  MODELS.concat([model(7, 40, 6)]).forEach((m, i) => {
+    const D = m.D.map((d) => ({ ...d })), E = []; let r = 0, R = 0;
+    m.edges.forEach((e) => { if (e[2] === 1 && r++ % 3 === 0) { const c = D.length; D.push({ w: 90, h: 20, between: [e[0], e[1]] }); E.push([e[0], c, 1], [c, e[1], 1]); R++; } else E.push(e); });
+    const t0 = L.now(), P = L.auto(D, E, { seed: 1 }).pos.map((p) => ({ x: p.x, y: p.y })); L.sep(P, D.map((d) => ({ w: d.w + 16, h: d.h + 12 })), 6, 200);
+    const Q = A.inline(P, D, E), a = problems(P, D, E), b = problems(Q, D, E);
+    if (b > a + 6 * R) bad.push(`model ${i}: putting relation classes on their lines added ${b - a} in problems for ${R} classes`);
+  });
+  return bad;
+}
 function runAll(code) {
   const out = { clock: checkClock(code) }, L = load(code);
-  out.grid = checkGrid(L); out.repeatable = checkRepeatable(L); out.tree = checkTree(L); out.routes = checkRoutes(L); out.moves = checkMoves(L); out.pull = checkPull(L); out.api = checkApi(L);
+  out.grid = checkGrid(L); out.repeatable = checkRepeatable(L); out.tree = checkTree(L); out.routes = checkRoutes(L); out.moves = checkMoves(L); out.pull = checkPull(L); out.api = checkApi(L); out.keep = checkKeep(L);
   return out;
 }
 
@@ -202,6 +241,11 @@ if (process.argv.includes('--self-test')) {
     ['api', 'paths not clipped at the start class', code.replace('if (i < pl.length - 1 && inside(pl[i], A, items[s])) pl =', 'if (false) pl =')],
     ['api', 'draw() returns the positions before the routing moved classes', code.replace('return { pos: rr.pos, routes: rr.routes,', 'return { pos: clean, routes: rr.routes,')],
     ['api', 'no room left for the arrowhead', code.replace('let rem = Math.min(o.arrow,', 'let rem = Math.min(0,')],
+    ['keep', 'exact keeping still runs the clean-up', code.replace('const clean = ex ? lay.pos :', 'const clean = false ? lay.pos :')],
+    ['keep', 'new classes placed without looking for a free spot', code.replace('const free = (v, p) => { _ogWorkN[2] += n;', 'const free = (v, p) => { return true;')],
+    ['keep', 'the earlier positions ignored', code.replace('(keep && keep[v] && isFinite(keep[v].x)', '(false && keep[v] && isFinite(keep[v].x)')],
+    ['keep', 'relation classes left off their line', code.replace('if (!R.length || n > 1500) return P;', 'return P;')],
+    ['keep', 'relation classes moved whatever it costs', code.replace('if (c1 <= c0 + 6) {', 'if (true) {')],
   ];
   let ok = true;
   for (const [check, what, broken] of fixtures) {

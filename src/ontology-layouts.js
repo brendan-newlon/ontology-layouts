@@ -1223,10 +1223,76 @@
       function _ogLayoutCleanUp(pos, items, edges, startedAt, topDown) {
         const budgetMs = Math.min(500, 1500 - (_ogNow() - startedAt));
         const swap0 = (P) => (_OG_TUNE.noSwap ? P : _ogClocked(() => _ogLeafSwap(P, items, edges)));
-        const swap = (P) => { const Q = swap0(P); return _OG_TUNE.noPull || topDown ? Q : _ogClocked(() => _ogPullIn(Q, items, edges, _OG_TUNE.pull)); }; // a top-down tree keeps its levels
+        const swap1 = (P) => { const Q = swap0(P); return _OG_TUNE.noPull || topDown ? Q : _ogClocked(() => _ogPullIn(Q, items, edges, _OG_TUNE.pull)); }; // a top-down tree keeps its levels
+        const swap = (P) => { const Q = swap1(P); return topDown || !items.some((d) => d && d.between) ? Q : _ogClocked(() => _ogInline(Q, items, edges)); };
         if (budgetMs < 100) return swap(pos);
         const down = topDown ? edges.filter((e) => e[2] === 2 && e[0] !== e[1]).map((e) => [e[0], e[1]]) : null;
         return swap(_ogClocked(() => _ogHandTidy.run(pos, items, edges.map((e) => ({ s: e[0], t: e[1] })), { budgetMs, down, ...(_OG_TUNE.cleanup || {}) }).P));
+      }
+      // Problems that involve class v: its links through other boxes (10 each, with a pad px margin) and across other links
+      // (6 each), and other links through its box (10 each). Classes without a position yet (P[u] null) and their links are left out.
+      function _ogVCost(P, items, EE, inc, v, pad) {
+        const n = P.length, m = EE.length; let c = 0; _ogWorkN[1] += n + m; _ogWorkN[0] += m * inc[v].length;
+        for (const k of inc[v]) { const e = EE[k], a = P[e.s], b = P[e.t]; if (!a || !b) continue;
+          for (let u = 0; u < n; u++) if (u !== e.s && u !== e.t && P[u] && _ogClSegBox(a.x - P[u].x, a.y - P[u].y, b.x - P[u].x, b.y - P[u].y, items[u].w / 2 + pad, items[u].h / 2 + pad)) c += 10;
+          for (let f = 0; f < m; f++) { const g = EE[f]; if (g.s === e.s || g.s === e.t || g.t === e.s || g.t === e.t || !P[g.s] || !P[g.t]) continue; if (_ogClSegX(a, b, P[g.s], P[g.t])) c += 6; } }
+        for (let f = 0; f < m; f++) { const g = EE[f]; if (g.s === v || g.t === v || !P[g.s] || !P[g.t]) continue; if (_ogClSegBox(P[g.s].x - P[v].x, P[g.s].y - P[v].y, P[g.t].x - P[v].x, P[g.t].y - P[v].y, items[v].w / 2 + pad, items[v].h / 2 + pad)) c += 10; }
+        return c;
+      }
+      // Keep a drawing the reader knows: classes with a position in keep ([{x, y}] or null per class) stay exactly there, and
+      // each new class (null) goes where it has the fewest problems, then the shortest links, round the classes it links to
+      // (or beside the drawing if it links to none yet), on a free spot. A second round reconsiders each new class once all
+      // are placed. For redrawing a model after a small edit without moving what the reader has seen. Positions out.
+      function _ogPlaceNew(keep, items, edges) {
+        const n = items.length, P = Array.from({ length: n }, (_, v) => (keep && keep[v] && isFinite(keep[v].x) && isFinite(keep[v].y) ? { x: keep[v].x, y: keep[v].y } : null));
+        const fresh = []; for (let v = 0; v < n; v++) if (!P[v]) fresh.push(v);
+        if (!fresh.length) return P;
+        const EE = edges.filter((e) => e[0] !== e[1]).map((e) => ({ s: e[0], t: e[1] })), inc = _ogClIncidence(n, EE), N = items.map((d) => ({ w: d.w + 16, h: d.h + 12 }));
+        const nbr = (v) => inc[v].map((k) => (EE[k].s === v ? EE[k].t : EE[k].s)).filter((u) => P[u]);
+        const free = (v, p) => { _ogWorkN[2] += n; for (let u = 0; u < n; u++) if (u !== v && P[u] && Math.abs(P[u].x - p.x) < (N[u].w + N[v].w) / 2 + 14 && Math.abs(P[u].y - p.y) < (N[u].h + N[v].h) / 2 + 14) return false; return true; };
+        const beside = (v) => { let x2 = -1e18, y1 = 1e18, y2 = -1e18, any = false; P.forEach((p, u) => { if (!p) return; any = true; x2 = Math.max(x2, p.x + N[u].w / 2); y1 = Math.min(y1, p.y); y2 = Math.max(y2, p.y); }); return any ? { x: x2 + N[v].w, y: (y1 + y2) / 2 } : { x: 0, y: 0 }; };
+        const place = (v) => { const nb = nbr(v); let c;
+          if (nb.length) { c = { x: 0, y: 0 }; nb.forEach((u) => { c.x += P[u].x / nb.length; c.y += P[u].y / nb.length; }); } else c = beside(v);
+          let best = null;
+          for (const r of [0, 70, 100, 140, 190, 250, 320, 400, 500, 620, 760, 920]) for (let k = 0; k < (r ? 24 : 1); k++) {
+            const p = { x: c.x + r * Math.cos(k * Math.PI / 12), y: c.y + r * 0.7 * Math.sin(k * Math.PI / 12) }; if (!free(v, p)) continue;
+            P[v] = p; let len = 0; nb.forEach((u) => (len += Math.hypot(P[u].x - p.x, P[u].y - p.y)));
+            const sc = _ogVCost(P, items, EE, inc, v, 9) * 1e4 + len; P[v] = null; if (!best || sc < best.sc) best = { sc, p }; }
+          P[v] = best ? best.p : c; };
+        // the new class with the most placed neighbours goes first
+        const todo = new Set(fresh);
+        while (todo.size) { let pick = -1, most = -1; for (const v of todo) { const c = nbr(v).length; if (c > most) { most = c; pick = v; } } todo.delete(pick); place(pick); }
+        for (const v of fresh) { P[v] = null; place(v); }
+        if (_ogTr) _ogTr.snap("place", P);
+        return P;
+      }
+      // Relation classes (a relationship modelled as a class, as with reification or an association class): a box with
+      // between: [subject, object] moves onto the line between those two classes, as near its middle as there is room, when that
+      // costs it at most one crossing more than where it is (a link through a box counts 10, a crossing 6). Measured on the 15
+      // development graphs with every third relationship made a class: relation classes bent by more than 45 degrees 100 -> 66
+      // of 225, with fewer crossed links and links through classes in total. Positions in, new positions out.
+      function _ogInline(pos, items, edges) {
+        const n = pos.length, P = pos.map((p) => ({ x: p.x, y: p.y })), EE = edges.filter((e) => e[0] !== e[1]).map((e) => ({ s: e[0], t: e[1] })), m = EE.length;
+        const R = []; items.forEach((d, v) => { const b = d && d.between; if (b && b.length === 2 && b[0] !== b[1] && b.every((u) => u >= 0 && u < n && u !== v)) R.push(v); });
+        if (!R.length || n > 1500) return P;
+        const inc = _ogClIncidence(n, EE), pad = 9;
+        const cost = (v) => _ogVCost(P, items, EE, inc, v, pad);
+        const clash = (v) => { _ogWorkN[2] += n; for (let u = 0; u < n; u++) if (u !== v && Math.abs(P[u].x - P[v].x) < (items[u].w + items[v].w) / 2 + 10 && Math.abs(P[u].y - P[v].y) < (items[u].h + items[v].h) / 2 + 10) return true; return false; };
+        // how far a point lies off the line between the two classes, as a share of their distance
+        const off = (v, p) => { const [a, b] = items[v].between, A = P[a], B = P[b], L = Math.hypot(B.x - A.x, B.y - A.y) || 1; return Math.abs((B.x - A.x) * (p.y - A.y) - (B.y - A.y) * (p.x - A.x)) / L / L; };
+        let moved = 0;
+        for (let pass = 0; pass < 2; pass++) for (const v of R) {
+          const [a, b] = items[v].between, A = P[a], B = P[b], dx = B.x - A.x, dy = B.y - A.y, L = Math.hypot(dx, dy) || 1, nx = -dy / L, ny = dx / L;
+          const old = P[v], f0 = off(v, old); if (f0 < 0.05) continue;
+          const c0 = cost(v); let best = null;
+          for (const t of [0.5, 0.42, 0.58, 0.34, 0.66, 0.26, 0.74]) for (const d of [0, 12, -12, 24, -24, 40, -40]) {
+            const p = { x: A.x + dx * t + nx * d, y: A.y + dy * t + ny * d }; if (off(v, p) >= f0 * 0.7) continue;
+            P[v] = p; if (!clash(v)) { const c1 = cost(v); if (c1 <= c0 + 6) { const sc = c1 * 100 + off(v, p) * 50 + Math.abs(t - 0.5); if (!best || sc < best.sc) best = { sc, p }; } }
+            P[v] = old; }
+          if (best) { P[v] = best.p; moved++; }
+        }
+        if (_ogTr && moved) _ogTr.snap("inline", P);
+        return P;
       }
       // Two one-link classes of the same class trade places when that leaves fewer problems: a link through a box (with a
       // 9 px margin, as the drawing is measured) counts 10, a crossing 6. A long name beside a link that passes close by is
@@ -1237,12 +1303,7 @@
         const leafOf = _ogClLeaves(n, EE), kids = new Map(), inc = _ogClIncidence(n, EE), pad = 9;
         leafOf.forEach((p, v) => { if (p >= 0) { if (!kids.has(p)) kids.set(p, []); kids.get(p).push(v); } });
         // problems that involve class v: its links (crossings, through boxes) and links through its box
-        const cost = (v) => { let c = 0; _ogWorkN[1] += n + m; _ogWorkN[0] += m * inc[v].length;
-          for (const k of inc[v]) { const e = EE[k], a = P[e.s], b = P[e.t];
-            for (let u = 0; u < n; u++) if (u !== e.s && u !== e.t && _ogClSegBox(a.x - P[u].x, a.y - P[u].y, b.x - P[u].x, b.y - P[u].y, items[u].w / 2 + pad, items[u].h / 2 + pad)) c += 10;
-            for (let f = 0; f < m; f++) { const g = EE[f]; if (g.s === e.s || g.s === e.t || g.t === e.s || g.t === e.t) continue; if (_ogClSegX(a, b, P[g.s], P[g.t])) c += 6; } }
-          for (let f = 0; f < m; f++) { const g = EE[f]; if (g.s === v || g.t === v) continue; if (_ogClSegBox(P[g.s].x - P[v].x, P[g.s].y - P[v].y, P[g.t].x - P[v].x, P[g.t].y - P[v].y, items[v].w / 2 + pad, items[v].h / 2 + pad)) c += 10; }
-          return c; };
+        const cost = (v) => _ogVCost(P, items, EE, inc, v, pad);
         let swaps = 0;
         kids.forEach((ks) => {
           if (ks.length < 2 || ks.length > 40) return;
@@ -1743,14 +1804,20 @@
       // -> { pos, routes, paths, groups, algo }. pos is the final position of every class: the link routing may push a class
       // off a link (settle), so draw the classes at pos, never at the layout's positions, or the paths will miss them.
       function _ogDraw(boxes, links, opts) {
-        const o = opts || {}, t0 = _ogNow(), lay = _ogAutoLayout(boxes, links, { seed: o.seed, roomy: o.roomy });
-        const clean = _ogLayoutCleanUp(lay.pos, boxes, links, t0, lay.algo === "tree");
-        const rr = _ogRouteLinks(clean, boxes, links, o.route);
+        const o = opts || {}, t0 = _ogNow();
+        // keep: an earlier drawing's positions (null for new classes). The new classes are placed round the old ones, then the
+        // clean-up and the routing make local moves (old classes move a few percent of the drawing, a redraw about a third).
+        // exact: true keeps every old class exactly where it was (no clean-up, the routing moves no class).
+        const ex = o.keep && o.exact, lay = o.keep ? { pos: _ogClocked(() => _ogPlaceNew(o.keep, boxes, links)), algo: "keep" } : _ogAutoLayout(boxes, links, { seed: o.seed, roomy: o.roomy });
+        const clean = ex ? lay.pos : _ogLayoutCleanUp(lay.pos, boxes, links, t0, lay.algo === "tree");
+        const rr = _ogRouteLinks(clean, boxes, links, ex ? { settle: false, ...(o.route || {}) } : o.route);
         return { pos: rr.pos, routes: rr.routes, paths: _ogRoutePaths(rr.pos, boxes, links, rr.routes, { arrow: o.arrow || 0 }), groups: _ogGroups(boxes.length, links), algo: lay.algo };
       }
       // Loaded as a script, this is the library's one global; as a module, import it (see README, "Using the code").
       const OntologyLayouts = {
-        draw: _ogDraw,                 // (boxes, links, opts) -> { pos, routes, paths, groups, algo }: everything below in one call
+        draw: _ogDraw,                 // (boxes, links, { arrow, seed, keep, exact, route }) -> { pos, routes, paths, groups, algo }: everything below in one call
+        placeNew: _ogPlaceNew,         // (keep, boxes, links) -> [{x, y}]: classes in keep stay, the others (null) are placed round them
+        inline: _ogInline,             // (pos, boxes, links) -> [{x, y}]: boxes with between: [a, b] onto the line from a to b (cleanUp does this)
         bestRead: _ogAutoLayout,       // (boxes, links, { seed, roomy }) -> { pos, algo, ... }: the more readable of the two
         tidyStress: _ogCompactLayout,  // same
         mycelium: _ogGroupedLayout,    // same, or null for fewer than 8 classes
