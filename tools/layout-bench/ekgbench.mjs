@@ -1,6 +1,7 @@
 // Best Read with the clean-up, then the link routing, under experimental settings; straight and routed measures.
 // node ekgbench.mjs <set: dev|held|public|comma list> '<tuneJSON>' [names: 0|1] [seed]
 //   tune: merged into OURS.tune (_OG_TUNE): e.g. {"noTree":true}, {"cleanup":{"W":{"area":3}}}, {"cleanup":{"groupDepth":8}}
+//   {"timeLimit": 3000}: runs with that time limit (OURS.setTimeLimit) instead of 1500
 //   names 1: the layout gets each link's name width (edges[3]) and reserves room for it
 import { execSync } from 'node:child_process';
 const here = new URL('.', import.meta.url).pathname.replace(/^\/([A-Za-z]:)/, '$1');
@@ -9,6 +10,7 @@ const { MODELS, OURS: O } = await import('./_bundle.mjs');
 const { names } = await import('./routenames.mjs');
 const DEV = ['uni', 'hotel', 'org', 'brewery', 'trial', 'prov', 'telecom', 'sosa', 'crm', 'schema', 'health', 'fibo', 'pizza', 'bio', 'big'];
 const set = process.argv[2] || 'dev', tune = JSON.parse(process.argv[3] || '{}'), useNames = process.argv[4] === '1', seed = +(process.argv[5] || 1);
+if (tune.timeLimit) { O.setTimeLimit(tune.timeLimit); delete tune.timeLimit; } // the time limit for the layouts, clean-up and routing together (ms of work)
 Object.assign(O.tune, tune);
 const keys = set === 'dev' ? DEV : set === 'held' ? Object.keys(MODELS).filter((k) => k.startsWith('hx_') && !['hx_md1200'].includes(k)) : set === 'public' ? Object.keys(MODELS).filter((k) => k.startsWith('pb_') && k !== 'pb_cl') : set.split(',');
 const T = { s: {}, r: {}, ms: 0, msMax: 0, g: 0 }; const add = (a, m) => { for (const f in m) a[f] = (a[f] || 0) + m[f]; };
