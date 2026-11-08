@@ -8,11 +8,17 @@
 // slower the wait stays bounded and the drawing gets less work instead.
 const _ogWorkN = new Float64Array(7); // 0 link pairs tested, 1 link-box tests, 2 pair loops, 3 placement sums, 4 clean-up checks, 5 steps, 6 crossing-count visits
 const _OG_WORK_NS = [10, 30, 5, 5, 50, 600, 20], _OG_WALL_CAP = 2.5;
-const _ogClk = { depth: 0, v0: 0, w0: 0, lag: 0 };
-function _ogWorkMs() { let s = _ogClk.lag; for (let i = 0; i < 7; i++) s += _ogWorkN[i] * _OG_WORK_NS[i] / 1e6; return s; }
+// scale: the time limit as a multiple of the default (1.5 s for a layout and its clean-up). Every limit in the layouts is
+// on this clock, so a scale of 2 lets each step do twice the work before it stops (_ogSetTimeLimit).
+const _ogClk = { depth: 0, v0: 0, w0: 0, lag: 0, scale: 1 };
+function _ogWorkMs() { let s = 0; for (let i = 0; i < 7; i++) s += _ogWorkN[i] * _OG_WORK_NS[i] / 1e6; return _ogClk.lag + s / _ogClk.scale; }
+// Time limit for the layouts, the clean-up and the link routing together, in ms of the reference laptop (default 1500).
+// Longer limits let the steps that stop on time (restarts, crossing swaps, the clean-up, bends) do more; the same limit
+// gives the same drawing on any computer. Returns the previous limit.
+function _ogSetTimeLimit(ms) { const prev = 1500 * _ogClk.scale; _ogClk.scale = Math.max(0.05, (+ms || 1500) / 1500); return prev; }
 function _ogNow() {
   const v = _ogWorkMs(); if (!_ogClk.depth) return v;
-  const w = _ogClk.v0 + (performance.now() - _ogClk.w0) / _OG_WALL_CAP; return w > v ? w : v;
+  const w = _ogClk.v0 + (performance.now() - _ogClk.w0) / (_OG_WALL_CAP * _ogClk.scale); return w > v ? w : v;
 }
 // Runs fn as one timed run (nested calls join the outer run); afterwards the clock never runs backwards.
 function _ogClocked(fn) {
@@ -455,6 +461,8 @@ const _ogHandTidy = (function () {
       if (own) stage('single');
       const { issues } = total(M, true), hot = new Set(); issues.forEach((is) => is.nodes.forEach((v) => hot.add(v)));
       grid = openGrid(M);
+      // for the playback: the open-space grid this pass chose from, on its stage marker (record only)
+      if (rec) { const ph = log.findLast((x) => x.kind === 'phase'); if (ph && !ph.grid) ph.grid = { s: grid.s, x1: grid.x1, y1: grid.y1, cols: grid.cols, rows: grid.rows, busy: Array.from(grid.busy).join(''), reach: 1.8 * M.medLen }; }
       for (const v of hot) {
         if (up()) break;
         if (failedV.has(v) && quietSince(M.P[v], reach, failedV.get(v))) { stats.skipped++; tick('skipped'); continue; }
@@ -587,9 +595,97 @@ const _ogHandTidy = (function () {
 // topDown: the layout drew subclasses below their superclasses (the tree), and the clean-up keeps them there.
 function _ogLayoutCleanUp(pos, items, edges, startedAt, topDown) {
   const budgetMs = Math.min(500, 1500 - (_ogNow() - startedAt));
-  if (budgetMs < 100) return pos;
+  const swap = (P) => (_OG_TUNE.noSwap ? P : _ogClocked(() => _ogLeafSwap(P, items, edges)));
+  if (budgetMs < 100) return swap(pos);
   const down = topDown ? edges.filter((e) => e[2] === 2 && e[0] !== e[1]).map((e) => [e[0], e[1]]) : null;
-  return _ogClocked(() => _ogHandTidy.run(pos, items, edges.map((e) => ({ s: e[0], t: e[1] })), { budgetMs, down, ...(_OG_TUNE.cleanup || {}) }).P);
+  return swap(_ogClocked(() => _ogHandTidy.run(pos, items, edges.map((e) => ({ s: e[0], t: e[1] })), { budgetMs, down, ...(_OG_TUNE.cleanup || {}) }).P));
+}
+// Two one-link classes of the same class trade places when that leaves fewer problems: a link through a box (with a
+// 9 px margin, as the drawing is measured) counts 10, a crossing 6. A long name beside a link that passes close by is
+// the usual case: the shorter box fits where the longer one was in the way. Positions in, new positions out.
+function _ogLeafSwap(pos, items, edges) {
+  const n = pos.length, P = pos.map((p) => ({ x: p.x, y: p.y })), EE = edges.filter((e) => e[0] !== e[1]).map((e) => ({ s: e[0], t: e[1] })), m = EE.length;
+  if (!m || n > 1500) return P;
+  const leafOf = _ogClLeaves(n, EE), kids = new Map(), inc = _ogClIncidence(n, EE), pad = 9;
+  leafOf.forEach((p, v) => { if (p >= 0) { if (!kids.has(p)) kids.set(p, []); kids.get(p).push(v); } });
+  // problems that involve class v: its links (crossings, through boxes) and links through its box
+  const cost = (v) => { let c = 0; _ogWorkN[1] += n + m; _ogWorkN[0] += m * inc[v].length;
+    for (const k of inc[v]) { const e = EE[k], a = P[e.s], b = P[e.t];
+      for (let u = 0; u < n; u++) if (u !== e.s && u !== e.t && _ogClSegBox(a.x - P[u].x, a.y - P[u].y, b.x - P[u].x, b.y - P[u].y, items[u].w / 2 + pad, items[u].h / 2 + pad)) c += 10;
+      for (let f = 0; f < m; f++) { const g = EE[f]; if (g.s === e.s || g.s === e.t || g.t === e.s || g.t === e.t) continue; if (_ogClSegX(a, b, P[g.s], P[g.t])) c += 6; } }
+    for (let f = 0; f < m; f++) { const g = EE[f]; if (g.s === v || g.t === v) continue; if (_ogClSegBox(P[g.s].x - P[v].x, P[g.s].y - P[v].y, P[g.t].x - P[v].x, P[g.t].y - P[v].y, items[v].w / 2 + pad, items[v].h / 2 + pad)) c += 10; }
+    return c; };
+  let swaps = 0;
+  kids.forEach((ks) => {
+    if (ks.length < 2 || ks.length > 40) return;
+    for (let i = 0; i < ks.length; i++) for (let j = i + 1; j < ks.length; j++) {
+      const a = ks[i], b = ks[j], before = cost(a) + cost(b); if (!before) continue;
+      const pa = P[a]; P[a] = P[b]; P[b] = pa;
+      const after = cost(a) + cost(b);
+      // the two classes must not overlap anything at their new places
+      const clash = [a, b].some((v) => { for (let u = 0; u < n; u++) if (u !== v && Math.abs(P[u].x - P[v].x) < (items[u].w + items[v].w) / 2 + 4 && Math.abs(P[u].y - P[v].y) < (items[u].h + items[v].h) / 2 + 4) return true; return false; });
+      if (clash || after >= before - 0.5) { P[b] = P[a]; P[a] = pa; } else swaps++;
+    }
+  });
+  if (_ogTr && swaps) _ogTr.snap("swap", P);
+  let moved = 0;
+  const t0 = _ogNow(), late = () => _ogNow() - t0 > 120; // these passes stop after 120 ms of the work clock
+  const overlaps = (v) => { _ogWorkN[2] += n; for (let u = 0; u < n; u++) if (u !== v && Math.abs(P[u].x - P[v].x) < (items[u].w + items[v].w) / 2 + 6 && Math.abs(P[u].y - P[v].y) < (items[u].h + items[v].h) / 2 + 6) return true; return false; };
+  // "Don't fence me in": a one-link class whose link still crosses another link or runs through a class looks for the
+  // most open spot round its neighbor (out to 4 link lengths, 48 directions): problems first (a crossing 6, a link through a
+  // class 10, as in the link routing), then the most room
+  // around it (clearance to the nearest class or link, up to 120 px), then the shorter link. Taken only if its problems
+  // get fewer.
+  if (!_OG_TUNE.noFence) {
+    const L0 = 170, segs = EE;
+    const probs = (v, c) => { const p = leafOf[v]; let x = 0; _ogWorkN[0] += m; _ogWorkN[1] += n + m;
+      for (const g of segs) { if (g.s === v || g.t === v) continue;
+        if (g.s !== p && g.t !== p && _ogClSegX(P[p], c, P[g.s], P[g.t])) x += 6;
+        if (_ogClSegBox(P[g.s].x - c.x, P[g.s].y - c.y, P[g.t].x - c.x, P[g.t].y - c.y, items[v].w / 2 + pad, items[v].h / 2 + pad)) x += 10; }
+      for (let u = 0; u < n; u++) if (u !== v && u !== p && _ogClSegBox(P[p].x - P[u].x, P[p].y - P[u].y, c.x - P[u].x, c.y - P[u].y, items[u].w / 2 + pad, items[u].h / 2 + pad)) x += 10;
+      return x; };
+    const room = (v, c) => { let d = 120; _ogWorkN[1] += n + m;
+      for (let u = 0; u < n; u++) if (u !== v) { const gx = Math.abs(P[u].x - c.x) - (items[u].w + items[v].w) / 2, gy = Math.abs(P[u].y - c.y) - (items[u].h + items[v].h) / 2; d = Math.min(d, Math.max(gx, gy)); }
+      for (const g of segs) { if (g.s === v || g.t === v) continue; d = Math.min(d, _ogClDPS(c, P[g.s], P[g.t]) - Math.max(items[v].w, items[v].h) / 2); }
+      return d; };
+    for (let v = 0; v < n; v++) {
+      const p = leafOf[v]; if (p < 0) continue; if (late()) break; const now = probs(v, P[v]); if (!now) continue;
+      let best = null; const old = P[v];
+      for (let a = 0; a < 48; a++) { const th = a * Math.PI / 24, ux = Math.cos(th), uy = Math.sin(th) * 0.75;
+        const r0 = Math.min(((items[p].w + items[v].w) / 2 + 40) / Math.max(Math.abs(ux), 1e-6), ((items[p].h + items[v].h) / 2 + 40) / Math.max(Math.abs(uy), 1e-6));
+        for (let r = r0; r < r0 + 3 * L0; r += 30) { const c = { x: P[p].x + ux * r, y: P[p].y + uy * r }; P[v] = c;
+          const free = !overlaps(v); P[v] = old; if (!free) continue;
+          const x = probs(v, c); if (x >= now) continue; const sc = x * 200 - room(v, c) + 0.2 * r;
+          if (!best || sc < best.sc) best = { sc, c }; } }
+      if (best) { P[v] = best.c; moved++; }
+    }
+  }
+  if (_ogTr && moved) _ogTr.snap("fence", P);
+  if (_OG_TUNE.noNudge) return P;
+  // Then a class that a link runs through (or within the margin of) is pushed off the line, to the side it is on, just far
+  // enough to clear it (or twice that); or, when one end of the link is a one-link class, that end turns round its neighbor
+  // by 8 to 30 degrees. Kept only if the problems involving the moved class get fewer and it overlaps nothing.
+  const tryMove = (v, x, y) => { const o = P[v], before = cost(v); P[v] = { x, y }; if (!overlaps(v) && cost(v) < before - 0.5) return true; P[v] = o; return false; };
+  for (let pass = 0; pass < 3; pass++) {
+    let any = false;
+    for (let k = 0; k < m && !late(); k++) {
+      const e = EE[k]; _ogWorkN[1] += n;
+      for (let u = 0; u < n; u++) {
+        if (u === e.s || u === e.t) continue; const a = P[e.s], b = P[e.t], c = P[u];
+        if (!_ogClSegBox(a.x - c.x, a.y - c.y, b.x - c.x, b.y - c.y, items[u].w / 2 + pad, items[u].h / 2 + pad)) continue;
+        const L = Math.hypot(b.x - a.x, b.y - a.y) || 1, nx = -(b.y - a.y) / L, ny = (b.x - a.x) / L, d = (c.x - a.x) * nx + (c.y - a.y) * ny, sg = d >= 0 ? 1 : -1;
+        const need = Math.abs(nx) * items[u].w / 2 + Math.abs(ny) * items[u].h / 2 + pad + 2 - Math.abs(d);
+        let done = false;
+        for (const f of [1, 2]) if (!done && tryMove(u, c.x + sg * nx * need * f, c.y + sg * ny * need * f)) done = true;
+        for (const end of [e.s, e.t]) { if (done || leafOf[end] < 0) continue; const h = P[leafOf[end]], q = P[end], r = Math.hypot(q.x - h.x, q.y - h.y), a0 = Math.atan2(q.y - h.y, q.x - h.x);
+          for (const da of [8, -8, 15, -15, 30, -30]) { const t = a0 + da * Math.PI / 180; if (tryMove(end, h.x + r * Math.cos(t), h.y + r * Math.sin(t))) { done = true; break; } } }
+        if (done) { moved++; any = true; }
+      }
+    }
+    if (!any) break;
+  }
+  if (_ogTr && moved) _ogTr.snap("nudge", P);
+  return P;
 }
 root.HandTidy = _ogHandTidy; root.HandTidy.cleanUp = _ogLayoutCleanUp;
 })(typeof window !== 'undefined' ? window : globalThis);

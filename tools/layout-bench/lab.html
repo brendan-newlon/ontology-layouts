@@ -19,6 +19,10 @@ header h1 { font-size: 15px; margin: 0 8px 0 0; }
 select, button, input[type=text] { font: inherit; font-size: 13px; padding: 3px 8px; border: 1px solid var(--rule); border-radius: 6px; background: var(--paper); color: var(--ink); }
 button { cursor: pointer; } button:hover { border-color: var(--accent); }
 label.tog { display: inline-flex; gap: 5px; align-items: center; cursor: pointer; color: var(--muted); }
+#syncBar { display: inline-flex; gap: 8px; align-items: center; font-size: 12.5px; color: var(--muted); border: 1px solid var(--rule); border-radius: 6px; padding: 2px 8px; }
+#syncBar[hidden] { display: none; }
+#syncTxt { color: var(--ink); }
+.ev .pb { display: block; font-size: 11px; color: var(--muted); }
 .metrics { display: flex; flex-wrap: wrap; gap: 4px 14px; font-variant-numeric: tabular-nums; color: var(--muted); }
 .metrics b { color: var(--ink); }
 .metrics .up { color: var(--bad); } .metrics .down { color: var(--accent); }
@@ -99,6 +103,7 @@ aside h2 { font-size: 13px; margin: 0; padding: 8px 12px; border-bottom: 1px sol
   <select id="walkFrom" title="Which drawing the walk-through cleans up"><option value="start">from the starting layout</option><option value="here">from this drawing</option></select>
   <button id="routeBtn" title="Bend the links the way the link routing does after a layout: parallel links as arcs, links bent round classes in their way (the bends become handles you can edit)">Bend links</button>
   <a id="pbLink" href="playback.html" title="Watch the layout of this graph step by step">Playback ↗</a>
+  <span id="syncBar" hidden><label class="tog" title="Show the playback's current frame as it plays. Moving anything here stops following and sends your drawing to the playback, which continues from it."><input type="checkbox" id="syncFollow" checked> Follow the playback</label><span id="syncTxt"></span></span>
   <label class="tog"><input type="checkbox" id="marks" checked> Mark problems</label>
   <label class="tog"><input type="checkbox" id="handles" checked> Show bends</label>
   <div class="metrics" id="metrics"></div>
@@ -132,6 +137,8 @@ aside h2 { font-size: 13px; margin: 0; padding: 8px 12px; border-bottom: 1px sol
 <script src="models2.js"></script>
 <script src="models3.js"></script>
 <script src="models4.js"></script>
+<script src="models5.js"></script>
+<script src="models6.js"></script>
 <script src="engines3.js"></script>
 <script src="handtidy.js"></script>
 <script>
@@ -247,7 +254,9 @@ function restore(s) { G.P = s.P.map(([x, y]) => ({ x, y })); G.H = s.H.map((h) =
 function record(kind, detail, before) {
   const after = measure(), ev = { seq: S.events.length + 1, ms: Math.round(performance.now() - S.started), at: new Date().toISOString(), kind, ...detail };
   if (before) { ev.before = brief(before); ev.after = brief(after); ev.state = snapshot(); }
+  if (SYNC.on && SYNC.at) ev.playback = { ...SYNC.at };
   S.events.push(ev); showEvent(ev); persist();
+  if (SYNC.on && before && !SYNC_QUIET.has(kind)) syncEdit();
 }
 function describe(ev) {
   const m = ev.before ? ` <span class="m">crossings ${ev.before.cross}→${ev.after.cross}, through ${ev.before.thru}→${ev.after.thru}, sharp ${ev.before.sharp}→${ev.after.sharp}, cramped ${ev.before.tight}→${ev.after.tight}</span>` : '';
@@ -265,6 +274,7 @@ function describe(ev) {
     case 'walkthrough': return `<span class="d">Started a walk-through of the clean-up ${ev.from === 'start' ? 'from the starting layout' : 'from this drawing'} (${(ev.ms / 1000).toFixed(2)} s, ${ev.stages.length} stages)</span>`;
     case 'walk-closed': return `<span class="d">Closed the walk-through at step ${ev.atStep}; your drawing is back as it was</span>`;
     case 'route': return `<span class="d">Bent the links as the link routing does: ${ev.bent} links bent, ${ev.parallel} parallel links spread</span>` + m;
+    case 'playback': return `<span class="d">Opened from the playback at ${esc(ev.playback ? ev.playback.step : '')}, frame ${ev.playback ? ev.playback.frame + ' of ' + ev.playback.of : ''}</span>`;
     case 'resume': return `<span class="d">Came back to ${esc(ev.graph)}, continuing from where you left it</span>`;
     default: return esc(ev.kind);
   }
@@ -275,7 +285,8 @@ function showEvent(ev) {
   const d = document.createElement('div'); d.className = 'ev' + (ev.kind === 'note' ? ' note' : '') + (ev.undone ? ' undone' : '') + (ev.ignored ? ' ignored' : ''); d.dataset.seq = ev.seq;
   const ign = ev.kind === 'note' || ev.kind === 'resume' ? '' : `<button class="ign" data-seq="${ev.seq}" title="Mark this step as a test to leave out of the analysis">${ev.ignored ? 'keep' : 'ignore'}</button>`;
   const on = ev.kind === 'note' && ev.walk ? `<span class="on">On walk-through step ${ev.walk.step} (${esc(ev.walk.where)})</span>` : '';
-  d.innerHTML = ign + `<span class="t">${ev.seq} · ${(ev.ms / 1000).toFixed(0)} s</span>` + (ev.kind === 'note' ? on + esc(ev.text) : describe(ev));
+  const pb = ev.playback && ev.kind !== 'playback' ? `<span class="pb">During the playback's ${esc(ev.playback.step)}, frame ${ev.playback.frame} of ${ev.playback.of}</span>` : '';
+  d.innerHTML = ign + `<span class="t">${ev.seq} · ${(ev.ms / 1000).toFixed(0)} s</span>` + pb + (ev.kind === 'note' ? on + esc(ev.text) : describe(ev));
   $('log').appendChild(d); $('log').scrollTop = 1e9;
 }
 $('log').addEventListener('click', (e) => {
@@ -422,6 +433,7 @@ let lastPan = false;
 function sendNote() { const text = $('note').value.trim(); if (!text) return; $('note').value = '';
   const ev = { seq: S.events.length + 1, ms: Math.round(performance.now() - S.started), at: new Date().toISOString(), kind: 'note', text, selected: [...G.sel].map((i) => G.labels[i]), afterStep: S.events.length ? S.events[S.events.length - 1].seq : 0 };
   if (W) { const f = W.frames[W.i]; ev.walk = { walk: W.seq, step: W.i + 1, where: frameWhere(f), about: $('wWhat').textContent }; }
+  if (SYNC.on && SYNC.at) ev.playback = { ...SYNC.at };
   S.events.push(ev); showEvent(ev); persist(); }
 $('send').onclick = sendNote;
 // Clean up: the hand-style post-layout steps (handtidy.js), as one undoable step
@@ -599,7 +611,7 @@ $('handles').onchange = () => { draw(); record('toggle', { bends: $('handles').c
 // Bend links: the library's link routing on this drawing; its bends become this lab's bends (ports and names are not shown here)
 $('routeBtn').onclick = () => {
   if (W) return; const before = measure(), snap = snapshot();
-  const r = O.route(G.P, G.D, G.E.map((e) => [e.s, e.t, e.sub ? 2 : 1]), { ports: 0, labels: false });
+  const r = O.route(G.P, G.D, G.E.map((e) => [e.s, e.t, e.sub ? 2 : 1]), { ports: 0, labels: false, settle: false });
   G.H = r.routes.map((x) => x.bends.map((h) => ({ t: h.t, d: h.d }))); S.undo.push(snap);
   record('route', { bent: r.stats.bent, parallel: r.stats.parallel }, before); draw();
 };
@@ -607,12 +619,37 @@ $('relayout').onclick = () => load(G.key, $('algo').value, true);
 $('graph').onchange = () => load($('graph').value, $('algo').value, 'open');
 $('algo').onchange = () => load(G.key, $('algo').value, true);
 window.addEventListener('resize', () => { if (G.P.length) { fit(); draw(); } });
+// ---------- kept in step with the playback ----------
+// Opened from the playback (?sync=1): the drawing is the playback's current frame and follows it as it plays, until a class
+// is moved here; then each edit is sent back and the playback continues from it. Every event and note records the step.
+const SYNC = { on: false, follow: false, at: null, bc: 'BroadcastChannel' in window ? new BroadcastChannel('layout-sync') : null };
+const SYNC_QUIET = new Set(['layout', 'resume', 'playback', 'view', 'select', 'toggle', 'walk-step', 'walkthrough', 'walk-closed']);
+function applyFrame(m) {
+  if (!m || m.graph !== G.key || m.n !== G.labels.length) return false;
+  m.P.forEach((p, v) => { if (p) G.P[v] = { x: p[0], y: p[1] }; });
+  if (m.H && m.H.length === G.E.length) G.H = m.H.map((h) => h.map(([t, d]) => ({ t, d })));
+  SYNC.at = { step: m.step, group: m.group, key: m.key, frame: m.j + 1, of: m.of }; showSync(); return true;
+}
+function showSync() { $('syncBar').hidden = !SYNC.on; $('syncFollow').checked = SYNC.follow;
+  $('syncTxt').textContent = SYNC.at ? `${SYNC.follow ? 'Showing' : 'Edited from'} ${SYNC.at.step}, frame ${SYNC.at.frame} of ${SYNC.at.of}` : ''; }
+function syncEdit() { if (!SYNC.bc) return; SYNC.follow = false; showSync();
+  SYNC.bc.postMessage({ type: 'edit', graph: G.key, n: G.labels.length, P: G.P.map((p) => [Math.round(p.x * 10) / 10, Math.round(p.y * 10) / 10]), H: G.H.map((h) => h.map((x) => [x.t, x.d])) }); }
+function startSync() {
+  SYNC.on = true; SYNC.follow = true; let m = null; try { m = JSON.parse(localStorage.getItem('layout-sync:frame') || 'null'); } catch (e) {}
+  if (applyFrame(m)) { fit(); record('playback', {}, measure()); }
+  draw(); showSync(); if (SYNC.bc) SYNC.bc.postMessage({ type: 'hello' });
+}
+if (SYNC.bc) SYNC.bc.onmessage = (ev) => { const m = ev.data || {}; if (m.type === 'frame' && SYNC.on && SYNC.follow && !drag && !W && applyFrame(m)) draw(); };
+$('syncFollow').onchange = () => { SYNC.follow = $('syncFollow').checked; showSync(); if (SYNC.follow && SYNC.bc) SYNC.bc.postMessage({ type: 'hello' }); };
 // graph list: the 15 graphs of the write-up first
 const ORDER = ['prov', 'uni', 'hotel', 'org', 'brewery', 'trial', 'telecom', 'sosa', 'crm', 'schema', 'health', 'fibo', 'pizza', 'bio', 'big'];
 const names = { prov: 'PROV-O (30)', uni: 'University (14)', hotel: 'Hotel booking (13)', org: 'W3C ORG (15)', brewery: 'Brewery IoT (23)', trial: 'Clinical trial (24)', telecom: 'Telecom network (34)', sosa: 'SOSA/SSN (36)', crm: 'Customer 360 (31)', schema: 'schema.org core (49)', health: 'Clinical record, 3 hubs (53)', fibo: 'FIBO-like loans (59)', pizza: 'Pizza taxonomy (90)', bio: 'Biomedical taxonomy (115)', big: 'Bank (179)' };
 ORDER.filter((k) => MODELS[k]).forEach((k) => { const o = document.createElement('option'); o.value = k; o.textContent = names[k] || k; $('graph').appendChild(o); });
-const start = new URLSearchParams(location.search).get('graph') || 'prov'; $('graph').value = start;
-load(start, 'auto', 'open');
+const QS = new URLSearchParams(location.search), start = MODELS[QS.get('graph')] ? QS.get('graph') : 'prov';
+if (!ORDER.includes(start)) { const o = document.createElement('option'); o.value = start; o.textContent = (MODELS[start].name || start).replace(/^Public: /, ''); $('graph').appendChild(o); }
+$('graph').value = start;
+if (QS.get('sync')) { const a = QS.get('algo'); if (a && [...$('algo').options].some((o) => o.value === a)) $('algo').value = a; load(start, $('algo').value, 'new').then(startSync); }
+else load(start, 'auto', 'open');
 </script>
 </body>
 </html>

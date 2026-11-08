@@ -7,7 +7,10 @@
 //   4. tree: a pure taxonomy drawn as a tree, and cleaned up keeping it top-down, has no problem and every subclass below;
 //   5. routes: the link routing after a layout leaves no parallel link hidden on another, gives every self-link a loop,
 //      never makes a drawing worse than straight links (10 per link through a class, 6 per crossing), gives the same routes
-//      twice, and counts its work on the work clock (so its time limit holds).
+//      twice, and counts its work on the work clock (so its time limit holds); when it moves classes off links still through
+//      them (settle), the moved drawing overlaps no class and has no more problems than the one routed without moving;
+//   6. moves: the passes after the clean-up (leaf swaps, leaves to open space, classes pushed off a link) never leave more
+//      problems on straight links (10 per link through a class with a 9 px margin, 6 per crossing) than without them.
 // node tests/check_ontology_layout.mjs            -> "ontology layout clean" or the failures
 // node tests/check_ontology_layout.mjs --self-test -> runs each check on a deliberately broken copy and confirms it fails
 import fs from 'node:fs';
@@ -19,7 +22,7 @@ function layoutCode(src) {
   return src.slice(a, b).replace(/\r\n/g, '\n');
 }
 function load(code) {
-  const api = 'return { auto: _ogAutoLayout, tree: _ogTreeLayout, cleanUp: _ogLayoutCleanUp, tidy: _ogHandTidy, now: _ogNow, sep: _ogClSeparate, route: _ogRouteLinks, routeMetrics: _ogRouteMetrics };';
+  const api = 'return { auto: _ogAutoLayout, tree: _ogTreeLayout, cleanUp: _ogLayoutCleanUp, tidy: _ogHandTidy, now: _ogNow, sep: _ogClSeparate, route: _ogRouteLinks, routeMetrics: _ogRouteMetrics, tune: _OG_TUNE, segX: _ogClSegX, segBox: _ogClSegBox };';
   return new Function('window', 'document', 'state', 'log', code + '\n' + api)({}, {}, { ui: {} }, () => {});
 }
 // small generated models: a few taxonomies with property links between them, fixed seeds
@@ -86,7 +89,10 @@ function checkRoutes(L) {
     const t0 = L.now(), P = L.auto(m.D, edges, { seed: 1 }).pos.map((p) => ({ x: p.x, y: p.y })); L.sep(P, m.D.map((d) => ({ w: d.w + 16, h: d.h + 12 })), 6, 200);
     const Q = L.cleanUp(P, m.D, edges, t0).map((p) => ({ x: p.x, y: p.y }));
     const w0 = performance.now(), r = L.route(Q, m.D, edges), wall = performance.now() - w0, r2 = L.route(Q, m.D, edges);
-    const st = L.routeMetrics(Q, m.D, edges, edges.map(() => null)), ro = L.routeMetrics(Q, m.D, edges, r.routes), cost = (x) => 10 * x.thru + 6 * x.cross;
+    const st = L.routeMetrics(Q, m.D, edges, edges.map(() => null)), ro = L.routeMetrics(r.pos, m.D, edges, r.routes), cost = (x) => 10 * x.thru + 6 * x.cross;
+    const rs = L.route(Q, m.D, edges, { settle: false }), so = L.routeMetrics(Q, m.D, edges, rs.routes), score = (x) => x.cross * 6 + x.thru * 10 + x.labelOver * 8 + x.labelCrossed * 1.5;
+    if (score(ro) > score(so)) bad.push(`model ${i}: moving classes off links left more problems (${score(ro)} against ${score(so)})`);
+    r.pos.forEach((p, u) => r.pos.forEach((q, w) => { if (w > u && Math.abs(p.x - q.x) < (m.D[u].w + m.D[w].w) / 2 && Math.abs(p.y - q.y) < (m.D[u].h + m.D[w].h) / 2) bad.push(`model ${i}: classes ${u} and ${w} overlap after the routing`); }));
     if (ro.hidden) bad.push(`model ${i}: ${ro.hidden} parallel links hidden on another`);
     if (edges.some(([s, t], k) => s === t && !r.routes[k].loop)) bad.push(`model ${i}: a self-link without a loop`);
     if (cost(ro) > cost(st)) bad.push(`model ${i}: routed links worse than straight (${ro.cross} crossed, ${ro.thru} through classes against ${st.cross}, ${st.thru})`);
@@ -96,11 +102,36 @@ function checkRoutes(L) {
   // the work counted must keep up with the time taken, on a dense model where routing has plenty to do
   const d = model(4, 90, 140), Pd = L.auto(d.D, d.edges, { seed: 1 }).pos, w0 = performance.now(), rd = L.route(Pd, d.D, d.edges), wall = performance.now() - w0;
   if (wall > 2 * rd.stats.work + 25) bad.push(`dense model: routing took ${Math.round(wall)} ms but counted ${Math.round(rd.stats.work)} ms of work`);
+  // moving classes off links where some links still run through classes after the bends: two denser models
+  [model(5, 40, 60), model(6, 60, 90)].forEach((d2, i) => {
+    const P2 = L.auto(d2.D, d2.edges, { seed: 1 }).pos, score = (x) => x.cross * 6 + x.thru * 10 + x.labelOver * 8 + x.labelCrossed * 1.5;
+    const a = L.route(P2, d2.D, d2.edges), b = L.route(P2, d2.D, d2.edges, { settle: false });
+    if (process.env.CHECK_VERBOSE) console.log('settle model', i, 'moved', a.stats.settled || 0, score(L.routeMetrics(a.pos, d2.D, d2.edges, a.routes)), score(L.routeMetrics(P2, d2.D, d2.edges, b.routes)));
+    if (score(L.routeMetrics(a.pos, d2.D, d2.edges, a.routes)) > score(L.routeMetrics(P2, d2.D, d2.edges, b.routes))) bad.push(`dense model ${i}: moving classes off links left more problems`);
+  });
+  return bad;
+}
+// 6. moves after the clean-up
+function checkMoves(L) {
+  const bad = [];
+  const problems = (P, D, E) => { let c = 0;
+    E.forEach(([s, t], k) => { if (s === t) return; D.forEach((d, u) => { if (u !== s && u !== t && L.segBox(P[s].x - P[u].x, P[s].y - P[u].y, P[t].x - P[u].x, P[t].y - P[u].y, d.w / 2 + 9, d.h / 2 + 9)) c += 10; });
+      E.forEach(([a, b], f) => { if (f > k && a !== b && a !== s && a !== t && b !== s && b !== t && L.segX(P[s], P[t], P[a], P[b])) c += 6; }); });
+    return c; };
+  MODELS.concat([model(7, 40, 6), model(8, 60, 10)]).forEach((m, i) => {
+    const run = (off) => { Object.assign(L.tune, off ? { noSwap: true, noFence: true, noNudge: true } : { noSwap: false, noFence: false, noNudge: false });
+      const t0 = L.now(), P = L.auto(m.D, m.edges, { seed: 1 }).pos.map((p) => ({ x: p.x, y: p.y })); L.sep(P, m.D.map((d) => ({ w: d.w + 16, h: d.h + 12 })), 6, 200);
+      // a tiny time limit for the clean-up itself, so both runs clean up the same way and only the passes after it differ
+      return L.cleanUp(P, m.D, m.edges, t0 - 5000); };
+    const a = problems(run(true), m.D, m.edges), b = problems(run(false), m.D, m.edges);
+    Object.assign(L.tune, { noSwap: false, noFence: false, noNudge: false });
+    if (b > a) bad.push(`model ${i}: the passes after the clean-up left more problems (${b} against ${a})`);
+  });
   return bad;
 }
 function runAll(code) {
   const out = { clock: checkClock(code) }, L = load(code);
-  out.grid = checkGrid(L); out.repeatable = checkRepeatable(L); out.tree = checkTree(L); out.routes = checkRoutes(L);
+  out.grid = checkGrid(L); out.repeatable = checkRepeatable(L); out.tree = checkTree(L); out.routes = checkRoutes(L); out.moves = checkMoves(L);
   return out;
 }
 
@@ -117,7 +148,10 @@ if (process.argv.includes('--self-test')) {
     ['routes', 'self-links left without a loop', code.replace('R[k].loop = [{', 'R[k].nope = [{')],
     ['routes', 'bends kept even when they make things worse', code.replace('if (r.c < best.c - 0.5) { best = r; bestW = w; }', 'if (r.c > best.c) { best = r; bestW = w; }').replace('if (bestW !== b.way && best.c < c0 - 0.5) {', 'if (bestW !== b.way) {')],
     ['routes', 'the routing checks not counted on the work clock', code.replace('_ogWorkN[2] += 14 * (n + m) + pl.length * 28; _ogWorkN[5]++;', '').replace('_ogClSegX(a, b, cc, d)', '_ogFreeX(a, b, cc, d)').replace('if (_ogClSegBox(ax, ay, bx, by, hw, hh)) return true;', 'if (_ogFreeBox(ax, ay, bx, by, hw, hh)) return true;')
-      + '\nfunction _ogFreeX(a, b, c, d) { const w = _ogWorkN[0], r = _ogClSegX(a, b, c, d); _ogWorkN[0] = w; return r; }\nfunction _ogFreeBox(a, b, c, d, e, f) { const w = _ogWorkN[1], r = _ogClSegBox(a, b, c, d, e, f); _ogWorkN[1] = w; return r; }\n']
+      + '\nfunction _ogFreeX(a, b, c, d) { const w = _ogWorkN[0], r = _ogClSegX(a, b, c, d); _ogWorkN[0] = w; return r; }\nfunction _ogFreeBox(a, b, c, d, e, f) { const w = _ogWorkN[1], r = _ogClSegBox(a, b, c, d, e, f); _ogWorkN[1] = w; return r; }\n'],
+    ['routes', 'classes pushed onto the link and kept even when worse', code.replace('if (score(_ogRouteMetrics(Q, items, edges, r2.routes, o.pad)) < score(_ogRouteMetrics(pos, items, edges, r.routes, o.pad)))', 'if (true)').replace('best = { need, nx: (dd < 0 ? -1 : 1) * nx, ny: (dd < 0 ? -1 : 1) * ny }', 'best = { need: need + 2 * Math.abs(dd), nx: (dd < 0 ? 1 : -1) * nx, ny: (dd < 0 ? 1 : -1) * ny }')],
+    ['moves', 'a class pushed off a link even when that is worse', code.replace('if (!overlaps(v) && cost(v) < before - 0.5) return true;', 'if (!overlaps(v)) return true;')],
+    ['moves', 'a leaf moved to the spot with the most problems', code.replace('if (x >= now) continue;', 'if (x > 1e9) continue;').replace('const sc = x * 200 - room(v, c) + 0.2 * r;', 'const sc = -x * 200;')],
   ];
   let ok = true;
   for (const [check, what, broken] of fixtures) {
