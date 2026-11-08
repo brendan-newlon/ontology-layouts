@@ -423,7 +423,8 @@
         // halo (cfg.halo, off by default): a class that hides k one-link classes stands apart from the rest by sqrt(k) × L / π, as if it were a disc
         if (cfg.halo) {
           const nl = new Array(m).fill(0); leafOf.forEach((p, v) => { if (p >= 0 && ci.has(p)) nl[ci.get(p)]++; });
-          const R = nl.map((k) => cfg.halo * Math.sqrt(k) * L / Math.PI);
+          // cfg.haloMin2: only a class hiding two or more leaves gets a halo, of sqrt(k - 1) × L / π
+          const R = nl.map((k) => (cfg.haloMin2 ? (k >= 2 ? Math.sqrt(k - 1) : 0) : Math.sqrt(k)) * cfg.halo * L / Math.PI);
           for (let i = 0; i < m; i++) for (let j = 0; j < m; j++) if (i !== j) D[i][j] += R[i] + R[j];
         }
         const NC = core.map((v) => N[v]), EC = EE.filter((e) => ci.has(e.s) && ci.has(e.t)).map((e) => ({ s: ci.get(e.s), t: ci.get(e.t) }));
