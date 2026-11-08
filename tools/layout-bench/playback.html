@@ -6,33 +6,45 @@
 <title>Layout Playback</title>
 <style>
 :root { --bg: #f4f3ee; --paper: #fff; --ink: #1d232b; --muted: #5d6673; --rule: #d9d6cc; --accent: #2f6b4f; --box: #eef3fb; --box-line: #6d86b0;
-  --sub: #6f9a54; --rel: #8b97a8; --bad: #c43d32; --warn: #c98a12; --new: #e0a100; --name: #4b5563; --name-bg: #fffdf5; }
+  --sub: #6f9a54; --rel: #8b97a8; --bad: #c43d32; --warn: #c98a12; --new: #e0a100; --name: #4b5563; --name-bg: #fffdf5;
+  --ov-grid: #2f9d6a; --ov-slice: #c98a12; --ov-group: #c2417a; --ov-stress: #7c5cd6; --ov-extent: #5d6673; --ov-clear: #1793ad; }
 @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) { --bg: #15181c; --paper: #1c2026; --ink: #e6e8eb; --muted: #9aa4b1; --rule: #30353d; --accent: #7cc39e;
-  --box: #233041; --box-line: #6f8db8; --sub: #8fbf6f; --rel: #6f7b8c; --bad: #ff6f61; --warn: #f0b44a; --new: #ffcc33; --name: #b8c0cc; --name-bg: #22262d; color-scheme: dark; } }
+  --box: #233041; --box-line: #6f8db8; --sub: #8fbf6f; --rel: #6f7b8c; --bad: #ff6f61; --warn: #f0b44a; --new: #ffcc33; --name: #b8c0cc; --name-bg: #22262d;
+  --ov-grid: #5fd39a; --ov-slice: #f0b44a; --ov-group: #f07aae; --ov-stress: #a98bff; --ov-extent: #9aa4b1; --ov-clear: #3fc8e4; color-scheme: dark; } }
 * { box-sizing: border-box; }
 html, body { height: 100%; }
-body { margin: 0; background: var(--bg); color: var(--ink); font: 14px/1.45 "Segoe UI", system-ui, sans-serif; display: grid; grid-template-rows: auto 1fr auto; }
-header, footer { display: flex; flex-wrap: wrap; gap: 8px 14px; align-items: center; padding: 8px 14px; background: var(--paper); }
-header { border-bottom: 1px solid var(--rule); } footer { border-top: 1px solid var(--rule); }
+body { margin: 0; background: var(--bg); color: var(--ink); font: 14px/1.45 "Segoe UI", system-ui, sans-serif; display: grid; grid-template-rows: auto auto minmax(0, 1fr) auto; }
+[hidden] { display: none !important; }
+header, footer, nav { display: flex; flex-wrap: wrap; gap: 8px 14px; align-items: center; padding: 7px 14px; background: var(--paper); }
+header { border-bottom: 1px solid var(--rule); } footer { border-top: 1px solid var(--rule); } nav { border-bottom: 1px solid var(--rule); padding-top: 4px; padding-bottom: 5px; }
 header h1 { font-size: 15px; margin: 0 8px 0 0; }
+nav .lbl { font-size: 11px; text-transform: uppercase; letter-spacing: .05em; color: var(--muted); }
 select, button, input { font: inherit; font-size: 13px; padding: 3px 8px; border: 1px solid var(--rule); border-radius: 6px; background: var(--paper); color: var(--ink); }
 input[type=number] { width: 64px; } input[type=range] { padding: 0; }
 button { cursor: pointer; } button:hover { border-color: var(--accent); } button:disabled { opacity: .45; cursor: default; }
 label.tog { display: inline-flex; gap: 5px; align-items: center; cursor: pointer; color: var(--muted); font-size: 13px; }
+label.tog .sw { margin-right: 0; }
 #status { color: var(--muted); font-size: 12px; }
+#editBar { display: none; gap: 8px; align-items: center; font-size: 12.5px; color: var(--new); }
+#editBar.on { display: inline-flex; }
 a { color: var(--accent); }
-main { display: grid; grid-template-columns: 1fr 390px; min-height: 0; }
+main { display: grid; grid-template-columns: 1fr 420px; min-height: 0; }
 #stage { position: relative; min-width: 0; min-height: 0; }
 #svg { width: 100%; height: 100%; display: block; background: var(--bg); touch-action: none; user-select: none; cursor: grab; }
 #caption { position: absolute; left: 12px; top: 10px; max-width: min(560px, calc(100% - 24px)); background: color-mix(in srgb, var(--paper) 90%, transparent); border: 1px solid var(--rule); border-radius: 8px; padding: 8px 10px; pointer-events: none; }
 #caption .k { font-size: 11px; text-transform: uppercase; letter-spacing: .05em; color: var(--muted); }
 #caption .t { font-weight: 600; }
 #caption .d { font-size: 12.5px; color: var(--muted); margin-top: 2px; }
+#caption .x { font-size: 12.5px; color: var(--ink); margin-top: 3px; }
 #counts { position: absolute; right: 12px; top: 10px; background: color-mix(in srgb, var(--paper) 90%, transparent); border: 1px solid var(--rule); border-radius: 8px; padding: 6px 10px; font-size: 12px; font-variant-numeric: tabular-nums; color: var(--muted); display: grid; grid-template-columns: auto auto; gap: 0 10px; pointer-events: none; }
 #counts b { color: var(--ink); text-align: right; }
+#legend { position: absolute; left: 12px; bottom: 10px; max-width: min(460px, calc(100% - 24px)); background: color-mix(in srgb, var(--paper) 92%, transparent); border: 1px solid var(--rule); border-radius: 8px; padding: 6px 10px; font-size: 12px; color: var(--muted); pointer-events: none; display: none; }
+#legend div { display: flex; gap: 7px; align-items: baseline; padding: 1px 0; }
+#legend i { flex: none; width: 14px; height: 10px; border-radius: 2px; display: inline-block; }
+#legend b { color: var(--ink); font-weight: 600; }
 aside { border-left: 1px solid var(--rule); background: var(--paper); overflow-y: auto; padding: 10px 12px; display: grid; gap: 10px; align-content: start; }
-aside h2 { font-size: 13px; margin: 0; display: flex; justify-content: space-between; align-items: baseline; }
-aside h2 small { font-weight: 400; color: var(--muted); }
+aside h2 { font-size: 13px; margin: 0; display: flex; justify-content: space-between; align-items: baseline; gap: 8px; }
+aside h2 small { font-weight: 400; color: var(--muted); font-size: 12px; }
 .hint { font-size: 12px; color: var(--muted); margin: 0; }
 table { border-collapse: collapse; width: 100%; font-size: 12.5px; }
 td { padding: 3px 4px; border-bottom: 1px solid var(--rule); vertical-align: middle; }
@@ -40,16 +52,29 @@ td.n { font-variant-numeric: tabular-nums; color: var(--muted); text-align: righ
 tr.group td { font-size: 11px; text-transform: uppercase; letter-spacing: .05em; color: var(--muted); padding-top: 9px; border-bottom: 0; }
 tr.cur td { background: color-mix(in srgb, var(--accent) 12%, transparent); }
 tr.off td.name { opacity: .5; }
+tr.drop td { box-shadow: inset 0 2px 0 var(--accent); }
 td.name { cursor: pointer; }
+.grip { cursor: grab; color: var(--muted); margin-right: 3px; font-size: 11px; }
 .sw { width: 10px; height: 10px; border-radius: 3px; display: inline-block; margin-right: 5px; vertical-align: -1px; }
-td input[type=range] { width: 70px; }
+button.lock { border: 0; padding: 0 3px; background: none; font-size: 12px; opacity: .3; }
+button.lock.on { opacity: 1; }
 #variants { font-size: 12.5px; }
 #variants div { padding: 2px 0; }
+#tbarWrap { display: grid; gap: 5px; }
+#tbar { position: relative; height: 30px; border: 1px solid var(--rule); border-radius: 6px; background: var(--bg); display: flex; user-select: none; touch-action: none; }
+#tbar .tseg { position: relative; height: 100%; min-width: 2px; overflow: hidden; font-size: 10.5px; color: #fff; display: flex; align-items: center; justify-content: center; white-space: nowrap; text-shadow: 0 0 2px rgba(0,0,0,.7); }
+#tbar .tseg.locked { background-image: repeating-linear-gradient(45deg, rgba(255,255,255,.25) 0 3px, transparent 3px 7px); }
+#tbar .tseg.cur { box-shadow: inset 0 0 0 2px var(--ink); }
+#tbar .hdl { position: absolute; top: -4px; bottom: -4px; width: 11px; margin-left: -5px; cursor: ew-resize; z-index: 2; }
+#tbar .hdl::after { content: ""; position: absolute; left: 5px; top: 0; bottom: 0; width: 1px; background: var(--ink); opacity: .5; }
+#tbar .hdl:hover::after { opacity: 1; width: 3px; left: 4px; }
+.row { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; font-size: 12.5px; color: var(--muted); }
 footer .grp { display: flex; gap: 4px; align-items: center; }
 #scrub { position: relative; flex: 1 1 320px; min-width: 200px; height: 28px; border-radius: 6px; overflow: hidden; background: var(--bg); border: 1px solid var(--rule); cursor: pointer; }
 #scrub .seg { position: absolute; top: 0; bottom: 0; opacity: .55; }
-#scrub .head { position: absolute; top: -2px; bottom: -2px; width: 2px; background: var(--ink); }
-#time { font-variant-numeric: tabular-nums; color: var(--muted); font-size: 12px; min-width: 92px; }
+#scrub .head { position: absolute; top: -2px; bottom: -2px; width: 2px; background: var(--ink); pointer-events: none; }
+#time { font-variant-numeric: tabular-nums; color: var(--muted); font-size: 12px; min-width: 104px; }
+#speedV, #limitV { font-variant-numeric: tabular-nums; min-width: 38px; display: inline-block; }
 .link { fill: none; stroke: var(--rel); stroke-width: 1.4; }
 .link.sub { stroke: var(--sub); stroke-width: 1.8; }
 .link.thru { stroke: var(--bad); stroke-width: 2.2; }
@@ -58,6 +83,13 @@ footer .grp { display: flex; gap: 4px; align-items: center; }
 .node text { font-size: 11px; fill: var(--ink); pointer-events: none; }
 .lname rect { fill: var(--name-bg); stroke: none; opacity: .9; }
 .lname text { font-size: 10px; fill: var(--name); }
+#menu { position: fixed; z-index: 20; background: var(--paper); border: 1px solid var(--rule); border-radius: 8px; box-shadow: 0 6px 24px rgba(0,0,0,.25); padding: 4px; display: none; min-width: 230px; font-size: 13px; }
+#menu .h { padding: 4px 10px 6px; font-weight: 600; border-bottom: 1px solid var(--rule); margin-bottom: 3px; }
+#menu button { display: block; width: 100%; text-align: left; border: 0; border-radius: 5px; padding: 5px 10px; background: none; }
+#menu button:hover { background: color-mix(in srgb, var(--accent) 15%, transparent); }
+#tip { position: fixed; z-index: 19; max-width: 360px; background: var(--paper); border: 1px solid var(--rule); border-radius: 8px; box-shadow: 0 6px 24px rgba(0,0,0,.25); padding: 8px 10px; font-size: 12.5px; display: none; pointer-events: none; }
+#tip .t { font-weight: 600; } #tip .g { font-size: 11px; text-transform: uppercase; letter-spacing: .05em; color: var(--muted); }
+#tip .d { color: var(--muted); margin: 3px 0; } #tip .m { font-variant-numeric: tabular-nums; }
 @media (max-width: 900px) { main { grid-template-columns: 1fr; grid-template-rows: 60vh auto; } aside { border-left: 0; border-top: 1px solid var(--rule); } }
 </style>
 </head>
@@ -65,21 +97,48 @@ footer .grp { display: flex; gap: 4px; align-items: center; }
 <header>
   <h1>Layout Playback</h1>
   <select id="graph" title="Graph"></select>
-  <select id="algo" title="Layout"><option value="auto">Best Read</option><option value="compact">Tidy Stress</option><option value="grouped">Mycelium</option></select>
+  <select id="algo" title="Layout">
+    <optgroup label="Our layouts"><option value="auto">Best Read</option><option value="compact">Tidy Stress</option><option value="grouped">Mycelium</option></optgroup>
+    <optgroup label="Open-source layouts"><option value="x:d3">d3-force</option><option value="x:cola">WebCola</option><option value="x:cose">Cytoscape cose</option><option value="x:fcose">Cytoscape fcose</option><option value="x:elk-stress">ELK stress</option><option value="x:elk-force">ELK force</option><option value="x:elk-layered">ELK layered</option><option value="x:neato">Graphviz neato</option><option value="x:fdp">Graphviz fdp</option><option value="x:sfdp">Graphviz sfdp</option><option value="x:dagre">dagre (layered)</option></optgroup>
+  </select>
   <label class="tog" title="The layouts' random seed">Seed <input type="number" id="seed" value="1" min="1" max="999"></label>
+  <label class="tog" title="How long our layout, its clean-up and the link drawing may work in all (default 1.5 s). It is a limit on work done, measured against a reference laptop, so the same limit gives the same drawing on any computer. Stopping sooner or allowing longer shows what each step does with less or more time.">Time limit <input type="range" id="limit" min="200" max="6000" step="100" value="1500" style="width:110px"> <span id="limitV">1.5 s</span></label>
+  <label class="tog" id="oursTog" title="Draw this layout's links with our link drawing (arcs, bends, ports, names), so both are compared on the same footing" hidden><input type="checkbox" id="ourLinks" checked> Our link drawing</label>
   <span id="status"></span>
-  <a id="labLink" href="lab.html" title="Hand-edit this graph in the Layout Lab">Layout Lab ↗</a>
+  <span id="editBar"><span id="editTxt"></span><button id="editDrop" title="Go back to the layout's own run">Discard the edit</button></span>
+  <a id="labLink" href="lab.html" target="layout-lab" title="Open the drawing as shown now in the Layout Lab. The lab follows the playback until you move something there; your moves come back here and the playback continues from them.">Open in Layout Lab ↗</a>
 </header>
+<nav>
+  <span class="lbl">Show the math</span>
+  <label class="tog" title="During moves into open space: the grid of cells the clean-up chose from (tinted cells hold no class and no link) and how far a class may jump"><input type="checkbox" data-ov="grid"><span class="sw" style="background:var(--ov-grid)"></span>Open-space grid</label>
+  <label class="tog" title="During crowd spreading: the 8 slices round the crowd's center; the darker a slice, the more open space lay beyond it and the further it was pushed"><input type="checkbox" data-ov="slice"><span class="sw" style="background:var(--ov-slice)"></span>Spreading slices</label>
+  <label class="tog" title="During group moves: the problem being fixed, the side of the drawing that moves together and where it moves"><input type="checkbox" data-ov="group"><span class="sw" style="background:var(--ov-group)"></span>Group-move side</label>
+  <label class="tog" title="During placement: rings round each class show how far it is from where its link distances want it; more and tighter rings, a stronger pull"><input type="checkbox" data-ov="stress"><span class="sw" style="background:var(--ov-stress)"></span>Stress rings</label>
+  <label class="tog" title="The drawing's extent: the area the scores count"><input type="checkbox" data-ov="extent"><span class="sw" style="background:var(--ov-extent)"></span>Drawing extent</label>
+  <label class="tog" title="During the link steps: the margin round each class that a link must keep clear of"><input type="checkbox" data-ov="clear"><span class="sw" style="background:var(--ov-clear)"></span>Link clearance</label>
+</nav>
 <main>
   <div id="stage">
     <svg id="svg"></svg>
-    <div id="caption"><div class="k" id="cK"></div><div class="t" id="cT"></div><div class="d" id="cD"></div></div>
+    <div id="caption"><div class="k" id="cK"></div><div class="t" id="cT"></div><div class="d" id="cD"></div><div class="x" id="cX"></div></div>
     <div id="counts"></div>
+    <div id="legend"></div>
   </div>
   <aside>
     <h2>Steps <small id="totalInfo"></small></h2>
-    <p class="hint"><b>Show</b>: animate the step (unticked, it happens at once). <b>Run</b>: unticked, the layout is redone without that step, so you can see what it adds. The slider gives the step more or less of the playing time. Click a step's name to jump to it.</p>
+    <p class="hint">Times are measured in this browser. Hover a step for details, right-click it for more. <b>Show</b> unticked: the step happens at once. <b>Run</b> unticked: the layout is redone without it. Drag <span class="grip">⋮⋮</span> to run steps in another order.</p>
     <table id="steps"></table>
+    <div class="row" id="ordRow" hidden>Steps run in another order than usual. <button id="oReset">Usual order</button></div>
+    <div id="tbarWrap">
+      <h2>Playing time per step <small id="tbarInfo"></small></h2>
+      <div id="tbar"></div>
+      <div class="row">
+        <label class="tog" title="Dragging a border makes one step longer and its neighbor shorter; the whole stays as long"><input type="radio" name="tmode" value="shrink" checked> Shrink the neighbor</label>
+        <label class="tog" title="Dragging a border makes only the step on its left longer or shorter; the whole grows or shrinks"><input type="radio" name="tmode" value="stretch"> Stretch only</label>
+        <button id="tReset" title="Every step back to its measured time, no locks">Reset</button>
+      </div>
+      <p class="hint">Drag the border between two steps. A locked step (🔒) is never shrunk: the whole grows instead.</p>
+    </div>
     <div id="variants"></div>
   </aside>
 </main>
@@ -95,12 +154,13 @@ footer .grp { display: flex; gap: 4px; align-items: center; }
   </div>
   <div id="scrub" title="Click or drag to move through the layout"></div>
   <span id="time"></span>
-  <label class="tog" title="Playing time of the whole layout at 1×">Length <input type="number" id="dur" value="10" min="2" max="300" step="1"> s</label>
-  <label class="tog">Speed <select id="speed"><option>0.25</option><option>0.5</option><option selected>1</option><option>2</option><option>4</option></select>×</label>
+  <label class="tog" title="Playing speed. At 1×, each millisecond the layout worked plays for 8 ms (each frame for at least 15 ms, so a quick move is still seen), so a quick graph plays quickly and a slow one slowly.">Speed <input type="range" id="speed" min="-1" max="2" step="0.01" value="0" style="width:120px"> <span id="speedV">1×</span></label>
   <label class="tog"><input type="checkbox" id="follow" checked> Follow the drawing</label>
   <label class="tog"><input type="checkbox" id="names" checked> Link names</label>
   <label class="tog"><input type="checkbox" id="marks" checked> Mark links through classes</label>
 </footer>
+<div id="menu"></div>
+<div id="tip"></div>
 <script src="base_layout.js"></script>
 <script src="models.js"></script>
 <script src="models2.js"></script>
@@ -110,12 +170,13 @@ footer .grp { display: flex; gap: 4px; align-items: center; }
 <script src="models6.js"></script>
 <script>
 // Plays back a layout step by step: the library reports the positions after every step that moves classes (_ogTraced),
-// the clean-up records each step it keeps, and the link routing is replayed one step at a time. Frames are spread over
-// the playing time by step, and the drawing moves smoothly from frame to frame.
+// the clean-up records each step it keeps, and the link routing is replayed one step at a time. Each frame plays for as
+// long as its step took (measured in this browser) times the speed, so quick graphs play quickly and slow ones slowly.
 const O = window.OURS, svg = $('svg');
+const RATE = 8, MINF = 0.015; // s of playback per s of work at 1×; shortest transition, so a quick move is still seen
 const STEPS = [ // key, group, name, what it does, color, can it be left out (Run)
-  ['start', 'Placement', 'Start (Pivot-MDS)', 'Classes start where a quick projection of the graph distances puts them (classes with one link wait aside). The drawing starts five times too large so the next step unfolds it.', '#5b8def', false],
-  ['restart', 'Placement', 'Other random starts', 'Small graphs also try random starts; only the start that ends with the fewest crossings is shown.', '#7aa2f7', false],
+  ['start', 'Placement', 'Start (Pivot-MDS)', 'Classes start where a quick projection of the graph distances puts them (classes with one link wait aside). The projection starts larger than needed, so the next step unfolds the drawing rather than pressing it together: that is why classes then move inward.', '#5b8def', false],
+  ['restart', 'Placement', 'Other starts', 'Small graphs also try random starts and keep the one that ends with the fewest crossings; the starts not kept are not shown, only the time they took.', '#7aa2f7', false],
   ['stress', 'Placement', 'Stress majorization', 'Every pair of classes is pulled toward a distance that matches how many links apart they are, near pairs most. Each frame is one sweep.', '#3d6fd6', false],
   ['separate', 'Placement', 'Overlap removal', 'Boxes that touch are pushed apart.', '#9aa4b1', false],
   ['cross', 'Placement', 'Crossing swaps', 'A class at the end of a crossed link swaps place with another class, or moves beside a neighbor, when that crosses fewer links.', '#c43d32', true],
@@ -123,23 +184,35 @@ const STEPS = [ // key, group, name, what it does, color, can it be left out (Ru
   ['tight', 'Placement', 'Shortening long links', 'Each class is pulled toward its neighbors when its links get shorter and nothing gets worse; then the whole drawing shrinks as far as the boxes allow.', '#8a6fd1', true],
   ['leaves', 'Placement', 'One-link classes placed', 'Classes with one link come back, each beside its neighbor in the direction where its link crosses nothing.', '#2f9d6a', false],
   ['leaffix', 'Placement', 'One-link classes re-placed', 'One-link classes that the moves left too close or on a line are placed again.', '#5fb98a', false],
+  ['e-iter', 'Open-source layout', 'Iterations', 'The open-source layout at work; each frame is a few of its iterations.', '#64748b', false],
+  ['e-final', 'Open-source layout', 'Result', 'This layout does not report its steps: its result appears at once, after the time it took.', '#475569', false],
   ['c-single', 'Clean-up', 'Moves into open space', 'A class in a problem moves into nearby open space (cells with no class and no link) or is nudged.', '#d9822b', true],
   ['c-unit', 'Clean-up', 'Leaf units turned', 'A leaf, leaf chain or leaf triangle hanging off one class is turned, mirrored or resized around it.', '#1f8577', true],
   ['c-spread', 'Clean-up', 'Crowds spread outward', 'Where problems pile up, the region is pushed outward in 8 slices, more toward open space, then repaired; kept only if better.', '#2f5fb3', true],
   ['c-group', 'Clean-up', 'Group moves', 'The classes on one side of a remaining problem move together away from the line, with a few repair moves; kept only if better.', '#b5548c', true],
   ['c-finish', 'Clean-up', 'Final leaf pass', 'A last pass over leaf units and single classes still in a problem.', '#6f9a54', true],
+  ['c-swap', 'Clean-up', 'Leaves trade places', 'Two one-link classes of the same class trade places when that leaves fewer problems (a shorter box fits where a longer one was in the way).', '#94a34a', true],
+  ['c-fence', 'Clean-up', 'Leaves to open space', 'A one-link class whose link still crosses another link or runs through a class moves to the most open spot round its neighbor: fewest problems first, then the most room around it, then the shorter link.', '#4d9a8a', true],
+  ['c-nudge', 'Clean-up', 'Pushed off a link', 'A class that a link runs through (or passes within 9 px of) is pushed sideways off the line just far enough, or a one-link class turns round its neighbor; kept only if it leaves fewer problems.', '#a0703c', true],
+  ['edit', 'Your edit', 'Edited in the Layout Lab', 'The positions as you left them in the Layout Lab; the steps after this one were run again from there.', '#e0a100', false],
   ['r-arcs', 'Links', 'Parallel links as arcs', 'Two or more links between the same two classes (a link and its reverse, or two relationships) spread into arcs, so none hides another.', '#0e7490', true],
-  ['r-loops', 'Links', 'Self-link loops', 'A link from a class to itself becomes a loop on its emptiest corner.', '#0891b2', false],
+  ['r-loops', 'Links', 'Self-link loops', 'A link from a class to itself becomes a loop on its emptiest side.', '#0891b2', false],
   ['r-bends', 'Links', 'Bends round obstacles', 'A link that still runs through a class (or crosses others when that pays off) bends round it; one link per frame.', '#be185d', true],
   ['r-ports', 'Links', 'Ports at crowded classes', 'Link ends that would meet a box at nearly the same point are spread along that side, in order.', '#7c3aed', true],
-  ['r-names', 'Links', 'Link names placed', 'Each link\'s name goes where on its path it covers no class, no other name and as few links as can be. The graphs carry no names, so they are made up: "has" plus the target class.', '#4b5563', true],
+  ['r-names', 'Links', 'Link names placed', 'Each link\'s name goes on its path or just beside it, on the side where it covers no class, no other name and as few links as can be. The graphs carry no names, so they are made up: "has" plus the target class.', '#4b5563', true],
+  ['r-settle', 'Links', 'Classes moved off links', 'A class that a drawn link still runs through is pushed off the curve, sideways, just far enough; the links are drawn again, and the result is kept only if it has fewer problems.', '#9f4f2f', true],
 ];
 const SI = Object.fromEntries(STEPS.map((s, i) => [s[0], i]));
 const store = { get(k, d) { try { const v = localStorage.getItem('playback:' + k); return v == null ? d : JSON.parse(v); } catch (e) { return d; } }, set(k, v) { try { localStorage.setItem('playback:' + k, JSON.stringify(v)); } catch (e) {} } };
-const CTL = store.get('ctl', {}); // per step: { show, run, w }
-const ctl = (k) => (CTL[k] = CTL[k] || { show: !k.startsWith('variant:'), run: true, w: 1 }); // variants not kept start hidden
+const CTL = store.get('ctl2', {}); // per step: { show, run, w (multiplier of its measured time), lock }
+const ctl = (k) => (CTL[k] = CTL[k] || { show: !k.startsWith('variant:'), run: true, w: 1, lock: false });
+const saveCtl = () => store.set('ctl2', CTL);
+// steps that can run in another order
+const ORD = { place: store.get('order:place', ['cross', 'thru', 'tight']), clean: store.get('order:clean', ['c-single', 'c-unit', 'c-spread', 'c-group']) };
+const ordOf = (k) => (ORD.place.includes(k) ? 'place' : ORD.clean.includes(k) ? 'clean' : null);
 const VERBS = ['has', 'relatedTo', 'ownedBy', 'partOf', 'uses'];
-const esc = (t) => String(t).replace(/&/g, '&amp;').replace(/</g, '&lt;');
+const esc = (t) => String(t).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/"/g, '&quot;');
+const fmtMs = (ms) => (ms >= 1000 ? (ms / 1000).toFixed(2) + ' s' : ms >= 10 ? Math.round(ms) + ' ms' : ms >= 1 ? ms.toFixed(1) + ' ms' : ms.toFixed(2) + ' ms');
 
 // ---------- graphs ----------
 const DEV = ['prov', 'uni', 'hotel', 'org', 'brewery', 'trial', 'telecom', 'sosa', 'crm', 'schema', 'health', 'fibo', 'pizza', 'bio', 'big'];
@@ -147,96 +220,202 @@ const DEVN = { prov: 'PROV-O (30)', uni: 'University (14)', hotel: 'Hotel bookin
 const TOO_BIG = new Set(['huge', 'hx_md1200', 'pb_cl', 'sf400']);
 const groups = [['Development graphs', DEV.filter((k) => MODELS[k])], ['Other training graphs', Object.keys(MODELS).filter((k) => !DEV.includes(k) && !/^(hx_|pb_)/.test(k) && !TOO_BIG.has(k))],
   ['Unseen: held-out graphs', Object.keys(MODELS).filter((k) => k.startsWith('hx_') && !TOO_BIG.has(k))], ['Unseen: public ontologies and Rome graphs', Object.keys(MODELS).filter((k) => k.startsWith('pb_') && !TOO_BIG.has(k))]];
-groups.forEach(([label, keys]) => { const g = document.createElement('optgroup'); g.label = label; keys.forEach((k) => { const o = document.createElement('option'); o.value = k; o.textContent = DEVN[k] || (MODELS[k].name || k).replace(/^Public: /, ''); g.appendChild(o); }); $('graph').appendChild(g); });
+const graphName = (k) => DEVN[k] || (MODELS[k].name || k).replace(/^Public: /, '');
+groups.forEach(([label, keys]) => { const g = document.createElement('optgroup'); g.label = label; keys.forEach((k) => { const o = document.createElement('option'); o.value = k; o.textContent = graphName(k); g.appendChild(o); }); $('graph').appendChild(g); });
+
+// ---------- open-source layouts, loaded when first chosen (default settings, as in the benchmark) ----------
+const CDN = { cy: 'https://cdnjs.cloudflare.com/ajax/libs/cytoscape/3.28.1/cytoscape.min.js', dagre: 'https://cdn.jsdelivr.net/npm/dagre@0.8.5/dist/dagre.min.js', cyDagre: 'https://cdn.jsdelivr.net/npm/cytoscape-dagre@2.5.0/cytoscape-dagre.min.js',
+  lbase: 'https://cdn.jsdelivr.net/npm/layout-base@2.0.1/layout-base.js', cbase: 'https://cdn.jsdelivr.net/npm/cose-base@2.2.0/cose-base.js', fcose: 'https://cdn.jsdelivr.net/npm/cytoscape-fcose@2.2.0/cytoscape-fcose.js',
+  cola: 'https://cdn.jsdelivr.net/npm/webcola@3.4.0/WebCola/cola.min.js', elk: 'https://cdn.jsdelivr.net/npm/elkjs@0.9.3/lib/elk.bundled.js', viz: 'https://cdn.jsdelivr.net/npm/@viz-js/viz@3.11.0/lib/viz-standalone.js', d3: 'https://cdn.jsdelivr.net/npm/d3@7.9.0/dist/d3.min.js' };
+const loaded = {};
+const need = async (...ks) => { for (const k of ks) { if (!loaded[k]) loaded[k] = new Promise((res, rej) => { const s = document.createElement('script'); s.src = CDN[k]; s.onload = res; s.onerror = () => { loaded[k] = null; rej(new Error('could not load the layout library (offline?)')); }; document.head.appendChild(s); }); await loaded[k]; } };
+const cyOf = (N, E) => { const c = cytoscape({ headless: true, elements: N.map((d, i) => ({ data: { id: 'n' + i } })).concat(E.map((e, j) => ({ data: { id: 'e' + j, source: 'n' + e.s, target: 'n' + e.t } }))) }); c.nodes().forEach((n, i) => n.style({ width: N[i].w, height: N[i].h, label: '' })); return c; };
+const cyPos = (c) => c.nodes().map((n) => ({ x: n.position().x, y: n.position().y }));
+const runCy = (c, opt) => new Promise((res) => { const l = c.layout(opt); l.one('layoutstop', () => res()); l.run(); });
+let VIZ = null, ELKI = null;
+const elkRun = async (G, algorithm) => { await need('elk'); ELKI = ELKI || new ELK();
+  const g = await ELKI.layout({ id: 'root', layoutOptions: { 'elk.algorithm': algorithm, 'elk.stress.desiredEdgeLength': '170', 'elk.spacing.nodeNode': '30', 'elk.layered.spacing.nodeNodeBetweenLayers': '60' },
+    children: G.N.map((d, i) => ({ id: 'n' + i, width: d.w, height: d.h })), edges: G.edges.map(([a, b], k) => ({ id: 'e' + k, sources: ['n' + a], targets: ['n' + b] })) });
+  const P = new Array(G.n); g.children.forEach((c) => { P[+c.id.slice(1)] = { x: c.x + c.width / 2, y: c.y + c.height / 2 }; }); return P; };
+const gvRun = async (G, engine, seed) => { await need('viz'); VIZ = VIZ || await Viz.instance();
+  let dot = 'graph G { graph [overlap=prism, sep="+6", start=' + seed + ']; node [shape=box, fixedsize=true, label=""];\n';
+  G.N.forEach((d, i) => { dot += 'n' + i + ' [width=' + (d.w / 72) + ', height=' + (d.h / 72) + '];\n'; }); G.edges.forEach(([a, b]) => { dot += 'n' + a + ' -- n' + b + ' [len=' + (170 / 72) + '];\n'; });
+  const j = VIZ.renderJSON(dot + '}', { engine }), P = new Array(G.n);
+  (j.objects || []).forEach((o) => { const m = /^n(\d+)$/.exec(o.name || ''); if (m && o.pos) { const [x, y] = o.pos.split(',').map(Number); P[+m[1]] = { x, y: -y }; } }); return P.map((p) => p || { x: 0, y: 0 }); };
+// each: async (G, seed, tick(P)) -> final positions; tick is called by the layouts that expose their iterations
+const ENGINES = {
+  'x:d3': { name: 'd3-force', iter: true, run: async (G, seed, tick) => { await need('d3');
+    const r = O.rng(seed), nodes = G.N.map((d, i) => ({ i, x: (r() - 0.5) * 600, y: (r() - 0.5) * 600 })), links = G.E2.map((e) => ({ source: e.s, target: e.t }));
+    const sim = d3.forceSimulation(nodes).force('link', d3.forceLink(links).distance(170).strength(0.6)).force('charge', d3.forceManyBody().strength(-700)).force('collide', d3.forceCollide((n) => Math.max(G.N[n.i].w, G.N[n.i].h) / 2 + 6)).force('center', d3.forceCenter(0, 0)).stop();
+    const pos = () => nodes.map((n) => ({ x: n.x, y: n.y })); tick(pos());
+    for (let k = 0; k < 400; k++) { sim.tick(); if (k % 10 === 9 && k < 399) tick(pos()); } return pos(); } },
+  'x:cola': { name: 'WebCola', iter: true, run: async (G, seed, tick) => { await need('cola');
+    const r = O.rng(seed), nodes = G.N.map((d) => ({ x: (r() - 0.5) * 600, y: (r() - 0.5) * 600, width: d.w + 10, height: d.h + 10 })), links = G.E2.map((e) => ({ source: e.s, target: e.t }));
+    const L = new cola.Layout().size([1000, 800]).nodes(nodes).links(links).avoidOverlaps(true).linkDistance(170).convergenceThreshold(1e-3);
+    let k = 0; const pos = () => nodes.map((n) => ({ x: n.x, y: n.y }));
+    const t0 = performance.now(); // stopped after 4 s, as the benchmark's settings do
+    L.on(cola.EventType.tick, () => { if (++k % 3 === 0) tick(pos()); if (performance.now() - t0 > 4000) L.stop(); }); tick(pos());
+    L.start(30, 0, 30, 0, false); tick(pos()); L.resume(); return pos(); } },
+  'x:cose': { name: 'Cytoscape cose', run: async (G) => { await need('cy'); const c = cyOf(G.N, G.E2); await runCy(c, { name: 'cose', animate: false, randomize: true, nodeRepulsion: 14000, idealEdgeLength: 150, gravity: 0.06 }); return cyPos(c); } },
+  'x:fcose': { name: 'Cytoscape fcose', run: async (G) => { await need('cy', 'lbase', 'cbase', 'fcose'); const c = cyOf(G.N, G.E2);
+    await runCy(c, { name: 'fcose', quality: 'proof', animate: false, randomize: true, nodeRepulsion: 20000, idealEdgeLength: 200, nodeSeparation: 150, edgeElasticity: 0.32, gravity: 0.05, gravityRange: 4.2, numIter: 2500, nodeDimensionsIncludeLabels: true }); return cyPos(c); } },
+  'x:dagre': { name: 'dagre (layered)', run: async (G) => { await need('cy', 'dagre', 'cyDagre'); const c = cyOf(G.N, G.E2); await runCy(c, { name: 'dagre', rankDir: 'TB', nodeSep: 30, rankSep: 80, animate: false }); return cyPos(c); } },
+  'x:elk-stress': { name: 'ELK stress', run: (G) => elkRun(G, 'stress') }, 'x:elk-force': { name: 'ELK force', run: (G) => elkRun(G, 'force') }, 'x:elk-layered': { name: 'ELK layered', run: (G) => elkRun(G, 'layered') },
+  'x:neato': { name: 'Graphviz neato', run: (G, s) => gvRun(G, 'neato', s) }, 'x:fdp': { name: 'Graphviz fdp', run: (G, s) => gvRun(G, 'fdp', s) }, 'x:sfdp': { name: 'Graphviz sfdp', run: (G, s) => gvRun(G, 'sfdp', s) },
+};
 
 // ---------- recording a run ----------
-// R = { labels, D, E (with self-links and names), frames: [{ key, P (Float64Array, NaN = not placed yet), routes }], variants }
+// R = { labels, D, E (with self-links and names), frames: [{ key, P (Float64Array, NaN = not placed yet), routes, ms, run, ov, note }], runs, variants }
+// A frame's ms is the time of the work that led to it from the frame before.
 let R = null;
-function recordRun(key, algo, seed) {
-  return MODELS[key].load().then((Md) => {
-    const labels = Md.labels, D = labels.map((l) => ({ w: String(l).length * 6.6 + 10, h: 20 })), n = D.length;
-    const seen = new Map(), E = Md.edges.map((e) => { const sub = e.kind === 'sub'; let name = ''; if (!sub) { const k = e.s + '>' + e.t, i = seen.get(k) || 0; seen.set(k, i + 1); name = VERBS[i % VERBS.length] + labels[e.t]; } return { s: e.s, t: e.t, sub, name }; });
-    const edges = E.filter((e) => e.s !== e.t).map((e) => [e.s, e.t, e.sub ? 2 : 1]);
-    const skip = {}; ['cross', 'thru', 'tight'].forEach((k) => { if (!ctl(k).run) skip[k] = true; }); O.tune.skip = skip;
-    // the sink: one run per variant the layout tries; frames of starts that were not kept are dropped
-    const runs = []; let cur = null, rtag = -1, chosen = null;
-    const sink = { map: null,
-      begin(name, nn, core, leafOf) { cur = { name, frames: [], hidden: new Uint8Array(n), score: null }; leafOf.forEach((p, v) => { if (p >= 0) cur.hidden[v] = 1; }); runs.push(cur); rtag = 0; },
-      restart(r) { rtag = r; },
-      keepRestart(r) { cur.frames = cur.frames.filter((f) => f.r < 0 || f.r === r); rtag = -1; },
-      snap(stage, P, info) { if (!cur) return; if (info && info.v != null) cur.hidden[info.v] = 0;
-        const A = new Float64Array(2 * n).fill(NaN), map = sink.map;
-        if (map) map.forEach((v, k) => { A[2 * v] = P[k].x; A[2 * v + 1] = P[k].y; });
-        else for (let v = 0; v < n; v++) if (!cur.hidden[v]) { A[2 * v] = P[v].x; A[2 * v + 1] = P[v].y; }
-        cur.frames.push({ key: stage, P: A, r: rtag }); },
-      score(name, s) { if (cur) cur.score = s; },
-      chosen(name) { chosen = name; } };
-    const items = D.map((d) => ({ w: d.w, h: d.h })), N = D.map((d) => ({ w: d.w + 16, h: d.h + 12 }));
-    const t0 = O.now();
-    const fn = algo === 'compact' ? O.compact : algo === 'grouped' ? (a, b, c) => O.grouped2(a, b, c) || O.compact(a, b, c) : O.auto;
-    const res = O.traced(sink, () => fn(items, edges, { seed }));
-    O.tune.skip = {};
-    const P = res.pos.map((p) => ({ x: p.x, y: p.y })); O.sep(P, N, 6, 200);
-    const frames = [], win = runs.find((r) => r.name === chosen) || runs[runs.length - 1];
-    runs.filter((r) => r !== win).forEach((r) => r.frames.forEach((f) => frames.push({ key: 'variant:' + r.name, P: f.P })));
-    // the drawing grows out of its center, then the kept variant's steps
-    const f0 = win.frames[0]; if (f0) { let cx = 0, cy = 0, c = 0; for (let v = 0; v < n; v++) if (!isNaN(f0.P[2 * v])) { cx += f0.P[2 * v]; cy += f0.P[2 * v + 1]; c++; }
-      const Z = new Float64Array(2 * n).fill(NaN); for (let v = 0; v < n; v++) if (!isNaN(f0.P[2 * v])) { Z[2 * v] = cx / c; Z[2 * v + 1] = cy / c; } frames.push({ key: 'start', P: Z }); }
-    win.frames.forEach((f) => frames.push({ key: f.key, P: f.P }));
-    const flat = (Q) => { const A = new Float64Array(2 * n); Q.forEach((p, v) => { A[2 * v] = p.x; A[2 * v + 1] = p.y; }); return A; };
-    frames.push({ key: 'separate', P: flat(P) });
-    // the clean-up, as the layouts run it: what is left of 1.5 s, at most 0.5 s (skipped below 0.1 s)
-    const budgetMs = Math.min(500, 1500 - (O.now() - t0)), Ec = edges.map(([s, t]) => ({ s, t }));
-    let Pc = P;
-    const order = ['single', 'unit', 'spread', 'group'].filter((k) => ctl('c-' + k).run);
-    if (budgetMs >= 100) {
-      const r = O.clocked(() => O.tidy.run(P, items, Ec, { budgetMs, record: true, order, spread: ctl('c-spread').run, groups: ctl('c-group').run, finish: ctl('c-finish').run }));
-      let Q = P.map((p) => ({ ...p })), phase = 'single';
-      for (const s of r.log) {
-        if (s.kind === 'phase') { phase = s.phase; continue; }
-        const k = 'c-' + phase;
-        if (s.kind === 'move' || s.kind === 'unit' || s.kind === 'spread') {
-          if (s.pushed) { const Qp = Q.map((p) => ({ ...p })); s.pushed.forEach(([v, x, y]) => (Qp[v] = { x, y })); frames.push({ key: k, P: flat(Qp) }); }
-          s.nodes.forEach((v, i) => (Q[v] = { x: s.to[i][0], y: s.to[i][1] })); frames.push({ key: k, P: flat(Q), moved: s.nodes });
-        } else if (s.kind === 'group') { s.after.forEach(([v, x, y]) => (Q[v] = { x, y })); frames.push({ key: k, P: flat(Q), moved: s.after.map((a) => a[0]) }); }
-      }
-      Pc = r.P.map((p) => ({ x: p.x, y: p.y }));
-    }
-    // the links, one routing step at a time, on the final positions
-    const RE = E.map((e) => [e.s, e.t, e.sub ? 2 : 1, e.name ? e.name.length * 6 + 8 : 0]), FP = flat(Pc), base = { sep: ctl('r-arcs').run ? 24 : 0 };
-    const route = (o) => O.route(Pc, D, RE, { ...base, ...o }).routes;
-    const r1 = route({ bends: false, ports: 0, labels: false }), r2 = ctl('r-bends').run ? route({ ports: 0, labels: false }) : r1;
-    const r3 = ctl('r-ports').run ? route({ bends: ctl('r-bends').run, labels: false }) : r2, r4 = ctl('r-names').run ? route({ bends: ctl('r-bends').run, ports: ctl('r-ports').run ? 3 : 0 }) : r3;
-    const noLoop = r1.map((x) => ({ ...x, loop: null })), hasLoops = r1.some((x) => x.loop);
-    frames.push({ key: 'r-arcs', P: FP, routes: noLoop });
-    if (hasLoops) frames.push({ key: 'r-loops', P: FP, routes: r1 });
-    const same = (a, b) => JSON.stringify(a.bends) === JSON.stringify(b.bends);
-    let cr = r1.slice(); r2.forEach((x, k) => { if (!same(x, r1[k])) { cr = cr.slice(); cr[k] = x; frames.push({ key: 'r-bends', P: FP, routes: cr }); } });
-    frames.push({ key: 'r-ports', P: FP, routes: r3 });
-    frames.push({ key: 'r-names', P: FP, routes: r4 });
-    return { key, algo, seed, labels, D, E, n, frames, final: r4, variants: runs.map((r) => ({ name: r.name, score: r.score, kept: r === win, frames: r.frames.length })), cleanupMs: budgetMs };
-  });
+const flat = (Q) => { const A = new Float64Array(2 * Q.length); Q.forEach((p, v) => { A[2 * v] = p.x; A[2 * v + 1] = p.y; }); return A; };
+const unflat = (A) => { const out = []; for (let v = 0; v < A.length / 2; v++) out.push(isNaN(A[2 * v]) ? null : { x: A[2 * v], y: A[2 * v + 1] }); return out; };
+function graphOf(key, Md) {
+  const labels = Md.labels, D = labels.map((l) => ({ w: String(l).length * 6.6 + 10, h: 20 })), n = D.length;
+  const seen = new Map(), E = Md.edges.map((e) => { const sub = e.kind === 'sub'; let name = ''; if (!sub) { const k = e.s + '>' + e.t, i = seen.get(k) || 0; seen.set(k, i + 1); name = VERBS[i % VERBS.length] + labels[e.t]; } return { s: e.s, t: e.t, sub, name }; });
+  const edges = E.filter((e) => e.s !== e.t).map((e) => [e.s, e.t, e.sub ? 2 : 1]);
+  return { key, labels, D, n, E, edges, E2: edges.map(([s, t]) => ({ s, t })), items: D.map((d) => ({ w: d.w, h: d.h })), N: D.map((d) => ({ w: d.w + 16, h: d.h + 12 })) };
 }
+function recordOurs(G, algo, seed) {
+  const n = G.n, skip = {}; ORD.place.forEach((k) => { if (!ctl(k).run) skip[k] = true; }); O.tune.skip = skip; O.tune.order = ORD.place.slice();
+  const runs = []; let cur = null, rtag = -1, chosen = null, tLast = 0;
+  const sink = { map: null,
+    begin(name, nn, core, leafOf) { cur = { name, frames: [], hidden: new Uint8Array(n), score: null, D: null, core: core.slice() }; leafOf.forEach((p, v) => { if (p >= 0) cur.hidden[v] = 1; }); runs.push(cur); rtag = 0; tLast = performance.now(); },
+    restart(r) { rtag = r; },
+    keepRestart(r) { const keep = [], drop = []; cur.frames.forEach((f) => (f.r < 0 || f.r === r ? keep : drop).push(f)); cur.frames = keep;
+      if (drop.length) { const starts = new Set(drop.map((f) => f.r)).size; keep.push({ key: 'restart', P: keep[keep.length - 1].P, r: -1, ms: drop.reduce((s, f) => s + f.ms, 0), hold: true, note: `${starts} other start${starts > 1 ? 's' : ''} tried and dropped; the one shown ended with the fewest crossings.` }); }
+      rtag = -1; },
+    snap(stage, P, info) { if (!cur) return; const t = performance.now(); if (info && info.v != null) cur.hidden[info.v] = 0; if (info && info.D) cur.D = info.D;
+      const A = new Float64Array(2 * n).fill(NaN), map = sink.map;
+      if (map) map.forEach((v, k) => { A[2 * v] = P[k].x; A[2 * v + 1] = P[k].y; });
+      else for (let v = 0; v < n; v++) if (!cur.hidden[v]) { A[2 * v] = P[v].x; A[2 * v + 1] = P[v].y; }
+      cur.frames.push({ key: stage, P: A, r: rtag, ms: t - tLast }); tLast = performance.now(); }, // the copy itself is not counted
+    score(name, s) { if (cur) cur.score = s; },
+    chosen(name) { chosen = name; } };
+  const fn = algo === 'compact' ? O.compact : algo === 'grouped' ? (a, b, c) => O.grouped2(a, b, c) || O.compact(a, b, c) : O.auto;
+  let res; try { res = O.traced(sink, () => fn(G.items, G.edges, { seed })); } finally { O.tune.skip = {}; delete O.tune.order; }
+  const tEnd = performance.now(), P = res.pos.map((p) => ({ x: p.x, y: p.y })); O.sep(P, G.N, 6, 200); const tSep = performance.now();
+  const win = runs.find((r) => r.name === chosen) || runs[runs.length - 1], wi = runs.indexOf(win);
+  const frames = [{ key: 'start', P: new Float64Array(2 * n).fill(NaN), ms: 0, run: -1 }]; // the empty canvas: the start fades in where it is
+  runs.forEach((r, i) => { if (r !== win) r.frames.forEach((f) => frames.push({ key: 'variant:' + r.name, P: f.P, ms: f.ms, run: i })); });
+  win.frames.forEach((f) => frames.push({ key: f.key, P: f.P, ms: f.ms, run: wi, hold: f.hold, note: f.note }));
+  frames.push({ key: 'separate', P: flat(P), ms: (tEnd - tLast) + (tSep - tEnd), run: wi });
+  return { frames, P, runs: runs.map((r) => ({ D: r.D, core: r.core })), variants: runs.map((r) => ({ name: r.name, score: r.score, kept: r === win, frames: r.frames.length })), run: wi };
+}
+async function recordEngine(G, algo, seed) {
+  const eng = ENGINES[algo], frames = [{ key: 'e-iter', P: new Float64Array(2 * G.n).fill(NaN), ms: 0, run: 0 }];
+  let tLast = performance.now(), first = true;
+  const tick = (P) => { const t = performance.now(); frames.push({ key: 'e-iter', P: flat(P), ms: t - tLast, run: 0, note: first ? 'Where the layout starts.' : undefined }); first = false; tLast = performance.now(); };
+  const t0 = performance.now(); let P = await eng.run(G, seed, tick); const t1 = performance.now();
+  P = P.map((p) => ({ x: p.x, y: p.y }));
+  if (eng.iter) frames.push({ key: 'e-iter', P: flat(P), ms: t1 - tLast, run: 0 }); else frames.push({ key: 'e-final', P: flat(P), ms: t1 - t0, run: 0 });
+  const t2 = performance.now(); O.sep(P, G.N, 6, 200); frames.push({ key: 'separate', P: flat(P), ms: performance.now() - t2, run: 0, note: 'The same overlap removal every layout gets in the comparisons.' });
+  return { frames, P, runs: [], variants: [], run: 0 };
+}
+// the clean-up (ours only) and the link steps, from positions P
+function tailFrames(G, P, { cleanup, budgetMs, links, run }) {
+  const frames = [], info = {}; let Pc = P;
+  if (cleanup && budgetMs >= 100) {
+    const order = ORD.clean.filter((k) => ctl(k).run).map((k) => k.slice(2)), w0 = performance.now();
+    const r = O.clocked(() => O.tidy.run(P, G.items, G.E2, { budgetMs, record: true, order, spread: ctl('c-spread').run, groups: ctl('c-group').run, finish: ctl('c-finish').run }));
+    const wall = performance.now() - w0; let tTot = 0; r.log.forEach((s) => { tTot = Math.max(tTot, s.t || 0, s.kind === 'phase-end' ? s.t0 + s.ms : 0); });
+    const k = tTot > 0 ? wall / tTot : 0; // the log's work-clock ms -> ms measured here
+    let Q = P.map((p) => ({ ...p })), phase = 'single', prevT = 0, inPhase = 0, grid = null;
+    const push = (f) => { frames.push({ run, ...f }); inPhase++; };
+    for (const s of r.log) {
+      if (s.kind === 'phase') { phase = s.phase; prevT = s.t; inPhase = 0; grid = s.grid || null; continue; }
+      const key = 'c-' + phase;
+      if (s.kind === 'phase-end') { const I = (info[key] = info[key] || { tried: 0, kept: 0, skipped: 0, rounds: 0 }); I.tried += s.tried; I.kept += s.kept; I.skipped += s.skipped; I.rounds++;
+        const left = (s.t0 + s.ms - prevT) * k; prevT = s.t0 + s.ms;
+        if (s.tried && (left > 0.2 || !inPhase)) frames.push({ key, P: flat(Q), ms: left, run, hold: true, ov: grid ? { grid } : null, note: `Round ${s.round + 1}: tried ${s.tried}, kept ${s.kept}${s.skipped ? `, skipped ${s.skipped} where nothing had changed` : ''}.` });
+        continue; }
+      if (s.kind === 'group-rejected') continue; // its time goes to the next frame
+      const ms = (s.t - prevT) * k; prevT = s.t;
+      if (s.kind === 'move' || s.kind === 'unit' || s.kind === 'spread') {
+        const ov = s.kind === 'spread' ? { spread: s } : grid && s.kind === 'move' ? { grid, from: s.from && s.from[0] } : null;
+        if (s.pushed) { const Qp = Q.map((p) => ({ ...p })); s.pushed.forEach(([v, x, y]) => (Qp[v] = { x, y })); push({ key, P: flat(Qp), ms: ms / 2, ov, note: 'Pushed outward, slice by slice; repair moves follow.' }); }
+        s.nodes.forEach((v, i) => (Q[v] = { x: s.to[i][0], y: s.to[i][1] })); push({ key, P: flat(Q), moved: s.nodes, ms: s.pushed ? ms / 2 : ms, ov });
+      } else if (s.kind === 'group') { s.after.forEach(([v, x, y]) => (Q[v] = { x, y })); push({ key, P: flat(Q), moved: s.after.map((a) => a[0]), ms, ov: { group: s } }); }
+    }
+    Pc = r.P.map((p) => ({ x: p.x, y: p.y }));
+  }
+  if (cleanup) { // the passes the layouts run after the clean-up: leaf swaps, leaves to open space, classes pushed off links
+    const keep = { noSwap: O.tune.noSwap, noFence: O.tune.noFence, noNudge: O.tune.noNudge };
+    Object.assign(O.tune, { noSwap: !ctl('c-swap').run, noFence: !ctl('c-fence').run, noNudge: !ctl('c-nudge').run });
+    let tl = performance.now(); const sink = { map: null, begin() {}, restart() {}, keepRestart() {}, score() {}, chosen() {},
+      snap(stage, Q) { const t = performance.now(); frames.push({ key: 'c-' + stage, P: flat(Q), ms: t - tl, run }); tl = performance.now(); } };
+    try { Pc = O.clocked(() => O.traced(sink, () => O.leafSwap(Pc, G.items, G.E.filter((e) => e.s !== e.t).map((e) => [e.s, e.t])))); } finally { Object.assign(O.tune, keep); }
+  }
+  if (!links) return { frames, info, P: Pc };
+  // the links, one routing step at a time, on the final positions
+  const RE = G.E.map((e) => [e.s, e.t, e.sub ? 2 : 1, e.name ? e.name.length * 6 + 8 : 0]), FP = flat(Pc), base = { sep: ctl('r-arcs').run ? 24 : 0 };
+  let last = null; const route = (o) => { const w0 = performance.now(), r = O.route(Pc, G.D, RE, { ...base, settle: false, ...o }); last = { r, wall: performance.now() - w0 }; return r.routes; };
+  const r1 = route({ bends: false, ports: 0, labels: false }), r2 = ctl('r-bends').run ? route({ ports: 0, labels: false }) : r1;
+  const r3 = ctl('r-ports').run ? route({ bends: ctl('r-bends').run, labels: false }) : r2, r4 = ctl('r-names').run ? route({ bends: ctl('r-bends').run, ports: ctl('r-ports').run ? 3 : 0 }) : r3;
+  const st = last.r.stats.t || {}, sum = Object.values(st).reduce((a, b) => a + b, 0) || 1, msOf = (k) => last.wall * (st[k] || 0) / sum;
+  const noLoop = r1.map((x) => ({ ...x, loop: null })), hasLoops = r1.some((x) => x.loop);
+  frames.push({ key: 'r-arcs', P: FP, routes: noLoop, ms: msOf('arcs'), run });
+  if (hasLoops) frames.push({ key: 'r-loops', P: FP, routes: r1, ms: msOf('loops'), run });
+  const same = (a, b) => JSON.stringify(a.bends) === JSON.stringify(b.bends), changed = r2.filter((x, k) => !same(x, r1[k])).length;
+  let cr = r1.slice(); r2.forEach((x, k) => { if (!same(x, r1[k])) { cr = cr.slice(); cr[k] = x; frames.push({ key: 'r-bends', P: FP, routes: cr, ms: msOf('bends') / changed, run }); } });
+  if (!changed && ctl('r-bends').run) frames.push({ key: 'r-bends', P: FP, routes: r2, ms: msOf('bends'), run, hold: true, note: 'No bend made the drawing better.' });
+  frames.push({ key: 'r-ports', P: FP, routes: r3, ms: msOf('ports'), run });
+  frames.push({ key: 'r-names', P: FP, routes: r4, ms: msOf('names'), run });
+  let Pf = Pc;
+  if (ctl('r-settle').run) { const w4 = last.wall, w0 = performance.now(), rs = O.route(Pc, G.D, RE, { ...base, bends: ctl('r-bends').run, ports: ctl('r-ports').run ? 3 : 0, labels: ctl('r-names').run }), ws = performance.now() - w0;
+    if (rs.pos !== Pc) { Pf = rs.pos.map((p) => ({ x: p.x, y: p.y })); frames.push({ key: 'r-settle', P: flat(Pf), routes: rs.routes, ms: Math.max(0, ws - w4), run, moved: [...Array(G.n).keys()].filter((v) => Pf[v].x !== Pc[v].x || Pf[v].y !== Pc[v].y) }); }
+    else frames.push({ key: 'r-settle', P: FP, routes: r4, ms: ws, run, hold: true, note: 'No class needed moving, or moving one did not help.' }); }
+  return { frames, info, P: Pf };
+}
+async function recordRun(key, algo, seed) {
+  const Md = await MODELS[key].load(), G = graphOf(key, Md), engine = !!ENGINES[algo], limit = +$('limit').value;
+  const prev = O.setTimeLimit(limit);
+  try {
+    const t0 = O.now(), head = engine ? await recordEngine(G, algo, seed) : recordOurs(G, algo, seed);
+    // the clean-up gets what is left of the time limit, at most a third of it, as in the layouts
+    const budgetMs = Math.min(500, 1500 - (O.now() - t0));
+    const tail = tailFrames(G, head.P, { cleanup: !engine, budgetMs, links: !engine || $('ourLinks').checked, run: head.run });
+    return { ...G, algo, seed, limit, engine, frames: head.frames.concat(tail.frames), runs: head.runs, variants: head.variants, info: tail.info, run: head.run, budgetMs, mcache: new Map() };
+  } finally { O.setTimeLimit(prev); }
+}
+// An edit made in the Layout Lab: keep the frames up to where it was made, then run the clean-up and the links again from it
+function applyEdit(msg) {
+  if (!R || msg.graph !== R.key || msg.n !== R.n) return;
+  if (!R.base) R.base = { frames: R.frames, j: C ? C.fj : R.frames.length - 1, info: R.info };
+  const j = R.base.j, F = R.base.frames.slice(0, j + 1), last = F[j].P;
+  const P = msg.P.map((p, v) => (p ? { x: p[0], y: p[1] } : { x: last[2 * v], y: last[2 * v + 1] })).map((p) => (isNaN(p.x) ? { x: 0, y: 0 } : p));
+  const inLinks = F[j].key.startsWith('r-'), prev = O.setTimeLimit(R.limit);
+  let tail; try { tail = tailFrames(R, P, { cleanup: !R.engine && !inLinks, budgetMs: Math.max(100, Math.min(500, R.budgetMs || 500)), links: !R.engine || $('ourLinks').checked, run: F[j].run }); } finally { O.setTimeLimit(prev); }
+  const moved = []; for (let v = 0; v < R.n; v++) if (!isNaN(last[2 * v]) && Math.hypot(P[v].x - last[2 * v], P[v].y - last[2 * v + 1]) > 0.5) moved.push(v);
+  R.frames = F.concat([{ key: 'edit', P: flat(P), ms: 0, run: F[j].run, moved, routes: F[j].routes, note: `${moved.length} class${moved.length === 1 ? '' : 'es'} moved by hand. ${inLinks ? 'The link steps' : 'The clean-up and the link steps'} were run again from here.` }], tail.frames);
+  R.info = { ...R.base.info, ...tail.info }; R.mcache = new Map();
+  pause(); timeline(); buildPanel(); T = TL.at[j + 1]; countsFor = -1; render();
+  $('editTxt').textContent = 'Continuing from your edit in the Layout Lab'; $('editBar').classList.add('on');
+}
+$('editDrop').onclick = () => { if (!R || !R.base) return; R.frames = R.base.frames; R.info = R.base.info; const j = R.base.j; R.base = null; R.mcache = new Map(); $('editBar').classList.remove('on'); timeline(); buildPanel(); T = TL.at[j]; countsFor = -1; render(); };
 
 // ---------- the timeline ----------
-// each frame j > 0 is reached by a transition that belongs to frame j's step; a step's share of the playing time is its
-// weight over the sum of weights of the steps shown, split evenly over its transitions
+// each frame j > 0 is reached by a transition that plays for its measured time × RATE (at least MINF) × its step's time
+// multiplier; a step not shown takes no time
 let TL = null; // { at: [time of each frame], total }
-function timeline() {
-  const F = R.frames, cnt = {}; F.forEach((f, j) => { if (j) cnt[f.key] = (cnt[f.key] || 0) + 1; });
-  const keys = Object.keys(cnt), w = (k) => { const c = ctl(k.startsWith('variant:') ? k : k); return c.show ? c.w : 0; };
-  const W = keys.reduce((s, k) => s + w(k), 0) || 1, T = +$('dur').value || 10, at = [0];
-  for (let j = 1; j < F.length; j++) { const k = F[j].key; at.push(at[j - 1] + T * w(k) / W / cnt[k]); }
-  TL = { at, total: at[at.length - 1] || 0.001 };
-}
-const meta = (k) => k.startsWith('variant:') ? ['variant', 'Variants not kept', `Variant "${k.slice(8)}"`, 'Best Read (and Tidy Stress on small graphs) runs several variants and keeps the best-scoring drawing; this one was not kept.', '#b0b7c3', false] : STEPS[SI[k]];
+const baseDur = (f) => Math.max(MINF, (f.ms || 0) * RATE / 1000);
+const frameDur = (f) => { const c = ctl(f.key); return c.show ? baseDur(f) * c.w : 0; };
+function timeline() { const F = R.frames, at = [0]; for (let j = 1; j < F.length; j++) at.push(at[j - 1] + frameDur(F[j])); TL = { at, total: at[at.length - 1] || 0.001 }; }
+const meta = (k) => k.startsWith('variant:') ? ['variant', 'Variants not kept', `Variant "${k.slice(8)}"`, 'Best Read (and Tidy Stress on small graphs) runs several variants and keeps the best-scoring drawing; this one was not kept.', '#b0b7c3', false] : STEPS[SI[k]] || [k, '', k, '', '#888', false];
 function frameAt(t) { const at = TL.at; let lo = 0, hi = at.length - 1; if (t >= at[hi]) return [hi, 0]; while (lo < hi - 1) { const m = (lo + hi) >> 1; if (at[m] <= t) lo = m; else hi = m; }
-  // several frames at the same time (a step shown at once): the last of them
-  while (lo < at.length - 1 && at[lo + 1] <= t) lo++;
+  while (lo < at.length - 1 && at[lo + 1] <= t) lo++; // several frames at the same time (a step shown at once): the last of them
   const span = at[lo + 1] - at[lo]; return [lo, span > 0 ? (t - at[lo]) / span : 1]; }
+// per step: frames, measured ms, playing time at 1× (base: before its multiplier), the runs of consecutive frames
+function stepStats() {
+  const S = {}, F = R.frames;
+  for (let j = 1; j < F.length; j++) { const k = F[j].key, s = (S[k] = S[k] || { frames: 0, ms: 0, base: 0, dur: 0, runs: [] });
+    s.frames++; s.ms += F[j].ms || 0; s.base += baseDur(F[j]); s.dur += frameDur(F[j]);
+    const r = s.runs[s.runs.length - 1]; if (r && r[1] === j - 1) r[1] = j; else s.runs.push([j, j]); }
+  return S;
+}
 
 // ---------- drawing ----------
-let view = { x: 0, y: 0, w: 1000, h: 700 }, viewT = null, T = 0, playing = false, lastTs = 0, userView = false;
+let view = { x: 0, y: 0, w: 1000, h: 700 }, T = 0, playing = false, lastTs = 0, userView = false;
 const ease = (u) => u * u * (3 - 2 * u);
 function lerpRoute(a, b, u) {
   if (!a && !b) return null; const ra = a || { bends: [], ports: null, loop: null }, rb = b || { bends: [], ports: null, loop: null };
@@ -252,31 +431,82 @@ function lerpRoute(a, b, u) {
 }
 function current() {
   const [j, u0] = frameAt(T), F = R.frames, a = F[j], b = F[Math.min(F.length - 1, j + 1)], u = ease(u0), n = R.n, P = new Array(n), alpha = new Float64Array(n).fill(1);
+  const still = u0 === 0 || j === F.length - 1, aP = a.run !== b.run ? null : a.P; // from another run (a variant not kept): fade in where it is
   for (let v = 0; v < n; v++) {
-    const ax = a.P[2 * v], ay = a.P[2 * v + 1], bx = b.P[2 * v], by = b.P[2 * v + 1];
+    if (still) { const x = a.P[2 * v], y = a.P[2 * v + 1]; P[v] = isNaN(x) ? null : { x, y }; continue; }
+    const ax = aP ? aP[2 * v] : NaN, ay = aP ? aP[2 * v + 1] : NaN, bx = b.P[2 * v], by = b.P[2 * v + 1];
     if (isNaN(bx) && isNaN(ax)) { P[v] = null; continue; }
-    if (isNaN(ax)) { // appears in this step: grows out of a placed neighbor
-      let from = null; for (const e of R.E) { const o = e.s === v ? e.t : e.t === v ? e.s : -1; if (o >= 0 && o !== v && !isNaN(a.P[2 * o])) { from = { x: a.P[2 * o], y: a.P[2 * o + 1] }; break; } }
+    if (isNaN(ax)) { // appears in this step: grows out of a placed neighbor, or fades in where it is
+      let from = null; if (aP) for (const e of R.E) { const o = e.s === v ? e.t : e.t === v ? e.s : -1; if (o >= 0 && o !== v && !isNaN(aP[2 * o])) { from = { x: aP[2 * o], y: aP[2 * o + 1] }; break; } }
       from = from || { x: bx, y: by }; P[v] = { x: from.x + (bx - from.x) * u, y: from.y + (by - from.y) * u }; alpha[v] = u; continue; }
     if (isNaN(bx)) { P[v] = { x: ax, y: ay }; continue; }
     P[v] = { x: ax + (bx - ax) * u, y: ay + (by - ay) * u };
   }
-  const routes = R.E.map((e, k) => lerpRoute(a.routes && a.routes[k], b.routes && b.routes[k], u));
-  const moved = new Set(u0 > 0 && u0 < 1 && b.moved ? b.moved : []);
-  if (u0 > 0 && u0 < 1 && !b.moved) for (let v = 0; v < n; v++) if (P[v] && !isNaN(a.P[2 * v]) && !isNaN(b.P[2 * v]) && Math.hypot(a.P[2 * v] - b.P[2 * v], a.P[2 * v + 1] - b.P[2 * v + 1]) > 0.5) moved.add(v);
-  return { j, u0, P, alpha, routes, moved, key: (u0 > 0 && j + 1 < F.length ? b : a).key };
+  const routes = still ? R.E.map((e, k) => (a.routes && a.routes[k] ? lerpRoute(a.routes[k], a.routes[k], 1) : null)) : R.E.map((e, k) => lerpRoute(a.routes && a.routes[k], b.routes && b.routes[k], u));
+  const moved = new Set(!still && b.moved ? b.moved : []);
+  if (!still && !b.moved && aP) for (let v = 0; v < n; v++) if (P[v] && !isNaN(aP[2 * v]) && !isNaN(b.P[2 * v]) && Math.hypot(aP[2 * v] - b.P[2 * v], aP[2 * v + 1] - b.P[2 * v + 1]) > 0.5) moved.add(v);
+  const shown = still ? a : b;
+  return { j, u0, P, alpha, routes, moved, key: shown.key, f: shown, fj: shown === a ? j : j + 1 };
 }
+function bounds(P) { let x1 = 1e18, y1 = 1e18, x2 = -1e18, y2 = -1e18; P.forEach((p, v) => { if (!p) return; const d = R.D[v]; x1 = Math.min(x1, p.x - d.w / 2); x2 = Math.max(x2, p.x + d.w / 2); y1 = Math.min(y1, p.y - d.h / 2); y2 = Math.max(y2, p.y + d.h / 2); }); return { x1, y1, x2, y2 }; }
 function fitView(P, snap) {
-  let x1 = 1e18, y1 = 1e18, x2 = -1e18, y2 = -1e18; P.forEach((p, v) => { if (!p) return; const d = R.D[v]; x1 = Math.min(x1, p.x - d.w / 2); x2 = Math.max(x2, p.x + d.w / 2); y1 = Math.min(y1, p.y - d.h / 2); y2 = Math.max(y2, p.y + d.h / 2); });
-  if (x1 > x2) return; const r = svg.getBoundingClientRect(), pad = 50, w = x2 - x1 + 2 * pad, h = y2 - y1 + 2 * pad, ar = r.width / Math.max(1, r.height);
+  const { x1, y1, x2, y2 } = bounds(P); if (x1 > x2) return; const r = svg.getBoundingClientRect(), pad = 50, w = x2 - x1 + 2 * pad, h = y2 - y1 + 2 * pad, ar = r.width / Math.max(1, r.height);
   const t = w / h > ar ? { x: x1 - pad, w, h: w / ar, y: (y1 + y2) / 2 - w / ar / 2 } : { y: y1 - pad, h, w: h * ar, x: (x1 + x2) / 2 - h * ar / 2 };
   if (snap) view = t; else { const k = 0.12; view = { x: view.x + (t.x - view.x) * k, y: view.y + (t.y - view.y) * k, w: view.w + (t.w - view.w) * k, h: view.h + (t.h - view.h) * k }; }
 }
-const finalP = () => { const F = R.frames[R.frames.length - 1].P, out = []; for (let v = 0; v < R.n; v++) out.push({ x: F[2 * v], y: F[2 * v + 1] }); return out; };
 function pathOf(A, B, r) {
   const pl = O.routePoly(A, B, r, 6); if (pl.length === 2) return `M${pl[0].x.toFixed(1)},${pl[0].y.toFixed(1)}L${pl[1].x.toFixed(1)},${pl[1].y.toFixed(1)}`;
   return 'M' + pl.map((p) => p.x.toFixed(1) + ',' + p.y.toFixed(1)).join('L');
 }
+
+// ---------- the math made visible: one color per idea, drawn faintly behind the graph ----------
+const OV = store.get('ov', {}); document.querySelectorAll('[data-ov]').forEach((el) => { el.checked = !!OV[el.dataset.ov]; el.onchange = () => { OV[el.dataset.ov] = el.checked; store.set('ov', OV); if (R) render(); }; });
+const OVL = { grid: ['var(--ov-grid)', 'Open-space grid', 'tinted cells hold no class and no link; the dashed circle is how far the class may jump (moves into open space)'],
+  slice: ['var(--ov-slice)', 'Spreading slices', 'the 8 slices round a crowd; the darker, the more open space beyond, so pushed further (crowd spreading)'],
+  group: ['var(--ov-group)', 'Group-move side', 'the problem fixed (ring), the side that moves together (tint) and where to (arrow) (group moves)'],
+  stress: ['var(--ov-stress)', 'Stress rings', 'more and tighter rings: the class is further from the distances its links ask for, a stronger pull (placement)'],
+  extent: ['var(--ov-extent)', 'Drawing extent', 'the area the scores count'],
+  clear: ['var(--ov-clear)', 'Link clearance', 'the margin round each class a link must keep clear of (link steps)'] };
+function stressOf(f) { // per class: Σ over pairs ((distance − target) / target)², relative to the largest in the frame
+  if (f.stress !== undefined) return f.stress; f.stress = null;
+  const run = R.runs && R.runs[f.run]; if (!run || !run.D || !/^(start|restart|stress|separate|cross|thru|tight|leaves|leaffix)$/.test(f.key)) return null;
+  const core = run.core, D = run.D, m = core.length, e = new Float64Array(m);
+  for (let i = 0; i < m; i++) { const vi = core[i], xi = f.P[2 * vi], yi = f.P[2 * vi + 1]; if (isNaN(xi)) continue;
+    for (let j = 0; j < m; j++) { if (i === j) continue; const vj = core[j], d = D[i][j], c = Math.hypot(xi - f.P[2 * vj], yi - f.P[2 * vj + 1]); if (!isFinite(d) || d <= 0 || isNaN(c)) continue; const r = (c - d) / d; e[i] += r * r; } }
+  let mx = 0; for (let i = 0; i < m; i++) mx = Math.max(mx, e[i]); if (!mx) return null;
+  f.stress = { core, e: Array.from(e, (x) => x / mx) }; return f.stress;
+}
+function overlays(P) {
+  const f = C.f, on = (k) => OV[k], now = []; let s = ''; const nse = 'vector-effect="non-scaling-stroke"';
+  if (on('extent')) { const b = bounds(P); if (b.x1 < b.x2) { s += `<rect x="${b.x1}" y="${b.y1}" width="${b.x2 - b.x1}" height="${b.y2 - b.y1}" fill="none" stroke="var(--ov-extent)" stroke-width="1.2" stroke-dasharray="7 5" opacity=".7" ${nse}/>`
+    + `<text x="${b.x1 + 4}" y="${b.y1 - 6}" font-size="11" fill="var(--ov-extent)">${Math.round(b.x2 - b.x1)} × ${Math.round(b.y2 - b.y1)} px</text>`; now.push('extent'); } }
+  const ov = f.ov || {};
+  if (on('grid') && ov.grid) { const g = ov.grid; if (!g.open) { g.open = []; for (let i = 0; i < g.busy.length; i++) if (g.busy[i] === '0') g.open.push(i); }
+    let d = ''; const w = (g.s - 2).toFixed(1); g.open.forEach((i) => { const x = g.x1 + (i % g.cols) * g.s + 1, y = g.y1 + ((i / g.cols) | 0) * g.s + 1; d += `M${x.toFixed(1)},${y.toFixed(1)}h${w}v${w}h-${w}z`; });
+    s += `<path d="${d}" fill="var(--ov-grid)" opacity=".14"/><rect x="${g.x1}" y="${g.y1}" width="${g.cols * g.s}" height="${g.rows * g.s}" fill="none" stroke="var(--ov-grid)" stroke-opacity=".35" stroke-width="1" ${nse}/>`;
+    if (ov.from) s += `<circle cx="${ov.from[0]}" cy="${ov.from[1]}" r="${g.reach}" fill="none" stroke="var(--ov-grid)" stroke-width="1.3" stroke-dasharray="5 4" opacity=".85" ${nse}/>`;
+    now.push('grid'); }
+  if (on('slice') && ov.spread) { const sp = ov.spread, c = sp.center, Rr = 3 * sp.r0, mx = Math.max(...(sp.room || [1])) || 1;
+    for (let k = 0; k < 8; k++) { const a0 = -Math.PI + k * Math.PI / 4, a1 = a0 + Math.PI / 4, op = 0.04 + 0.26 * ((sp.room ? sp.room[k] : 0) / mx);
+      s += `<path d="M${c.x},${c.y}L${c.x + Rr * Math.cos(a0)},${c.y + Rr * Math.sin(a0)}A${Rr},${Rr} 0 0 1 ${c.x + Rr * Math.cos(a1)},${c.y + Rr * Math.sin(a1)}Z" fill="var(--ov-slice)" fill-opacity="${op.toFixed(3)}" stroke="var(--ov-slice)" stroke-opacity=".45" stroke-width="1" ${nse}/>`; }
+    s += `<circle cx="${c.x}" cy="${c.y}" r="${sp.r0}" fill="none" stroke="var(--ov-slice)" stroke-width="1.4" stroke-dasharray="4 3" ${nse}/><circle cx="${c.x}" cy="${c.y}" r="4" fill="var(--ov-slice)"/>`;
+    now.push('slice'); }
+  if (on('group') && ov.group && ov.group.problem) { const g = ov.group, q = g.problem.q, L = Math.hypot(g.dx, g.dy) || 1, ux = g.dx / L, uy = g.dy / L;
+    let rr = 60; g.nodes.forEach((v) => { if (P[v]) rr = Math.max(rr, Math.hypot(P[v].x - q.x, P[v].y - q.y) + 40); });
+    const a = Math.atan2(uy, ux), p1 = { x: q.x + rr * Math.cos(a - Math.PI / 2), y: q.y + rr * Math.sin(a - Math.PI / 2) }, p2 = { x: q.x + rr * Math.cos(a + Math.PI / 2), y: q.y + rr * Math.sin(a + Math.PI / 2) };
+    s += `<path d="M${p1.x},${p1.y}A${rr},${rr} 0 0 1 ${p2.x},${p2.y}Z" fill="var(--ov-group)" fill-opacity=".08"/><line x1="${p1.x}" y1="${p1.y}" x2="${p2.x}" y2="${p2.y}" stroke="var(--ov-group)" stroke-width="1.3" stroke-dasharray="6 4" ${nse}/>`;
+    const al = Math.min(rr * 0.6, Math.max(40, L * 2)); s += `<line x1="${q.x}" y1="${q.y}" x2="${q.x + ux * al}" y2="${q.y + uy * al}" stroke="var(--ov-group)" stroke-width="2" marker-end="url(#ovArrow)" ${nse}/><circle cx="${q.x}" cy="${q.y}" r="14" fill="none" stroke="var(--ov-group)" stroke-width="2" ${nse}/>`;
+    now.push('group'); }
+  if (on('stress')) { const st = stressOf(f); if (st) { st.core.forEach((v, i) => { const p = P[v], x = st.e[i]; if (!p || x < 0.04) return; const n = Math.max(1, Math.round(x * 4)), gap = 9 - 4 * x, d = R.D[v];
+      for (let r = 1; r <= n; r++) { const o = r * gap; s += `<rect x="${(p.x - d.w / 2 - o).toFixed(1)}" y="${(p.y - d.h / 2 - o).toFixed(1)}" width="${(d.w + 2 * o).toFixed(1)}" height="${(d.h + 2 * o).toFixed(1)}" rx="${(6 + o).toFixed(1)}" fill="none" stroke="var(--ov-stress)" stroke-opacity="${(0.65 - 0.12 * r).toFixed(2)}" stroke-width="1.1" ${nse}/>`; } }); now.push('stress'); } }
+  if (on('clear') && f.key.startsWith('r-')) { const pad = (O.ROUTE && O.ROUTE.pad) || 9; P.forEach((p, v) => { if (!p) return; const d = R.D[v]; s += `<rect x="${p.x - d.w / 2 - pad}" y="${p.y - d.h / 2 - pad}" width="${d.w + 2 * pad}" height="${d.h + 2 * pad}" rx="${4 + pad}" fill="var(--ov-clear)" fill-opacity=".07" stroke="var(--ov-clear)" stroke-opacity=".5" stroke-width="1" stroke-dasharray="2 3" ${nse}/>`; }); now.push('clear'); }
+  const ks = Object.keys(OVL).filter(on); // the legend lists every overlay that is on; the ones drawn on this frame in full
+  $('legend').style.display = ks.length ? 'block' : 'none';
+  $('legend').innerHTML = ks.map((k) => `<div style="opacity:${now.includes(k) ? 1 : 0.5}"><i style="background:${OVL[k][0]};opacity:.75"></i><span><b>${OVL[k][1]}</b>: ${OVL[k][2]}</span></div>`).join('');
+  return s;
+}
+
+// ---------- render ----------
 let C = null;
 function render() {
   if (!R) return; C = current();
@@ -288,7 +518,7 @@ function render() {
       for (let v = 0; v < R.n && !thru.has(k); v++) { if (v === e.s || v === e.t || !C.P[v]) continue; const p = C.P[v], hw = R.D[v].w / 2 + 3, hh = R.D[v].h / 2 + 3;
         for (let i = 0; i < pl.length - 1; i++) if (O.segBox(pl[i].x - p.x, pl[i].y - p.y, pl[i + 1].x - p.x, pl[i + 1].y - p.y, hw, hh)) { thru.add(k); break; } } });
   }
-  let s = '<g>';
+  let s = '<defs><marker id="ovArrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0,0L10,5L0,10z" fill="var(--ov-group)"/></marker></defs><g>' + overlays(C.P) + '</g><g>';
   R.E.forEach((e, k) => { const A = C.P[e.s], B = C.P[e.t]; if (!A || !B) return; const r = C.routes[k]; if (e.s === e.t && !(r && r.loop)) return;
     const op = Math.min(C.alpha[e.s], C.alpha[e.t]); s += `<path class="link${e.sub ? ' sub' : ''}${thru.has(k) ? ' thru' : ''}" d="${pathOf(A, B, r)}"${op < 1 ? ` opacity="${op.toFixed(2)}"` : ''}/>`; });
   s += '</g><g>';
@@ -299,67 +529,155 @@ function render() {
     s += `<g class="node${C.moved.has(v) ? ' moved' : ''}" transform="translate(${p.x.toFixed(1)},${p.y.toFixed(1)})"${C.alpha[v] < 1 ? ` opacity="${C.alpha[v].toFixed(2)}"` : ''}><rect x="${-d.w / 2}" y="${-d.h / 2}" width="${d.w}" height="${d.h}" rx="4"/><text text-anchor="middle" y="4">${esc(R.labels[v])}</text></g>`; });
   s += '</g>';
   svg.innerHTML = s;
-  // caption, scrubber head, step row
-  const m = meta(C.key); $('cK').textContent = `${m[1]} · frame ${C.j + 1} of ${R.frames.length}`; $('cT').textContent = m[2]; $('cD').textContent = m[3];
-  $('time').textContent = `${T.toFixed(2)} / ${TL.total.toFixed(2)} s`;
+  const m = meta(C.key); $('cK').textContent = `${m[1]} · frame ${C.fj + 1} of ${R.frames.length}`; $('cT').textContent = m[2]; $('cD').textContent = m[3];
+  $('cX').textContent = C.fj > 0 ? `${C.f.note ? C.f.note + ' ' : ''}${C.key === 'edit' ? '' : `This frame: ${fmtMs(C.f.ms || 0)} of work.`}` : '';
+  $('time').textContent = `${T.toFixed(1)} / ${TL.total.toFixed(1)} s`;
   const hd = $('scrub').querySelector('.head'); if (hd) hd.style.left = (100 * T / TL.total) + '%';
   $('steps').querySelectorAll('tr[data-k]').forEach((tr) => tr.classList.toggle('cur', tr.dataset.k === C.key));
+  $('tbar').querySelectorAll('.tseg').forEach((el) => el.classList.toggle('cur', el.dataset.k === C.key));
   $('bPlay').textContent = playing ? '⏸ Pause' : '▶ Play';
-  showCounts();
+  showCounts(); postFrame();
 }
-// counts on the frame shown (the nearest frame, on the drawn paths), computed when the frame changes and the playback rests
+// counts on a frame (on the drawn paths), cached
+function metricsAt(j) {
+  if (R.mcache.has(j)) return R.mcache.get(j);
+  const f = R.frames[j], vis = [], idx = new Map();
+  for (let v = 0; v < R.n; v++) if (!isNaN(f.P[2 * v])) { idx.set(v, vis.length); vis.push(v); }
+  const P = vis.map((v) => ({ x: f.P[2 * v], y: f.P[2 * v + 1] })), D = vis.map((v) => R.D[v]), ks = [];
+  R.E.forEach((e, k) => { if (idx.has(e.s) && idx.has(e.t)) ks.push(k); });
+  const edges = ks.map((k) => [idx.get(R.E[k].s), idx.get(R.E[k].t), R.E[k].sub ? 2 : 1, 0]);
+  const routes = ks.map((k) => (f.routes ? { ...f.routes[k], label: $('names').checked && R.E[k].name ? f.routes[k].label : null } : null));
+  const m = vis.length ? O.routeMetrics(P, D, edges, routes, 3) : { cross: 0, sharp: 0, thru: 0, hidden: 0, labelOver: 0, bends: 0 }; m.placed = vis.length;
+  R.mcache.set(j, m); return m;
+}
 let countsFor = -1, countsT = null;
 function showCounts() {
-  const j = C.u0 > 0.5 ? Math.min(R.frames.length - 1, C.j + 1) : C.j; if (j === countsFor) return;
+  const j = C.fj; if (j === countsFor) return;
   clearTimeout(countsT); countsT = setTimeout(() => {
-    countsFor = j; const f = R.frames[j], vis = [], idx = new Map();
-    for (let v = 0; v < R.n; v++) if (!isNaN(f.P[2 * v])) { idx.set(v, vis.length); vis.push(v); }
-    const P = vis.map((v) => ({ x: f.P[2 * v], y: f.P[2 * v + 1] })), D = vis.map((v) => R.D[v]), ks = [];
-    R.E.forEach((e, k) => { if (idx.has(e.s) && idx.has(e.t)) ks.push(k); });
-    const edges = ks.map((k) => [idx.get(R.E[k].s), idx.get(R.E[k].t), R.E[k].sub ? 2 : 1, 0]);
-    const routes = ks.map((k) => (f.routes ? { ...f.routes[k], label: $('names').checked && R.E[k].name ? f.routes[k].label : null } : null));
-    const m = O.routeMetrics(P, D, edges, routes, 3);
-    $('counts').innerHTML = [['Crossings', m.cross], ['Sharp crossings', m.sharp], ['Through classes', m.thru], ['Hidden parallel links', m.hidden], ['Names on names or classes', f.routes ? m.labelOver : '–'], ['Bends', m.bends], ['Classes placed', vis.length + ' of ' + R.n]].map(([l, v]) => `<span>${l}</span><b>${v}</b>`).join('');
+    countsFor = j; const f = R.frames[j], m = metricsAt(j);
+    $('counts').innerHTML = [['Crossings', m.cross], ['Sharp crossings', m.sharp], ['Through classes', m.thru], ['Hidden parallel links', m.hidden], ['Names on names or classes', f.routes ? m.labelOver : '–'], ['Bends', m.bends], ['Classes placed', m.placed + ' of ' + R.n]].map(([l, v]) => `<span>${l}</span><b>${v}</b>`).join('');
   }, playing ? 250 : 30);
 }
 
-// ---------- side panel ----------
+// ---------- side panel: steps, time bar, variants ----------
+const GROUP_ORDER = ['Variants not kept', 'Placement', 'Open-source layout', 'Clean-up', 'Your edit', 'Links'];
+function orderedKeys(keys) {
+  const pos = (k) => { if (k.startsWith('variant:')) return -1; const o = ordOf(k); if (o === 'place') return SI.cross + ORD.place.indexOf(k) * 0.1; if (o === 'clean') return SI['c-single'] + ORD.clean.indexOf(k) * 0.1; return SI[k]; };
+  return keys.sort((a, b) => GROUP_ORDER.indexOf(meta(a)[1]) - GROUP_ORDER.indexOf(meta(b)[1]) || pos(a) - pos(b));
+}
+let SS = null;
 function buildPanel() {
-  const cnt = {}; R.frames.forEach((f, j) => { if (j) cnt[f.key] = (cnt[f.key] || 0) + 1; });
-  const keys = Object.keys(cnt).sort((a, b) => (a.startsWith('variant:') ? -1 : SI[a]) - (b.startsWith('variant:') ? -1 : SI[b]));
-  // steps that were left out (Run unticked) stay listed so they can be put back
-  STEPS.forEach((s) => { if (!cnt[s[0]] && s[5] && !ctl(s[0]).run) keys.push(s[0]); });
-  const W = keys.reduce((s, k) => s + (cnt[k] && ctl(k).show ? ctl(k).w : 0), 0) || 1;
-  let h = '', g = null;
-  keys.sort((a, b) => (a.startsWith('variant:') ? -1 : SI[a]) - (b.startsWith('variant:') ? -1 : SI[b])).forEach((k) => {
-    const m = meta(k), c = ctl(k);
-    if (m[1] !== g) { g = m[1]; h += `<tr class="group"><td colspan="5">${g}</td></tr>`; }
-    const share = cnt[k] && c.show ? Math.round(100 * c.w / W) + '%' : cnt[k] ? 'at once' : 'left out';
-    h += `<tr data-k="${k}" class="${c.show && cnt[k] ? '' : 'off'}"><td class="name" title="${esc(m[3])}"><span class="sw" style="background:${m[4]}"></span>${esc(m[2])}</td>`
-      + `<td class="n" title="frames">${cnt[k] || 0}</td>`
-      + `<td><label class="tog" title="Animate this step"><input type="checkbox" data-c="show" ${c.show ? 'checked' : ''}>Show</label></td>`
-      + `<td>${m[5] ? `<label class="tog" title="Untick to redo the layout without this step"><input type="checkbox" data-c="run" ${c.run ? 'checked' : ''}>Run</label>` : ''}</td>`
-      + `<td class="n"><input type="range" min="0.1" max="5" step="0.1" value="${c.w}" data-c="w" title="Share of the playing time"> <span>${share}</span></td></tr>`;
+  SS = stepStats();
+  const ks = new Set(Object.keys(SS)); STEPS.forEach((s) => { if (s[5] && !ctl(s[0]).run && !(R.engine && !s[0].startsWith('r-'))) ks.add(s[0]); }); // left out: still listed, to put back
+  if (!R.engine) [...ORD.place, ...ORD.clean].forEach((k) => ks.add(k)); // steps that can be reordered: always listed, even when they made no move
+  const keys = [...ks];
+  let h = '', g = null; const canOrder = (k) => ordOf(k) && !R.engine;
+  orderedKeys(keys).forEach((k) => {
+    const m = meta(k), c = ctl(k), st = SS[k];
+    if (m[1] !== g) { g = m[1]; h += `<tr class="group"><td colspan="6">${g}</td></tr>`; }
+    h += `<tr data-k="${k}" class="${c.show && st ? '' : 'off'}"${canOrder(k) ? ' draggable="true"' : ''}><td class="name">${canOrder(k) ? '<span class="grip">⋮⋮</span>' : ''}<span class="sw" style="background:${m[4]}"></span>${esc(m[2])}</td>`
+      + `<td class="n">${st ? fmtMs(st.ms) : !c.run ? 'left out' : 'no move'}</td>`
+      + `<td class="n">${st ? st.frames + ' fr' : ''}</td>`
+      + `<td><label class="tog"><input type="checkbox" data-c="show" ${c.show ? 'checked' : ''}>Show</label></td>`
+      + `<td>${m[5] ? `<label class="tog"><input type="checkbox" data-c="run" ${c.run ? 'checked' : ''}>Run</label>` : ''}</td>`
+      + `<td><button class="lock${c.lock ? ' on' : ''}" data-c="lock">🔒</button></td></tr>`;
   });
   $('steps').innerHTML = h;
-  $('totalInfo').textContent = `${R.frames.length} frames`;
+  $('ordRow').hidden = R.engine || (ORD.place.join() === 'cross,thru,tight' && ORD.clean.join() === 'c-single,c-unit,c-spread,c-group');
+  const sumOf = (re) => Object.entries(SS).filter(([k]) => re.test(k)).reduce((s, [, x]) => s + x.ms, 0);
+  const lay = sumOf(/^(start|restart|stress|separate|cross|thru|tight|leaves|leaffix|e-iter|e-final|variant:.*)$/), cl = sumOf(/^c-/), li = sumOf(/^r-/);
+  $('totalInfo').textContent = `${R.frames.length} frames · work ${fmtMs(lay + cl + li)}: layout ${fmtMs(lay)}${R.engine ? '' : `, clean-up ${fmtMs(cl)}`}, links ${fmtMs(li)}`;
   const vs = R.variants; $('variants').innerHTML = vs.length > 1 ? '<b>Variants tried</b> (lower score is better):' + vs.map((v) => `<div>${v.kept ? '✓' : '·'} ${esc(v.name)}: score ${v.score == null ? '–' : Math.round(v.score)}${v.kept ? ' (kept)' : ''}</div>`).join('') : '';
   // scrubber segments, one per run of frames of the same step
   let sc = ''; for (let j = 1; j < R.frames.length;) { const k = R.frames[j].key; let e = j; while (e + 1 < R.frames.length && R.frames[e + 1].key === k) e++;
-    const x0 = TL.at[j - 1], x1 = TL.at[e]; if (x1 > x0) sc += `<div class="seg" style="left:${100 * x0 / TL.total}%;width:${100 * (x1 - x0) / TL.total}%;background:${meta(k)[4]}" title="${esc(meta(k)[2])}"></div>`; j = e + 1; }
+    const x0 = TL.at[j - 1], x1 = TL.at[e]; if (x1 > x0) sc += `<div class="seg" data-k="${k}" style="left:${100 * x0 / TL.total}%;width:${100 * (x1 - x0) / TL.total}%;background:${meta(k)[4]}"></div>`; j = e + 1; }
   $('scrub').innerHTML = sc + '<div class="head"></div>';
+  buildBar();
 }
-$('steps').addEventListener('input', (ev) => { const tr = ev.target.closest('tr'), c = ev.target.dataset.c; if (!tr || c !== 'w') return; const k = tr.dataset.k; ctl(k).w = +ev.target.value; store.set('ctl', CTL); const keepU = T / TL.total; timeline(); T = keepU * TL.total; buildPanel(); render(); });
-$('steps').addEventListener('change', (ev) => { const tr = ev.target.closest('tr'), c = ev.target.dataset.c; if (!tr || !c || c === 'w') return; const k = tr.dataset.k; ctl(k)[c] = ev.target.checked; store.set('ctl', CTL);
-  if (c === 'run') run(); else { const keepU = T / TL.total; timeline(); T = keepU * TL.total; buildPanel(); render(); } });
-$('steps').addEventListener('click', (ev) => { const td = ev.target.closest('td.name'); if (!td) return; const k = td.parentElement.dataset.k, j = R.frames.findIndex((f, i) => i && f.key === k); if (j > 0) { pause(); T = TL.at[j - 1]; userView = false; render(); } });
+// one bar: a segment per step shown, as long as its playing time; drag the border between two steps
+let barKeys = [];
+function buildBar() {
+  barKeys = orderedKeys(Object.keys(SS).filter((k) => SS[k].dur > 0)); const tot = barKeys.reduce((s, k) => s + SS[k].dur, 0) || 1;
+  let h = '', x = 0; barKeys.forEach((k, i) => { const w = 100 * SS[k].dur / tot, m = meta(k);
+    h += `<div class="tseg${ctl(k).lock ? ' locked' : ''}" data-k="${k}" style="width:${w}%;background:${m[4]}">${w > 10 ? esc(m[2].split(' ')[0]) : ''}</div>`; x += w;
+    if (i < barKeys.length - 1) h += `<div class="hdl" data-i="${i}" style="left:${x}%"></div>`; });
+  $('tbar').innerHTML = h; $('tbarInfo').textContent = `${TL.total.toFixed(1)} s at 1×`;
+}
+const retime = () => { const u = TL.total ? T / TL.total : 0; timeline(); T = u * TL.total; buildPanel(); render(); };
+let bdrag = null;
+$('tbar').addEventListener('pointerdown', (ev) => { const hd = ev.target.closest('.hdl'); if (!hd || !R) return; ev.preventDefault(); pause();
+  const i = +hd.dataset.i, A = barKeys[i], B = barKeys[i + 1], r = $('tbar').getBoundingClientRect(), tot = barKeys.reduce((s, k) => s + SS[k].dur, 0);
+  bdrag = { A, B, x0: ev.clientX, sPerPx: tot / r.width, dA: SS[A].dur, dB: SS[B].dur, bA: SS[A].base, bB: SS[B].base, mode: document.querySelector('input[name=tmode]:checked').value }; $('tbar').setPointerCapture(ev.pointerId); });
+$('tbar').addEventListener('pointermove', (ev) => { if (!bdrag) return; const d = bdrag, min = 0.05; let dt = (ev.clientX - d.x0) * d.sPerPx;
+  const lockA = ctl(d.A).lock, lockB = ctl(d.B).lock, shrink = d.mode === 'shrink';
+  if (dt < 0 && lockA) dt = 0; // a locked step is never shrunk
+  dt = Math.max(dt, min - d.dA); if (shrink && !lockB && dt > 0) dt = Math.min(dt, d.dB - min);
+  ctl(d.A).w = (d.dA + dt) / d.bA; // the left step takes the change; in "shrink" mode its neighbor gives or takes it, unless locked (then the whole grows)
+  if (shrink && !(dt > 0 && lockB)) ctl(d.B).w = Math.max(min, d.dB - dt) / d.bB;
+  retime(); });
+$('tbar').addEventListener('pointerup', () => { if (bdrag) { bdrag = null; saveCtl(); } });
+$('tReset').onclick = () => { Object.keys(CTL).forEach((k) => { CTL[k].w = 1; CTL[k].lock = false; }); saveCtl(); if (R) retime(); };
+if (store.get('tmode', 'shrink') === 'stretch') document.querySelector('input[name=tmode][value=stretch]').checked = true;
+document.querySelectorAll('input[name=tmode]').forEach((el) => (el.onchange = () => store.set('tmode', el.value)));
+
+$('steps').addEventListener('change', (ev) => { const tr = ev.target.closest('tr'), c = ev.target.dataset.c; if (!tr || !c) return; const k = tr.dataset.k; ctl(k)[c] = ev.target.checked; saveCtl();
+  if (c === 'run') run(); else retime(); });
+$('steps').addEventListener('click', (ev) => { const lb = ev.target.closest('button.lock'); if (lb) { const k = lb.closest('tr').dataset.k; ctl(k).lock = !ctl(k).lock; saveCtl(); buildPanel(); render(); return; }
+  const td = ev.target.closest('td.name'); if (!td || ev.target.classList.contains('grip')) return; jumpTo(td.parentElement.dataset.k); });
+function jumpTo(k) { const j = R.frames.findIndex((f, i) => i && f.key === k); if (j > 0) { pause(); T = TL.at[j - 1]; userView = false; render(); } }
+// drag and drop: the order of the crossing / off-link / shortening steps, and of the clean-up stages
+let dragK = null;
+$('steps').addEventListener('dragstart', (ev) => { const tr = ev.target.closest('tr[draggable]'); if (!tr) return; dragK = tr.dataset.k; ev.dataTransfer.effectAllowed = 'move'; ev.dataTransfer.setData('text/plain', dragK); tip.style.display = 'none'; });
+$('steps').addEventListener('dragover', (ev) => { const tr = ev.target.closest('tr[data-k]'); if (!dragK || !tr || ordOf(tr.dataset.k) !== ordOf(dragK)) return; ev.preventDefault(); $('steps').querySelectorAll('tr.drop').forEach((x) => x.classList.remove('drop')); tr.classList.add('drop'); });
+$('steps').addEventListener('dragend', () => { dragK = null; $('steps').querySelectorAll('tr.drop').forEach((x) => x.classList.remove('drop')); });
+$('steps').addEventListener('drop', (ev) => { const tr = ev.target.closest('tr[data-k]'); if (!dragK || !tr) return; ev.preventDefault(); const to = tr.dataset.k, o = ordOf(dragK); if (o !== ordOf(to) || to === dragK) return;
+  const L = ORD[o].filter((k) => k !== dragK); L.splice(L.indexOf(to), 0, dragK); ORD[o] = L; store.set('order:' + o, L); dragK = null; run(); });
+
+$('oReset').onclick = () => { ORD.place = ['cross', 'thru', 'tight']; ORD.clean = ['c-single', 'c-unit', 'c-spread', 'c-group']; store.set('order:place', ORD.place); store.set('order:clean', ORD.clean); run(); };
+// ---------- tooltips and the step menu ----------
+function tipHtml(k) {
+  const m = meta(k), st = SS && SS[k], c = ctl(k), o = ordOf(k); let h = `<div class="g">${esc(m[1])}</div><div class="t">${esc(m[2])}</div><div class="d">${esc(m[3])}</div>`;
+  if (st) {
+    const moved = new Set(); let dc = 0, dt = 0;
+    st.runs.forEach(([a, b]) => { for (let j = a; j <= b; j++) { const p = R.frames[j - 1].P, q = R.frames[j].P; for (let v = 0; v < R.n; v++) if (!isNaN(p[2 * v]) && !isNaN(q[2 * v]) && Math.hypot(p[2 * v] - q[2 * v], p[2 * v + 1] - q[2 * v + 1]) > 0.5) moved.add(v); }
+      const m0 = metricsAt(a - 1), m1 = metricsAt(b); dc += m1.cross - m0.cross; dt += m1.thru - m0.thru; });
+    const sg = (x) => (x > 0 ? '+' + x : x < 0 ? '−' + -x : '±0');
+    h += `<div class="m">Work: <b>${fmtMs(st.ms)}</b> (measured in this browser) · ${st.frames} frame${st.frames > 1 ? 's' : ''} · ${moved.size} class${moved.size === 1 ? '' : 'es'} moved</div>`;
+    if (!k.startsWith('variant:')) h += `<div class="m">Over this step: crossings ${sg(dc)}, links through classes ${sg(dt)}</div>`;
+    const I = R.info && R.info[k]; if (I) h += `<div class="m">Tried ${I.tried}, kept ${I.kept}${I.skipped ? `, skipped ${I.skipped}` : ''}, over ${I.rounds} round${I.rounds > 1 ? 's' : ''}</div>`;
+    h += `<div class="m">Plays for ${st.dur.toFixed(2)} s at 1×${Math.abs(c.w - 1) > 0.01 ? ` (${c.w.toFixed(2)}× its measured time)` : ''}${c.show ? '' : ' (not shown: happens at once)'}${c.lock ? ' · locked' : ''}</div>`;
+  } else if (!c.run) h += '<div class="m">Left out of this run.</div>';
+  if (o === 'place' && !R.engine) h += '<div class="d">Crossing swaps, off-link moves and shortening can run in another order: drag the rows. A last off-link pass always follows them.</div>';
+  if (o === 'clean' && !R.engine) h += '<div class="d">The clean-up stages can run in another order: drag the rows. The final leaf pass always comes last.</div>';
+  return h;
+}
+const tip = $('tip'); let tipK = null;
+document.addEventListener('mouseover', (ev) => { const el = ev.target.closest('#steps tr[data-k], #tbar .tseg, #scrub .seg'); if (!el || !R || bdrag || dragK) { tip.style.display = 'none'; tipK = null; return; }
+  if (el.dataset.k !== tipK) { tipK = el.dataset.k; tip.innerHTML = tipHtml(tipK); } tip.style.display = 'block'; });
+document.addEventListener('mousemove', (ev) => { if (tip.style.display !== 'block') return; const w = tip.offsetWidth, h = tip.offsetHeight; let x = ev.clientX + 14, y = ev.clientY + 14;
+  if (x + w > innerWidth - 8) x = ev.clientX - w - 14; if (y + h > innerHeight - 8) y = ev.clientY - h - 14; tip.style.left = Math.max(8, x) + 'px'; tip.style.top = Math.max(8, y) + 'px'; });
+const menu = $('menu');
+document.addEventListener('contextmenu', (ev) => { const el = ev.target.closest('#steps tr[data-k], #tbar .tseg, #scrub .seg'); if (!el || !R) return; ev.preventDefault(); tip.style.display = 'none';
+  const k = el.dataset.k, m = meta(k), c = ctl(k), has = SS && SS[k];
+  const items = [[has ? 'Jump to this step' : null, () => jumpTo(k)], [c.show ? 'Happen at once (do not animate)' : 'Animate this step', () => { c.show = !c.show; saveCtl(); retime(); }],
+    [m[5] ? (c.run ? 'Run the layout without this step' : 'Run the layout with this step again') : null, () => { c.run = !c.run; saveCtl(); run(); }],
+    [c.lock ? 'Unlock its playing time' : 'Lock its playing time', () => { c.lock = !c.lock; saveCtl(); retime(); }],
+    [has ? 'Twice the time' : null, () => { c.w *= 2; saveCtl(); retime(); }], [has && !c.lock ? 'Half the time' : null, () => { c.w /= 2; saveCtl(); retime(); }],
+    [Math.abs(c.w - 1) > 0.01 ? 'Back to its measured time' : null, () => { c.w = 1; saveCtl(); retime(); }]].filter((x) => x[0]);
+  menu.innerHTML = `<div class="h">${esc(m[2])}</div>` + items.map((x, i) => `<button data-i="${i}">${esc(x[0])}</button>`).join('');
+  menu.onclick = (e) => { const b = e.target.closest('button'); if (!b) return; menu.style.display = 'none'; items[+b.dataset.i][1](); };
+  menu.style.display = 'block'; const w = menu.offsetWidth, h = menu.offsetHeight; menu.style.left = Math.min(ev.clientX, innerWidth - w - 8) + 'px'; menu.style.top = Math.min(ev.clientY, innerHeight - h - 8) + 'px'; });
+document.addEventListener('pointerdown', (ev) => { if (!ev.target.closest('#menu')) menu.style.display = 'none'; });
+document.addEventListener('keydown', (ev) => { if (ev.key === 'Escape') menu.style.display = 'none'; });
 
 // ---------- transport ----------
-function tick(ts) { if (!playing) return; const dt = lastTs ? (ts - lastTs) / 1000 : 0; lastTs = ts; T = Math.min(TL.total, T + dt * +$('speed').value); if (T >= TL.total) playing = false; render(); if (playing) requestAnimationFrame(tick); }
+const speed = () => Math.pow(10, +$('speed').value);
+const showSpeed = () => { const s = speed(); $('speedV').textContent = (s >= 10 ? Math.round(s) : s >= 1 ? s.toFixed(1).replace(/\.0$/, '') : s.toFixed(2)) + '×'; };
+function tick(ts) { if (!playing) return; const dt = lastTs ? (ts - lastTs) / 1000 : 0; lastTs = ts; T = Math.min(TL.total, T + dt * speed()); if (T >= TL.total) playing = false; render(); if (playing) requestAnimationFrame(tick); }
 function play() { if (!R) return; if (T >= TL.total) T = 0; playing = true; lastTs = 0; userView = false; requestAnimationFrame(tick); render(); }
-function pause() { playing = false; render(); }
+function pause() { playing = false; if (R) render(); }
 $('bPlay').onclick = () => (playing ? pause() : play());
-$('bStart').onclick = () => { pause(); T = 0; userView = false; fitView(current().P, true); render(); };
+$('bStart').onclick = () => { pause(); T = 0; userView = false; render(); };
 $('bEnd').onclick = () => { pause(); T = TL.total; render(); };
 const frameStep = (d) => { pause(); const [j, u] = frameAt(T); let k = d > 0 ? j + 1 : u > 0 ? j : j - 1; k = Math.max(0, Math.min(R.frames.length - 1, k)); T = TL.at[k]; render(); };
 const stepStep = (d) => { pause(); const F = R.frames, [j] = frameAt(T); let k = j; const key = F[Math.min(F.length - 1, j + (d > 0 ? 1 : 0))].key;
@@ -369,15 +687,14 @@ const stepStep = (d) => { pause(); const F = R.frames, [j] = frameAt(T); let k =
 $('bNext').onclick = () => frameStep(1); $('bPrev').onclick = () => frameStep(-1);
 $('bNextStep').onclick = () => stepStep(1); $('bPrevStep').onclick = () => stepStep(-1);
 let scrubbing = false; const scrubTo = (ev) => { const r = $('scrub').getBoundingClientRect(); T = Math.max(0, Math.min(1, (ev.clientX - r.left) / r.width)) * TL.total; render(); };
-$('scrub').addEventListener('pointerdown', (ev) => { if (!R) return; pause(); scrubbing = true; $('scrub').setPointerCapture(ev.pointerId); scrubTo(ev); });
+$('scrub').addEventListener('pointerdown', (ev) => { if (!R || ev.button !== 0) return; pause(); scrubbing = true; $('scrub').setPointerCapture(ev.pointerId); scrubTo(ev); });
 $('scrub').addEventListener('pointermove', (ev) => { if (scrubbing) scrubTo(ev); });
 $('scrub').addEventListener('pointerup', () => (scrubbing = false));
 document.addEventListener('keydown', (ev) => { if (ev.target.tagName === 'INPUT' || ev.target.tagName === 'SELECT' || !R) return;
   const k = ev.key; if (k === ' ') { ev.preventDefault(); playing ? pause() : play(); } else if (k === 'ArrowRight') frameStep(1); else if (k === 'ArrowLeft') frameStep(-1);
   else if (k === 'PageDown') { ev.preventDefault(); stepStep(1); } else if (k === 'PageUp') { ev.preventDefault(); stepStep(-1); } else if (k === 'Home') $('bStart').onclick(); else if (k === 'End') $('bEnd').onclick(); });
-$('dur').onchange = () => { store.set('dur', +$('dur').value); const u = T / TL.total; timeline(); T = u * TL.total; buildPanel(); render(); };
-$('speed').onchange = () => store.set('speed', $('speed').value);
-['follow', 'names', 'marks'].forEach((id) => ($(id).onchange = () => { store.set(id, $(id).checked); if (id === 'follow') userView = false; countsFor = -1; render(); }));
+$('speed').oninput = () => { showSpeed(); store.set('speed2', +$('speed').value); };
+['follow', 'names', 'marks'].forEach((id) => ($(id).onchange = () => { store.set(id, $(id).checked); if (id === 'follow') userView = false; countsFor = -1; if (R) R.mcache = new Map(); render(); }));
 // pan and zoom by hand stop the camera from following until Play or Home
 let pan = null;
 svg.addEventListener('pointerdown', (ev) => { pan = { x: ev.clientX, y: ev.clientY, v: { ...view } }; svg.setPointerCapture(ev.pointerId); });
@@ -387,25 +704,42 @@ svg.addEventListener('wheel', (ev) => { ev.preventDefault(); const p = svg.creat
   view = { x: q.x - (q.x - view.x) * f, y: q.y - (q.y - view.y) * f, w: view.w * f, h: view.h * f }; userView = true; svg.setAttribute('viewBox', `${view.x} ${view.y} ${view.w} ${view.h}`); }, { passive: false });
 window.addEventListener('resize', () => { if (R) render(); });
 
+// ---------- the Layout Lab, kept in step ----------
+// The lab opens on the frame shown here and follows the playback until a class is moved there; each move comes back here
+// and the playback continues from it (BroadcastChannel 'layout-sync'; the frame to open on is left in localStorage).
+const bc = 'BroadcastChannel' in window ? new BroadcastChannel('layout-sync') : null;
+function framePayload() {
+  const P = C.P.map((p) => (p ? [Math.round(p.x * 10) / 10, Math.round(p.y * 10) / 10] : null)), H = [];
+  R.E.forEach((e, k) => { if (e.s === e.t) return; const r = C.routes[k]; H.push(r && r.bends ? r.bends.map((h) => [+h.t.toFixed(4), +h.d.toFixed(1)]) : []); });
+  return { type: 'frame', graph: R.key, algo: R.algo, n: R.n, j: C.fj, of: R.frames.length, key: C.key, step: meta(C.key)[2], group: meta(C.key)[1], P, H };
+}
+let postT = 0, postLast = '';
+function postFrame() { if (!bc || !C) return; const now = performance.now(), sig = C.j + ':' + C.u0.toFixed(2); if (sig === postLast || (playing && now - postT < 90)) return; postT = now; postLast = sig; bc.postMessage(framePayload()); }
+if (bc) bc.onmessage = (ev) => { const m = ev.data || {}; if (m.type === 'edit') applyEdit(m); else if (m.type === 'hello' && R && C) { postLast = ''; postFrame(); } };
+$('labLink').addEventListener('click', () => { if (!R || !C) return; try { localStorage.setItem('layout-sync:frame', JSON.stringify(framePayload())); } catch (e) {}
+  $('labLink').href = `lab.html?graph=${R.key}&algo=${R.engine ? 'auto' : R.algo}&sync=1`; });
+
 // ---------- run ----------
 let runSeq = 0;
 function run() {
-  const key = $('graph').value, algo = $('algo').value, seed = Math.max(1, +$('seed').value || 1), my = ++runSeq;
-  pause(); $('status').textContent = 'Laying out…';
-  const qs = `?graph=${key}&algo=${algo}&seed=${seed}`; history.replaceState(null, '', qs); $('labLink').href = 'lab.html?graph=' + key;
-  store.set('last', { key, algo, seed });
+  const key = $('graph').value, algo = $('algo').value, seed = Math.max(1, +$('seed').value || 1), my = ++runSeq, engine = !!ENGINES[algo];
+  pause(); $('status').textContent = engine ? `Running ${ENGINES[algo].name}…` : 'Laying out…'; $('oursTog').hidden = !engine;
+  history.replaceState(null, '', `?graph=${key}&algo=${algo}&seed=${seed}`); $('labLink').href = `lab.html?graph=${key}&sync=1`;
+  store.set('last', { key, algo, seed }); $('editBar').classList.remove('on');
   setTimeout(() => recordRun(key, algo, seed).then((r) => {
     if (my !== runSeq) return; R = r; timeline(); buildPanel(); T = 0; countsFor = -1; userView = false;
-    fitView(current().P, true); render();
+    fitView(unflat(R.frames[R.frames.length - 1].P), true); render();
     $('status').textContent = `${R.n} classes, ${R.E.length} links`;
     play();
-  }).catch((err) => { $('status').textContent = 'Could not lay out: ' + err.message; console.error(err); }), 20);
+  }).catch((err) => { if (my === runSeq) $('status').textContent = 'Could not lay out: ' + err.message; console.error(err); }), 20);
 }
-$('graph').onchange = run; $('algo').onchange = run; $('seed').onchange = run;
+$('graph').onchange = run; $('algo').onchange = run; $('seed').onchange = run; $('ourLinks').onchange = run;
+const showLimit = () => ($('limitV').textContent = (+$('limit').value / 1000).toFixed(1) + ' s');
+$('limit').oninput = showLimit; $('limit').onchange = () => { store.set('limit', +$('limit').value); run(); };
 const q = new URLSearchParams(location.search), last = store.get('last', {});
 $('graph').value = q.get('graph') || last.key || 'crm'; if (!$('graph').value) $('graph').value = 'crm';
-$('algo').value = q.get('algo') || last.algo || 'auto'; $('seed').value = q.get('seed') || last.seed || 1;
-$('dur').value = store.get('dur', 10); $('speed').value = store.get('speed', '1');
+$('algo').value = q.get('algo') || last.algo || 'auto'; if (!$('algo').value) $('algo').value = 'auto'; $('seed').value = q.get('seed') || last.seed || 1;
+$('speed').value = store.get('speed2', 0); showSpeed(); $('limit').value = store.get('limit', 1500); showLimit();
 ['follow', 'names', 'marks'].forEach((id) => ($(id).checked = store.get(id, true)));
 run();
 </script>

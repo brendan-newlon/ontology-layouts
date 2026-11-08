@@ -6,7 +6,7 @@ Layouts for drawing ontologies (classes as boxes, subclass and relationship link
 - **Mycelium**: the same, with closely linked groups of classes kept together and room around hubs.
 - **Tree**: a top-down tree for taxonomies, after Reingold–Tilford, with levels deep enough that no parent-to-child line cuts through a sibling. On request only: these layouts are for business models joined mostly by relationships.
 - **Best Read**: runs Tidy Stress and Mycelium and keeps the more readable drawing.
-- **Link routing**: after the layout, draws the links without moving a class: parallel and reciprocal links as arcs, self-links as loops, bends round classes in the way, link ends spread along crowded boxes, link names placed where they cover nothing.
+- **Link routing**: after the layout, draws the links: parallel and reciprocal links as arcs, self-links as loops on the most open side, bends round classes in the way that stay inside the drawing, link ends spread along crowded boxes, link names on or beside their link where they cover nothing; a class a link still runs through is pushed off it when that helps.
 - **Clean-up**: a pass after any layout that moves classes the way a person would (single moves into open space, leaf groups, spreading crowded regions), learned from recorded hand edits.
 
 Same input, same drawing on any computer: time limits count units of work, not wall time.
@@ -36,4 +36,4 @@ Playback and lab: double-click `Start Layout Lab.cmd`, or by hand: serve the rep
 
 ## Using the code
 
-The layout functions take boxes `[{w, h}]` and links `[[a, b, kind]]` (kind 2 for a subclass link, 1 otherwise) and return positions. `_ogRouteLinks(positions, boxes, links)` then returns one route per link (`[a, b, kind, nameWidth]`; self-links and repeated links welcome): bends `{t, d}`, port offsets, a loop, a name position. The function names carry the prefix `_og` (ontology graph). The code expects a `log(level, message)` function in scope; `tests/check_ontology_layout.mjs` shows how to load it.
+The layout functions take boxes `[{w, h}]` and links `[[a, b, kind]]` (kind 2 for a subclass link, 1 otherwise) and return positions. `_ogRouteLinks(positions, boxes, links)` then returns one route per link (`[a, b, kind, nameWidth]`; self-links and repeated links welcome): bends `{t, d}`, port offsets, a loop, a name position, plus `pos`, the positions the routes belong to (classes may have been pushed off links; pass `{ settle: false }` to keep every class where it is). `_ogSetTimeLimit(ms)` sets how long the layouts, clean-up and routing may work together (default 1500, on the work clock). The function names carry the prefix `_og` (ontology graph). The code expects a `log(level, message)` function in scope; `tests/check_ontology_layout.mjs` shows how to load it.

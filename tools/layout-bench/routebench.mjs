@@ -29,8 +29,8 @@ for (const r of rows.filter((r) => r.algo === algo && inSet(r.key))) {
   const edges = r.edges.map(([s, t, sub], k) => [s, t, sub ? 2 : 1, nm[k] ? nm[k].length * 6 + 8 : 0]);
   STEPS.forEach(([name, opt], i) => {
     const t0 = O.now(); let routes;
-    if (opt.labelMid) { routes = O.route(P, N, edges, { ...extra, labels: false }).routes; routes.forEach((ro, k) => { if (edges[k][3]) { const pl = O.routePoly(P[edges[k][0]], P[edges[k][1]], ro, 8), c = pl[pl.length >> 1]; ro.label = { x: c.x, y: c.y, w: edges[k][3], h: 14 }; } }); }
-    else routes = O.route(P, N, edges, { ...extra, ...opt }).routes;
+    if (opt.labelMid) { routes = O.route(P, N, edges, { settle: false, ...extra, labels: false }).routes; routes.forEach((ro, k) => { if (edges[k][3]) { const pl = O.routePoly(P[edges[k][0]], P[edges[k][1]], ro, 8), c = pl[pl.length >> 1]; ro.label = { x: c.x, y: c.y, w: edges[k][3], h: 14 }; } }); }
+    else routes = O.route(P, N, edges, { settle: false, ...extra, ...opt }).routes; // steps that never move a class
     const ms = O.now() - t0, m = O.routeMetrics(P, N, edges, opt.labels ? routes : routes.map((x) => ({ ...x, label: null })));
     for (const f in m) tot[i][f] += m[f]; tot[i].ms = Math.max(tot[i].ms, ms); tot[i].g++;
     if (process.env.RB_VERBOSE) console.log(r.key.padEnd(12), name.padEnd(24), JSON.stringify(m), Math.round(ms) + 'ms');
