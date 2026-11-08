@@ -7,6 +7,8 @@ Layouts for drawing ontologies (classes as boxes, subclass and relationship link
 - **Tree**: a top-down tree for taxonomies, after Reingold–Tilford, with levels deep enough that no parent-to-child line cuts through a sibling. On request only: these layouts are for business models joined mostly by relationships.
 - **Best Read**: runs Tidy Stress and Mycelium and keeps the more readable drawing.
 - **Link routing**: after the layout, draws the links: parallel and reciprocal links as arcs, self-links as loops on the most open side, bends round classes in the way that stay inside the drawing, link ends spread along crowded boxes, link names on or beside their link where they cover nothing; a class a link still runs through is pushed off it when that helps.
+- **Keeping a drawing**: after an edit, new classes are placed round the old ones, which stay where the reader knows them.
+- **Relation classes**: a relationship modelled as a class, when marked, sits on the line between the two classes it relates.
 - **Clean-up**: a pass after any layout that moves classes the way a person would (single moves into open space, leaf groups, spreading crowded regions), learned from recorded hand edits. After it: one-link classes trade places or move out of a fence of lines, classes are pushed off links, and parts that sprawl toward the edge (chains, small trees, whole groups) are pulled in where that makes the drawing smaller with no more problems.
 
 Same input, same drawing on any computer: time limits count units of work, not wall time.
@@ -20,7 +22,7 @@ Same input, same drawing on any computer: time limits count units of work, not w
 | `docs/ONTOLOGY-LAYOUT-ALGORITHMS.html` | The full write-up: interactive, self-contained, with drawings side by side against eleven open-source layouts. |
 | `docs/PLAYBACK-AND-LAB.md` | The Layout Playback and Layout Lab as a reusable pattern: watch any step-by-step algorithm work, switch steps off, reorder them, edit by hand and record why, then turn the demonstrations into rules. How to adapt it to another algorithm. |
 | `docs/BEYOND-LAYOUT.md` | For discussion: which of these methods could carry over to other optimization problems (warehouse slotting, scheduling, bin packing, routing, dependency solving), and which would not. |
-| `tests/check_ontology_layout.mjs` | Checks on the layout code (work clock only, clean-up grid equals checking every pair, same drawing twice, tree stays top-down, link routing, the passes after the clean-up, pulling in from the edge, the public entry points); `--self-test` proves each check fires. |
+| `tests/check_ontology_layout.mjs` | Checks on the layout code (work clock only, clean-up grid equals checking every pair, same drawing twice, tree stays top-down, link routing, the passes after the clean-up, pulling in from the edge, the public entry points, keeping a drawing and relation classes); `--self-test` proves each check fires. |
 | `tools/layout-bench/` | Benchmark graphs, the Node and browser benches, the hands-on lab, recorded results and the script that builds the write-up. See its README. |
 | `tools/recv.py` | Local receiver for the lab: saves posted sessions into `_temp/`. |
 | `Start Layout Lab.cmd` | Double-click (Windows) to open the playback and the lab: starts a page server for this folder (first free port from 8611; one already serving this folder is reused) and the receiver (port 8613) in small windows; close them to stop. |
@@ -51,6 +53,10 @@ const d = OntologyLayouts.draw(boxes, links, { arrow: 8 });
 // name position); d.groups: a group number per class, for hulls or background areas round related classes
 ```
 Or step by step: `bestRead` (or `tidyStress`, `mycelium`), `cleanUp`, `routeLinks`, `routePaths`; the [write-up](docs/ONTOLOGY-LAYOUT-ALGORITHMS.html#code) shows each call. Self-links and repeated links are welcome.
+
+**After an edit,** pass the earlier drawing to keep the reader's picture: `draw(boxes, links, { keep: oldPos })`, with `null` in `oldPos` for each new class. The new classes are placed round the classes they link to, and the old ones move only a little (2–5% of the drawing, against about a third for a redraw); `exact: true` moves none. Keeping costs some crossings, so redraw from time to time.
+
+**Relationships modelled as classes** (reification, association classes): give the box `between: [subject, object]`, and it is drawn on the line between the two.
 
 **Draw the classes at the positions the routing returns.** `routeLinks` returns `pos` with the routes: a class that a drawn link still runs through is pushed off it, and the routes belong to those positions. Pass `{ settle: false }` to keep every class where it is.
 
