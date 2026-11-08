@@ -1,0 +1,413 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Layout Playback</title>
+<style>
+:root { --bg: #f4f3ee; --paper: #fff; --ink: #1d232b; --muted: #5d6673; --rule: #d9d6cc; --accent: #2f6b4f; --box: #eef3fb; --box-line: #6d86b0;
+  --sub: #6f9a54; --rel: #8b97a8; --bad: #c43d32; --warn: #c98a12; --new: #e0a100; --name: #4b5563; --name-bg: #fffdf5; }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) { --bg: #15181c; --paper: #1c2026; --ink: #e6e8eb; --muted: #9aa4b1; --rule: #30353d; --accent: #7cc39e;
+  --box: #233041; --box-line: #6f8db8; --sub: #8fbf6f; --rel: #6f7b8c; --bad: #ff6f61; --warn: #f0b44a; --new: #ffcc33; --name: #b8c0cc; --name-bg: #22262d; color-scheme: dark; } }
+* { box-sizing: border-box; }
+html, body { height: 100%; }
+body { margin: 0; background: var(--bg); color: var(--ink); font: 14px/1.45 "Segoe UI", system-ui, sans-serif; display: grid; grid-template-rows: auto 1fr auto; }
+header, footer { display: flex; flex-wrap: wrap; gap: 8px 14px; align-items: center; padding: 8px 14px; background: var(--paper); }
+header { border-bottom: 1px solid var(--rule); } footer { border-top: 1px solid var(--rule); }
+header h1 { font-size: 15px; margin: 0 8px 0 0; }
+select, button, input { font: inherit; font-size: 13px; padding: 3px 8px; border: 1px solid var(--rule); border-radius: 6px; background: var(--paper); color: var(--ink); }
+input[type=number] { width: 64px; } input[type=range] { padding: 0; }
+button { cursor: pointer; } button:hover { border-color: var(--accent); } button:disabled { opacity: .45; cursor: default; }
+label.tog { display: inline-flex; gap: 5px; align-items: center; cursor: pointer; color: var(--muted); font-size: 13px; }
+#status { color: var(--muted); font-size: 12px; }
+a { color: var(--accent); }
+main { display: grid; grid-template-columns: 1fr 390px; min-height: 0; }
+#stage { position: relative; min-width: 0; min-height: 0; }
+#svg { width: 100%; height: 100%; display: block; background: var(--bg); touch-action: none; user-select: none; cursor: grab; }
+#caption { position: absolute; left: 12px; top: 10px; max-width: min(560px, calc(100% - 24px)); background: color-mix(in srgb, var(--paper) 90%, transparent); border: 1px solid var(--rule); border-radius: 8px; padding: 8px 10px; pointer-events: none; }
+#caption .k { font-size: 11px; text-transform: uppercase; letter-spacing: .05em; color: var(--muted); }
+#caption .t { font-weight: 600; }
+#caption .d { font-size: 12.5px; color: var(--muted); margin-top: 2px; }
+#counts { position: absolute; right: 12px; top: 10px; background: color-mix(in srgb, var(--paper) 90%, transparent); border: 1px solid var(--rule); border-radius: 8px; padding: 6px 10px; font-size: 12px; font-variant-numeric: tabular-nums; color: var(--muted); display: grid; grid-template-columns: auto auto; gap: 0 10px; pointer-events: none; }
+#counts b { color: var(--ink); text-align: right; }
+aside { border-left: 1px solid var(--rule); background: var(--paper); overflow-y: auto; padding: 10px 12px; display: grid; gap: 10px; align-content: start; }
+aside h2 { font-size: 13px; margin: 0; display: flex; justify-content: space-between; align-items: baseline; }
+aside h2 small { font-weight: 400; color: var(--muted); }
+.hint { font-size: 12px; color: var(--muted); margin: 0; }
+table { border-collapse: collapse; width: 100%; font-size: 12.5px; }
+td { padding: 3px 4px; border-bottom: 1px solid var(--rule); vertical-align: middle; }
+td.n { font-variant-numeric: tabular-nums; color: var(--muted); text-align: right; white-space: nowrap; }
+tr.group td { font-size: 11px; text-transform: uppercase; letter-spacing: .05em; color: var(--muted); padding-top: 9px; border-bottom: 0; }
+tr.cur td { background: color-mix(in srgb, var(--accent) 12%, transparent); }
+tr.off td.name { opacity: .5; }
+td.name { cursor: pointer; }
+.sw { width: 10px; height: 10px; border-radius: 3px; display: inline-block; margin-right: 5px; vertical-align: -1px; }
+td input[type=range] { width: 70px; }
+#variants { font-size: 12.5px; }
+#variants div { padding: 2px 0; }
+footer .grp { display: flex; gap: 4px; align-items: center; }
+#scrub { position: relative; flex: 1 1 320px; min-width: 200px; height: 28px; border-radius: 6px; overflow: hidden; background: var(--bg); border: 1px solid var(--rule); cursor: pointer; }
+#scrub .seg { position: absolute; top: 0; bottom: 0; opacity: .55; }
+#scrub .head { position: absolute; top: -2px; bottom: -2px; width: 2px; background: var(--ink); }
+#time { font-variant-numeric: tabular-nums; color: var(--muted); font-size: 12px; min-width: 92px; }
+.link { fill: none; stroke: var(--rel); stroke-width: 1.4; }
+.link.sub { stroke: var(--sub); stroke-width: 1.8; }
+.link.thru { stroke: var(--bad); stroke-width: 2.2; }
+.node rect { fill: var(--box); stroke: var(--box-line); stroke-width: 1; }
+.node.moved rect { stroke: var(--new); stroke-width: 2.2; }
+.node text { font-size: 11px; fill: var(--ink); pointer-events: none; }
+.lname rect { fill: var(--name-bg); stroke: none; opacity: .9; }
+.lname text { font-size: 10px; fill: var(--name); }
+@media (max-width: 900px) { main { grid-template-columns: 1fr; grid-template-rows: 60vh auto; } aside { border-left: 0; border-top: 1px solid var(--rule); } }
+</style>
+</head>
+<body>
+<header>
+  <h1>Layout Playback</h1>
+  <select id="graph" title="Graph"></select>
+  <select id="algo" title="Layout"><option value="auto">Best Read</option><option value="compact">Tidy Stress</option><option value="grouped">Mycelium</option></select>
+  <label class="tog" title="The layouts' random seed">Seed <input type="number" id="seed" value="1" min="1" max="999"></label>
+  <span id="status"></span>
+  <a id="labLink" href="lab.html" title="Hand-edit this graph in the Layout Lab">Layout Lab ↗</a>
+</header>
+<main>
+  <div id="stage">
+    <svg id="svg"></svg>
+    <div id="caption"><div class="k" id="cK"></div><div class="t" id="cT"></div><div class="d" id="cD"></div></div>
+    <div id="counts"></div>
+  </div>
+  <aside>
+    <h2>Steps <small id="totalInfo"></small></h2>
+    <p class="hint"><b>Show</b>: animate the step (unticked, it happens at once). <b>Run</b>: unticked, the layout is redone without that step, so you can see what it adds. The slider gives the step more or less of the playing time. Click a step's name to jump to it.</p>
+    <table id="steps"></table>
+    <div id="variants"></div>
+  </aside>
+</main>
+<footer>
+  <div class="grp">
+    <button id="bStart" title="Back to the start (Home)">⏮</button>
+    <button id="bPrevStep" title="Previous step (Page Up)">⏪</button>
+    <button id="bPrev" title="Previous frame (Left arrow)">◀</button>
+    <button id="bPlay" title="Play or pause (Space)" style="min-width:64px">▶ Play</button>
+    <button id="bNext" title="Next frame (Right arrow)">▶|</button>
+    <button id="bNextStep" title="Next step (Page Down)">⏩</button>
+    <button id="bEnd" title="To the end (End)">⏭</button>
+  </div>
+  <div id="scrub" title="Click or drag to move through the layout"></div>
+  <span id="time"></span>
+  <label class="tog" title="Playing time of the whole layout at 1×">Length <input type="number" id="dur" value="10" min="2" max="300" step="1"> s</label>
+  <label class="tog">Speed <select id="speed"><option>0.25</option><option>0.5</option><option selected>1</option><option>2</option><option>4</option></select>×</label>
+  <label class="tog"><input type="checkbox" id="follow" checked> Follow the drawing</label>
+  <label class="tog"><input type="checkbox" id="names" checked> Link names</label>
+  <label class="tog"><input type="checkbox" id="marks" checked> Mark links through classes</label>
+</footer>
+<script src="base_layout.js"></script>
+<script src="models.js"></script>
+<script src="models2.js"></script>
+<script src="models3.js"></script>
+<script src="models4.js"></script>
+<script src="models5.js"></script>
+<script src="models6.js"></script>
+<script>
+// Plays back a layout step by step: the library reports the positions after every step that moves classes (_ogTraced),
+// the clean-up records each step it keeps, and the link routing is replayed one step at a time. Frames are spread over
+// the playing time by step, and the drawing moves smoothly from frame to frame.
+const O = window.OURS, svg = $('svg');
+const STEPS = [ // key, group, name, what it does, color, can it be left out (Run)
+  ['start', 'Placement', 'Start (Pivot-MDS)', 'Classes start where a quick projection of the graph distances puts them (classes with one link wait aside). The drawing starts five times too large so the next step unfolds it.', '#5b8def', false],
+  ['restart', 'Placement', 'Other random starts', 'Small graphs also try random starts; only the start that ends with the fewest crossings is shown.', '#7aa2f7', false],
+  ['stress', 'Placement', 'Stress majorization', 'Every pair of classes is pulled toward a distance that matches how many links apart they are, near pairs most. Each frame is one sweep.', '#3d6fd6', false],
+  ['separate', 'Placement', 'Overlap removal', 'Boxes that touch are pushed apart.', '#9aa4b1', false],
+  ['cross', 'Placement', 'Crossing swaps', 'A class at the end of a crossed link swaps place with another class, or moves beside a neighbor, when that crosses fewer links.', '#c43d32', true],
+  ['thru', 'Placement', 'Off-link moves', 'A class with a link running through its box moves off it, never adding a crossing.', '#e0702b', true],
+  ['tight', 'Placement', 'Shortening long links', 'Each class is pulled toward its neighbors when its links get shorter and nothing gets worse; then the whole drawing shrinks as far as the boxes allow.', '#8a6fd1', true],
+  ['leaves', 'Placement', 'One-link classes placed', 'Classes with one link come back, each beside its neighbor in the direction where its link crosses nothing.', '#2f9d6a', false],
+  ['leaffix', 'Placement', 'One-link classes re-placed', 'One-link classes that the moves left too close or on a line are placed again.', '#5fb98a', false],
+  ['c-single', 'Clean-up', 'Moves into open space', 'A class in a problem moves into nearby open space (cells with no class and no link) or is nudged.', '#d9822b', true],
+  ['c-unit', 'Clean-up', 'Leaf units turned', 'A leaf, leaf chain or leaf triangle hanging off one class is turned, mirrored or resized around it.', '#1f8577', true],
+  ['c-spread', 'Clean-up', 'Crowds spread outward', 'Where problems pile up, the region is pushed outward in 8 slices, more toward open space, then repaired; kept only if better.', '#2f5fb3', true],
+  ['c-group', 'Clean-up', 'Group moves', 'The classes on one side of a remaining problem move together away from the line, with a few repair moves; kept only if better.', '#b5548c', true],
+  ['c-finish', 'Clean-up', 'Final leaf pass', 'A last pass over leaf units and single classes still in a problem.', '#6f9a54', true],
+  ['r-arcs', 'Links', 'Parallel links as arcs', 'Two or more links between the same two classes (a link and its reverse, or two relationships) spread into arcs, so none hides another.', '#0e7490', true],
+  ['r-loops', 'Links', 'Self-link loops', 'A link from a class to itself becomes a loop on its emptiest corner.', '#0891b2', false],
+  ['r-bends', 'Links', 'Bends round obstacles', 'A link that still runs through a class (or crosses others when that pays off) bends round it; one link per frame.', '#be185d', true],
+  ['r-ports', 'Links', 'Ports at crowded classes', 'Link ends that would meet a box at nearly the same point are spread along that side, in order.', '#7c3aed', true],
+  ['r-names', 'Links', 'Link names placed', 'Each link\'s name goes where on its path it covers no class, no other name and as few links as can be. The graphs carry no names, so they are made up: "has" plus the target class.', '#4b5563', true],
+];
+const SI = Object.fromEntries(STEPS.map((s, i) => [s[0], i]));
+const store = { get(k, d) { try { const v = localStorage.getItem('playback:' + k); return v == null ? d : JSON.parse(v); } catch (e) { return d; } }, set(k, v) { try { localStorage.setItem('playback:' + k, JSON.stringify(v)); } catch (e) {} } };
+const CTL = store.get('ctl', {}); // per step: { show, run, w }
+const ctl = (k) => (CTL[k] = CTL[k] || { show: !k.startsWith('variant:'), run: true, w: 1 }); // variants not kept start hidden
+const VERBS = ['has', 'relatedTo', 'ownedBy', 'partOf', 'uses'];
+const esc = (t) => String(t).replace(/&/g, '&amp;').replace(/</g, '&lt;');
+
+// ---------- graphs ----------
+const DEV = ['prov', 'uni', 'hotel', 'org', 'brewery', 'trial', 'telecom', 'sosa', 'crm', 'schema', 'health', 'fibo', 'pizza', 'bio', 'big'];
+const DEVN = { prov: 'PROV-O (30)', uni: 'University (14)', hotel: 'Hotel booking (13)', org: 'W3C ORG (15)', brewery: 'Brewery IoT (23)', trial: 'Clinical trial (24)', telecom: 'Telecom network (34)', sosa: 'SOSA/SSN (36)', crm: 'Customer 360 (31)', schema: 'schema.org core (49)', health: 'Clinical record, 3 hubs (53)', fibo: 'FIBO-like loans (59)', pizza: 'Pizza taxonomy (90)', bio: 'Biomedical taxonomy (115)', big: 'Bank (179)' };
+const TOO_BIG = new Set(['huge', 'hx_md1200', 'pb_cl', 'sf400']);
+const groups = [['Development graphs', DEV.filter((k) => MODELS[k])], ['Other training graphs', Object.keys(MODELS).filter((k) => !DEV.includes(k) && !/^(hx_|pb_)/.test(k) && !TOO_BIG.has(k))],
+  ['Unseen: held-out graphs', Object.keys(MODELS).filter((k) => k.startsWith('hx_') && !TOO_BIG.has(k))], ['Unseen: public ontologies and Rome graphs', Object.keys(MODELS).filter((k) => k.startsWith('pb_') && !TOO_BIG.has(k))]];
+groups.forEach(([label, keys]) => { const g = document.createElement('optgroup'); g.label = label; keys.forEach((k) => { const o = document.createElement('option'); o.value = k; o.textContent = DEVN[k] || (MODELS[k].name || k).replace(/^Public: /, ''); g.appendChild(o); }); $('graph').appendChild(g); });
+
+// ---------- recording a run ----------
+// R = { labels, D, E (with self-links and names), frames: [{ key, P (Float64Array, NaN = not placed yet), routes }], variants }
+let R = null;
+function recordRun(key, algo, seed) {
+  return MODELS[key].load().then((Md) => {
+    const labels = Md.labels, D = labels.map((l) => ({ w: String(l).length * 6.6 + 10, h: 20 })), n = D.length;
+    const seen = new Map(), E = Md.edges.map((e) => { const sub = e.kind === 'sub'; let name = ''; if (!sub) { const k = e.s + '>' + e.t, i = seen.get(k) || 0; seen.set(k, i + 1); name = VERBS[i % VERBS.length] + labels[e.t]; } return { s: e.s, t: e.t, sub, name }; });
+    const edges = E.filter((e) => e.s !== e.t).map((e) => [e.s, e.t, e.sub ? 2 : 1]);
+    const skip = {}; ['cross', 'thru', 'tight'].forEach((k) => { if (!ctl(k).run) skip[k] = true; }); O.tune.skip = skip;
+    // the sink: one run per variant the layout tries; frames of starts that were not kept are dropped
+    const runs = []; let cur = null, rtag = -1, chosen = null;
+    const sink = { map: null,
+      begin(name, nn, core, leafOf) { cur = { name, frames: [], hidden: new Uint8Array(n), score: null }; leafOf.forEach((p, v) => { if (p >= 0) cur.hidden[v] = 1; }); runs.push(cur); rtag = 0; },
+      restart(r) { rtag = r; },
+      keepRestart(r) { cur.frames = cur.frames.filter((f) => f.r < 0 || f.r === r); rtag = -1; },
+      snap(stage, P, info) { if (!cur) return; if (info && info.v != null) cur.hidden[info.v] = 0;
+        const A = new Float64Array(2 * n).fill(NaN), map = sink.map;
+        if (map) map.forEach((v, k) => { A[2 * v] = P[k].x; A[2 * v + 1] = P[k].y; });
+        else for (let v = 0; v < n; v++) if (!cur.hidden[v]) { A[2 * v] = P[v].x; A[2 * v + 1] = P[v].y; }
+        cur.frames.push({ key: stage, P: A, r: rtag }); },
+      score(name, s) { if (cur) cur.score = s; },
+      chosen(name) { chosen = name; } };
+    const items = D.map((d) => ({ w: d.w, h: d.h })), N = D.map((d) => ({ w: d.w + 16, h: d.h + 12 }));
+    const t0 = O.now();
+    const fn = algo === 'compact' ? O.compact : algo === 'grouped' ? (a, b, c) => O.grouped2(a, b, c) || O.compact(a, b, c) : O.auto;
+    const res = O.traced(sink, () => fn(items, edges, { seed }));
+    O.tune.skip = {};
+    const P = res.pos.map((p) => ({ x: p.x, y: p.y })); O.sep(P, N, 6, 200);
+    const frames = [], win = runs.find((r) => r.name === chosen) || runs[runs.length - 1];
+    runs.filter((r) => r !== win).forEach((r) => r.frames.forEach((f) => frames.push({ key: 'variant:' + r.name, P: f.P })));
+    // the drawing grows out of its center, then the kept variant's steps
+    const f0 = win.frames[0]; if (f0) { let cx = 0, cy = 0, c = 0; for (let v = 0; v < n; v++) if (!isNaN(f0.P[2 * v])) { cx += f0.P[2 * v]; cy += f0.P[2 * v + 1]; c++; }
+      const Z = new Float64Array(2 * n).fill(NaN); for (let v = 0; v < n; v++) if (!isNaN(f0.P[2 * v])) { Z[2 * v] = cx / c; Z[2 * v + 1] = cy / c; } frames.push({ key: 'start', P: Z }); }
+    win.frames.forEach((f) => frames.push({ key: f.key, P: f.P }));
+    const flat = (Q) => { const A = new Float64Array(2 * n); Q.forEach((p, v) => { A[2 * v] = p.x; A[2 * v + 1] = p.y; }); return A; };
+    frames.push({ key: 'separate', P: flat(P) });
+    // the clean-up, as the layouts run it: what is left of 1.5 s, at most 0.5 s (skipped below 0.1 s)
+    const budgetMs = Math.min(500, 1500 - (O.now() - t0)), Ec = edges.map(([s, t]) => ({ s, t }));
+    let Pc = P;
+    const order = ['single', 'unit', 'spread', 'group'].filter((k) => ctl('c-' + k).run);
+    if (budgetMs >= 100) {
+      const r = O.clocked(() => O.tidy.run(P, items, Ec, { budgetMs, record: true, order, spread: ctl('c-spread').run, groups: ctl('c-group').run, finish: ctl('c-finish').run }));
+      let Q = P.map((p) => ({ ...p })), phase = 'single';
+      for (const s of r.log) {
+        if (s.kind === 'phase') { phase = s.phase; continue; }
+        const k = 'c-' + phase;
+        if (s.kind === 'move' || s.kind === 'unit' || s.kind === 'spread') {
+          if (s.pushed) { const Qp = Q.map((p) => ({ ...p })); s.pushed.forEach(([v, x, y]) => (Qp[v] = { x, y })); frames.push({ key: k, P: flat(Qp) }); }
+          s.nodes.forEach((v, i) => (Q[v] = { x: s.to[i][0], y: s.to[i][1] })); frames.push({ key: k, P: flat(Q), moved: s.nodes });
+        } else if (s.kind === 'group') { s.after.forEach(([v, x, y]) => (Q[v] = { x, y })); frames.push({ key: k, P: flat(Q), moved: s.after.map((a) => a[0]) }); }
+      }
+      Pc = r.P.map((p) => ({ x: p.x, y: p.y }));
+    }
+    // the links, one routing step at a time, on the final positions
+    const RE = E.map((e) => [e.s, e.t, e.sub ? 2 : 1, e.name ? e.name.length * 6 + 8 : 0]), FP = flat(Pc), base = { sep: ctl('r-arcs').run ? 24 : 0 };
+    const route = (o) => O.route(Pc, D, RE, { ...base, ...o }).routes;
+    const r1 = route({ bends: false, ports: 0, labels: false }), r2 = ctl('r-bends').run ? route({ ports: 0, labels: false }) : r1;
+    const r3 = ctl('r-ports').run ? route({ bends: ctl('r-bends').run, labels: false }) : r2, r4 = ctl('r-names').run ? route({ bends: ctl('r-bends').run, ports: ctl('r-ports').run ? 3 : 0 }) : r3;
+    const noLoop = r1.map((x) => ({ ...x, loop: null })), hasLoops = r1.some((x) => x.loop);
+    frames.push({ key: 'r-arcs', P: FP, routes: noLoop });
+    if (hasLoops) frames.push({ key: 'r-loops', P: FP, routes: r1 });
+    const same = (a, b) => JSON.stringify(a.bends) === JSON.stringify(b.bends);
+    let cr = r1.slice(); r2.forEach((x, k) => { if (!same(x, r1[k])) { cr = cr.slice(); cr[k] = x; frames.push({ key: 'r-bends', P: FP, routes: cr }); } });
+    frames.push({ key: 'r-ports', P: FP, routes: r3 });
+    frames.push({ key: 'r-names', P: FP, routes: r4 });
+    return { key, algo, seed, labels, D, E, n, frames, final: r4, variants: runs.map((r) => ({ name: r.name, score: r.score, kept: r === win, frames: r.frames.length })), cleanupMs: budgetMs };
+  });
+}
+
+// ---------- the timeline ----------
+// each frame j > 0 is reached by a transition that belongs to frame j's step; a step's share of the playing time is its
+// weight over the sum of weights of the steps shown, split evenly over its transitions
+let TL = null; // { at: [time of each frame], total }
+function timeline() {
+  const F = R.frames, cnt = {}; F.forEach((f, j) => { if (j) cnt[f.key] = (cnt[f.key] || 0) + 1; });
+  const keys = Object.keys(cnt), w = (k) => { const c = ctl(k.startsWith('variant:') ? k : k); return c.show ? c.w : 0; };
+  const W = keys.reduce((s, k) => s + w(k), 0) || 1, T = +$('dur').value || 10, at = [0];
+  for (let j = 1; j < F.length; j++) { const k = F[j].key; at.push(at[j - 1] + T * w(k) / W / cnt[k]); }
+  TL = { at, total: at[at.length - 1] || 0.001 };
+}
+const meta = (k) => k.startsWith('variant:') ? ['variant', 'Variants not kept', `Variant "${k.slice(8)}"`, 'Best Read (and Tidy Stress on small graphs) runs several variants and keeps the best-scoring drawing; this one was not kept.', '#b0b7c3', false] : STEPS[SI[k]];
+function frameAt(t) { const at = TL.at; let lo = 0, hi = at.length - 1; if (t >= at[hi]) return [hi, 0]; while (lo < hi - 1) { const m = (lo + hi) >> 1; if (at[m] <= t) lo = m; else hi = m; }
+  // several frames at the same time (a step shown at once): the last of them
+  while (lo < at.length - 1 && at[lo + 1] <= t) lo++;
+  const span = at[lo + 1] - at[lo]; return [lo, span > 0 ? (t - at[lo]) / span : 1]; }
+
+// ---------- drawing ----------
+let view = { x: 0, y: 0, w: 1000, h: 700 }, viewT = null, T = 0, playing = false, lastTs = 0, userView = false;
+const ease = (u) => u * u * (3 - 2 * u);
+function lerpRoute(a, b, u) {
+  if (!a && !b) return null; const ra = a || { bends: [], ports: null, loop: null }, rb = b || { bends: [], ports: null, loop: null };
+  let bends; const A = ra.bends || [], B = rb.bends || [];
+  if (A.length === B.length) bends = B.map((h, i) => ({ t: A[i].t + (h.t - A[i].t) * u, d: A[i].d + (h.d - A[i].d) * u }));
+  else if (!A.length) bends = B.map((h) => ({ t: h.t, d: h.d * u }));
+  else if (!B.length) bends = A.map((h) => ({ t: h.t, d: h.d * (1 - u) }));
+  else bends = u < 0.5 ? A : B;
+  const pp = (x, y) => (x || y) ? { x: ((x && x.x) || 0) + (((y && y.x) || 0) - ((x && x.x) || 0)) * u, y: ((x && x.y) || 0) + (((y && y.y) || 0) - ((x && x.y) || 0)) * u } : null;
+  const ports = ra.ports || rb.ports ? [pp(ra.ports && ra.ports[0], rb.ports && rb.ports[0]), pp(ra.ports && ra.ports[1], rb.ports && rb.ports[1])] : null;
+  const loop = rb.loop ? (ra.loop ? rb.loop : rb.loop.map((p) => ({ x: p.x * u, y: p.y * u }))) : ra.loop && u < 1 ? ra.loop : null;
+  return { bends, ports, loop, label: rb.label, labelU: ra.label ? 1 : u };
+}
+function current() {
+  const [j, u0] = frameAt(T), F = R.frames, a = F[j], b = F[Math.min(F.length - 1, j + 1)], u = ease(u0), n = R.n, P = new Array(n), alpha = new Float64Array(n).fill(1);
+  for (let v = 0; v < n; v++) {
+    const ax = a.P[2 * v], ay = a.P[2 * v + 1], bx = b.P[2 * v], by = b.P[2 * v + 1];
+    if (isNaN(bx) && isNaN(ax)) { P[v] = null; continue; }
+    if (isNaN(ax)) { // appears in this step: grows out of a placed neighbor
+      let from = null; for (const e of R.E) { const o = e.s === v ? e.t : e.t === v ? e.s : -1; if (o >= 0 && o !== v && !isNaN(a.P[2 * o])) { from = { x: a.P[2 * o], y: a.P[2 * o + 1] }; break; } }
+      from = from || { x: bx, y: by }; P[v] = { x: from.x + (bx - from.x) * u, y: from.y + (by - from.y) * u }; alpha[v] = u; continue; }
+    if (isNaN(bx)) { P[v] = { x: ax, y: ay }; continue; }
+    P[v] = { x: ax + (bx - ax) * u, y: ay + (by - ay) * u };
+  }
+  const routes = R.E.map((e, k) => lerpRoute(a.routes && a.routes[k], b.routes && b.routes[k], u));
+  const moved = new Set(u0 > 0 && u0 < 1 && b.moved ? b.moved : []);
+  if (u0 > 0 && u0 < 1 && !b.moved) for (let v = 0; v < n; v++) if (P[v] && !isNaN(a.P[2 * v]) && !isNaN(b.P[2 * v]) && Math.hypot(a.P[2 * v] - b.P[2 * v], a.P[2 * v + 1] - b.P[2 * v + 1]) > 0.5) moved.add(v);
+  return { j, u0, P, alpha, routes, moved, key: (u0 > 0 && j + 1 < F.length ? b : a).key };
+}
+function fitView(P, snap) {
+  let x1 = 1e18, y1 = 1e18, x2 = -1e18, y2 = -1e18; P.forEach((p, v) => { if (!p) return; const d = R.D[v]; x1 = Math.min(x1, p.x - d.w / 2); x2 = Math.max(x2, p.x + d.w / 2); y1 = Math.min(y1, p.y - d.h / 2); y2 = Math.max(y2, p.y + d.h / 2); });
+  if (x1 > x2) return; const r = svg.getBoundingClientRect(), pad = 50, w = x2 - x1 + 2 * pad, h = y2 - y1 + 2 * pad, ar = r.width / Math.max(1, r.height);
+  const t = w / h > ar ? { x: x1 - pad, w, h: w / ar, y: (y1 + y2) / 2 - w / ar / 2 } : { y: y1 - pad, h, w: h * ar, x: (x1 + x2) / 2 - h * ar / 2 };
+  if (snap) view = t; else { const k = 0.12; view = { x: view.x + (t.x - view.x) * k, y: view.y + (t.y - view.y) * k, w: view.w + (t.w - view.w) * k, h: view.h + (t.h - view.h) * k }; }
+}
+const finalP = () => { const F = R.frames[R.frames.length - 1].P, out = []; for (let v = 0; v < R.n; v++) out.push({ x: F[2 * v], y: F[2 * v + 1] }); return out; };
+function pathOf(A, B, r) {
+  const pl = O.routePoly(A, B, r, 6); if (pl.length === 2) return `M${pl[0].x.toFixed(1)},${pl[0].y.toFixed(1)}L${pl[1].x.toFixed(1)},${pl[1].y.toFixed(1)}`;
+  return 'M' + pl.map((p) => p.x.toFixed(1) + ',' + p.y.toFixed(1)).join('L');
+}
+let C = null;
+function render() {
+  if (!R) return; C = current();
+  if ($('follow').checked && !userView) fitView(C.P, !playing); // smooth while playing, exact when paused or jumping
+  svg.setAttribute('viewBox', `${view.x} ${view.y} ${view.w} ${view.h}`);
+  const thru = new Set(); const paused = !playing;
+  if ($('marks').checked && (paused || R.n < 120)) {
+    R.E.forEach((e, k) => { const A = C.P[e.s], B = C.P[e.t]; if (!A || !B || e.s === e.t) return; const pl = O.routePoly(A, B, C.routes[k], 6);
+      for (let v = 0; v < R.n && !thru.has(k); v++) { if (v === e.s || v === e.t || !C.P[v]) continue; const p = C.P[v], hw = R.D[v].w / 2 + 3, hh = R.D[v].h / 2 + 3;
+        for (let i = 0; i < pl.length - 1; i++) if (O.segBox(pl[i].x - p.x, pl[i].y - p.y, pl[i + 1].x - p.x, pl[i + 1].y - p.y, hw, hh)) { thru.add(k); break; } } });
+  }
+  let s = '<g>';
+  R.E.forEach((e, k) => { const A = C.P[e.s], B = C.P[e.t]; if (!A || !B) return; const r = C.routes[k]; if (e.s === e.t && !(r && r.loop)) return;
+    const op = Math.min(C.alpha[e.s], C.alpha[e.t]); s += `<path class="link${e.sub ? ' sub' : ''}${thru.has(k) ? ' thru' : ''}" d="${pathOf(A, B, r)}"${op < 1 ? ` opacity="${op.toFixed(2)}"` : ''}/>`; });
+  s += '</g><g>';
+  if ($('names').checked) R.E.forEach((e, k) => { const r = C.routes[k]; if (!r || !r.label || !e.name) return; const L = r.label, op = r.labelU;
+    s += `<g class="lname" opacity="${op.toFixed(2)}"><rect x="${L.x - L.w / 2}" y="${L.y - L.h / 2}" width="${L.w}" height="${L.h}" rx="3"/><text x="${L.x}" y="${L.y + 3.5}" text-anchor="middle">${esc(e.name)}</text></g>`; });
+  s += '</g><g>';
+  C.P.forEach((p, v) => { if (!p) return; const d = R.D[v];
+    s += `<g class="node${C.moved.has(v) ? ' moved' : ''}" transform="translate(${p.x.toFixed(1)},${p.y.toFixed(1)})"${C.alpha[v] < 1 ? ` opacity="${C.alpha[v].toFixed(2)}"` : ''}><rect x="${-d.w / 2}" y="${-d.h / 2}" width="${d.w}" height="${d.h}" rx="4"/><text text-anchor="middle" y="4">${esc(R.labels[v])}</text></g>`; });
+  s += '</g>';
+  svg.innerHTML = s;
+  // caption, scrubber head, step row
+  const m = meta(C.key); $('cK').textContent = `${m[1]} · frame ${C.j + 1} of ${R.frames.length}`; $('cT').textContent = m[2]; $('cD').textContent = m[3];
+  $('time').textContent = `${T.toFixed(2)} / ${TL.total.toFixed(2)} s`;
+  const hd = $('scrub').querySelector('.head'); if (hd) hd.style.left = (100 * T / TL.total) + '%';
+  $('steps').querySelectorAll('tr[data-k]').forEach((tr) => tr.classList.toggle('cur', tr.dataset.k === C.key));
+  $('bPlay').textContent = playing ? '⏸ Pause' : '▶ Play';
+  showCounts();
+}
+// counts on the frame shown (the nearest frame, on the drawn paths), computed when the frame changes and the playback rests
+let countsFor = -1, countsT = null;
+function showCounts() {
+  const j = C.u0 > 0.5 ? Math.min(R.frames.length - 1, C.j + 1) : C.j; if (j === countsFor) return;
+  clearTimeout(countsT); countsT = setTimeout(() => {
+    countsFor = j; const f = R.frames[j], vis = [], idx = new Map();
+    for (let v = 0; v < R.n; v++) if (!isNaN(f.P[2 * v])) { idx.set(v, vis.length); vis.push(v); }
+    const P = vis.map((v) => ({ x: f.P[2 * v], y: f.P[2 * v + 1] })), D = vis.map((v) => R.D[v]), ks = [];
+    R.E.forEach((e, k) => { if (idx.has(e.s) && idx.has(e.t)) ks.push(k); });
+    const edges = ks.map((k) => [idx.get(R.E[k].s), idx.get(R.E[k].t), R.E[k].sub ? 2 : 1, 0]);
+    const routes = ks.map((k) => (f.routes ? { ...f.routes[k], label: $('names').checked && R.E[k].name ? f.routes[k].label : null } : null));
+    const m = O.routeMetrics(P, D, edges, routes, 3);
+    $('counts').innerHTML = [['Crossings', m.cross], ['Sharp crossings', m.sharp], ['Through classes', m.thru], ['Hidden parallel links', m.hidden], ['Names on names or classes', f.routes ? m.labelOver : '–'], ['Bends', m.bends], ['Classes placed', vis.length + ' of ' + R.n]].map(([l, v]) => `<span>${l}</span><b>${v}</b>`).join('');
+  }, playing ? 250 : 30);
+}
+
+// ---------- side panel ----------
+function buildPanel() {
+  const cnt = {}; R.frames.forEach((f, j) => { if (j) cnt[f.key] = (cnt[f.key] || 0) + 1; });
+  const keys = Object.keys(cnt).sort((a, b) => (a.startsWith('variant:') ? -1 : SI[a]) - (b.startsWith('variant:') ? -1 : SI[b]));
+  // steps that were left out (Run unticked) stay listed so they can be put back
+  STEPS.forEach((s) => { if (!cnt[s[0]] && s[5] && !ctl(s[0]).run) keys.push(s[0]); });
+  const W = keys.reduce((s, k) => s + (cnt[k] && ctl(k).show ? ctl(k).w : 0), 0) || 1;
+  let h = '', g = null;
+  keys.sort((a, b) => (a.startsWith('variant:') ? -1 : SI[a]) - (b.startsWith('variant:') ? -1 : SI[b])).forEach((k) => {
+    const m = meta(k), c = ctl(k);
+    if (m[1] !== g) { g = m[1]; h += `<tr class="group"><td colspan="5">${g}</td></tr>`; }
+    const share = cnt[k] && c.show ? Math.round(100 * c.w / W) + '%' : cnt[k] ? 'at once' : 'left out';
+    h += `<tr data-k="${k}" class="${c.show && cnt[k] ? '' : 'off'}"><td class="name" title="${esc(m[3])}"><span class="sw" style="background:${m[4]}"></span>${esc(m[2])}</td>`
+      + `<td class="n" title="frames">${cnt[k] || 0}</td>`
+      + `<td><label class="tog" title="Animate this step"><input type="checkbox" data-c="show" ${c.show ? 'checked' : ''}>Show</label></td>`
+      + `<td>${m[5] ? `<label class="tog" title="Untick to redo the layout without this step"><input type="checkbox" data-c="run" ${c.run ? 'checked' : ''}>Run</label>` : ''}</td>`
+      + `<td class="n"><input type="range" min="0.1" max="5" step="0.1" value="${c.w}" data-c="w" title="Share of the playing time"> <span>${share}</span></td></tr>`;
+  });
+  $('steps').innerHTML = h;
+  $('totalInfo').textContent = `${R.frames.length} frames`;
+  const vs = R.variants; $('variants').innerHTML = vs.length > 1 ? '<b>Variants tried</b> (lower score is better):' + vs.map((v) => `<div>${v.kept ? '✓' : '·'} ${esc(v.name)}: score ${v.score == null ? '–' : Math.round(v.score)}${v.kept ? ' (kept)' : ''}</div>`).join('') : '';
+  // scrubber segments, one per run of frames of the same step
+  let sc = ''; for (let j = 1; j < R.frames.length;) { const k = R.frames[j].key; let e = j; while (e + 1 < R.frames.length && R.frames[e + 1].key === k) e++;
+    const x0 = TL.at[j - 1], x1 = TL.at[e]; if (x1 > x0) sc += `<div class="seg" style="left:${100 * x0 / TL.total}%;width:${100 * (x1 - x0) / TL.total}%;background:${meta(k)[4]}" title="${esc(meta(k)[2])}"></div>`; j = e + 1; }
+  $('scrub').innerHTML = sc + '<div class="head"></div>';
+}
+$('steps').addEventListener('input', (ev) => { const tr = ev.target.closest('tr'), c = ev.target.dataset.c; if (!tr || c !== 'w') return; const k = tr.dataset.k; ctl(k).w = +ev.target.value; store.set('ctl', CTL); const keepU = T / TL.total; timeline(); T = keepU * TL.total; buildPanel(); render(); });
+$('steps').addEventListener('change', (ev) => { const tr = ev.target.closest('tr'), c = ev.target.dataset.c; if (!tr || !c || c === 'w') return; const k = tr.dataset.k; ctl(k)[c] = ev.target.checked; store.set('ctl', CTL);
+  if (c === 'run') run(); else { const keepU = T / TL.total; timeline(); T = keepU * TL.total; buildPanel(); render(); } });
+$('steps').addEventListener('click', (ev) => { const td = ev.target.closest('td.name'); if (!td) return; const k = td.parentElement.dataset.k, j = R.frames.findIndex((f, i) => i && f.key === k); if (j > 0) { pause(); T = TL.at[j - 1]; userView = false; render(); } });
+
+// ---------- transport ----------
+function tick(ts) { if (!playing) return; const dt = lastTs ? (ts - lastTs) / 1000 : 0; lastTs = ts; T = Math.min(TL.total, T + dt * +$('speed').value); if (T >= TL.total) playing = false; render(); if (playing) requestAnimationFrame(tick); }
+function play() { if (!R) return; if (T >= TL.total) T = 0; playing = true; lastTs = 0; userView = false; requestAnimationFrame(tick); render(); }
+function pause() { playing = false; render(); }
+$('bPlay').onclick = () => (playing ? pause() : play());
+$('bStart').onclick = () => { pause(); T = 0; userView = false; fitView(current().P, true); render(); };
+$('bEnd').onclick = () => { pause(); T = TL.total; render(); };
+const frameStep = (d) => { pause(); const [j, u] = frameAt(T); let k = d > 0 ? j + 1 : u > 0 ? j : j - 1; k = Math.max(0, Math.min(R.frames.length - 1, k)); T = TL.at[k]; render(); };
+const stepStep = (d) => { pause(); const F = R.frames, [j] = frameAt(T); let k = j; const key = F[Math.min(F.length - 1, j + (d > 0 ? 1 : 0))].key;
+  if (d > 0) { while (k + 1 < F.length && F[k + 1].key === key) k++; k = Math.min(F.length - 1, k + 1); while (k + 1 < F.length && TL.at[k + 1] === TL.at[k] && F[k + 1].key === F[k].key) k++; }
+  else { while (k > 0 && F[k].key === key) k--; const k2 = F[k].key; while (k > 0 && F[k - 1].key === k2) k--; }
+  T = TL.at[k]; render(); };
+$('bNext').onclick = () => frameStep(1); $('bPrev').onclick = () => frameStep(-1);
+$('bNextStep').onclick = () => stepStep(1); $('bPrevStep').onclick = () => stepStep(-1);
+let scrubbing = false; const scrubTo = (ev) => { const r = $('scrub').getBoundingClientRect(); T = Math.max(0, Math.min(1, (ev.clientX - r.left) / r.width)) * TL.total; render(); };
+$('scrub').addEventListener('pointerdown', (ev) => { if (!R) return; pause(); scrubbing = true; $('scrub').setPointerCapture(ev.pointerId); scrubTo(ev); });
+$('scrub').addEventListener('pointermove', (ev) => { if (scrubbing) scrubTo(ev); });
+$('scrub').addEventListener('pointerup', () => (scrubbing = false));
+document.addEventListener('keydown', (ev) => { if (ev.target.tagName === 'INPUT' || ev.target.tagName === 'SELECT' || !R) return;
+  const k = ev.key; if (k === ' ') { ev.preventDefault(); playing ? pause() : play(); } else if (k === 'ArrowRight') frameStep(1); else if (k === 'ArrowLeft') frameStep(-1);
+  else if (k === 'PageDown') { ev.preventDefault(); stepStep(1); } else if (k === 'PageUp') { ev.preventDefault(); stepStep(-1); } else if (k === 'Home') $('bStart').onclick(); else if (k === 'End') $('bEnd').onclick(); });
+$('dur').onchange = () => { store.set('dur', +$('dur').value); const u = T / TL.total; timeline(); T = u * TL.total; buildPanel(); render(); };
+$('speed').onchange = () => store.set('speed', $('speed').value);
+['follow', 'names', 'marks'].forEach((id) => ($(id).onchange = () => { store.set(id, $(id).checked); if (id === 'follow') userView = false; countsFor = -1; render(); }));
+// pan and zoom by hand stop the camera from following until Play or Home
+let pan = null;
+svg.addEventListener('pointerdown', (ev) => { pan = { x: ev.clientX, y: ev.clientY, v: { ...view } }; svg.setPointerCapture(ev.pointerId); });
+svg.addEventListener('pointermove', (ev) => { if (!pan) return; const r = svg.getBoundingClientRect(), s = view.w / r.width; view.x = pan.v.x - (ev.clientX - pan.x) * s; view.y = pan.v.y - (ev.clientY - pan.y) * s; userView = true; svg.setAttribute('viewBox', `${view.x} ${view.y} ${view.w} ${view.h}`); });
+svg.addEventListener('pointerup', () => (pan = null));
+svg.addEventListener('wheel', (ev) => { ev.preventDefault(); const p = svg.createSVGPoint(); p.x = ev.clientX; p.y = ev.clientY; const q = p.matrixTransform(svg.getScreenCTM().inverse()), f = Math.exp(Math.max(-60, Math.min(60, ev.deltaY)) * 0.0015);
+  view = { x: q.x - (q.x - view.x) * f, y: q.y - (q.y - view.y) * f, w: view.w * f, h: view.h * f }; userView = true; svg.setAttribute('viewBox', `${view.x} ${view.y} ${view.w} ${view.h}`); }, { passive: false });
+window.addEventListener('resize', () => { if (R) render(); });
+
+// ---------- run ----------
+let runSeq = 0;
+function run() {
+  const key = $('graph').value, algo = $('algo').value, seed = Math.max(1, +$('seed').value || 1), my = ++runSeq;
+  pause(); $('status').textContent = 'Laying out…';
+  const qs = `?graph=${key}&algo=${algo}&seed=${seed}`; history.replaceState(null, '', qs); $('labLink').href = 'lab.html?graph=' + key;
+  store.set('last', { key, algo, seed });
+  setTimeout(() => recordRun(key, algo, seed).then((r) => {
+    if (my !== runSeq) return; R = r; timeline(); buildPanel(); T = 0; countsFor = -1; userView = false;
+    fitView(current().P, true); render();
+    $('status').textContent = `${R.n} classes, ${R.E.length} links`;
+    play();
+  }).catch((err) => { $('status').textContent = 'Could not lay out: ' + err.message; console.error(err); }), 20);
+}
+$('graph').onchange = run; $('algo').onchange = run; $('seed').onchange = run;
+const q = new URLSearchParams(location.search), last = store.get('last', {});
+$('graph').value = q.get('graph') || last.key || 'crm'; if (!$('graph').value) $('graph').value = 'crm';
+$('algo').value = q.get('algo') || last.algo || 'auto'; $('seed').value = q.get('seed') || last.seed || 1;
+$('dur').value = store.get('dur', 10); $('speed').value = store.get('speed', '1');
+['follow', 'names', 'marks'].forEach((id) => ($(id).checked = store.get(id, true)));
+run();
+</script>
+</body>
+</html>
