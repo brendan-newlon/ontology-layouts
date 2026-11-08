@@ -326,7 +326,7 @@ label.tog { display: inline-flex; gap: 6px; align-items: center; cursor: pointer
 <li><strong>Ports:</strong> at a class with three or more links, link ends that would meet its box closer than 10 px apart are spread along the side they reach, in the same order, kept only if no link gets a new problem.</li>
 <li><strong>Names:</strong> each link's name goes at the point along its path where it covers no class, no other name and as few links as possible, longest names first.</li>
 </ul>
-<p>Measured on the drawn curves, on Best Read's recorded drawings (no class moved). The graphs carry no link names, so the names are made up: "has" plus the target class, "relatedTo" plus the target for a second link the same way, and so on; subclass links have none. Totals:</p>
+<p>Measured on the drawn curves, on Best Read's drawings as recorded on 2026-11-07 (no class moved). <strong>Two margins.</strong> Here and in every table about the routing, a link counts as running through a class when it passes within 9 px of its box: closer than that, a drawn line with its arrowhead reads as touching the box, and the routing keeps that clearance. The rankings below count within 3 px, as published comparisons of layouts do, so the same drawing has more links through classes here. That, and the earlier drawings, is why Best Read's straight links show 61 links through classes on the 15 development graphs in this table and 39 in the rankings. The graphs carry no link names, so the names are made up: "has" plus the target class, "relatedTo" plus the target for a second link the same way, and so on; subclass links have none. Totals:</p>
 </div>
 <div class="tbl"><table>
 <thead><tr><th>Graphs</th><th>Links drawn</th><th>Crossed links</th><th>Sharp crossings</th><th>Links through classes</th><th>Parallel links hidden</th><th>Link ends within 4 px</th><th>Names over a class or name</th><th>Bends</th><th>Area ÷ class area</th></tr></thead>
@@ -364,7 +364,7 @@ label.tog { display: inline-flex; gap: 6px; align-items: center; cursor: pointer
 <tr class="ours"><td>With pulling in</td><td class="best">1,708</td><td class="best">24</td><td>65</td><td>162</td><td>887</td><td>514</td><td class="best">9.6 / 8.3 / 8.7</td><td>about 455 ms</td></tr>
 </tbody></table></div>
 <p>The drawings are 9% smaller on the development graphs and 27 to 29% smaller on the graphs never seen during development (23% over all 51), for as many problems: 6 fewer crossings, 6 more links through classes after routing (all on the two densest public ontologies, DOLCE and SAREF, where DOLCE also loses 5 crossings), and slightly more crowded names. Three graphs it was built for: Rome graph 7785, whose long chain ran off to the right, 2,026 &rarr; 1,677 px wide; the held-out deep taxonomy, 5,724 &times; 2,272 &rarr; 4,591 &times; 1,714 px (39% less area); the biomedical taxonomy's HormoneSignaling, 484 &rarr; 266 px from Signaling. Tried and not adopted: more room between groups (60 or 80 px: the same problems, less of the gain); not drawing in at all, only turning (most of the gain is from drawing in).</p>
-<p>Area is 0 to 2% larger before pulling in. The slowest graph (SAREF, 98 classes and 160 links) takes about 1.6 s. Also tested and not adopted: starting the placement at the matching size instead of five times too large (2% fewer crossed links and fewer links through classes, but twice the sharp crossings, all on the two densest public ontologies). Trading two one-link classes' places alone rarely helps: where two of them lie on one ray from their neighbor, the far one's link runs through the near one whichever is farther.</p>
+<p>Area is 0 to 2% larger before pulling in. The slowest graph (SAREF, 98 classes and 160 links) takes about 1.6 s. Also tested and not adopted: starting the placement at the matching size, or at two or three times it, instead of five times too large. Over the 51 graphs and three seeds the four come within 0.5% of each other on crossed links, links through classes and sharp crossings together: the matching size has the most sharp crossings, twice the size the fewest links through classes but the most crossed links. That is the spread between seeds, not a gain, so five times stays. Trading two one-link classes' places alone rarely helps: where two of them lie on one ray from their neighbor, the far one's link runs through the near one whichever is farther.</p>
 </div>
 
 <h2 id="tuned">Rankings on the five measures</h2>
@@ -572,7 +572,7 @@ clean:  rounds of single moves → leaf units → region spreading → group mov
 <li>WebCola: three seeds. d3-force: three seeds × three repulsion strengths. Cytoscape <code>cose</code>: three seeds × two repulsion strengths. <code>fcose</code>: three seeds × three repulsion strengths.</li>
 </ul>
 <p>On the 179-class bank, tuned ELK force gave no result within two minutes, so its default run stands in.</p>
-<p><strong>Measures.</strong> Crossed links: pairs of straight links without a shared end that intersect. Links through classes: a link passing within 3 px of a third class box. Area: the bounding box divided by the total area of the class boxes. Crossing angle: the mean angle at which links cross (Huang, Eades and Hong, 2008). Angular resolution: the smallest angle between the links at a class as a share of 360° divided by its number of links. Normalized stress (distance fidelity), the variation of link lengths and the share of subclass links drawn top-down were also recorded; they are left out of the main rankings for the reasons given at the top, and each ranking table has tabs that add them.</p>
+<p><strong>Measures.</strong> Crossed links: pairs of straight links without a shared end that intersect. Links through classes: a link passing within 3 px of a third class box (the tables on the link routing use 9 px, see there). Area: the bounding box divided by the total area of the class boxes. Crossing angle: the mean angle at which links cross (Huang, Eades and Hong, 2008). Angular resolution: the smallest angle between the links at a class as a share of 360° divided by its number of links. Normalized stress (distance fidelity), the variation of link lengths and the share of subclass links drawn top-down were also recorded; they are left out of the main rankings for the reasons given at the top, and each ranking table has tabs that add them.</p>
 <p><strong>Fairness.</strong> Every layout received the same boxes, the same 170 px target link length where it takes one, and the same overlap removal afterwards.</p>
 <p><strong>Runs.</strong> One run per layout and graph, seed 1, on one consumer laptop, so the times compare with each other but are not absolute. The open-source layouts ran in a browser tab; ours ran at native speed in Node.js with the same code the library runs, which takes about as long as a browser tab in front. Our time limits count work rather than seconds, so our drawings do not depend on the machine or how busy it was.</p>
 </div>
@@ -659,7 +659,7 @@ clean:  rounds of single moves → leaf units → region spreading → group mov
 
 <h2 id="code">Source code</h2>
 <div class="prose">
-<p>The implementation below is complete and self-contained: plain JavaScript, no dependencies, about 900 lines, the clean-up included.</p>
+<p>The implementation below is complete and self-contained: plain JavaScript, no dependencies, about 1,800 lines, the clean-up included.</p>
 <p><strong>Input.</strong> An array of boxes <code>[{ w, h }]</code> and an array of links <code>[[i, j, weight, labelWidth]]</code>:</p>
 <ul>
 <li><code>i</code> and <code>j</code> index into the boxes;</li>
@@ -670,18 +670,29 @@ clean:  rounds of single moves → leaf units → region spreading → group mov
 </div>
 <pre><code>const boxes = [{ w: 90, h: 20 }, { w: 70, h: 20 }, { w: 110, h: 20 }];
 const links = [[1, 0, 2], [2, 0, 1, 60]];       // 1 is a subclass of 0; 2 links to 0 with a 60 px label
-const result = OntologyLayouts.bestRead(boxes, links, {});    // or .tidyStress(…) / .mycelium(…)
-result.pos.forEach((p, i) =&gt; console.log(i, p.x, p.y));
-// options: { roomy: true } leaves 30% more space (for example when boxes grow), { budgetMs } sets the time budget
-// Mycelium returns null for fewer than 8 classes; Best Read then uses Tidy Stress.
-// The clean-up is a separate call, made after any of the three (as the library does). Time is read from the work clock,
-// OntologyLayouts.now(), not from the computer's clock, so the same model gets the same drawing on any computer:
-const t0 = OntologyLayouts.now(), P = OntologyLayouts.bestRead(boxes, links, {}).pos;
-const cleaned = OntologyLayouts.cleanUp(P, boxes, links, t0);   // within what is left of 1.5 s since t0; returns [{ x, y }]</code></pre>
-<div class="prose"><p>The entry points are collected at the end of the code as <code>OntologyLayouts.tidyStress</code>, <code>OntologyLayouts.mycelium</code>, <code>OntologyLayouts.bestRead</code>, <code>OntologyLayouts.cleanUp</code>, <code>OntologyLayouts.now</code>, <code>OntologyLayouts.metrics</code> and <code>OntologyLayouts.score</code>.</p>
+// Everything in one call: layout, clean-up, link routing, groups, and paths ready to draw.
+const d = OntologyLayouts.draw(boxes, links, { arrow: 8 });
+d.pos.forEach((p, i) =&gt; console.log(i, p.x, p.y));        // draw class i centered here
+d.paths.forEach((p) =&gt; console.log(p.points, p.tip, p.angle)); // border to border; an 8 px arrowhead from the last point to tip
+console.log(d.groups);                                      // a group number per class, for hulls or background areas
+// The same in three steps. Time is read from the work clock, OntologyLayouts.now(), not from the computer's clock,
+// so the same model gets the same drawing on any computer:
+const t0 = OntologyLayouts.now();
+const { pos } = OntologyLayouts.bestRead(boxes, links, {});    // or .tidyStress(…) / .mycelium(…)
+const cleanPos = OntologyLayouts.cleanUp(pos, boxes, links, t0); // within what is left of 1.5 s since t0
+const { routes, pos: finalPos } = OntologyLayouts.routeLinks(cleanPos, boxes, links);
+// finalPos, not cleanPos: the routing may push a class off a link it still runs through, and the routes belong to finalPos.
+const paths = OntologyLayouts.routePaths(finalPos, boxes, links, routes, { arrow: 8 });
+// options: bestRead(…, { roomy: true }) leaves 30% more space; routeLinks(…, { settle: false }) never moves a class;
+// OntologyLayouts.setTimeLimit(ms) sets the time for all three steps together (default 1500).
+// Mycelium returns null for fewer than 8 classes; Best Read then uses Tidy Stress.</code></pre>
+<div class="prose"><p>The entry points are collected at the end of the code in <code>OntologyLayouts</code>: <code>draw</code>, <code>bestRead</code>, <code>tidyStress</code>, <code>mycelium</code>, <code>cleanUp</code>, <code>routeLinks</code>, <code>routePaths</code>, <code>groups</code>, <code>routeMetrics</code>, <code>metrics</code>, <code>score</code>, <code>setTimeLimit</code> and <code>now</code>.</p>
+<p><strong>Draw the classes where the routing leaves them.</strong> <code>routeLinks</code> returns <code>pos</code> as well as the routes: when a drawn link still runs through a class, the class is pushed off it and the links are routed again, and the result is kept only if it has fewer problems. Those positions are the final ones. A renderer that keeps the earlier positions draws routes that miss their classes. Pass <code>{ settle: false }</code> to keep every class where it is.</p>
+<p><strong>Arrowheads.</strong> <code>routePaths</code> turns each route into points from the border of one box to the border of the other. With <code>arrow</code>, each path stops that many pixels short of its end class along its last direction, so an arrowhead drawn from there to <code>tip</code>, at <code>angle</code>, touches the box without entering it. Spreading the arrow ends further apart on a shared side was tried and not kept: on the 15 development graphs it changed no drawing. Where arrowheads crowd, it is at a hub with more incoming links than its side has room for, and spacing them further adds crossings.</p>
+<p><strong>Groups.</strong> <code>groups</code>, and <code>draw</code>'s <code>groups</code>, give each class the number of its group of closely linked classes. These are the groups that Mycelium keeps together and the pull-in slides inward, for a renderer that draws hulls, swimlanes or background areas round related classes.</p>
 <p><strong>Time limits count work, not seconds.</strong> Every time limit (the layouts' and the clean-up's) is measured in units of work: tests of two links, of a link against a box, steps tried, each with a fixed cost in nanoseconds measured on the laptop the layouts were tuned on. A computer half as fast therefore takes twice as long and draws exactly the same picture, instead of drawing a worse one in the same time. To keep the wait bounded on very slow computers, the wall clock still applies at 1/2.5 speed: a computer more than 2.5 times slower gets less work and a somewhat different drawing.</p></div>
 <details class="code">
-  <summary>Show the code (about 900 lines)</summary>
+  <summary>Show the code (about 1,800 lines)</summary>
   <div class="bar"><button type="button" id="copyCode">Copy</button></div>
   <pre><code id="srcCode"><!--__CODE__--></code></pre>
 </details>
