@@ -119,19 +119,39 @@ function checkMoves(L) {
       E.forEach(([a, b], f) => { if (f > k && a !== b && a !== s && a !== t && b !== s && b !== t && L.segX(P[s], P[t], P[a], P[b])) c += 6; }); });
     return c; };
   MODELS.concat([model(7, 40, 6), model(8, 60, 10)]).forEach((m, i) => {
-    const run = (off) => { Object.assign(L.tune, off ? { noSwap: true, noFence: true, noNudge: true } : { noSwap: false, noFence: false, noNudge: false });
+    const run = (off) => { Object.assign(L.tune, off ? { noSwap: true, noFence: true, noNudge: true, noPull: true } : { noSwap: false, noFence: false, noNudge: false, noPull: true });
       const t0 = L.now(), P = L.auto(m.D, m.edges, { seed: 1 }).pos.map((p) => ({ x: p.x, y: p.y })); L.sep(P, m.D.map((d) => ({ w: d.w + 16, h: d.h + 12 })), 6, 200);
       // a tiny time limit for the clean-up itself, so both runs clean up the same way and only the passes after it differ
       return L.cleanUp(P, m.D, m.edges, t0 - 5000); };
     const a = problems(run(true), m.D, m.edges), b = problems(run(false), m.D, m.edges);
-    Object.assign(L.tune, { noSwap: false, noFence: false, noNudge: false });
+    Object.assign(L.tune, { noSwap: false, noFence: false, noNudge: false, noPull: false });
     if (b > a) bad.push(`model ${i}: the passes after the clean-up left more problems (${b} against ${a})`);
+  });
+  return bad;
+}
+// 7. pulling parts and groups in from the edge: never more problems, never a bigger box, never two boxes on each other
+function checkPull(L) {
+  const bad = [];
+  const problems = (P, D, E) => { let c = 0;
+    E.forEach(([s, t], k) => { if (s === t) return; D.forEach((d, u) => { if (u !== s && u !== t && L.segBox(P[s].x - P[u].x, P[s].y - P[u].y, P[t].x - P[u].x, P[t].y - P[u].y, d.w / 2 + 9, d.h / 2 + 9)) c += 10; });
+      E.forEach(([a, b], f) => { if (f > k && a !== b && a !== s && a !== t && b !== s && b !== t && L.segX(P[s], P[t], P[a], P[b])) c += 6; }); });
+    return c; };
+  const area = (P, D) => { let x1 = 1e18, y1 = 1e18, x2 = -1e18, y2 = -1e18; P.forEach((p, i) => { x1 = Math.min(x1, p.x - D[i].w / 2); x2 = Math.max(x2, p.x + D[i].w / 2); y1 = Math.min(y1, p.y - D[i].h / 2); y2 = Math.max(y2, p.y + D[i].h / 2); }); return (x2 - x1) * (y2 - y1); };
+  // trees with long hanging chains and loosely joined groups: the shapes this pass is for
+  const chainy = (seed, n) => { const m = model(seed, n, 3); for (let i = 0; i < 8; i++) m.edges.push([n + i, i ? n + i - 1 : 0, 1]); for (let i = 0; i < 8; i++) m.D.push({ w: 70, h: 20 }); return m; };
+  [chainy(11, 20), chainy(12, 40), model(13, 60, 8), model(14, 90, 12)].forEach((m, i) => {
+    const run = (off) => { L.tune.noPull = off; const t0 = L.now(), P = L.auto(m.D, m.edges, { seed: 1 }).pos.map((p) => ({ x: p.x, y: p.y })); L.sep(P, m.D.map((d) => ({ w: d.w + 16, h: d.h + 12 })), 6, 200); return L.cleanUp(P, m.D, m.edges, t0 - 5000); };
+    const A = run(true), B = run(false); L.tune.noPull = false;
+    const pa = problems(A, m.D, m.edges), pb = problems(B, m.D, m.edges);
+    if (pb > pa) bad.push(`model ${i}: pulling in left more problems (${pb} against ${pa})`);
+    if (area(B, m.D) > area(A, m.D) * 1.0001) bad.push(`model ${i}: pulling in made the drawing bigger`);
+    for (let u = 0; u < B.length; u++) for (let v = u + 1; v < B.length; v++) if (Math.abs(B[u].x - B[v].x) < (m.D[u].w + m.D[v].w) / 2 && Math.abs(B[u].y - B[v].y) < (m.D[u].h + m.D[v].h) / 2) { bad.push(`model ${i}: pulling in put two classes on each other`); u = v = 1e9; }
   });
   return bad;
 }
 function runAll(code) {
   const out = { clock: checkClock(code) }, L = load(code);
-  out.grid = checkGrid(L); out.repeatable = checkRepeatable(L); out.tree = checkTree(L); out.routes = checkRoutes(L); out.moves = checkMoves(L);
+  out.grid = checkGrid(L); out.repeatable = checkRepeatable(L); out.tree = checkTree(L); out.routes = checkRoutes(L); out.moves = checkMoves(L); out.pull = checkPull(L);
   return out;
 }
 
@@ -152,6 +172,8 @@ if (process.argv.includes('--self-test')) {
     ['routes', 'classes pushed onto the link and kept even when worse', code.replace('if (score(_ogRouteMetrics(Q, items, edges, r2.routes, o.pad)) < score(_ogRouteMetrics(pos, items, edges, r.routes, o.pad)))', 'if (true)').replace('best = { need, nx: (dd < 0 ? -1 : 1) * nx, ny: (dd < 0 ? -1 : 1) * ny }', 'best = { need: need + 2 * Math.abs(dd), nx: (dd < 0 ? 1 : -1) * nx, ny: (dd < 0 ? 1 : -1) * ny }')],
     ['moves', 'a class pushed off a link even when that is worse', code.replace('if (!overlaps(v) && cost(v) < before - 0.5) return true;', 'if (!overlaps(v)) return true;')],
     ['moves', 'a leaf moved to the spot with the most problems', code.replace('if (x >= now) continue;', 'if (x > 1e9) continue;').replace('const sc = x * 200 - room(v, c) + 0.2 * r;', 'const sc = -x * 200;')],
+    ['pull', 'a part pulled in even when that adds problems', code.replace('if (c1.c <= c0.c) {', 'if (true) {').replace("if ((!best || sc > best.sc) && cost(S, inS).c <= c0.c)", "if (!best || sc > best.sc)")],
+    ['pull', 'parts pulled in on top of other classes', code.replace('if (!clash(S, inS, o.room) && (sc === 1 || gapsOk(S))) {', 'if (sc === 1 || gapsOk(S)) {').replace('if (inward > 30 && !clash(S, inS, o.groupRoom, true)) {', 'if (inward > 30) {')],
   ];
   let ok = true;
   for (const [check, what, broken] of fixtures) {

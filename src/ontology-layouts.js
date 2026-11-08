@@ -1222,7 +1222,8 @@
       // topDown: the layout drew subclasses below their superclasses (the tree), and the clean-up keeps them there.
       function _ogLayoutCleanUp(pos, items, edges, startedAt, topDown) {
         const budgetMs = Math.min(500, 1500 - (_ogNow() - startedAt));
-        const swap = (P) => (_OG_TUNE.noSwap ? P : _ogClocked(() => _ogLeafSwap(P, items, edges)));
+        const swap0 = (P) => (_OG_TUNE.noSwap ? P : _ogClocked(() => _ogLeafSwap(P, items, edges)));
+        const swap = (P) => { const Q = swap0(P); return _OG_TUNE.noPull || topDown ? Q : _ogClocked(() => _ogPullIn(Q, items, edges, _OG_TUNE.pull)); }; // a top-down tree keeps its levels
         if (budgetMs < 100) return swap(pos);
         const down = topDown ? edges.filter((e) => e[2] === 2 && e[0] !== e[1]).map((e) => [e[0], e[1]]) : null;
         return swap(_ogClocked(() => _ogHandTidy.run(pos, items, edges.map((e) => ({ s: e[0], t: e[1] })), { budgetMs, down, ...(_OG_TUNE.cleanup || {}) }).P));
@@ -1271,7 +1272,7 @@
               if (_ogClSegBox(P[g.s].x - c.x, P[g.s].y - c.y, P[g.t].x - c.x, P[g.t].y - c.y, items[v].w / 2 + pad, items[v].h / 2 + pad)) x += 10; }
             for (let u = 0; u < n; u++) if (u !== v && u !== p && _ogClSegBox(P[p].x - P[u].x, P[p].y - P[u].y, c.x - P[u].x, c.y - P[u].y, items[u].w / 2 + pad, items[u].h / 2 + pad)) x += 10;
             return x; };
-          const room = (v, c) => { let d = 120; _ogWorkN[1] += n + m;
+          const room = (v, c) => { let d = _OG_TUNE.fenceRoom || 120; _ogWorkN[1] += n + m;
             for (let u = 0; u < n; u++) if (u !== v) { const gx = Math.abs(P[u].x - c.x) - (items[u].w + items[v].w) / 2, gy = Math.abs(P[u].y - c.y) - (items[u].h + items[v].h) / 2; d = Math.min(d, Math.max(gx, gy)); }
             for (const g of segs) { if (g.s === v || g.t === v) continue; d = Math.min(d, _ogClDPS(c, P[g.s], P[g.t]) - Math.max(items[v].w, items[v].h) / 2); }
             return d; };
@@ -1312,6 +1313,96 @@
           if (!any) break;
         }
         if (_ogTr && moved) _ogTr.snap("nudge", P);
+        return P;
+      }
+      // "Pull in": a part that hangs off the rest by one link (a one-link class, a chain, a small tree) and sprawls toward
+      // the edge of the drawing turns round the class it hangs from and/or draws in toward it, into open space, when that
+      // leaves no more problems (crossing 6, link through a class 10, measured on the part's links and on links through its
+      // boxes) and either shrinks the drawing's box or, with the box unchanged, makes the part's links much shorter. Parts
+      // on the edge go first; at most `ms` of the work clock. Positions in, new positions out.
+      const _OG_PULL = { ms: 100, maxPart: 0.4, gain: 0.01, shorter: 0.25, room: 14, pad: 9, minGap: 70, groupRoom: 40 };
+      function _ogPullIn(pos, items, edges, opt) {
+        const o = { ..._OG_PULL, ...(opt || {}) }, n = pos.length, P = pos.map((p) => ({ x: p.x, y: p.y }));
+        const EE = edges.filter((e) => e[0] !== e[1]).map((e) => ({ s: e[0], t: e[1] })), m = EE.length;
+        if (n < 4 || !m || n > 1500) return P;
+        const inc = _ogClIncidence(n, EE), pad = o.pad, t0 = _ogNow();
+        // parts hanging by one link: strip one-link classes until none is left; each stripped class hangs from the
+        // neighbor still there when it went, and a part is a stripped class with everything hanging below it
+        const deg = inc.map((l) => l.length), gone = new Array(n).fill(false), up = new Array(n).fill(-1), q = [];
+        for (let v = 0; v < n; v++) if (deg[v] === 1) q.push(v);
+        let left = n;
+        while (q.length && left > 1) { const v = q.shift(); if (gone[v] || deg[v] !== 1) continue; gone[v] = true; left--;
+          for (const k of inc[v]) { const u = EE[k].s === v ? EE[k].t : EE[k].s; if (!gone[u]) { up[v] = u; if (--deg[u] === 1) q.push(u); } } }
+        const kids = Array.from({ length: n }, () => []); for (let v = 0; v < n; v++) if (gone[v] && up[v] >= 0) kids[up[v]].push(v);
+        const below = (v) => { const S = [v]; for (let i = 0; i < S.length; i++) S.push(...kids[S[i]]); return S; };
+        // every stripped class with what hangs below it is a part (a whole hanging tree, and each of its branches)
+        const parts = []; for (let v = 0; v < n; v++) if (gone[v] && up[v] >= 0) { const S = below(v); if (S.length <= o.maxPart * n) parts.push({ root: v, hang: up[v], S }); }
+        if (!parts.length) return P;
+        const box = () => { let x1 = 1e18, y1 = 1e18, x2 = -1e18, y2 = -1e18; for (let u = 0; u < n; u++) { const p = P[u], w = items[u].w / 2, h = items[u].h / 2; if (p.x - w < x1) x1 = p.x - w; if (p.x + w > x2) x2 = p.x + w; if (p.y - h < y1) y1 = p.y - h; if (p.y + h > y2) y2 = p.y + h; } return { x1, y1, x2, y2, a: (x2 - x1) * (y2 - y1) }; };
+        // problems involving the part (its links against all links and boxes, other links through its boxes) and its link length
+        const cost = (S, inS) => { let c = 0, len = 0; const ek = new Set(); for (const v of S) for (const k of inc[v]) ek.add(k); _ogWorkN[0] += ek.size * m; _ogWorkN[1] += ek.size * n + m * S.length;
+          for (const k of ek) { const e = EE[k], a = P[e.s], b = P[e.t]; len += Math.hypot(b.x - a.x, b.y - a.y);
+            for (let u = 0; u < n; u++) if (u !== e.s && u !== e.t && _ogClSegBox(a.x - P[u].x, a.y - P[u].y, b.x - P[u].x, b.y - P[u].y, items[u].w / 2 + pad, items[u].h / 2 + pad)) c += 10;
+            for (let f = 0; f < m; f++) { if (ek.has(f) && f <= k) continue; const g = EE[f]; if (g.s === e.s || g.s === e.t || g.t === e.s || g.t === e.t) continue; if (_ogClSegX(a, b, P[g.s], P[g.t])) c += 6; } }
+          for (let f = 0; f < m; f++) { if (ek.has(f)) continue; const g = EE[f]; for (const v of S) if (_ogClSegBox(P[g.s].x - P[v].x, P[g.s].y - P[v].y, P[g.t].x - P[v].x, P[g.t].y - P[v].y, items[v].w / 2 + pad, items[v].h / 2 + pad)) c += 10; }
+          return { c, len }; };
+        // the part's boxes must keep `room` px from every other box (and from each other when drawn in)
+        const clash = (S, inS, gap, rigid) => { _ogWorkN[2] += S.length * n; for (const v of S) for (let u = 0; u < n; u++) { if (u === v || (inS[u] && (rigid || u < v))) continue; if (Math.abs(P[u].x - P[v].x) < (items[u].w + items[v].w) / 2 + gap && Math.abs(P[u].y - P[v].y) < (items[u].h + items[v].h) / 2 + gap) return true; } return false; };
+        const edgeDist = (S, B) => { let d = 1e18; for (const v of S) { const p = P[v], w = items[v].w / 2, h = items[v].h / 2; d = Math.min(d, p.x - w - B.x1, B.x2 - p.x - w, p.y - h - B.y1, B.y2 - p.y - h); } return d; };
+        // a link drawn in keeps at least minGap px between its two boxes (or what it had), so its name still fits
+        const gap = (e) => { const a = P[e.s], b = P[e.t], dx = Math.abs(b.x - a.x), dy = Math.abs(b.y - a.y), L = Math.hypot(dx, dy) || 1;
+          const inA = Math.min(dx ? items[e.s].w / 2 * L / dx : 1e9, dy ? items[e.s].h / 2 * L / dy : 1e9), inB = Math.min(dx ? items[e.t].w / 2 * L / dx : 1e9, dy ? items[e.t].h / 2 * L / dy : 1e9); return L - inA - inB; };
+        const gap0 = EE.map(gap), gapsOk = (S) => { for (const v of S) for (const k of inc[v]) if (gap(EE[k]) < Math.min(gap0[k], o.minGap)) return false; return true; };
+        const angs = [20, -20, 40, -40, 60, -60, 90, -90, 120, -120, 150, -150, 180], scales = [1, 0.85, 0.7, 0.55];
+        let moved = 0;
+        for (let pass = 0; pass < 2; pass++) {
+          let B = box(); parts.sort((a, b) => edgeDist(a.S, B) - edgeDist(b.S, B) || b.S.length - a.S.length);
+          let any = false;
+          for (const pt of parts) {
+            if (_ogNow() - t0 > o.ms) break;
+            const S = pt.S, inS = new Array(n).fill(false); S.forEach((v) => (inS[v] = true));
+            B = box(); const c0 = cost(S, inS), old = S.map((v) => P[v]), h = P[pt.hang];
+            let best = null;
+            for (const sc of scales) for (const da of [0, ...angs]) {
+              if (sc === 1 && da === 0) continue; const t = da * Math.PI / 180, cs = Math.cos(t), sn = Math.sin(t);
+              S.forEach((v, i) => { const dx = old[i].x - h.x, dy = old[i].y - h.y; P[v] = { x: h.x + sc * (dx * cs - dy * sn), y: h.y + sc * (dx * sn + dy * cs) }; });
+              if (!clash(S, inS, o.room) && (sc === 1 || gapsOk(S))) { const c1 = cost(S, inS);
+                if (c1.c <= c0.c) { const B1 = box(), gain = (B.a - B1.a) / B.a, short = 1 - c1.len / (c0.len || 1);
+                  const ok = gain > o.gain || (gain > -1e-9 && short > o.shorter);
+                  if (ok) { const sc2 = c1.c * 1e6 - gain * 1e4 - short * 100 + Math.abs(da) / 180; if (!best || sc2 < best.sc) best = { sc: sc2, at: S.map((v) => P[v]) }; } } }
+              S.forEach((v, i) => (P[v] = old[i]));
+            }
+            if (best) { S.forEach((v, i) => (P[v] = best.at[i])); moved++; any = true; }
+          }
+          if (!any) break;
+        }
+        // groups (Louvain communities of 4 or more) slide straight toward the middle of the drawing, as a block, by the largest
+        // step that keeps room round every box, no more problems and a smaller box: closes the empty bands between groups
+        if (!o.noGroups && n >= 12) {
+          const com = _ogClMergeSmall(_ogClLouvain(n, EE.map((e) => [e.s, e.t, 1])), EE.map((e) => [e.s, e.t, 1]), 4), G = new Map();
+          com.forEach((c, v) => { if (!G.has(c)) G.set(c, []); G.get(c).push(v); });
+          const groups = [...G.values()].filter((S) => S.length < n * 0.6);
+          for (let pass = 0; pass < 3; pass++) {
+            let any = false; const B = box(); groups.sort((a, b) => edgeDist(a, B) - edgeDist(b, B));
+            for (const S of groups) {
+              if (_ogNow() - t0 > o.ms * 2) break;
+              const inS = new Array(n).fill(false); S.forEach((v) => (inS[v] = true));
+              const B0 = box(), cx = (B0.x1 + B0.x2) / 2, cy = (B0.y1 + B0.y2) / 2; let gx = 0, gy = 0; S.forEach((v) => { gx += P[v].x; gy += P[v].y; }); gx /= S.length; gy /= S.length;
+              const c0 = cost(S, inS), old = S.map((v) => P[v]), d0 = Math.hypot(gx - cx, gy - cy); let best = null;
+              for (let k = 0; k < 16; k++) { const th = k * Math.PI / 8, ux = Math.cos(th), uy = Math.sin(th);
+                if (ux * (cx - gx) + uy * (cy - gy) <= 0) continue; // only steps toward the middle
+                for (const st of [640, 320, 160, 80, 40]) {
+                  S.forEach((v, i) => (P[v] = { x: old[i].x + ux * st, y: old[i].y + uy * st }));
+                  const inward = d0 - Math.hypot(gx + ux * st - cx, gy + uy * st - cy);
+                  if (inward > 30 && !clash(S, inS, o.groupRoom, true)) { const B1 = box(), gain = (B0.a - B1.a) / B0.a;
+                    if (gain > -1e-9) { const sc = gain * 1e4 + inward; if ((!best || sc > best.sc) && cost(S, inS).c <= c0.c) best = { sc, gain, at: S.map((v) => P[v]) }; } }
+                  S.forEach((v, i) => (P[v] = old[i])); } }
+              if (best) { S.forEach((v, i) => (P[v] = best.at[i])); moved++; any = true; }
+            }
+            if (!any) break;
+          }
+        }
+        if (_ogTr && moved) _ogTr.snap("pull", P);
         return P;
       }
       // ── end of the clean-up ──

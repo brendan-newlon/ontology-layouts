@@ -1,0 +1,10 @@
+Ontology layouts (Tidy Stress, Mycelium, Best Read, the clean-up, the link routing) and the Layout Playback and Lab
+Copyright 2026 Brendan Newlon
+
+Licensed under the Apache License, Version 2.0 (see LICENSE).
+
+Benchmark graphs in tools/layout-bench/models6.js were converted from published sources that remain under their own
+terms: the Rome graphs (graphdrawing.org) and the ontologies FOAF, Dublin Core terms, OWL-Time, DCAT 3, BFO 2020,
+DOLCE+DnS Ultralite, SAREF core, GoodRelations and the Cell Ontology. Open-source layout engines used for comparison
+(Graphviz, ELK, WebCola, d3-force, dagre, Cytoscape and its extensions) are loaded from public CDNs or run as separate
+programs; none is redistributed here.
