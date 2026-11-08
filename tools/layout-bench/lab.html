@@ -29,6 +29,7 @@ main { display: grid; grid-template-columns: 1fr 360px; min-height: 0; }
 aside { border-left: 1px solid var(--rule); background: var(--paper); display: grid; grid-template-rows: auto auto 1fr auto; min-height: 0; }
 /* walk-through panel */
 #walk { border-bottom: 1px solid var(--rule); padding: 8px 10px; display: grid; gap: 6px; background: color-mix(in srgb, var(--accent) 6%, var(--paper)); max-height: 55vh; overflow-y: auto; }
+#walk[hidden] { display: none; }
 #walk .where { font-size: 11px; text-transform: uppercase; letter-spacing: .05em; color: var(--muted); display: flex; justify-content: space-between; }
 #walk .what { font-size: 13px; }
 #walk .what small { color: var(--muted); display: block; margin-top: 3px; }
@@ -96,6 +97,8 @@ aside h2 { font-size: 13px; margin: 0; padding: 8px 12px; border-bottom: 1px sol
   <label class="tog" title="How many repair moves a group move may use before it has to pay off">Look-ahead <input type="range" id="tidyLA" min="0" max="8" step="1" value="4"> <span id="tidyLAv">4</span></label>
   <button id="walkBtn" title="Run the clean-up and step through what it does, stage by stage, with notes on each step">Walk through</button>
   <select id="walkFrom" title="Which drawing the walk-through cleans up"><option value="start">from the starting layout</option><option value="here">from this drawing</option></select>
+  <button id="routeBtn" title="Bend the links the way the link routing does after a layout: parallel links as arcs, links bent round classes in their way (the bends become handles you can edit)">Bend links</button>
+  <a id="pbLink" href="playback.html" title="Watch the layout of this graph step by step">Playback ↗</a>
   <label class="tog"><input type="checkbox" id="marks" checked> Mark problems</label>
   <label class="tog"><input type="checkbox" id="handles" checked> Show bends</label>
   <div class="metrics" id="metrics"></div>
@@ -261,6 +264,7 @@ function describe(ev) {
       return `<span class="d">Cleaned up in ${(ev.ms / 1000).toFixed(1)} s: ${c('move')} single moves, ${c('unit')} leaf units turned, ${c('spread')} crowds spread, ${c('group')} group moves${ev.fromWalk ? ` (kept from the walk-through, up to step ${ev.upToStep})` : ''}</span>` + m; }
     case 'walkthrough': return `<span class="d">Started a walk-through of the clean-up ${ev.from === 'start' ? 'from the starting layout' : 'from this drawing'} (${(ev.ms / 1000).toFixed(2)} s, ${ev.stages.length} stages)</span>`;
     case 'walk-closed': return `<span class="d">Closed the walk-through at step ${ev.atStep}; your drawing is back as it was</span>`;
+    case 'route': return `<span class="d">Bent the links as the link routing does: ${ev.bent} links bent, ${ev.parallel} parallel links spread</span>` + m;
     case 'resume': return `<span class="d">Came back to ${esc(ev.graph)}, continuing from where you left it</span>`;
     default: return esc(ev.kind);
   }
@@ -312,7 +316,7 @@ function journal(action) {
 async function load(key, algo, logIt = true) {
   if (W) walkEnd(false);
   const Md = await MODELS[key].load();
-  G.key = key; G.labels = Md.labels; G.D = Md.labels.map((l) => ({ w: String(l).length * 6.6 + 10, h: 20 }));
+  G.key = key; G.labels = Md.labels; $('pbLink').href = 'playback.html?graph=' + key + '&algo=' + algo; G.D = Md.labels.map((l) => ({ w: String(l).length * 6.6 + 10, h: 20 }));
   const edges = Md.edges.filter((e) => e.s !== e.t).map((e) => [e.s, e.t, e.kind === 'sub' ? 2 : 1]);
   G.E = edges.map(([s, t, w]) => ({ s, t, sub: w === 2 }));
   G.P = freshLayout(algo);
@@ -592,6 +596,13 @@ $('wDropped').onchange = () => { if (!W) return; const cur = W.frames[W.i]; W.fr
 $('note').addEventListener('keydown', (ev) => { if (ev.key === 'Enter' && !ev.shiftKey) { ev.preventDefault(); sendNote(); } });
 $('marks').onchange = () => { draw(); record('toggle', { marks: $('marks').checked }); };
 $('handles').onchange = () => { draw(); record('toggle', { bends: $('handles').checked }); };
+// Bend links: the library's link routing on this drawing; its bends become this lab's bends (ports and names are not shown here)
+$('routeBtn').onclick = () => {
+  if (W) return; const before = measure(), snap = snapshot();
+  const r = O.route(G.P, G.D, G.E.map((e) => [e.s, e.t, e.sub ? 2 : 1]), { ports: 0, labels: false });
+  G.H = r.routes.map((x) => x.bends.map((h) => ({ t: h.t, d: h.d }))); S.undo.push(snap);
+  record('route', { bent: r.stats.bent, parallel: r.stats.parallel }, before); draw();
+};
 $('relayout').onclick = () => load(G.key, $('algo').value, true);
 $('graph').onchange = () => load($('graph').value, $('algo').value, 'open');
 $('algo').onchange = () => load(G.key, $('algo').value, true);
