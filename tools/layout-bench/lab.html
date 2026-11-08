@@ -136,7 +136,7 @@ aside h2 { font-size: 13px; margin: 0; padding: 8px 12px; border-bottom: 1px sol
 <script src="handtidy.js"></script>
 <script>
 // Every action and note is kept in order, with the metrics before and after and the full positions after, so that a session
-// can be replayed and studied. Sessions are posted to the local receiver (tools/recv.py, port 8013) and kept in localStorage.
+// can be replayed and studied. Sessions are posted to the local receiver (tools/recv.py, port 8613) and kept in localStorage.
 const O = window.OURS; // $ (getElementById) comes from models.js
 const svg = $('svg');
 const G = { key: null, labels: [], D: [], E: [], P: [], H: [], sel: new Set(), pick: -1 };
@@ -286,7 +286,7 @@ let saveT = null;
 function persist() {
   const body = JSON.stringify({ id: S.id, graph: G.key, algo: $('algo').value, labels: G.labels, links: G.E.map((e) => [e.s, e.t, e.sub ? 1 : 0]), boxes: G.D.map((d) => d.w), events: S.events });
   try { localStorage.setItem('layout-lab:' + S.id, body); } catch (e) {}
-  clearTimeout(saveT); saveT = setTimeout(() => fetch('http://127.0.0.1:8013/' + S.id + '.json', { method: 'POST', body })
+  clearTimeout(saveT); saveT = setTimeout(() => fetch('http://127.0.0.1:8613/' + S.id + '.json', { method: 'POST', body })
     .then(() => ($('save').textContent = 'saved ' + new Date().toLocaleTimeString()))
     .catch(() => ($('save').textContent = 'kept in this browser only')), 400);
 }
@@ -311,7 +311,7 @@ function journal(action) {
   let J = []; try { J = JSON.parse(localStorage.getItem('layout-lab:journal') || '[]'); } catch (e) {}
   J.push({ at: new Date().toISOString(), action, graph: G.key, session: S.id });
   const body = JSON.stringify(J); try { localStorage.setItem('layout-lab:journal', body); } catch (e) {}
-  fetch('http://127.0.0.1:8013/lab_journal.json', { method: 'POST', body }).catch(() => {});
+  fetch('http://127.0.0.1:8613/lab_journal.json', { method: 'POST', body }).catch(() => {});
 }
 async function load(key, algo, logIt = true) {
   if (W) walkEnd(false);

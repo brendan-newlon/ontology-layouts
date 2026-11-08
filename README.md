@@ -21,7 +21,7 @@ Same input, same drawing on any computer: time limits count units of work, not w
 | `tests/check_ontology_layout.mjs` | Checks on the layout code (work clock only, clean-up grid equals checking every pair, same drawing twice, tree stays top-down); `--self-test` proves each check fires. |
 | `tools/layout-bench/` | Benchmark graphs, the Node and browser benches, the hands-on lab, recorded results and the script that builds the write-up. See its README. |
 | `tools/recv.py` | Local receiver for the lab: saves posted sessions into `_temp/`. |
-| `Start Layout Lab.cmd` | Double-click (Windows) to open the playback and the lab: starts the page server (port 8011) and the receiver (port 8013) in two small windows; close them to stop. |
+| `Start Layout Lab.cmd` | Double-click (Windows) to open the playback and the lab: starts a page server for this folder (first free port from 8611; one already serving this folder is reused) and the receiver (port 8613) in small windows; close them to stop. |
 
 ## Run
 
