@@ -294,49 +294,52 @@
  },
  "tunedRanks": {
   "five": {
-   "Tidy Stress": 3.07,
-   "Mycelium": 4.51,
-   "Graphviz neato": 5.49,
-   "Graphviz sfdp": 6.06,
-   "Graphviz fdp": 6.82,
-   "ELK stress": 6.99,
-   "ELK force": 10.42,
-   "ELK layered": 9.17,
-   "dagre": 9.37,
-   "WebCola": 5.38,
-   "d3-force": 7.35,
-   "Cytoscape cose": 10.09,
-   "Cytoscape fcose": 6.27
+   "Best Read": 2.87,
+   "Tidy Stress": 2.65,
+   "Mycelium": 3.93,
+   "Graphviz neato": 4.9,
+   "Graphviz sfdp": 5.33,
+   "Graphviz fdp": 6.06,
+   "ELK stress": 6.23,
+   "ELK force": 9.53,
+   "ELK layered": 8.27,
+   "dagre": 8.57,
+   "WebCola": 4.75,
+   "d3-force": 6.55,
+   "Cytoscape cose": 9.31,
+   "Cytoscape fcose": 5.63
   },
   "down": {
-   "Tidy Stress": 3.81,
-   "Mycelium": 5.07,
-   "Graphviz neato": 5.36,
-   "Graphviz sfdp": 6.17,
-   "Graphviz fdp": 6.95,
-   "ELK stress": 7.07,
-   "ELK force": 9.95,
-   "ELK layered": 8.3,
-   "dagre": 8.96,
-   "WebCola": 5.82,
-   "d3-force": 7.29,
-   "Cytoscape cose": 9.53,
-   "Cytoscape fcose": 6.73
+   "Best Read": 3.7,
+   "Tidy Stress": 3.38,
+   "Mycelium": 4.49,
+   "Graphviz neato": 4.81,
+   "Graphviz sfdp": 5.49,
+   "Graphviz fdp": 6.21,
+   "ELK stress": 6.33,
+   "ELK force": 9.14,
+   "ELK layered": 7.5,
+   "dagre": 8.23,
+   "WebCola": 5.19,
+   "d3-force": 6.54,
+   "Cytoscape cose": 8.8,
+   "Cytoscape fcose": 6.06
   },
   "dist": {
-   "Tidy Stress": 4.73,
-   "Mycelium": 6.11,
-   "Graphviz neato": 5.27,
-   "Graphviz sfdp": 6.45,
-   "Graphviz fdp": 6.4,
-   "ELK stress": 5.68,
-   "ELK force": 9.76,
-   "ELK layered": 9.7,
-   "dagre": 10.07,
-   "WebCola": 4.92,
-   "d3-force": 6.22,
-   "Cytoscape cose": 10.44,
-   "Cytoscape fcose": 5.26
+   "Best Read": 4.63,
+   "Tidy Stress": 4.36,
+   "Mycelium": 5.49,
+   "Graphviz neato": 4.82,
+   "Graphviz sfdp": 5.89,
+   "Graphviz fdp": 5.83,
+   "ELK stress": 5.13,
+   "ELK force": 9.02,
+   "ELK layered": 8.84,
+   "dagre": 9.27,
+   "WebCola": 4.46,
+   "d3-force": 5.65,
+   "Cytoscape cose": 9.65,
+   "Cytoscape fcose": 4.8
   }
  },
  "tunedRanksBR": {
@@ -344,126 +347,158 @@
   "down": 3.7,
   "dist": 4.63
  },
+ "tunedPlaces": {
+  "five": {
+   "Best Read": 1,
+   "Tidy Stress": 1,
+   "Mycelium": 1,
+   "next": "WebCola",
+   "nextRank": 4.75
+  },
+  "down": {
+   "Best Read": 1,
+   "Tidy Stress": 1,
+   "Mycelium": 1,
+   "next": "Graphviz neato",
+   "nextRank": 4.81
+  },
+  "dist": {
+   "Best Read": 2,
+   "Tidy Stress": 1,
+   "Mycelium": 5,
+   "next": "WebCola",
+   "nextRank": 4.46
+  }
+ },
  "tunedRanksDetail": {
+  "Best Read": {
+   "cross": 1.37,
+   "thru": 1.87,
+   "fill": 4.73,
+   "xang": 3.37,
+   "angres": 3,
+   "mean": 2.87
+  },
   "Tidy Stress": {
-   "cross": 2.1,
-   "thru": 2.5,
-   "fill": 3.87,
-   "xang": 3.13,
-   "angres": 3.73,
-   "mean": 3.07
+   "cross": 1.5,
+   "thru": 1.97,
+   "fill": 3.67,
+   "xang": 2.9,
+   "angres": 3.2,
+   "mean": 2.65
   },
   "Mycelium": {
-   "cross": 1.87,
-   "thru": 2.4,
-   "fill": 6.87,
-   "xang": 6.93,
-   "angres": 4.47,
-   "mean": 4.51
+   "cross": 1.47,
+   "thru": 1.93,
+   "fill": 6.07,
+   "xang": 6.17,
+   "angres": 4,
+   "mean": 3.93
   },
   "Graphviz neato": {
-   "cross": 4,
-   "thru": 3.2,
-   "fill": 11,
-   "xang": 5.47,
-   "angres": 3.8,
-   "mean": 5.49
+   "cross": 3.17,
+   "thru": 2.7,
+   "fill": 10.13,
+   "xang": 5.03,
+   "angres": 3.47,
+   "mean": 4.9
   },
   "Graphviz sfdp": {
-   "cross": 5.27,
-   "thru": 5.57,
-   "fill": 6.2,
-   "xang": 6.4,
-   "angres": 6.87,
-   "mean": 6.06
+   "cross": 4.33,
+   "thru": 4.7,
+   "fill": 5.53,
+   "xang": 5.9,
+   "angres": 6.2,
+   "mean": 5.33
   },
   "Graphviz fdp": {
-   "cross": 7.87,
-   "thru": 5.63,
-   "fill": 9.53,
-   "xang": 5.87,
-   "angres": 5.2,
-   "mean": 6.82
+   "cross": 6.9,
+   "thru": 4.7,
+   "fill": 8.67,
+   "xang": 5.43,
+   "angres": 4.6,
+   "mean": 6.06
   },
   "ELK stress": {
-   "cross": 7.4,
-   "thru": 7.1,
-   "fill": 8.07,
-   "xang": 6,
-   "angres": 6.4,
-   "mean": 6.99
+   "cross": 6.47,
+   "thru": 6.17,
+   "fill": 7.27,
+   "xang": 5.57,
+   "angres": 5.67,
+   "mean": 6.23
   },
   "ELK force": {
-   "cross": 12.73,
-   "thru": 10.7,
-   "fill": 8.73,
-   "xang": 9,
-   "angres": 10.93,
-   "mean": 10.42
+   "cross": 11.73,
+   "thru": 9.7,
+   "fill": 7.93,
+   "xang": 8.27,
+   "angres": 10,
+   "mean": 9.53
   },
   "ELK layered": {
-   "cross": 7.57,
-   "thru": 9.17,
-   "fill": 7.8,
-   "xang": 10.67,
-   "angres": 10.67,
-   "mean": 9.17
+   "cross": 6.6,
+   "thru": 8.2,
+   "fill": 7.07,
+   "xang": 9.83,
+   "angres": 9.67,
+   "mean": 8.27
   },
   "dagre": {
-   "cross": 10.47,
-   "thru": 11.53,
-   "fill": 3.33,
-   "xang": 10.6,
-   "angres": 10.93,
-   "mean": 9.37
+   "cross": 9.47,
+   "thru": 10.53,
+   "fill": 3.07,
+   "xang": 9.8,
+   "angres": 10,
+   "mean": 8.57
   },
   "WebCola": {
-   "cross": 4.37,
-   "thru": 5.07,
-   "fill": 9.73,
-   "xang": 4.33,
-   "angres": 3.4,
-   "mean": 5.38
+   "cross": 3.5,
+   "thru": 4.17,
+   "fill": 8.93,
+   "xang": 4.03,
+   "angres": 3.13,
+   "mean": 4.75
   },
   "d3-force": {
-   "cross": 8.17,
-   "thru": 6.47,
-   "fill": 10,
-   "xang": 6.2,
-   "angres": 5.93,
-   "mean": 7.35
+   "cross": 7.17,
+   "thru": 5.53,
+   "fill": 9.13,
+   "xang": 5.67,
+   "angres": 5.27,
+   "mean": 6.55
   },
   "Cytoscape cose": {
-   "cross": 11.13,
-   "thru": 13,
+   "cross": 10.13,
+   "thru": 12,
    "fill": 1.2,
-   "xang": 12.6,
-   "angres": 12.53,
-   "mean": 10.09
+   "xang": 11.67,
+   "angres": 11.53,
+   "mean": 9.31
   },
   "Cytoscape fcose": {
-   "cross": 8.07,
-   "thru": 8.67,
-   "fill": 4.67,
-   "xang": 3.8,
-   "angres": 6.13,
-   "mean": 6.27
+   "cross": 7.17,
+   "thru": 7.73,
+   "fill": 4.33,
+   "xang": 3.43,
+   "angres": 5.47,
+   "mean": 5.63
   }
  },
  "defaultRanks": {
-  "Tidy Stress": 2.82,
-  "Mycelium": 4.06,
-  "Graphviz neato": 5.82,
-  "Graphviz fdp": 9.69,
-  "Graphviz sfdp": 5.73,
-  "ELK stress": 5.87,
-  "ELK force": 10.61,
-  "ELK layered": 9.06,
-  "WebCola": 5.07,
-  "d3-force": 7.24,
-  "dagre": 8.56,
-  "Cytoscape cose": 9.79,
-  "Cytoscape fcose": 6.7
+  "Best Read": 2.59,
+  "Tidy Stress": 2.4,
+  "Mycelium": 3.48,
+  "Graphviz neato": 5.11,
+  "Graphviz fdp": 8.82,
+  "Graphviz sfdp": 4.95,
+  "ELK stress": 5.19,
+  "ELK force": 9.71,
+  "ELK layered": 8.11,
+  "WebCola": 4.4,
+  "d3-force": 6.43,
+  "dagre": 7.73,
+  "Cytoscape cose": 8.99,
+  "Cytoscape fcose": 5.96
  },
  "defaultRanksBR": 2.59,
  "winsBRvsTuned": {
@@ -700,55 +735,81 @@
   },
   "ranks": {
    "five": {
-    "Tidy Stress": 3.16,
-    "Mycelium": 2.9,
-    "Graphviz neato": 5.31,
-    "Graphviz sfdp": 7.24,
-    "Graphviz fdp": 7.58,
-    "ELK stress": 6.77,
-    "ELK force": 11.22,
-    "ELK layered": 8.44,
-    "dagre": 9.44,
-    "WebCola": 4.83,
-    "d3-force": 7.58,
-    "Cytoscape cose": 9.62,
-    "Cytoscape fcose": 6.91
+    "Best Read": 2.5,
+    "Tidy Stress": 2.61,
+    "Mycelium": 2.45,
+    "Graphviz neato": 4.51,
+    "Graphviz sfdp": 6.33,
+    "Graphviz fdp": 6.63,
+    "ELK stress": 5.93,
+    "ELK force": 10.24,
+    "ELK layered": 7.48,
+    "dagre": 8.64,
+    "WebCola": 4.14,
+    "d3-force": 6.69,
+    "Cytoscape cose": 8.82,
+    "Cytoscape fcose": 6.09
    },
    "down": {
-    "Tidy Stress": 3.62,
-    "Mycelium": 3.58,
-    "Graphviz neato": 5.81,
-    "Graphviz sfdp": 7.09,
-    "Graphviz fdp": 7.66,
-    "ELK stress": 7.02,
-    "ELK force": 10.75,
-    "ELK layered": 7.31,
-    "dagre": 8.7,
-    "WebCola": 5.06,
-    "d3-force": 7.38,
-    "Cytoscape cose": 9.55,
-    "Cytoscape fcose": 7.46
+    "Best Read": 3.13,
+    "Tidy Stress": 3.08,
+    "Mycelium": 3.13,
+    "Graphviz neato": 5.02,
+    "Graphviz sfdp": 6.26,
+    "Graphviz fdp": 6.76,
+    "ELK stress": 6.22,
+    "ELK force": 9.82,
+    "ELK layered": 6.5,
+    "dagre": 7.99,
+    "WebCola": 4.4,
+    "d3-force": 6.53,
+    "Cytoscape cose": 8.74,
+    "Cytoscape fcose": 6.63
    },
    "dist": {
-    "Tidy Stress": 4.23,
-    "Mycelium": 4.51,
-    "Graphviz neato": 4.99,
-    "Graphviz sfdp": 7.64,
-    "Graphviz fdp": 7.5,
-    "ELK stress": 5.31,
-    "ELK force": 10.5,
-    "ELK layered": 9.44,
-    "dagre": 10.13,
-    "WebCola": 4.48,
-    "d3-force": 6.84,
-    "Cytoscape cose": 9.74,
-    "Cytoscape fcose": 5.68
+    "Best Read": 3.96,
+    "Tidy Stress": 3.78,
+    "Mycelium": 3.96,
+    "Graphviz neato": 4.38,
+    "Graphviz sfdp": 6.82,
+    "Graphviz fdp": 6.69,
+    "ELK stress": 4.71,
+    "ELK force": 9.66,
+    "ELK layered": 8.49,
+    "dagre": 9.27,
+    "WebCola": 3.96,
+    "d3-force": 6.12,
+    "Cytoscape cose": 8.9,
+    "Cytoscape fcose": 5.05
    }
   },
   "ranksBR": {
    "five": 2.5,
    "down": 3.13,
    "dist": 3.96
+  },
+  "places": {
+   "five": {
+    "Best Read": 1,
+    "Tidy Stress": 1,
+    "Mycelium": 1,
+    "next": "WebCola",
+    "nextRank": 4.14
+   },
+   "down": {
+    "Best Read": 1,
+    "Tidy Stress": 1,
+    "Mycelium": 1,
+    "next": "WebCola",
+    "nextRank": 4.4
+   },
+   "dist": {
+    "Best Read": 2,
+    "Tidy Stress": 1,
+    "Mycelium": 2,
+    "next": "WebCola",
+    "nextRank": 3.96
+   }
   },
   "wins": {
    "Best Read": 10
@@ -985,55 +1046,81 @@
   },
   "ranks": {
    "five": {
-    "Tidy Stress": 3.57,
-    "Mycelium": 4.08,
-    "Graphviz neato": 5.36,
-    "Graphviz sfdp": 5.9,
-    "Graphviz fdp": 7.24,
-    "ELK stress": 6.72,
-    "ELK force": 10.41,
-    "ELK layered": 8.55,
-    "dagre": 9.25,
-    "WebCola": 5.83,
-    "d3-force": 7.25,
-    "Cytoscape cose": 10.13,
-    "Cytoscape fcose": 6.72
+    "Best Read": 3.16,
+    "Tidy Stress": 3.14,
+    "Mycelium": 3.52,
+    "Graphviz neato": 4.67,
+    "Graphviz sfdp": 5.2,
+    "Graphviz fdp": 6.45,
+    "ELK stress": 5.93,
+    "ELK force": 9.49,
+    "ELK layered": 7.71,
+    "dagre": 8.47,
+    "WebCola": 5.1,
+    "d3-force": 6.48,
+    "Cytoscape cose": 9.33,
+    "Cytoscape fcose": 5.99
    },
    "down": {
-    "Tidy Stress": 4.21,
-    "Mycelium": 4.54,
-    "Graphviz neato": 5.57,
-    "Graphviz sfdp": 6.42,
-    "Graphviz fdp": 7.35,
-    "ELK stress": 6.6,
-    "ELK force": 9.9,
-    "ELK layered": 7.58,
-    "dagre": 8.49,
-    "WebCola": 5.96,
-    "d3-force": 7.41,
-    "Cytoscape cose": 9.76,
-    "Cytoscape fcose": 7.22
+    "Best Read": 3.82,
+    "Tidy Stress": 3.75,
+    "Mycelium": 3.99,
+    "Graphviz neato": 4.92,
+    "Graphviz sfdp": 5.72,
+    "Graphviz fdp": 6.59,
+    "ELK stress": 5.87,
+    "ELK force": 9.02,
+    "ELK layered": 6.86,
+    "dagre": 7.79,
+    "WebCola": 5.25,
+    "d3-force": 6.65,
+    "Cytoscape cose": 9,
+    "Cytoscape fcose": 6.5
    },
    "dist": {
-    "Tidy Stress": 4.99,
-    "Mycelium": 5.75,
-    "Graphviz neato": 5.19,
-    "Graphviz sfdp": 6.17,
-    "Graphviz fdp": 6.85,
-    "ELK stress": 5.38,
-    "ELK force": 9.86,
-    "ELK layered": 9.42,
-    "dagre": 10.09,
-    "WebCola": 5.15,
-    "d3-force": 6.19,
-    "Cytoscape cose": 10.3,
-    "Cytoscape fcose": 5.66
+    "Best Read": 4.7,
+    "Tidy Stress": 4.64,
+    "Mycelium": 5.1,
+    "Graphviz neato": 4.7,
+    "Graphviz sfdp": 5.65,
+    "Graphviz fdp": 6.27,
+    "ELK stress": 4.82,
+    "ELK force": 9.09,
+    "ELK layered": 8.58,
+    "dagre": 9.28,
+    "WebCola": 4.62,
+    "d3-force": 5.64,
+    "Cytoscape cose": 9.52,
+    "Cytoscape fcose": 5.12
    }
   },
   "ranksBR": {
    "five": 3.16,
    "down": 3.82,
    "dist": 4.7
+  },
+  "places": {
+   "five": {
+    "Best Read": 1,
+    "Tidy Stress": 1,
+    "Mycelium": 1,
+    "next": "Graphviz neato",
+    "nextRank": 4.67
+   },
+   "down": {
+    "Best Read": 1,
+    "Tidy Stress": 1,
+    "Mycelium": 1,
+    "next": "Graphviz neato",
+    "nextRank": 4.92
+   },
+   "dist": {
+    "Best Read": 3,
+    "Tidy Stress": 2,
+    "Mycelium": 5,
+    "next": "WebCola",
+    "nextRank": 4.62
+   }
   },
   "wins": {
    "Best Read": 26
@@ -1270,49 +1357,52 @@
   },
   "ranks": {
    "five": {
-    "Tidy Stress": 3.46,
-    "Mycelium": 3.75,
-    "Graphviz neato": 5.34,
-    "Graphviz sfdp": 6.27,
-    "Graphviz fdp": 7.34,
-    "ELK stress": 6.73,
-    "ELK force": 10.63,
-    "ELK layered": 8.52,
-    "dagre": 9.3,
-    "WebCola": 5.56,
-    "d3-force": 7.34,
-    "Cytoscape cose": 9.99,
-    "Cytoscape fcose": 6.78
+    "Best Read": 2.98,
+    "Tidy Stress": 2.99,
+    "Mycelium": 3.22,
+    "Graphviz neato": 4.63,
+    "Graphviz sfdp": 5.52,
+    "Graphviz fdp": 6.5,
+    "ELK stress": 5.93,
+    "ELK force": 9.7,
+    "ELK layered": 7.65,
+    "dagre": 8.51,
+    "WebCola": 4.84,
+    "d3-force": 6.54,
+    "Cytoscape cose": 9.19,
+    "Cytoscape fcose": 6.02
    },
    "down": {
-    "Tidy Stress": 4,
-    "Mycelium": 4.28,
-    "Graphviz neato": 5.69,
-    "Graphviz sfdp": 6.52,
-    "Graphviz fdp": 7.44,
-    "ELK stress": 6.79,
-    "ELK force": 10.17,
-    "ELK layered": 7.47,
-    "dagre": 8.56,
-    "WebCola": 5.7,
-    "d3-force": 7.34,
-    "Cytoscape cose": 9.74,
-    "Cytoscape fcose": 7.3
+    "Best Read": 3.6,
+    "Tidy Stress": 3.52,
+    "Mycelium": 3.76,
+    "Graphviz neato": 4.99,
+    "Graphviz sfdp": 5.8,
+    "Graphviz fdp": 6.64,
+    "ELK stress": 6.03,
+    "ELK force": 9.28,
+    "ELK layered": 6.73,
+    "dagre": 7.86,
+    "WebCola": 5.01,
+    "d3-force": 6.56,
+    "Cytoscape cose": 8.96,
+    "Cytoscape fcose": 6.55
    },
    "dist": {
-    "Tidy Stress": 4.78,
-    "Mycelium": 5.41,
-    "Graphviz neato": 5.13,
-    "Graphviz sfdp": 6.58,
-    "Graphviz fdp": 7.03,
-    "ELK stress": 5.36,
-    "ELK force": 10.04,
-    "ELK layered": 9.42,
-    "dagre": 10.1,
-    "WebCola": 4.96,
-    "d3-force": 6.37,
-    "Cytoscape cose": 10.15,
-    "Cytoscape fcose": 5.66
+    "Best Read": 4.5,
+    "Tidy Stress": 4.4,
+    "Mycelium": 4.78,
+    "Graphviz neato": 4.61,
+    "Graphviz sfdp": 5.98,
+    "Graphviz fdp": 6.39,
+    "ELK stress": 4.79,
+    "ELK force": 9.25,
+    "ELK layered": 8.55,
+    "dagre": 9.28,
+    "WebCola": 4.43,
+    "d3-force": 5.78,
+    "Cytoscape cose": 9.35,
+    "Cytoscape fcose": 5.1
    }
   },
   "ranksBR": {
@@ -1320,8 +1410,172 @@
    "down": 3.6,
    "dist": 4.5
   },
+  "places": {
+   "five": {
+    "Best Read": 1,
+    "Tidy Stress": 1,
+    "Mycelium": 1,
+    "next": "Graphviz neato",
+    "nextRank": 4.63
+   },
+   "down": {
+    "Best Read": 1,
+    "Tidy Stress": 1,
+    "Mycelium": 1,
+    "next": "Graphviz neato",
+    "nextRank": 4.99
+   },
+   "dist": {
+    "Best Read": 2,
+    "Tidy Stress": 1,
+    "Mycelium": 4,
+    "next": "WebCola",
+    "nextRank": 4.43
+   }
+  },
   "wins": {
    "Best Read": 36
+  }
+ },
+ "topdown": {
+  "15 development graphs": {
+   "Best Read, top-down": {
+    "down": 100,
+    "cross": 588,
+    "thru": 141,
+    "fill": 8.7,
+    "ms": 558
+   },
+   "Tidy Stress, top-down": {
+    "down": 100,
+    "cross": 653,
+    "thru": 231,
+    "fill": 8,
+    "ms": 528
+   },
+   "Tree": {
+    "down": 100,
+    "cross": 1914,
+    "thru": 504,
+    "fill": 14,
+    "ms": 295
+   },
+   "ELK layered, tuned": {
+    "down": 97,
+    "cross": 1663,
+    "thru": 516,
+    "fill": 12.4,
+    "ms": 2266
+   },
+   "dagre, tuned": {
+    "down": 97,
+    "cross": 2245,
+    "thru": 1427,
+    "fill": 4.4,
+    "ms": 575
+   },
+   "WebCola, constrained": {
+    "down": 93,
+    "cross": 1109,
+    "thru": 414,
+    "fill": 17.6,
+    "ms": 21099
+   },
+   "Best Read, not top-down (for reference)": {
+    "down": 48,
+    "cross": 452,
+    "thru": 39,
+    "fill": 6.3,
+    "ms": 481
+   }
+  },
+  "10 held-out graphs": {
+   "Best Read, top-down": {
+    "down": 100,
+    "cross": 420,
+    "thru": 63,
+    "fill": 10,
+    "ms": 439
+   },
+   "Tidy Stress, top-down": {
+    "down": 100,
+    "cross": 572,
+    "thru": 271,
+    "fill": 8,
+    "ms": 374
+   },
+   "Tree": {
+    "down": 100,
+    "cross": 1589,
+    "thru": 2629,
+    "fill": 19.3,
+    "ms": 329
+   },
+   "ELK layered, tuned": {
+    "down": 93,
+    "cross": 1433,
+    "thru": 509,
+    "fill": 13,
+    "ms": 469
+   },
+   "dagre, tuned": {
+    "down": 65,
+    "cross": 1861,
+    "thru": 2005,
+    "fill": 3.1,
+    "ms": 161
+   },
+   "Best Read, not top-down (for reference)": {
+    "down": 53,
+    "cross": 302,
+    "thru": 39,
+    "fill": 7.6,
+    "ms": 385
+   }
+  },
+  "26 public graphs": {
+   "Best Read, top-down": {
+    "down": 100,
+    "cross": 1391,
+    "thru": 135,
+    "fill": 10.8,
+    "ms": 193
+   },
+   "Tidy Stress, top-down": {
+    "down": 100,
+    "cross": 1341,
+    "thru": 140,
+    "fill": 10.6,
+    "ms": 148
+   },
+   "Tree": {
+    "down": 100,
+    "cross": 2502,
+    "thru": 19698,
+    "fill": 24.3,
+    "ms": 319
+   },
+   "ELK layered, tuned": {
+    "down": 85,
+    "cross": 3100,
+    "thru": 751,
+    "fill": 10.2,
+    "ms": 272
+   },
+   "dagre, tuned": {
+    "down": 71,
+    "cross": 4088,
+    "thru": 2067,
+    "fill": 4.9,
+    "ms": 74
+   },
+   "Best Read, not top-down (for reference)": {
+    "down": 50,
+    "cross": 1263,
+    "thru": 99,
+    "fill": 9,
+    "ms": 173
+   }
   }
  }
 }

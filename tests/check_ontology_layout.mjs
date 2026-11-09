@@ -29,7 +29,7 @@ function layoutCode(src) {
   return src.slice(a, b).replace(/\r\n/g, '\n');
 }
 function load(code) {
-  const api = 'return { auto: _ogAutoLayout, tree: _ogTreeLayout, cleanUp: _ogLayoutCleanUp, tidy: _ogHandTidy, now: _ogNow, sep: _ogClSeparate, route: _ogRouteLinks, routeMetrics: _ogRouteMetrics, tune: _OG_TUNE, segX: _ogClSegX, segBox: _ogClSegBox, api: OntologyLayouts };';
+  const api = 'return { auto: _ogAutoLayout, tree: _ogTreeLayout, leafSwap: _ogLeafSwap, cleanUp: _ogLayoutCleanUp, tidy: _ogHandTidy, now: _ogNow, sep: _ogClSeparate, route: _ogRouteLinks, routeMetrics: _ogRouteMetrics, tune: _OG_TUNE, segX: _ogClSegX, segBox: _ogClSegBox, api: OntologyLayouts };';
   return new Function('window', 'document', 'state', 'log', code + '\n' + api)({}, {}, { ui: {} }, () => {});
 }
 // small generated models: a few taxonomies with property links between them, fixed seeds
@@ -85,6 +85,13 @@ function checkTree(L) {
   const L2 = ['Thing', 'A', 'B', 'B1', 'B2', 'B3', 'C', 'Cyc1', 'Cyc2', 'Cyc3'], E2 = [[1, 0, 2], [2, 0, 2], [3, 2, 2], [4, 3, 2], [5, 4, 2], [6, 1, 2], [6, 5, 2], [7, 0, 2], [8, 7, 2], [9, 8, 2], [7, 9, 2]];
   const D2 = L2.map((l) => ({ w: l.length * 6.6 + 10, h: 20 })), Q2 = L.tree(D2, E2, {}).pos, up2 = E2.filter(([c, p]) => Q2[c].y <= Q2[p].y).length;
   if (up2 !== 1) bad.push(`tree with multiple superclasses and a cycle: ${up2} subclass links not pointing down (expected 1, the cycle's)`);
+  // the passes after the clean-up keep a top-down drawing top-down: a subclass whose link is crossed just below its superclass,
+  // with open space above, would step up there; told the subclass links, it must stay at least 20 px below
+  const D3 = ['Parent', 'Child', 'Left', 'Right', 'Far', 'Other', 'Hub'].map((l) => ({ w: l.length * 6.6 + 10, h: 20 })), E3 = [[1, 0, 2], [2, 3, 1], [2, 4, 1], [3, 5, 1], [0, 6, 1], [6, 3, 1]];
+  const P3 = [{ x: 0, y: 0 }, { x: 0, y: 170 }, { x: -220, y: 85 }, { x: 220, y: 85 }, { x: -220, y: 400 }, { x: 220, y: 400 }, { x: 320, y: -40 }];
+  const free = L.leafSwap(P3, D3, E3, null), kept = L.leafSwap(P3, D3, E3, [[1, 0]]);
+  if (free[1].y >= 20) bad.push('top-down fixture no longer tempts the passes: without the subclass links the child stays below (y ' + Math.round(free[1].y) + ')');
+  if (kept[1].y < 20) bad.push('passes after the clean-up moved a subclass above its superclass in a top-down drawing (child y ' + Math.round(kept[1].y) + ')');
   return bad;
 }
 // 5. routes
@@ -264,6 +271,7 @@ if (process.argv.includes('--self-test')) {
     ['grid', 'the grid skips every third cell along a link', code.replace('f(cy * G.cols + cx);', 'if ((cx + cy) % 3) f(cy * G.cols + cx);')],
     ['repeatable', 'the layout depends on the wall clock', code.replace('function _ogNow() {', 'function _ogNow() { return performance.now() * 37 % 1e9;')],
     ['tree', 'the tree gap ignores the lines to far children', code.replace('if (room > 1) G = Math.max(G,', 'if (room > 1e9) G = Math.max(G,')],
+    ['tree', 'the passes after the clean-up ignore the subclass links', code.replace('const level = (v) => !dn ||', 'const level = (v) => true ||')],
     ['tree', 'levels by the shallowest superclass, not the deepest', code.replace('atLeast[k] = Math.max(atLeast[k], level[v] + 1);', 'atLeast[k] = atLeast[k] || level[v] + 1;')],
     ['routes', 'parallel links all on the straight line', code.replace('off: ks.map((_, i) => (i - (ks.length - 1) / 2) * o.sep)', 'off: ks.map(() => 0)')],
     ['routes', 'self-links left without a loop', code.replace('R[k].loop = [{', 'R[k].nope = [{')],
@@ -271,7 +279,7 @@ if (process.argv.includes('--self-test')) {
     ['routes', 'the routing checks not counted on the work clock', code.replace('_ogWorkN[2] += 14 * (n + m) + pl.length * 28; _ogWorkN[5]++;', '').replace('_ogClSegX(a, b, cc, d)', '_ogFreeX(a, b, cc, d)').replace('if (_ogClSegBox(ax, ay, bx, by, hw, hh)) return true;', 'if (_ogFreeBox(ax, ay, bx, by, hw, hh)) return true;')
       + '\nfunction _ogFreeX(a, b, c, d) { const w = _ogWorkN[0], r = _ogClSegX(a, b, c, d); _ogWorkN[0] = w; return r; }\nfunction _ogFreeBox(a, b, c, d, e, f) { const w = _ogWorkN[1], r = _ogClSegBox(a, b, c, d, e, f); _ogWorkN[1] = w; return r; }\n'],
     ['routes', 'classes pushed onto the link and kept even when worse', code.replace('if (score(_ogRouteMetrics(Q, items, edges, r2.routes, o.pad)) < score(_ogRouteMetrics(pos, items, edges, r.routes, o.pad)))', 'if (true)').replace('best = { need, nx: (dd < 0 ? -1 : 1) * nx, ny: (dd < 0 ? -1 : 1) * ny }', 'best = { need: need + 2 * Math.abs(dd), nx: (dd < 0 ? 1 : -1) * nx, ny: (dd < 0 ? 1 : -1) * ny }')],
-    ['moves', 'a class pushed off a link even when that is worse', code.replace('if (!overlaps(v) && cost(v) < before - 0.5) return true;', 'if (!overlaps(v)) return true;')],
+    ['moves', 'a class pushed off a link even when that is worse', code.replace('if (!overlaps(v) && level(v) && cost(v) < before - 0.5) return true;', 'if (!overlaps(v) && level(v)) return true;')],
     ['moves', 'a leaf moved to the spot with the most problems', code.replace('if (x >= now) continue;', 'if (x > 1e9) continue;').replace('const sc = x * 200 - room(v, c) + 0.2 * r;', 'const sc = -x * 200;')],
     ['pull', 'a part pulled in even when that adds problems', code.replace('if (c1.c <= c0.c) {', 'if (true) {').replace("if ((!best || sc > best.sc) && cost(S, inS).c <= c0.c)", "if (!best || sc > best.sc)")],
     ['pull', 'parts pulled in on top of other classes', code.replace('if (!clash(S, inS, o.room) && (sc === 1 || gapsOk(S))) {', 'if (sc === 1 || gapsOk(S)) {').replace('if (inward > 30 && !clash(S, inS, o.groupRoom, true)) {', 'if (inward > 30) {')],

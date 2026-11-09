@@ -2,6 +2,7 @@
 //  - The 15 test graphs the layouts were developed on: results_tuned.json (one run each).
 //  - Graphs never seen during development: the held-out graphs (models5.js, results_heldout.json) and the public benchmark
 //    graphs (models6.js, results_public.json), with our rows from results_ours.json.
+// Best Read is ranked against the open-source layouts in one pool; Tidy Stress and Mycelium each in a pool of their own.
 // Rankings use the five measures that count for ontologies: crossed links, links through classes, area, crossing angle, angular
 // resolution. Each ranking table has tabs that add optional measures (subclass links drawn top-down; distance fidelity and
 // even link lengths), for readers who value them. Our own readability score is never ranked.
@@ -50,16 +51,24 @@ function setOf(rows, keys) {
   const med = (a, f) => { const v = keys.map((k) => get(k, a)).filter(Boolean).map((r) => r[f]).sort((x, y) => x - y); return v.length % 2 ? v[v.length >> 1] : (v[v.length / 2 - 1] + v[v.length / 2]) / 2; };
   const mean = (a, f) => { const v = keys.map((k) => get(k, a)).filter((r) => r && r[f] != null).map((r) => r[f]); return v.reduce((s, x) => s + x, 0) / v.length; };
   const maxOf = (a, f) => Math.max(...keys.map((k) => (get(k, a) || {})[f] || 0));
-  // one ranking table: our two layouts and the open-source pool, then Best Read ranked against the same pool in their place
+  // one ranking table: Best Read against the open-source layouts, one pool, best mean rank first; then Tidy Stress and
+  // Mycelium, each ranked on its own against the same layouts (its own pool of the same size), so every number is a rank
+  // among the same number of layouts
   function rankTable(others, M) {
-    const R = ranks([TS, MY, ...others], M), RB = ranks([BR, ...others], M);
-    const best = Object.fromEntries([...M.map(([f]) => f), 'mean'].map((f) => [f, Math.min(...[TS, MY, ...others].map((a) => R[a][f]))]));
-    const cell = (v, f) => `<td${Math.abs(v - best[f]) < 1e-9 ? ' class="best"' : ''}>${n1(v)}</td>`;
-    const line = (a, cls, src, label) => `<tr${cls ? ` class="${cls}"` : ''}><td>${label || show(a)}</td>${M.map(([f]) => cell(src[a][f], f)).join('')}${cell(src[a].mean, 'mean')}<td>${int(sum(a, 'cross'))}</td><td>${int(sum(a, 'thru'))}</td><td>${msf(med(a, 'ms'))}</td></tr>`;
-    const sorted = others.slice().sort((x, y) => R[x].mean - R[y].mean);
-    const head = `<thead><tr><th>Layout</th>${M.map(([, l]) => `<th>${l}</th>`).join('')}<th>Mean rank</th><th>Crossed links, total</th><th>Links through classes, total</th><th>Median time</th></tr></thead>`;
-    const body = [TS, MY].sort((x, y) => R[x].mean - R[y].mean).map((a) => line(a, 'ours', R)).join('') + sorted.map((a, i) => line(a, i ? '' : 'split', R)).join('') + line(BR, 'autorow split', RB, 'Best Read (auto mode)');
-    return { html: `<div class="tbl"><table>${head}<tbody>${body}</tbody></table></div>`, R, RB };
+    const RB = ranks([BR, ...others], M), RT = ranks([TS, ...others], M), RM = ranks([MY, ...others], M);
+    const pool = others.length + 1, ord = (i) => i + (i % 10 === 1 && i % 100 !== 11 ? 'st' : i % 10 === 2 && i % 100 !== 12 ? 'nd' : i % 10 === 3 && i % 100 !== 13 ? 'rd' : 'th');
+    const best = Object.fromEntries([...M.map(([f]) => f), 'mean'].map((f) => [f, Math.min(...[BR, ...others].map((a) => RB[a][f]))]));
+    const cell = (v, f, b) => `<td${b && Math.abs(v - b[f]) < 1e-9 ? ' class="best"' : ''}>${n1(v)}</td>`;
+    const cols = (a, src, b) => M.map(([f]) => cell(src[a][f], f, b)).join('') + cell(src[a].mean, 'mean', b) + `<td>${int(sum(a, 'cross'))}</td><td>${int(sum(a, 'thru'))}</td><td>${msf(med(a, 'ms'))}</td>`;
+    const sorted = [BR, ...others].sort((x, y) => RB[x].mean - RB[y].mean);
+    const head = (first) => `<thead><tr><th>${first}</th><th>Layout</th>${M.map(([, l]) => `<th>${l}</th>`).join('')}<th>Mean rank</th><th>Crossed links, total</th><th>Links through classes, total</th><th>Median time</th></tr></thead>`;
+    const body = sorted.map((a, i) => `<tr${a === BR ? ' class="ours"' : ''}><td>${i + 1}</td><td>${a === BR ? 'Best Read (ours)' : show(a)}</td>${cols(a, RB, best)}</tr>`).join('');
+    const place = (R, a) => [a, ...others].sort((x, y) => R[x].mean - R[y].mean).indexOf(a) + 1;
+    const body2 = [[TS, RT], [MY, RM]].map(([a, R]) => `<tr class="ours"><td>${ord(place(R, a))} of ${pool}</td><td>${show(a)}</td>${cols(a, R, null)}</tr>`).join('');
+    const html = `<div class="tbl"><table>${head('Place')}<tbody>${body}</tbody></table></div>` +
+      `<p class="rnote">Best Read draws with one of our two layouts. Each of them, ranked on its own against the same ${others.length} layouts:</p>` +
+      `<div class="tbl"><table>${head('Place')}<tbody>${body2}</tbody></table></div>`;
+    return { html, RB, RT, RM, R: Object.fromEntries([BR, TS, MY, ...others].map((a) => [a, a === TS ? RT[a] : a === MY ? RM[a] : RB[a]])), places: { [BR]: place(RB, BR), [TS]: place(RT, TS), [MY]: place(RM, MY) }, next: sorted.find((a) => a !== BR) };
   }
   // the tabs: the five measures, then the same ranking with optional measures added
   function rankTabs(others) {
@@ -96,6 +105,7 @@ const T = {}, P = {};
   P.totals = S.totals();
   P.tunedRanks = Object.fromEntries(tuned.tabs.map((t) => [t.id, Object.fromEntries(Object.entries(t.R).map(([a, r]) => [show(a), +r.mean.toFixed(2)]))]));
   P.tunedRanksBR = Object.fromEntries(tuned.tabs.map((t) => [t.id, +t.RB[BR].mean.toFixed(2)]));
+  P.tunedPlaces = Object.fromEntries(tuned.tabs.map((t) => [t.id, { ...Object.fromEntries(Object.entries(t.places).map(([a, v]) => [show(a), v])), next: show(t.next), nextRank: +t.RB[t.next].mean.toFixed(2) }]));
   P.tunedRanksDetail = Object.fromEntries(Object.entries(tuned.tabs[0].R).map(([a, r]) => [show(a), Object.fromEntries(Object.entries(r).map(([f, v]) => [f, +v.toFixed(2)]))]));
   P.defaultRanks = Object.fromEntries(Object.entries(def.tabs[0].R).map(([a, r]) => [show(a), +r.mean.toFixed(2)]));
   P.defaultRanksBR = +def.tabs[0].RB[BR].mean.toFixed(2);
@@ -109,7 +119,32 @@ for (const [id, label, pick] of [['HELDOUT', 'heldout', (k) => k.startsWith('hx_
   const S = setOf(UNSEEN_ROWS, keys), tuned = S.rankTabs(TUNED);
   // the page shows one ranking over all unseen graphs, and the per-graph results of each set
   if (id === 'UNSEEN') T.TABLE_UNSEEN = tuned.html; else T['TABLE_' + id + '_PERGRAPH'] = S.perGraph();
-  P[label] = { graphs: keys.length, totals: S.totals(), ranks: Object.fromEntries(tuned.tabs.map((t) => [t.id, Object.fromEntries(Object.entries(t.R).map(([a, r]) => [show(a), +r.mean.toFixed(2)]))])), ranksBR: Object.fromEntries(tuned.tabs.map((t) => [t.id, +t.RB[BR].mean.toFixed(2)])), wins: S.wins() };
+  P[label] = { graphs: keys.length, totals: S.totals(), ranks: Object.fromEntries(tuned.tabs.map((t) => [t.id, Object.fromEntries(Object.entries(t.R).map(([a, r]) => [show(a), +r.mean.toFixed(2)]))])), ranksBR: Object.fromEntries(tuned.tabs.map((t) => [t.id, +t.RB[BR].mean.toFixed(2)])), places: Object.fromEntries(tuned.tabs.map((t) => [t.id, { ...Object.fromEntries(Object.entries(t.places).map(([a, v]) => [show(a), v])), next: show(t.next), nextRank: +t.RB[t.next].mean.toFixed(2) }])), wins: S.wins() };
+}
+// Top-down drawings (results_topdown.json, from topdown.mjs) against the layered layouts, which were given subclass links
+// oriented parent to child: on the development graphs the runs kept to top-down settings, on the others the tuned runs.
+{
+  const TD = read('results_topdown.json'), OURS_ROWS = [...latestOurs.values()];
+  const sets = [['15 development graphs', ORDER, TRAIN_ROWS, [['ELK layered, top-down (tuned)', 'ELK layered, tuned'], ['dagre, top-down (tuned)', 'dagre, tuned'], ['WebCola, top-down (constrained)', 'WebCola, constrained']]],
+    ['10 held-out graphs', (k) => k.startsWith('hx_'), read('results_heldout.json'), [['ELK layered (tuned)', 'ELK layered, tuned'], ['dagre (tuned)', 'dagre, tuned']]],
+    ['26 public graphs', (k) => k.startsWith('pb_'), read('results_public.json'), [['ELK layered (tuned)', 'ELK layered, tuned'], ['dagre (tuned)', 'dagre, tuned']]]];
+  const ourTD = [['Best Read, top-down (ours)', 'Best Read, top-down'], ['Tidy Stress, top-down (ours)', 'Tidy Stress, top-down'], ['Tree (ours)', 'Tree']];
+  const med = (v) => { v = v.slice().sort((x, y) => x - y); return v.length % 2 ? v[v.length >> 1] : (v[v.length / 2 - 1] + v[v.length / 2]) / 2; };
+  let body = '', nums = {};
+  for (const [label, pick, rows, theirs] of sets) {
+    const keys = Array.isArray(pick) ? pick : [...new Set(TD.map((r) => r.key))].filter(pick);
+    const line = (name, rs, cls) => { if (rs.length < keys.length) return null; const sub = rs.filter((r) => r.down != null);
+      return { name, cls, down: sub.reduce((a, r) => a + r.down, 0) / sub.length, cross: rs.reduce((a, r) => a + r.cross, 0), thru: rs.reduce((a, r) => a + r.thru, 0), fill: med(rs.map((r) => r.fill)), ms: med(rs.map((r) => r.ms)) }; };
+    const L = [...ourTD.map(([a, n]) => line(n, keys.map((k) => TD.find((r) => r.key === k && r.algo === a)).filter(Boolean), 'ours')),
+      ...theirs.map(([a, n]) => line(n, keys.map((k) => rows.find((r) => r.key === k && r.algo === a)).filter(Boolean), '')),
+      line('Best Read, not top-down (for reference)', keys.map((k) => OURS_ROWS.find((r) => r.key === k && r.algo === BR) || TRAIN_ROWS.find((r) => r.key === k && r.algo === BR)).filter(Boolean), 'ref')].filter(Boolean);
+    const td = L.filter((l) => l.cls !== 'ref'), bc = Math.min(...td.map((l) => l.cross)), bt = Math.min(...td.map((l) => l.thru)), bf = Math.min(...td.map((l) => l.fill));
+    nums[label] = Object.fromEntries(L.map((l) => [l.name, { down: +(l.down * 100).toFixed(0), cross: l.cross, thru: l.thru, fill: +l.fill.toFixed(1), ms: Math.round(l.ms) }]));
+    body += L.map((l, i) => `<tr class="${[l.cls === 'ours' ? 'ours' : '', i === 0 && body ? 'split' : ''].join(' ').trim()}"><td>${i ? '' : label}</td><td>${l.name}</td><td>${Math.round(l.down * 100)}%</td>` +
+      `<td${l.cls !== 'ref' && l.cross === bc ? ' class="best"' : ''}>${int(l.cross)}</td><td${l.cls !== 'ref' && l.thru === bt ? ' class="best"' : ''}>${int(l.thru)}</td><td${l.cls !== 'ref' && l.fill === bf ? ' class="best"' : ''}>${n1(l.fill)}</td><td>${msf(l.ms)}</td></tr>`).join('');
+  }
+  T.TABLE_TOPDOWN = `<div class="tbl"><table><thead><tr><th>Graphs</th><th>Layout</th><th>Subclass links pointing down</th><th>Crossed links, total</th><th>Links through classes, total</th><th>Median area</th><th>Median time</th></tr></thead><tbody>${body}</tbody></table></div>`;
+  P.topdown = nums;
 }
 fs.writeFileSync(new URL('tables.json', import.meta.url), JSON.stringify(T));
 fs.writeFileSync(new URL('tables_numbers.json', import.meta.url), JSON.stringify(P, null, 1));

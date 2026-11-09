@@ -4,15 +4,17 @@ Layouts for drawing ontologies (classes as boxes, subclass and relationship link
 
 - **Tidy Stress**: stress placement, then a search that removes crossings and links through classes.
 - **Mycelium**: the same, with closely linked groups of classes kept together and room around hubs.
-- **Tree**: a top-down tree for taxonomies, after Reingold–Tilford, with levels deep enough that no parent-to-child line cuts through a sibling. On request only: these layouts are for business models joined mostly by relationships.
+- **Top-down** (experiment, not yet an entry point): the same placement with every subclass below its superclass, for models where the hierarchy is the content; a third to a half of the crossings of tuned ELK layered. The repository also has a Reingold–Tilford-style **Tree** (`_ogTreeLayout`), which the top-down drawing beats on every test set.
 - **Best Read**: runs Tidy Stress and Mycelium and keeps the more readable drawing.
 - **Link routing**: after the layout, draws the links: parallel and reciprocal links as arcs, self-links as loops on the most open side, bends round classes in the way that stay inside the drawing, link ends spread along crowded boxes, link names on or beside their link where they cover nothing; a class a link still runs through is pushed off it when that helps.
 - **Keeping a drawing**: after an edit, new classes are placed round the old ones, which stay where the reader knows them.
-- **Exploring**: a drawing can start from one class and grow one expansion at a time; the new neighbours of a class go on an arc on its most open side, and nothing already drawn moves. Links can be drawn as straight lines only.
+- **Exploring**: a drawing can start from one class and grow one expansion at a time; the new neighbours of a class go on an arc on its most open side, and nothing already drawn moves. In simulated sessions that is a third of the crossings of a typical force-directed expansion, in a few milliseconds per click. Links can be drawn as straight lines only.
 - **Relation classes**: a relationship modelled as a class, when marked, sits on the line between the two classes it relates.
 - **Clean-up**: a pass after any layout that moves classes the way a person would (single moves into open space, leaf groups, spreading crowded regions), learned from recorded hand edits. After it: one-link classes trade places or move out of a fence of lines, classes are pushed off links, and parts that sprawl toward the edge (chains, small trees, whole groups) are pulled in where that makes the drawing smaller with no more problems.
 
 Same input, same drawing on any computer: time limits count units of work, not wall time.
+
+**Teach it something.** The clean-up was taught by a person, not designed from the literature: they tidied drawings by hand in the Layout Lab while saying why, and an AI assistant, Claude (Opus 5.5), distilled the reasons into rules and tested them on graphs nobody had looked at. The Layout Lab and the Layout Playback are offered as tools in their own right. Try your hand at the layouts here, or copy the lab for any problem a person can see and fix better than they can describe. Start with [docs/SHOW-AND-TELL-LABS.md](docs/SHOW-AND-TELL-LABS.md).
 
 ## Where things are
 
@@ -21,6 +23,7 @@ Same input, same drawing on any computer: time limits count units of work, not w
 | `src/ontology-layouts.js` | The layouts and the clean-up: plain JavaScript, no dependencies. |
 | `docs/ONTOLOGY-LAYOUT-ALGORITHMS.md` | Summary of the algorithms and results. |
 | `docs/ONTOLOGY-LAYOUT-ALGORITHMS.html` | The full write-up: interactive, self-contained, with drawings side by side against eleven open-source layouts. |
+| `docs/SHOW-AND-TELL-LABS.md` | The method: how a person's intuition becomes a program with an AI assistant, how to try the lab here, and how to build a lab of your own for another problem, with the prompts that worked. |
 | `docs/PLAYBACK-AND-LAB.md` | The Layout Playback and Layout Lab as a reusable pattern: watch any step-by-step algorithm work, switch steps off, reorder them, edit by hand and record why, then turn the demonstrations into rules. How to adapt it to another algorithm. |
 | `docs/BEYOND-LAYOUT.md` | For discussion: which of these methods could carry over to other optimization problems (warehouse slotting, scheduling, bin packing, routing, dependency solving), and which would not. |
 | `tests/check_ontology_layout.mjs` | Checks on the layout code (work clock only, clean-up grid equals checking every pair, same drawing twice, tree stays top-down, link routing, the passes after the clean-up, pulling in from the edge, the public entry points, keeping a drawing and relation classes, exploring); `--self-test` proves each check fires. |
