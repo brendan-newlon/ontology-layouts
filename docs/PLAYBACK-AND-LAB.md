@@ -8,6 +8,8 @@ The Layout Playback (`tools/layout-bench/playback.html`) and the Layout Lab (`to
 
 Copy them and adapt them; the parts that are specific to diagrams are listed below.
 
+This file is the technical contract. For the method (how a person's demonstrations become rules with an AI assistant), how to try the lab here, and the prompts that worked for adapting it, read [SHOW-AND-TELL-LABS.md](SHOW-AND-TELL-LABS.md) first.
+
 ## What the pair does
 **Playback** runs the algorithm with a recorder attached and plays the recording back:
 - **Real time.** Each frame plays for the time its step took on this computer, times a speed (0.1× to 100×), so a fast step flashes and a slow one lingers.

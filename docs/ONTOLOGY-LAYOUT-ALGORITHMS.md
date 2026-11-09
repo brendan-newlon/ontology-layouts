@@ -3,12 +3,13 @@
 The full write-up is [ONTOLOGY-LAYOUT-ALGORITHMS.html](ONTOLOGY-LAYOUT-ALGORITHMS.html). It is a single self-contained page with:
 - side-by-side drawings: an open-source layout on the left, ours on the right, on the 15 development graphs and on 34 graphs never seen during development;
 - the rankings and per-graph results, with tabs that add optional measures (subclass links top-down; distance fidelity and even link lengths);
-- a worked example of the clean-up after the layout, step by step, each step explained in plain terms and in math;
-- how the clean-up was taught: a person explained and demonstrated how they tidy these drawings, and the principles were distilled into rules a program can run;
-- time for one graph and for many, how the layouts work, the prior work they use, the benchmark method, its limits, and what did not work;
-- the complete source code.
+- top-down drawings of hierarchies, and drawings that change: keeping a drawing after an edit, and growing it click by click in a graph browser;
+- a worked example of the clean-up and its finishing passes, step by step, each step explained in plain terms and in math;
+- how the clean-up was taught by show and tell: a person explained and demonstrated how they tidy these drawings, and an AI assistant distilled the principles into rules a program can run;
+- link routing, time and scale, how the layouts work, the prior work they use, the benchmark method, its limits, and what did not work;
+- an appendix on using the code, with the complete source.
 
-This file is a short summary.
+This file is a short summary. The method behind the clean-up, and how to build a lab like ours for another problem, is in [SHOW-AND-TELL-LABS.md](SHOW-AND-TELL-LABS.md).
 
 ## What counts, and what deliberately does not
 These layouts are for ontologies. The main rankings use five measures:
@@ -16,7 +17,7 @@ These layouts are for ontologies. The main rankings use five measures:
 - crossing angle and angular resolution, next;
 - area.
 
-Distance fidelity (normalized stress) and even link lengths are left out on purpose. A multi-domain business ontology links many domains back to shared classes such as Person or Organization, and keeping each domain together, even at the cost of long links to the shared classes, is the point. These layouts are for conceptual ontologies, where classes are joined mostly by relationships; there a subclass link is one relationship among many, and about half point down. Taxonomies are not the target: Best Read no longer draws a top-down tree (it did until 2026-11-07, and kept it on one of 51 graphs, where the other drawing was just as clean); the Tree layout still draws any model top-down on request. Each of these measures can be added to the rankings with a tab; our layouts rank lower with distance and length in. Measured over the 51 graphs (2026-11-08): normalized stress 0.085 after the stress placement alone, 0.159 after the search, the clean-up and the routing. The share of a class's linked classes among its nearest classes stays the same (55.8% → 55.6%), so nearness still means linked, but a long distance does not mean unrelated.
+Distance fidelity (normalized stress) and even link lengths are left out on purpose. A multi-domain business ontology links many domains back to shared classes such as Person or Organization. Keeping each domain together, even at the cost of long links to the shared classes, is the point. Each of these measures can be added to the rankings with a tab; our layouts rank lower with distance and length in. Measured over the 51 graphs: normalized stress is 0.085 after the stress placement alone, and 0.159 after the search, the clean-up and the routing. The share of a class's linked classes among its nearest classes stays the same (55.8% → 55.6%). So nearness still means linked, but a long distance does not mean unrelated.
 
 ## Results
 Over 15 development graphs of 13 to 179 classes, one run each, ours with the clean-up, against 11 open-source layouts with tuned settings:
@@ -25,72 +26,82 @@ Over 15 development graphs of 13 to 179 classes, one run each, ours with the cle
 |---|---|
 | **About half the crossings** | Best Read 452 against 960 for tuned `neato` and 971 for tuned WebCola |
 | **An eighth of the links through classes of tuned WebCola** | 39 against 307. Tuned `neato` draws 81, in about 16 times the area |
-| **First on the five measures** | Mean rank among 13 layouts: Tidy Stress 3.1, Mycelium 4.5; next WebCola 5.4 and `neato` 5.5. Best Read, ranked in their place, 2.9 |
-| **Per graph** | Best Read has the fewest crossed links plus links through classes, or ties, on all 15 graphs |
+| **First of 12 on the five measures** | Best Read's mean rank is 2.9 among itself and the 11 open-source layouts; next come WebCola (4.8) and `neato` (4.9). Tidy Stress and Mycelium, each ranked on its own against the same 11, also place first |
+| **Every graph** | Best Read has the fewest crossed links plus links through classes, or ties, on all 15 graphs |
 | **Under a second** | Median 0.5 s, clean-up included; at most about 1.3 s up to 537 classes; the same drawing on any computer |
 
-**Graphs never seen during development** (10 held-out graphs, 8 published ontologies, 18 Rome benchmark graphs): Best Read 1,565 crossed links and 138 links through classes, against 2,160 / 212 for tuned `neato` (in nearly ten times the area) and 2,429 / 780 for tuned WebCola; fewest of both, or tied, on all 36 graphs. Mean rank: Tidy Stress 3.5, Mycelium 3.8, `neato` 5.3, WebCola 5.6; Best Read in their place 3.0. Recorded 2026-11-08, with the passes after the clean-up and the pull-in. Best Read chooses without the long-link penalties of the readability score (decided on the development graphs).
+**Graphs never seen during development** (10 held-out graphs, 8 published ontologies, 18 Rome benchmark graphs): Best Read draws 1,565 crossed links and 138 links through classes, against 2,160 and 212 for tuned `neato` (in nearly ten times the area) and 2,429 and 780 for tuned WebCola. It has the fewest of both, or ties, on all 36 graphs, and places first of 12 with a mean rank of 3.0 (`neato` 4.6, WebCola 4.8).
 
-What they give up: they are not the most compact (Cytoscape `cose` and dagre pack tighter), and they are slower than Graphviz at general settings: for one graph under 100 classes about 0.3 to 0.6 s against 20 to 50 ms, which a person opening one diagram does not notice; for 100 graphs of about 70 classes, about a minute against about 5 seconds.
+**Where others lead.** Cytoscape `cose` and dagre pack tighter, by letting links run through boxes. Graphviz is faster: for one graph under 100 classes it takes 20 to 50 ms against our 0.3 to 0.6 s. A person opening one diagram does not notice that, but 100 graphs of about 70 classes take about a minute against about 5 seconds. With distance and even lengths added, WebCola ranks first and Best Read second. At 3,335 classes (the Cell Ontology), d3-force draws fewer problems.
 
 The open-source layouts were Graphviz `neato`, `fdp` and `sfdp`, ELK stress, force and layered, WebCola, d3-force, dagre, and Cytoscape `cose` and `fcose`.
 
-## The two layouts, the auto mode and the clean-up
+**Top-down hierarchies** (an experiment, not yet an entry point). The same placement, with every subclass at least 40 px below its superclass. The clean-up and its finishing passes keep it that way. Every subclass link points down, with a third to a half of the crossings of tuned ELK layered and a quarter to an eighth of its links through classes:
+
+| Graphs | Our top-down | Tuned ELK layered |
+|---|---|---|
+| 15 development | 588 crossed links, 141 links through classes | 1,663 and 516 |
+| 10 held-out | 420 and 63 | 1,433 and 509 |
+| 26 public | 1,391 and 135 | 3,100 and 751 |
+
+The tidy tree in the library (`_ogTreeLayout`, after Reingold–Tilford, levels by the deepest superclass) draws two to four times the crossings of the top-down stress drawing on every set, because real taxonomies have second superclasses and relationships that cut across a tree.
+
+**Exploring a graph.** Simulated graph-browser sessions: 12 graphs, 48 sessions, 425 drawings of up to 15 new classes each, straight links. The table gives per-drawing averages:
+
+| Each click drawn by | Crossed links | Links through classes | Names covered | Earlier classes moved | Time |
+|---|---|---|---|---|---|
+| A typical force-directed expansion (earlier classes pinned) | 71.1 | 25.5 | 6.1 | none | 12 ms |
+| `draw(…, { keep, exact: true })` | 24.9 | 5.1 | 2.0 | none | 6 ms |
+| `draw(…, { keep })` | 19.9 | 0.9 | 1.2 | 2.7% of the drawing | 132 ms |
+| Redraw | 13.2 | 1.5 | 1.2 | 38.5% | 237 ms |
+
+## The layouts, the auto mode and the clean-up
 - **Tidy Stress** (up to a few dozen classes). Stress majorization on graph distances, then tidy-up moves that remove crossings, links through boxes and long links. It tries several settings and keeps the most readable drawing.
 - **Mycelium** (large and hub-heavy ontologies). The same placement and tidy-up, plus Louvain pods (shorter links inside groups, longer between), hub rings and leaf fanning.
-- **Best Read** (auto mode). Runs Tidy Stress and Mycelium, scores the drawings (problems, mean length and area; no long-link penalty), keeps the better; above 100 classes it runs Mycelium alone.
-- **Tree** (offered on its own; not used by Best Read). Custom, after Reingold–Tilford tidy trees: classes on levels, each one below its deepest superclass (so second superclasses are above too), subtrees side by side, each level deep enough that no parent-to-child line clips a sibling; the clean-up keeps it top-down. Models linked mostly by relationships go to dagre instead.
-- **Clean-up** (after any of the three). Taught by a person who explained and demonstrated how they tidy these drawings in the Layout Lab; their principles were distilled into:
+- **Best Read** (auto mode). Runs Tidy Stress and Mycelium, scores the drawings (problems, mean length and area; no long-link penalty), and keeps the better one. Above 100 classes it runs Mycelium alone.
+- **Clean-up, first part** (after any layout). Taught by a person who explained and demonstrated how they tidy these drawings in the Layout Lab. Their principles were distilled into:
   - single moves: a class in a problem moves into nearby open space (an open-space grid);
   - leaf units: leaves, leaf chains and leaf triangles hanging off one class are turned around it; long labels go sideways;
   - region spreading: the regions where problems pile up are pushed outward in 8 slices, more toward open space, then repaired;
   - group moves with look-ahead, and a last leaf pass.
 
-  It uses what is left of 1.5 s, at most 0.5 s; above 100 classes the layout gets 0.6 s so the clean-up keeps its share. Effect on Best Read over the 15 graphs, with the passes after it: links through classes 124 → 39, crossings 484 → 452, area 8.0 → 6.3 times the boxes, median time 0.2 → 0.5 s.
-- **Passes after the clean-up** (in `_ogLayoutCleanUp`, at most 120 ms): one-link classes of the same class trade places when that leaves fewer problems; a one-link class whose link still crosses or runs through something moves to the most open spot round its neighbor; a class that a link runs through (or passes within 9 px of) is pushed sideways off it. On straight links over the 51 graphs, links through classes 216 → 178.
-- **Pulled in from the edge** (`_ogPullIn`, after those passes; not for the top-down tree). "That chain sprawls into empty canvas; fold it up or down" and "these groups could sit closer, the middle is empty": a part hanging off the rest by one link (a one-link class, a chain, a small tree) turns round the class it hangs from and/or draws in toward it, and whole groups slide toward the middle, kept only if the problems involving them do not rise, every box keeps 14 px of room (40 px between groups), a drawn-in link keeps 70 px for its name, and the drawing's box shrinks (or, box unchanged, the part's links get 25% shorter). Over the 51 graphs, routed: area 9% smaller on the development graphs and 27–29% on the unseen ones, crossed links 1,714 → 1,708, links through classes 59 → 65 (all on DOLCE and SAREF), about 10 ms more. Rome graph 7785's chain no longer runs off to the right (2,026 → 1,677 px wide); the held-out deep taxonomy has 39% less area; HormoneSignaling sits 266 px from Signaling instead of 484.
-- **Relation classes** (`_ogInline`, at the end of `_ogLayoutCleanUp`; opt-in). A relationship modelled as a class (reification, an association class) marked with `between: [subject, object]` on its box moves onto the line between the two, as near the middle as there is room, at a cost of at most one crossing. On the 15 development graphs with every third relationship made a class (225 relation classes): bent by more than 45° 100 → 66, mean angle 129° → 147°, crossed links 521 → 507, links through classes 16 → 12.
-- **Keeping an earlier drawing** (`_ogPlaceNew`, `draw(…, { keep, exact })`). After an edit, the old classes keep their positions and only the new ones are placed, round the classes they link to; then the clean-up and the routing make local moves, or with `exact` none. Adding 3% of the classes at random on 25 graphs: redraw 685 crossed links and 13 through classes, old classes moved 30% of the drawing's diagonal; keep 807, 18, moved 2.3%; exact 834, 44, not moved.
-- **Exploring** (`draw(…, { keep, exact: true, route: { straight: true } })`). A drawing grown from one class or a small subgraph, one expansion at a time (a class's hidden neighbours, at most 15). New classes that link only to the expanded class go on an arc round it, on its most open side, on one ring or two, subclasses together; the arc is kept only when it scores better than placing them one at a time (problems, then names covering a class or another name, then link length). Simulated on 12 graphs (48 sessions, 425 drawings, straight links): per drawing 22.6 crossings, 4.7 links through classes, 3.2 names covered, nothing already drawn moved, 3.9 ms on average; a d3-force layout with the earlier classes pinned left 65.0, 13.6 and 18.1. The arc took names covered from 4.6 to 3.2 per drawing, with crossings about the same. With small moves allowed (no `exact`): 21.1, 1.6 and 2.3, earlier classes moving 3.4% of the drawing on average; that suits a "tidy" command better than every click. The placement sees each pair of linked classes once, so a data graph with a dozen links between two classes no longer slows it.
-- **Link routing** (after any layout, `_ogRouteLinks`). Parallel and reciprocal links become arcs 24 px apart; self-links become loops; a link still through a class (or crossing others, when it pays off) gets one or two bends round the obstacle, kept only if the drawing improves counting the extra length; link ends crowding one side of a box are spread along it (ports); link names go on or just beside their link where they cover no class and no other name. Since 2026-11-08: loops take the most open of 12 places round the class; a bend outside the drawing costs 1 per 20 px; and a class a drawn curve still runs through is pushed off it, the links routed again, kept only if better (the result then carries the moved positions in `pos`). Totals over the 51 graphs with the clean-up and routing, before → after these changes: crossed links 1,738 → 1,714, links through classes 75 → 59, names over a class or name 331 → 147, names with a link across 1,330 → 882, bends 534 → 503, area 0 to 2% larger, mean time about 430 → 455 ms (SAREF about 1.6 s). First measured on 2026-11-07, over the 51 graphs, measured on the curves, on Best Read's drawings: crossed links 2,043 → 1,736, links through classes 218 → 75, parallel links hidden on another 171 → 0, sharp crossings 113 → 25, names over a class or another name 4,396 → 328 (against names at the middle of straight links; the names are made up, the graphs carry none), about 10 bends per graph, 2–4% more area, at most 250 ms. Routes come as bends `{t, d}` (fraction along the line between the two centers, offset to its left), port offsets, a loop for self-links and a name position; `_ogRoutePoly` turns one into the drawn curve.
-- **Straight links** (`routeLinks(…, { straight: true })`). Every link one straight line; repeated links between two classes become parallel lines, their ends spread across both boxes; self-links stay loops. For browsers where links that bend round classes would confuse. In the exploration sessions above, bends would take links through classes from 4.7 to about 1 per drawing; straight, they stay where the placement could not avoid them.
-- **Time limits count work, not seconds.** `_ogSetTimeLimit(ms)` sets the limit for the layouts, clean-up and routing together (default 1500). Over the 51 graphs: 500 halves the time for 10% more crossed links and nearly three times the links through classes; 3000 brings links through classes 65 → 47 for about 40% more time, with crossed links about the same. A computer up to 2.5 times slower takes longer and draws the same picture.
+  It uses what is left of 1.5 s, at most 0.5 s. Above 100 classes the layout gets 0.6 s, so the clean-up keeps its share. Effect on Best Read over the 15 graphs, with the finishing passes: links through classes 124 → 39, crossings 484 → 452, area 8.0 → 6.3 times the boxes, median time 0.2 → 0.5 s.
+- **Clean-up, finishing passes** (`_ogLeafSwap`, `_ogPullIn`). These came from a second round of teaching, in which the person watched the first part in the Layout Playback and named what was still wrong:
+  - one-link classes of the same class trade places;
+  - "don't fence me in": a one-link class whose link still crosses or runs through something moves to the most open spot round its neighbor;
+  - "push it off the line": a class a link runs through is pushed sideways off it;
+  - "pull it in from the edge": parts hanging by one link turn or draw in, and whole groups slide toward the middle, when the drawing gets smaller with no more problems.
 
-## Experiments not in the layouts
-- **Subclass links top-down in the stress layouts.** Not free: as hard constraints with the clean-up, crossings +27% and links through classes fourfold over the 15 graphs; as a soft hierarchy term in the placement (λ·max(0, violation)², after DIG-CoLa), 94% down but crossings 203 → 262 and links through classes 91 → 166 on eight graphs; as a tie-breaker in the clean-up, links through classes 55 → 67. Hence the separate tree for taxonomies.
-- **Hierarchy as a stress energy term** (DIG-CoLa style, λ up to 16): the share of subclass links pointing down rises only from 46% to 54%, with 14% more links through classes; the tidy-up steps after the stress solve decide most directions.
-- **Bent links instead of moves** (simple router, current layouts, per graph): placement plus bends 27.5 crossings, 3.9 through, 18 bends, 9% less area; as shipped 34.7, 1.8, no bends; as shipped plus bends for what is left 33.5, 0.4, 2 bends. This became the link routing above. Routing the drawing before the clean-up instead of after leaves twice the links through classes for no smaller area, so the clean-up stays.
-- **Also tested for the review of 2026-11-07, not adopted** (`tools/layout-bench/ekgbench.mjs`): a half or quarter area penalty in the clean-up and a deeper look-ahead for group moves (within about 1% on problems, up to 6% more area); giving the layout the link names' widths (fewer name overlaps on unseen graphs, but 15% more crossings on the development graphs and up to 30% more area).
-- **Start at the matching size, or two or three times it, instead of five times too large** (retested 2026-11-08 with the clean-up, the pull-in and the routing, 51 graphs, three seeds): all four within 0.5% on crossed links, links through classes and sharp crossings together, which is the spread between seeds. Five times stays.
-- **Arrow ends spread further apart where two or more arrows meet one side** (for `routePaths` with arrowheads): no drawing changed on the 15 development graphs; where arrowheads crowd it is at a hub with more incoming links than its side has room for, and spacing them out adds crossings.
-- **Turning or mirroring whole branches** (2026-11-08, for "greedy search cannot free a branch caught on the wrong side of a hub"): a branch joined to the rest through one class, by any number of links, turned or mirrored round it when its problems drop. It moved something on 4 of 64 graphs and nothing in total (51 graphs, three seeds: 5,199 against 5,202 crossed links, other measures equal). Not kept.
-- **Long names and dense graphs** (2026-11-08, for "hand-set weights could cycle"): every name three times as long on the 15 development graphs, and random graphs of 40–150 classes with 6–10 links per class. Every run finished within its time limit and gave the same drawing twice; the clean-up still improved each by its weights (long names: crossed links 439 → 499, links through classes 107 → 35; dense: 27,920 → 25,600 and 2,874 → 2,250).
-- **ELK layered with its own routed links**, instead of straight ones: no links through classes, but 1,322 crossed pairs over the 15 graphs against Best Read's 452, with about 165 bends per graph (a different trade-off, not a defect; no comparison with a dedicated obstacle router was made).
-- **Exploring: capped moves and pushing off links only.** Allowing the clean-up on every expansion but capping each earlier class's move at 2% of the drawing gave 22.6 crossings per drawing against 23.9 for fixed positions as they stood then (the final fixed placement reaches 22.6 on its own), no fewer links through classes, and could leave classes touching. Keeping positions and letting only the routing push classes off links through them fired rarely (links through classes 4.3 → 4.1). Tidying only round the new classes needs the clean-up to work on a chosen set of classes.
-- **The clean-up stacking classes.** It counted an overlap as 1,000, about 170 crossings. Classes sharing the same many neighbours (five with the same 36, in a data graph) gained more than that by sitting on one spot, since their links then cross no longer. Overlaps now count 1,000,000; the benchmark results did not change.
+  In top-down mode no pass may lift a subclass above its superclass, and the pull-in is skipped. Over the 51 graphs the pull-in makes the drawing 9% smaller on the development graphs and 27–29% smaller on the unseen ones.
+- **Relation classes** (`between: [subject, object]` on a box; opt-in). A relationship modelled as a class moves onto the line between the two classes it relates.
+- **Keeping an earlier drawing** (`draw(…, { keep, exact })`). After an edit, the old classes keep their positions and only the new ones are placed, round the classes they link to.
+- **Link routing** (`_ogRouteLinks`):
+  - parallel and reciprocal links become arcs;
+  - self-links become loops on the most open side;
+  - a link still through a class gets one or two bends round it, kept only if the drawing improves;
+  - link ends crowding one side of a box are spread along it;
+  - link names go on or beside their link where they cover nothing.
+
+  Over the 51 graphs: 15% fewer crossed links, two thirds fewer links through classes, no parallel link hidden, and 93% fewer names on top of classes or other names, for about 10 bends per graph. `straight: true` draws every link as one straight line.
+- **Time limits count work, not seconds.** `_ogSetTimeLimit(ms)` sets the limit for the layouts, the clean-up and the routing together (default 1500). A computer up to 2.5 times slower takes longer and draws the same picture.
 
 ## Limits
-- As graph-drawing theory nothing here is new: no new model and no bounds. The established parts (stress majorization, Pivot MDS, Louvain) were chosen as the best known for the job; the new parts are applied (the clean-up taught by demonstration, routing joined to placement, the work clock, the evaluation on unseen graphs).
-- No study with people reading the diagrams; which measures matter most is a judgment backed by Purchase's studies of crossings. A task-based study is the missing evidence.
-- At 1,204 classes Best Read still has the fewest problems (1.6 s, against 19–21 s for Graphviz); at 3,335 (Cell Ontology) d3-force draws fewer (60k crossings against 75k, 12k links through classes against 27k), and Graphviz `sfdp` did not finish in ten minutes. Thousands of classes need a multilevel placement.
-- The layouts and the clean-up were developed on 15 graphs; the 36 unseen graphs check that the lead carries over. The clean-up's principles come from one person.
-- The layouts use a random seed; totals over the 15 graphs differ by a few percent between seeds. Every result uses seed 1.
-- The tuned settings are a reasonable search, not an exhaustive one. The rankings measure straight links; the link routing is measured on our drawings only.
-- Hubs with dozens of links (the clinical record's three hubs) still leave the most crossings; bundling or drawing a hub twice was not tried.
-- Commercial engines were not tested, and the public graphs are eight ontologies and 18 Rome graphs, not a large corpus.
+- As graph-drawing theory nothing here is new: no new model and no bounds. The new parts are applied: the clean-up taught by demonstration, routing joined to placement, the work clock, and the evaluation on unseen graphs.
+- No study with people reading the diagrams has been done. Which measures matter most is a judgment backed by Purchase's studies of crossings; a task-based study is the missing evidence.
+- At 3,335 classes d3-force draws fewer problems; thousands of classes need a multilevel placement.
+- The clean-up's principles come from one person. The layouts use a random seed, and totals differ by a few percent between seeds; every result uses seed 1.
+- The tuned settings are a reasonable search, not an exhaustive one. The rankings measure straight links.
+- Commercial engines (yFiles, Tom Sawyer and others) were not tested. They are closed source, and we found no published drawing of theirs of a graph we could rebuild exactly. yEd, built on yFiles, could be compared by hand.
 
 ## For developers
 - **Code:** the implementation is in `src/ontology-layouts.js`:
-  - `_ogCompactLayout` is Tidy Stress;
-  - `_ogGroupedLayout` is Mycelium;
-  - `_ogAutoLayout` is Best Read;
-  - `_ogHandTidy` is the clean-up, and `_ogLayoutCleanUp` calls it after a layout within the time left;
-  - `_ogRouteLinks` draws the links after that, `_ogRoutePoly` gives a route's curve, `_ogRouteMetrics` measures on the curves;
-  - `_ogLeafSwap` runs the passes after the clean-up, `_ogPullIn` pulls parts and groups in from the edge, `_ogInline` puts relation classes on their line; `_ogSetTimeLimit` sets the time limit;
-  - `_ogPlaceNew` places new classes round a kept drawing; `_ogVCost` is the problem count for one class that the passes share;
+  - `_ogCompactLayout` is Tidy Stress, `_ogGroupedLayout` Mycelium, `_ogAutoLayout` Best Read, `_ogTreeLayout` the tidy tree;
+  - `_ogHandTidy` is the clean-up, and `_ogLayoutCleanUp` calls it and the finishing passes after a layout;
+  - `_ogRouteLinks` draws the links, `_ogRoutePoly` gives a route's curve, and `_ogRouteMetrics` measures on the curves;
+  - `_ogPlaceNew` places new classes round a kept drawing;
   - `_ogTraced` reports every step of a layout, for the playback;
-  - `_ogNow` is the work clock every time limit reads;
-  - `OntologyLayouts`, at the end, collects the entry points; `OntologyLayouts.draw` runs the whole pipeline and returns the final positions, routes, paths from border to border (with room for arrowheads) and a group number per class (`_ogDraw`, `_ogRoutePaths`, `_ogGroups`).
-- **Two margins:** links through classes count within 3 px of a box in the rankings, as published comparisons do, and within 9 px in everything about the routing (`_ogRouteMetrics`, the passes after the clean-up), the clearance a drawn line with an arrowhead needs. The same drawing therefore shows more links through classes in the routing tables.
-- **Playback and Lab:** `docs/PLAYBACK-AND-LAB.md`: watch every step, switch steps off, edit by hand; reusable for other step-by-step algorithms.
+  - `_ogNow` is the work clock;
+  - `OntologyLayouts.draw` runs the whole pipeline.
+- **Two margins:** links through classes count within 3 px of a box in the rankings, as published comparisons do, and within 9 px in everything about the routing.
+- **Playback and Lab:** [SHOW-AND-TELL-LABS.md](SHOW-AND-TELL-LABS.md) covers the method; [PLAYBACK-AND-LAB.md](PLAYBACK-AND-LAB.md) covers the technical contract for adapting the pages.
 - **Benchmark:** `tools/layout-bench/`. Its README explains how to rerun it and how to rebuild the HTML page.

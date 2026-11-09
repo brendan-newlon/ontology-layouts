@@ -288,7 +288,7 @@
         // Stress keeps any offset and needs many sweeps from a wrong scale, so center the drawing and scale it to five times the
         // size whose distances to the pivots best match their targets (least squares): stress then unfolds the drawing rather
         // than pressing it together, which on the 15 development graphs gave as many crossed links and fewer links through
-        // classes than starting at the matching size. Retested on 2026-11-08 over 51 graphs and three seeds with the clean-up,
+        // classes than starting at the matching size. Retested over 51 graphs and three seeds with the clean-up,
         // the pull-in and the link routing: 1x, 2x, 3x and 5x all within 0.5% on crossings, links through classes and sharp
         // crossings together (the spread between seeds), so 5x stays; _OG_TUNE.pmdsScale sets it for experiments.
         let mx = 0, my = 0; P.forEach((p) => { mx += p.x / n; my += p.y / n; }); P.forEach((p) => { p.x -= mx; p.y -= my; });
@@ -638,7 +638,7 @@
       // 15 development graphs, choosing without them gave 6.5% fewer crossings plus links through classes for 7% more area.
       function _ogChoiceScore(m) { return 10 * m.cross + 8 * m.thru + 2 * m.near + 40 * m.ov + m.len / 10 + Math.max(0, (m.fill || 0) - 8) * 4 * Math.sqrt(m.n || 1); }
       // Automatic choice: the variants that suit the size, best score kept. Returns { pos, crossings, algo, scores } or null.
-      // (Until 2026-11-07 it also drew the top-down tree when most links were subclass links. Over the 51 benchmark graphs the
+      // (It used to draw the top-down tree when most links were subclass links. Over the 51 benchmark graphs the
       // tree was kept once, on Dublin Core terms, where the drawing kept without it has no crossing and no link through a class
       // either; these layouts are for business models joined mostly by relationships, so it was dropped. _ogTreeLayout is still
       // there for an app that wants a taxonomy drawn as a tree.)
@@ -1222,11 +1222,11 @@
       // topDown: the layout drew subclasses below their superclasses (the tree), and the clean-up keeps them there.
       function _ogLayoutCleanUp(pos, items, edges, startedAt, topDown) {
         const budgetMs = Math.min(500, 1500 - (_ogNow() - startedAt));
-        const swap0 = (P) => (_OG_TUNE.noSwap ? P : _ogClocked(() => _ogLeafSwap(P, items, edges)));
+        const down = topDown ? edges.filter((e) => e[2] === 2 && e[0] !== e[1]).map((e) => [e[0], e[1]]) : null;
+        const swap0 = (P) => (_OG_TUNE.noSwap ? P : _ogClocked(() => _ogLeafSwap(P, items, edges, down))); // a top-down drawing stays top-down
         const swap1 = (P) => { const Q = swap0(P); return _OG_TUNE.noPull || topDown ? Q : _ogClocked(() => _ogPullIn(Q, items, edges, _OG_TUNE.pull)); }; // a top-down tree keeps its levels
         const swap = (P) => { const Q = swap1(P); return topDown || !items.some((d) => d && d.between) ? Q : _ogClocked(() => _ogInline(Q, items, edges)); };
         if (budgetMs < 100) return swap(pos);
-        const down = topDown ? edges.filter((e) => e[2] === 2 && e[0] !== e[1]).map((e) => [e[0], e[1]]) : null;
         return swap(_ogClocked(() => _ogHandTidy.run(pos, items, edges.map((e) => ({ s: e[0], t: e[1] })), { budgetMs, down, ...(_OG_TUNE.cleanup || {}) }).P));
       }
       // Problems that involve class v: its links through other boxes (10 each, with a pad px margin) and across other links
@@ -1351,9 +1351,13 @@
       // Two one-link classes of the same class trade places when that leaves fewer problems: a link through a box (with a
       // 9 px margin, as the drawing is measured) counts 10, a crossing 6. A long name beside a link that passes close by is
       // the usual case: the shorter box fits where the longer one was in the way. Positions in, new positions out.
-      function _ogLeafSwap(pos, items, edges) {
+      // down [[subclass, superclass]] (a top-down drawing): no move may leave a subclass less than 20 px below its superclass.
+      function _ogLeafSwap(pos, items, edges, down) {
         const n = pos.length, P = pos.map((p) => ({ x: p.x, y: p.y })), EE = edges.filter((e) => e[0] !== e[1]).map((e) => ({ s: e[0], t: e[1] })), m = EE.length;
         if (!m || n > 1500) return P;
+        const dn = down && down.length ? Array.from({ length: n }, () => []) : null;
+        if (dn) down.forEach(([c, q]) => { if (c !== q) { dn[c].push([c, q]); dn[q].push([c, q]); } });
+        const level = (v) => !dn || dn[v].every(([c, q]) => P[c].y >= P[q].y + 20);
         const leafOf = _ogClLeaves(n, EE), kids = new Map(), inc = _ogClIncidence(n, EE), pad = 9;
         leafOf.forEach((p, v) => { if (p >= 0) { if (!kids.has(p)) kids.set(p, []); kids.get(p).push(v); } });
         // problems that involve class v: its links (crossings, through boxes) and links through its box
@@ -1367,7 +1371,7 @@
             const after = cost(a) + cost(b);
             // the two classes must not overlap anything at their new places
             const clash = [a, b].some((v) => { for (let u = 0; u < n; u++) if (u !== v && Math.abs(P[u].x - P[v].x) < (items[u].w + items[v].w) / 2 + 4 && Math.abs(P[u].y - P[v].y) < (items[u].h + items[v].h) / 2 + 4) return true; return false; });
-            if (clash || after >= before - 0.5) { P[b] = P[a]; P[a] = pa; } else swaps++;
+            if (clash || after >= before - 0.5 || !level(a) || !level(b)) { P[b] = P[a]; P[a] = pa; } else swaps++;
           }
         });
         if (_ogTr && swaps) _ogTr.snap("swap", P);
@@ -1397,7 +1401,7 @@
             for (let a = 0; a < 48; a++) { const th = a * Math.PI / 24, ux = Math.cos(th), uy = Math.sin(th) * 0.75;
               const r0 = Math.min(((items[p].w + items[v].w) / 2 + 40) / Math.max(Math.abs(ux), 1e-6), ((items[p].h + items[v].h) / 2 + 40) / Math.max(Math.abs(uy), 1e-6));
               for (let r = r0; r < r0 + 3 * L0; r += 30) { const c = { x: P[p].x + ux * r, y: P[p].y + uy * r }; P[v] = c;
-                const free = !overlaps(v); P[v] = old; if (!free) continue;
+                const free = !overlaps(v) && level(v); P[v] = old; if (!free) continue;
                 const x = probs(v, c); if (x >= now) continue; const sc = x * 200 - room(v, c) + 0.2 * r;
                 if (!best || sc < best.sc) best = { sc, c }; } }
             if (best) { P[v] = best.c; moved++; }
@@ -1408,7 +1412,7 @@
         // Then a class that a link runs through (or within the margin of) is pushed off the line, to the side it is on, just far
         // enough to clear it (or twice that); or, when one end of the link is a one-link class, that end turns round its neighbor
         // by 8 to 30 degrees. Kept only if the problems involving the moved class get fewer and it overlaps nothing.
-        const tryMove = (v, x, y) => { const o = P[v], before = cost(v); P[v] = { x, y }; if (!overlaps(v) && cost(v) < before - 0.5) return true; P[v] = o; return false; };
+        const tryMove = (v, x, y) => { const o = P[v], before = cost(v); P[v] = { x, y }; if (!overlaps(v) && level(v) && cost(v) < before - 0.5) return true; P[v] = o; return false; };
         for (let pass = 0; pass < 3; pass++) {
           let any = false;
           for (let k = 0; k < m && !late(); k++) {
