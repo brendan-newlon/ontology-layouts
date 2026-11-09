@@ -1,0 +1,21 @@
+dev (15 graphs): totals of crossed links and links through classes (3 px), mean area / box area
+label ours     cross   452  thru   39  area 18.6
+label d3       cross  2168  thru  708  area 22.1
+uniform ours   cross   467  thru   40  area 13.6
+uniform d3     cross  1956  thru  706  area 13.8
+varied ours    cross   552  thru  110  area 7.1
+varied d3      cross  2114  thru  843  area 6.0
+held (10 graphs): totals of crossed links and links through classes (3 px), mean area / box area
+label ours     cross   302  thru   39  area 15.0
+label d3       cross  1981  thru  964  area 21.4
+uniform ours   cross   309  thru   13  area 13.2
+uniform d3     cross  1436  thru  663  area 21.2
+varied ours    cross   353  thru   78  area 7.4
+varied d3      cross  2300  thru 1155  area 7.4
+public (26 graphs): totals of crossed links and links through classes (3 px), mean area / box area
+label ours     cross  1263  thru   99  area 17.1
+label d3       cross  3413  thru  922  area 41.8
+uniform ours   cross  1272  thru   76  area 10.0
+uniform d3     cross  3015  thru  933  area 22.8
+varied ours    cross  1401  thru  165  area 6.4
+varied d3      cross  3957  thru 1440  area 9.0

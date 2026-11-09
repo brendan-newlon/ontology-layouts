@@ -20,7 +20,7 @@ for (const key of keys) {
   const edges = raw.map((e, k) => [e.s, e.t, e.kind === 'sub' ? 2 : 1, nm[k] ? nm[k].length * 6 + 8 : 0]);
   const layEdges = useNames ? edges : edges.map((e) => e.slice(0, 3));
   const t0 = performance.now(), w0 = O.now(), r = O.auto(D, layEdges, { seed }); let P = r.pos.map((p) => ({ x: p.x, y: p.y })); O.sep(P, N, 6, 200);
-  P = O.cleanUp(P, D, layEdges, w0, r.algo === 'tree').map((p) => ({ x: p.x, y: p.y })); O.sep(P, N, 6, 200);
+  if (!process.env.EB_NOCLEAN) { P = O.cleanUp(P, D, layEdges, w0, r.algo === "tree").map((p) => ({ x: p.x, y: p.y })); O.sep(P, N, 6, 200); } // EB_NOCLEAN=1: no clean-up (bend instead of move, with {"skip":{"thru":true}})
   const rr = O.route(P, D, edges), routes = rr.routes, ms = performance.now() - t0;
   const s = O.routeMetrics(P, D, edges, edges.map(() => null)), ro = O.routeMetrics(rr.pos, D, edges, routes); // the routes belong to rr.pos (classes may move off links)
   add(T.s, s); add(T.r, ro); T.ms += ms; T.msMax = Math.max(T.msMax, ms); T.g++;

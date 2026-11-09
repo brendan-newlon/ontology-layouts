@@ -599,8 +599,10 @@ function _ogLayoutCleanUp(pos, items, edges, startedAt, topDown) {
   const swap0 = (P) => (_OG_TUNE.noSwap ? P : _ogClocked(() => _ogLeafSwap(P, items, edges, down))); // a top-down drawing stays top-down
   const swap1 = (P) => { const Q = swap0(P); return _OG_TUNE.noPull || topDown ? Q : _ogClocked(() => _ogPullIn(Q, items, edges, _OG_TUNE.pull)); }; // a top-down tree keeps its levels
   const swap = (P) => { const Q = swap1(P); return topDown || !items.some((d) => d && d.between) ? Q : _ogClocked(() => _ogInline(Q, items, edges)); };
-  if (budgetMs < 100) return swap(pos);
-  return swap(_ogClocked(() => _ogHandTidy.run(pos, items, edges.map((e) => ({ s: e[0], t: e[1] })), { budgetMs, down, ...(_OG_TUNE.cleanup || {}) }).P));
+  // last, classes with no link and small separate parts move out of the way of the main graph
+  const fin = (P) => (_OG_TUNE.noApart ? P : _ogClocked(() => _ogApart(P, items, edges)));
+  if (budgetMs < 100) return fin(swap(pos));
+  return fin(swap(_ogClocked(() => _ogHandTidy.run(pos, items, edges.map((e) => ({ s: e[0], t: e[1] })), { budgetMs, down, ...(_OG_TUNE.cleanup || {}) }).P)));
 }
 // Problems that involve class v: its links through other boxes (10 each, with a pad px margin) and across other links
 // (6 each), and other links through its box (10 each). Classes without a position yet (P[u] null) and their links are left out.

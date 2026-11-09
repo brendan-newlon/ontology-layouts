@@ -528,7 +528,7 @@
    "Mycelium": {
     "cross": 304,
     "thru": 37,
-    "fill": 8.6,
+    "fill": 8.8,
     "ms": 146,
     "maxMs": 1000,
     "xang": 76.4,
@@ -1046,8 +1046,8 @@
   },
   "ranks": {
    "five": {
-    "Best Read": 3.16,
-    "Tidy Stress": 3.14,
+    "Best Read": 3.17,
+    "Tidy Stress": 3.15,
     "Mycelium": 3.52,
     "Graphviz neato": 4.67,
     "Graphviz sfdp": 5.2,
@@ -1062,9 +1062,9 @@
     "Cytoscape fcose": 5.99
    },
    "down": {
-    "Best Read": 3.82,
-    "Tidy Stress": 3.75,
-    "Mycelium": 3.99,
+    "Best Read": 3.83,
+    "Tidy Stress": 3.76,
+    "Mycelium": 4,
     "Graphviz neato": 4.92,
     "Graphviz sfdp": 5.72,
     "Graphviz fdp": 6.59,
@@ -1078,7 +1078,7 @@
     "Cytoscape fcose": 6.5
    },
    "dist": {
-    "Best Read": 4.7,
+    "Best Read": 4.71,
     "Tidy Stress": 4.64,
     "Mycelium": 5.1,
     "Graphviz neato": 4.7,
@@ -1088,16 +1088,16 @@
     "ELK force": 9.09,
     "ELK layered": 8.58,
     "dagre": 9.28,
-    "WebCola": 4.62,
+    "WebCola": 4.61,
     "d3-force": 5.64,
     "Cytoscape cose": 9.52,
     "Cytoscape fcose": 5.12
    }
   },
   "ranksBR": {
-   "five": 3.16,
-   "down": 3.82,
-   "dist": 4.7
+   "five": 3.17,
+   "down": 3.83,
+   "dist": 4.71
   },
   "places": {
    "five": {
@@ -1119,7 +1119,7 @@
     "Tidy Stress": 2,
     "Mycelium": 5,
     "next": "WebCola",
-    "nextRank": 4.62
+    "nextRank": 4.61
    }
   },
   "wins": {
@@ -1132,8 +1132,8 @@
    "Best Read": {
     "cross": 1565,
     "thru": 138,
-    "fill": 8.9,
-    "ms": 264,
+    "fill": 9,
+    "ms": 265,
     "maxMs": 1107,
     "xang": 71.8,
     "down": 0.51
@@ -1142,7 +1142,7 @@
     "cross": 1631,
     "thru": 284,
     "fill": 8.5,
-    "ms": 244,
+    "ms": 248,
     "maxMs": 1336,
     "xang": 73,
     "down": 0.51
@@ -1151,7 +1151,7 @@
     "cross": 1400,
     "thru": 140,
     "fill": 9.4,
-    "ms": 120,
+    "ms": 121,
     "maxMs": 1123,
     "xang": 70.7,
     "down": 0.51
@@ -1358,8 +1358,8 @@
   "ranks": {
    "five": {
     "Best Read": 2.98,
-    "Tidy Stress": 2.99,
-    "Mycelium": 3.22,
+    "Tidy Stress": 3,
+    "Mycelium": 3.23,
     "Graphviz neato": 4.63,
     "Graphviz sfdp": 5.52,
     "Graphviz fdp": 6.5,
@@ -1367,14 +1367,14 @@
     "ELK force": 9.7,
     "ELK layered": 7.65,
     "dagre": 8.51,
-    "WebCola": 4.84,
+    "WebCola": 4.83,
     "d3-force": 6.54,
     "Cytoscape cose": 9.19,
     "Cytoscape fcose": 6.02
    },
    "down": {
-    "Best Read": 3.6,
-    "Tidy Stress": 3.52,
+    "Best Read": 3.61,
+    "Tidy Stress": 3.53,
     "Mycelium": 3.76,
     "Graphviz neato": 4.99,
     "Graphviz sfdp": 5.8,
@@ -1383,7 +1383,7 @@
     "ELK force": 9.28,
     "ELK layered": 6.73,
     "dagre": 7.86,
-    "WebCola": 5.01,
+    "WebCola": 5,
     "d3-force": 6.56,
     "Cytoscape cose": 8.96,
     "Cytoscape fcose": 6.55
@@ -1391,7 +1391,7 @@
    "dist": {
     "Best Read": 4.5,
     "Tidy Stress": 4.4,
-    "Mycelium": 4.78,
+    "Mycelium": 4.79,
     "Graphviz neato": 4.61,
     "Graphviz sfdp": 5.98,
     "Graphviz fdp": 6.39,
@@ -1407,7 +1407,7 @@
   },
   "ranksBR": {
    "five": 2.98,
-   "down": 3.6,
+   "down": 3.61,
    "dist": 4.5
   },
   "places": {

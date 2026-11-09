@@ -1226,8 +1226,10 @@
         const swap0 = (P) => (_OG_TUNE.noSwap ? P : _ogClocked(() => _ogLeafSwap(P, items, edges, down))); // a top-down drawing stays top-down
         const swap1 = (P) => { const Q = swap0(P); return _OG_TUNE.noPull || topDown ? Q : _ogClocked(() => _ogPullIn(Q, items, edges, _OG_TUNE.pull)); }; // a top-down tree keeps its levels
         const swap = (P) => { const Q = swap1(P); return topDown || !items.some((d) => d && d.between) ? Q : _ogClocked(() => _ogInline(Q, items, edges)); };
-        if (budgetMs < 100) return swap(pos);
-        return swap(_ogClocked(() => _ogHandTidy.run(pos, items, edges.map((e) => ({ s: e[0], t: e[1] })), { budgetMs, down, ...(_OG_TUNE.cleanup || {}) }).P));
+        // last, classes with no link and small separate parts move out of the way of the main graph
+        const fin = (P) => (_OG_TUNE.noApart ? P : _ogClocked(() => _ogApart(P, items, edges)));
+        if (budgetMs < 100) return fin(swap(pos));
+        return fin(swap(_ogClocked(() => _ogHandTidy.run(pos, items, edges.map((e) => ({ s: e[0], t: e[1] })), { budgetMs, down, ...(_OG_TUNE.cleanup || {}) }).P)));
       }
       // Problems that involve class v: its links through other boxes (10 each, with a pad px margin) and across other links
       // (6 each), and other links through its box (10 each). Classes without a position yet (P[u] null) and their links are left out.
@@ -1525,6 +1527,52 @@
         return P;
       }
       // ── end of the clean-up ──
+      // Apart: classes with no link, and small parts of the graph not linked to the rest, that sit inside or against the area
+      // of the largest part move out to one side of it, each part as it was drawn, so that they neither crowd the main graph
+      // nor look linked to it. A small part has at most a quarter of the largest part's classes and at most 12. Each side is
+      // tried, the parts packed in rows along it (largest first); the side that leaves the smallest drawing wins. A move is kept
+      // only when crossed links and links through classes do not rise, no box overlaps another and the drawing grows by at
+      // most 10%. Only when the largest part has 6 classes or more and twice as many as any other part.
+      function _ogApart(pos, items, edges) {
+        const n = pos.length; if (n < 8 || n > 1500) return pos;
+        const par = Array.from({ length: n }, (_, i) => i), root = (x) => { while (par[x] !== x) { par[x] = par[par[x]]; x = par[x]; } return x; };
+        edges.forEach(([s, t]) => { if (s !== t) par[root(s)] = root(t); });
+        const parts = new Map(); for (let i = 0; i < n; i++) { const r = root(i); if (!parts.has(r)) parts.set(r, []); parts.get(r).push(i); }
+        const C = [...parts.values()].sort((a, b) => b.length - a.length);
+        if (C.length < 2 || C[0].length < 6 || C[0].length < 2 * C[1].length) return pos;
+        const G = 40, lim = Math.min(12, Math.max(1, Math.floor(C[0].length / 4)));
+        const box = (vs, P) => { let x1 = Infinity, y1 = Infinity, x2 = -Infinity, y2 = -Infinity;
+          for (const v of vs) { x1 = Math.min(x1, P[v].x - items[v].w / 2); x2 = Math.max(x2, P[v].x + items[v].w / 2); y1 = Math.min(y1, P[v].y - items[v].h / 2); y2 = Math.max(y2, P[v].y + items[v].h / 2); }
+          return { x1, y1, x2, y2 }; };
+        const M = box(C[0], pos), near = (b) => b.x1 < M.x2 + G && b.x2 > M.x1 - G && b.y1 < M.y2 + G && b.y2 > M.y1 - G;
+        const units = C.slice(1).filter((c) => c.length <= lim).map((vs) => ({ vs, b: box(vs, pos) })).filter((u) => near(u.b));
+        if (!units.length) return pos;
+        units.sort((a, b) => b.vs.length - a.vs.length || (b.b.x2 - b.b.x1) - (a.b.x2 - a.b.x1) || a.vs[0] - b.vs[0]);
+        const EE = edges.filter((e) => e[0] !== e[1]).map((e) => ({ s: e[0], t: e[1] })), Np = items.map((d) => ({ w: d.w + 6, h: d.h + 6 }));
+        const all = Array.from({ length: n }, (_, i) => i), area = (P) => { const b = box(all, P); return (b.x2 - b.x1) * (b.y2 - b.y1); };
+        const m0 = _ogPlacementMetrics(pos, Np, EE), A0 = area(pos), moving = new Set(units.flatMap((u) => u.vs)), still = all.filter((v) => !moving.has(v));
+        let best = null;
+        for (const side of ["below", "right", "above", "left"]) {
+          const along = side === "below" || side === "above", span = Math.max(along ? M.x2 - M.x1 : M.y2 - M.y1, ...units.map((u) => (along ? u.b.x2 - u.b.x1 : u.b.y2 - u.b.y1)));
+          const P = pos.map((p) => ({ x: p.x, y: p.y })); let a = 0, b = 0, row = 0; // a: along the side, b: depth of the current row, row: its height
+          for (const u of units) {
+            const w = along ? u.b.x2 - u.b.x1 : u.b.y2 - u.b.y1, h = along ? u.b.y2 - u.b.y1 : u.b.x2 - u.b.x1;
+            if (a > 0 && a + w > span) { b += row + G / 2; a = 0; row = 0; }
+            const x = side === "below" || side === "above" ? M.x1 + a : side === "right" ? M.x2 + G + b : M.x1 - G - b - h;
+            const y = side === "below" ? M.y2 + G + b : side === "above" ? M.y1 - G - b - h : M.y1 + a;
+            for (const v of u.vs) P[v] = { x: pos[v].x + x - u.b.x1, y: pos[v].y + y - u.b.y1 };
+            a += w + G / 2; row = Math.max(row, h);
+          }
+          const hit = still.some((s) => [...moving].some((v) => Math.abs(P[s].x - P[v].x) < (items[s].w + items[v].w) / 2 + 6 && Math.abs(P[s].y - P[v].y) < (items[s].h + items[v].h) / 2 + 6));
+          if (hit) continue;
+          const m = _ogPlacementMetrics(P, Np, EE), A = area(P);
+          if (m.cross > m0.cross || m.thru > m0.thru || A > A0 * 1.1) continue;
+          if (!best || A < best.A) best = { P, A };
+        }
+        if (!best) return pos;
+        if (_ogTr) _ogTr.snap("apart", best.P);
+        return best.P;
+      }
       // ── Link routing after a layout ──
       // The layouts place classes; this draws the links between them, on the final positions, without moving any class:
       //   1. parallel links: two or more links between the same two classes (a link and its reverse, or two relationships)
@@ -1539,7 +1587,7 @@
       // fraction t along the line between the two centers and d px to its left (d < 0: right); the path is a Catmull-Rom curve
       // from the start through the bends to the end (_ogRoutePoly). Same input, same routes: the time limit is on the work clock.
       // items [{w, h}] as drawn, edges [[s, t, kind, nameWidth?]] -> { routes (one per edge), stats }.
-      const _OG_ROUTE = { sep: 24, pad: 9, samples: 8, bends: true, crossBends: true, ports: 3, portGap: 10, labels: true, labelH: 14, labelSide: true, settle: true, straight: false, budgetMs: 250, W: { thru: 10, cross: 6, sharp: 3, len: 5, bend: 1.5, turn: 3, out: 1 } };
+      const _OG_ROUTE = { sep: 24, pad: 9, samples: 8, bends: true, crossBends: true, ports: 3, portGap: 10, labels: true, labelH: 14, labelSide: true, settle: true, straight: false, arcs: true, budgetMs: 250, W: { thru: 10, cross: 6, sharp: 3, len: 5, bend: 1.5, turn: 3, out: 1 } };
       function _ogRoutePts(A, B, bends) {
         const dx = B.x - A.x, dy = B.y - A.y, L = Math.hypot(dx, dy) || 1, nx = -dy / L, ny = dx / L;
         return bends.map((h) => ({ x: A.x + h.t * dx + h.d * nx, y: A.y + h.t * dy + h.d * ny }));
@@ -1612,8 +1660,10 @@
         r.stats.work = _ogWorkMs() - w0; return r; }); }
       function _ogRouteRun(pos, items, edges, opts) {
         const o = { ..._OG_ROUTE, ...(opts || {}), W: { ..._OG_ROUTE.W, ...((opts && opts.W) || {}) } }, P = pos, N = items, n = P.length, t0 = _ogNow();
-        // straight: every link is one straight line (no bends, no arcs); repeated links between two classes become parallel
-        // straight lines, their ends spread across the two boxes; only self-links stay loops
+        // straight: no bends (a link through a class is not bent round it). Repeated and reciprocal links between two classes
+        // still become arcs side by side and self-links loops, as by default.
+        // arcs: false forces repeated links straight too: parallel straight lines, their ends spread across the two boxes.
+        // Self-links stay loops either way (a link from a class to itself has no straight line to draw).
         if (o.straight) { o.bends = false; o.crossBends = false; }
         const E = edges.map(([s, t, w, lab]) => ({ s, t, sub: w === 2, lab: lab || 0 })), m = E.length;
         const R = E.map(() => ({ bends: [], ports: null, loop: null, label: null }));
@@ -1632,7 +1682,7 @@
           return w;
         };
         B.forEach((b) => { if (b.ks.length > 1) stats.parallel += b.ks.length;
-          if (!o.straight) { b.ks.forEach((k, i) => (R[k].bends = memberBends(b, i))); return; }
+          if (o.arcs !== false) { b.ks.forEach((k, i) => (R[k].bends = memberBends(b, i))); return; }
           if (b.ks.length < 2) return; // parallel straight lines: the same offset at both ends, kept inside the smaller box
           const A = P[b.lo], Bp = P[b.hi], L = Math.hypot(Bp.x - A.x, Bp.y - A.y) || 1, nx = -(Bp.y - A.y) / L, ny = (Bp.x - A.x) / L;
           const half = Math.min(N[b.lo].w, N[b.lo].h, N[b.hi].w, N[b.hi].h) * 0.4, sp = Math.min(o.sep, 2 * half / (b.ks.length - 1));

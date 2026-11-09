@@ -34,5 +34,5 @@ const out = {
   open: { s: grid.s, cells: grid.open.map((c) => [Math.round(c.x), Math.round(c.y)]) },
   later, measures: { start: HT.measure(P0, D, E), before: HT.measure(before, D, E), pushed: HT.measure(pushedP, D, E), repaired: HT.measure(after, D, E), end: HT.measure(r.P, D, E) }, ms: r.stats.ms
 };
-fs.writeFileSync(new URL('example.json', import.meta.url), JSON.stringify(out));
+fs.writeFileSync(process.env.EX_OUT || new URL('example.json', import.meta.url), JSON.stringify(out));
 console.log(g, 'region', JSON.stringify(out.region.center), 'r0', out.region.r0, 'problems', out.region.problems, 'moved', out.region.moved.length, 'later steps', later.length, JSON.stringify(out.measures));

@@ -18,6 +18,8 @@
 //   9. explore: one class draws; straight routing gives one segment per link with repeated links apart; a burst of new
 //      classes round a crowded class lands on free spots and moves no earlier class; the clean-up never stacks classes that
 //      share the same many neighbours.
+//  10. apart: classes with no link sitting inside the main graph move outside its area, with no new problem or overlap,
+//      and the main graph stays where it was.
 // node tests/check_ontology_layout.mjs            -> "ontology layout clean" or the failures
 // node tests/check_ontology_layout.mjs --self-test -> runs each check on a deliberately broken copy and confirms it fails
 import fs from 'node:fs';
@@ -29,7 +31,7 @@ function layoutCode(src) {
   return src.slice(a, b).replace(/\r\n/g, '\n');
 }
 function load(code) {
-  const api = 'return { auto: _ogAutoLayout, tree: _ogTreeLayout, leafSwap: _ogLeafSwap, cleanUp: _ogLayoutCleanUp, tidy: _ogHandTidy, now: _ogNow, sep: _ogClSeparate, route: _ogRouteLinks, routeMetrics: _ogRouteMetrics, tune: _OG_TUNE, segX: _ogClSegX, segBox: _ogClSegBox, api: OntologyLayouts };';
+  const api = 'return { apart: _ogApart, pmetrics: _ogPlacementMetrics, auto: _ogAutoLayout, tree: _ogTreeLayout, leafSwap: _ogLeafSwap, cleanUp: _ogLayoutCleanUp, tidy: _ogHandTidy, now: _ogNow, sep: _ogClSeparate, route: _ogRouteLinks, routeMetrics: _ogRouteMetrics, tune: _OG_TUNE, segX: _ogClSegX, segBox: _ogClSegBox, api: OntologyLayouts };';
   return new Function('window', 'document', 'state', 'log', code + '\n' + api)({}, {}, { ui: {} }, () => {});
 }
 // small generated models: a few taxonomies with property links between them, fixed seeds
@@ -222,24 +224,51 @@ function checkKeep(L) {
   });
   return bad;
 }
-// 9. explore: growing a drawing by expansion. A drawing of one class (or none) works; straight routing draws every link as
-//    one straight segment, with repeated links side by side, not on top of each other; a burst of new classes round a crowded
+// 9. explore: growing a drawing by expansion. A drawing of one class (or none) works; straight routing draws a link alone
+//    between its classes as one straight segment, even through a class, and repeated links as arcs side by side; arcs: false
+//    draws repeated links as parallel straight lines, not on top of each other; a burst of new classes round a crowded
 //    class lands on free spots, with every earlier class where it was.
+function checkApart(L) {
+  const bad = [];
+  // a ring of ten linked classes, and three classes with no link in the middle of it (a ring this size, so a row of them
+  // outside costs less than the 10% more area the pass allows)
+  const D = [], E = [], P = [];
+  for (let i = 0; i < 10; i++) { const a = i * Math.PI / 5; D.push({ w: 90, h: 24 }); P.push({ x: 520 * Math.cos(a), y: 400 * Math.sin(a) }); E.push([i, (i + 1) % 10, 1]); }
+  for (let i = 0; i < 3; i++) { D.push({ w: 80, h: 24 }); P.push({ x: -100 + 100 * i, y: 0 }); }
+  const Q = L.apart(P, D, E), EE = E.map(([s, t]) => ({ s, t })), N = D.map((d) => ({ w: d.w + 6, h: d.h + 6 }));
+  for (let i = 0; i < 10; i++) if (Math.hypot(Q[i].x - P[i].x, Q[i].y - P[i].y) > 0.5) bad.push(`the main graph moved (class ${i})`);
+  for (let i = 10; i < 13; i++) if (Math.abs(Q[i].x) < 520 + 45 && Math.abs(Q[i].y) < 400 + 12) bad.push(`class ${i}, with no link, was left inside the main graph`);
+  const m0 = L.pmetrics(P, N, EE), m1 = L.pmetrics(Q, N, EE); if (m1.cross > m0.cross || m1.thru > m0.thru) bad.push('moving the classes with no link added problems');
+  for (let i = 0; i < 13; i++) for (let j = i + 1; j < 13; j++) if (Math.abs(Q[i].x - Q[j].x) < (D[i].w + D[j].w) / 2 && Math.abs(Q[i].y - Q[j].y) < (D[i].h + D[j].h) / 2) bad.push(`classes ${i} and ${j} overlap`);
+  // the same, with a chain of three linked classes (too big to move) hanging down just below where the row would go, its top
+  // box 4 px under it: the row must go elsewhere or keep 6 px clear of every box
+  const x1 = Math.min(...P.slice(0, 10).map((p) => p.x - D[0].w / 2)), y2 = Math.max(...P.slice(0, 10).map((p) => p.y + D[0].h / 2));
+  const D2 = D.slice(), E2 = E.slice(), P2 = P.slice();
+  for (let k = 0; k < 3; k++) { D2.push({ w: 90, h: 24 }); P2.push({ x: x1 + 45, y: y2 + 40 + 24 + 4 + 12 + 60 * k }); if (k) E2.push([12 + k, 13 + k, 1]); }
+  const Q2 = L.apart(P2, D2, E2), close = (A, i, j) => Math.abs(A[i].x - A[j].x) < (D2[i].w + D2[j].w) / 2 + 5 && Math.abs(A[i].y - A[j].y) < (D2[i].h + D2[j].h) / 2 + 5;
+  for (let i = 0; i < D2.length; i++) for (let j = i + 1; j < D2.length; j++) if (close(Q2, i, j) && !close(P2, i, j)) bad.push(`classes ${i} and ${j} were moved closer than 5 px (the pass keeps 6 px)`);
+  return bad;
+}
 function checkExplore(L) {
   const bad = [], A = L.api || {};
   try { const one = A.draw([{ w: 80, h: 30 }], [], {}), none = A.draw([], [], {});
     if (one.pos.length !== 1 || !isFinite(one.pos[0].x) || none.pos.length !== 0) bad.push('a drawing of one class or none has the wrong positions'); }
   catch (err) { bad.push('a drawing of one class failed: ' + err.message); }
-  { const D = [{ w: 90, h: 30 }, { w: 90, h: 30 }, { w: 90, h: 30 }, { w: 90, h: 30 }], E = [[0, 1, 1, 30], [0, 1, 1, 40], [1, 0, 1, 30], [1, 2, 1, 20], [2, 3, 2], [3, 0, 1, 25], [2, 2, 1]];
-    const P = [{ x: 0, y: 0 }, { x: 300, y: 0 }, { x: 300, y: 200 }, { x: 0, y: 200 }], rr = A.routeLinks(P, D, E, { straight: true }), ps = A.routePaths(rr.pos, D, E, rr.routes, {});
-    E.forEach(([s, t], k) => { if (s !== t && ps[k].points.length !== 2) bad.push(`straight routing drew link ${k} with ${ps[k].points.length} points`); });
-    const mid = (k) => { const q = ps[k].points; return { x: (q[0].x + q[q.length - 1].x) / 2, y: (q[0].y + q[q.length - 1].y) / 2 }; };
-    for (const [i, j] of [[0, 1], [0, 2], [1, 2]]) if (Math.hypot(mid(i).x - mid(j).x, mid(i).y - mid(j).y) < 4) bad.push(`straight routing drew repeated links ${i} and ${j} on top of each other`);
-    if (!rr.routes[6].loop) bad.push('straight routing left the self-link without a loop');
+  { // class 4 lies on the link from 2 to 3 and links to nothing: routing with bends would take that link round it
+    const D = [{ w: 90, h: 30 }, { w: 90, h: 30 }, { w: 90, h: 30 }, { w: 90, h: 30 }, { w: 60, h: 30 }], E = [[0, 1, 1, 30], [0, 1, 1, 40], [1, 0, 1, 30], [1, 2, 1, 20], [2, 3, 2], [3, 0, 1, 25], [2, 2, 1]];
+    const P = [{ x: 0, y: 0 }, { x: 300, y: 0 }, { x: 300, y: 200 }, { x: 0, y: 200 }, { x: 150, y: 200 }];
+    for (const arcs of [true, false]) {
+      const how = arcs ? 'straight routing' : 'straight routing with arcs: false', rr = A.routeLinks(P, D, E, arcs ? { straight: true, settle: false } : { straight: true, arcs: false, settle: false }), ps = A.routePaths(rr.pos, D, E, rr.routes, {});
+      E.forEach(([s, t], k) => { if (s === t || (arcs && k === 1)) return; const rep = k <= 2, pts = ps[k].points.length; // the middle link of three stays straight
+        if ((!rep || !arcs) && pts !== 2) bad.push(`${how} drew link ${k} with ${pts} points, not one straight segment`);
+        if (rep && arcs && pts <= 2) bad.push(`${how} drew repeated link ${k} straight, not as an arc`); });
+      const mid = (k) => { const q = ps[k].points, h = q[Math.floor(q.length / 2)], g = q[Math.ceil((q.length - 1) / 2)]; return arcs ? { x: (h.x + g.x) / 2, y: (h.y + g.y) / 2 } : { x: (q[0].x + q[q.length - 1].x) / 2, y: (q[0].y + q[q.length - 1].y) / 2 }; };
+      for (const [i, j] of [[0, 1], [0, 2], [1, 2]]) if (Math.hypot(mid(i).x - mid(j).x, mid(i).y - mid(j).y) < 4) bad.push(`${how} drew repeated links ${i} and ${j} on top of each other`);
+      if (!rr.routes[6].loop) bad.push(`${how} left the self-link without a loop`); }
     // two links between the same two classes and nothing else (too few link ends for the port spreading to separate them)
-    const D2 = [{ w: 90, h: 30 }, { w: 90, h: 30 }], E2 = [[0, 1, 1, 30], [1, 0, 1, 30]], r2 = A.routeLinks([{ x: 0, y: 0 }, { x: 300, y: 80 }], D2, E2, { straight: true }), p2 = A.routePaths(r2.pos, D2, E2, r2.routes, {});
+    const D2 = [{ w: 90, h: 30 }, { w: 90, h: 30 }], E2 = [[0, 1, 1, 30], [1, 0, 1, 30]], r2 = A.routeLinks([{ x: 0, y: 0 }, { x: 300, y: 80 }], D2, E2, { straight: true, arcs: false }), p2 = A.routePaths(r2.pos, D2, E2, r2.routes, {});
     const m2 = p2.map((q) => ({ x: (q.points[0].x + q.points[q.points.length - 1].x) / 2, y: (q.points[0].y + q.points[q.points.length - 1].y) / 2 }));
-    if (Math.hypot(m2[0].x - m2[1].x, m2[0].y - m2[1].y) < 4) bad.push('straight routing drew two links between the same classes on one line'); }
+    if (Math.hypot(m2[0].x - m2[1].x, m2[0].y - m2[1].y) < 4) bad.push('arcs: false drew two links between the same classes on one line'); }
   { // a hub with a ring of earlier classes round it, and twelve new classes that link only to the hub
     const D = [], E = [], keep = []; D.push({ w: 100, h: 34 }); keep.push({ x: 0, y: 0 });
     for (let i = 0; i < 7; i++) { const a = i * 2 * Math.PI / 7 + 0.3; D.push({ w: 100, h: 34 }); keep.push({ x: 260 * Math.cos(a), y: 200 * Math.sin(a) }); E.push([0, D.length - 1, 1, 40]); }
@@ -259,7 +288,7 @@ function checkExplore(L) {
 }
 function runAll(code) {
   const out = { clock: checkClock(code) }, L = load(code);
-  out.grid = checkGrid(L); out.repeatable = checkRepeatable(L); out.tree = checkTree(L); out.routes = checkRoutes(L); out.moves = checkMoves(L); out.pull = checkPull(L); out.api = checkApi(L); out.keep = checkKeep(L); out.explore = checkExplore(L);
+  out.grid = checkGrid(L); out.repeatable = checkRepeatable(L); out.tree = checkTree(L); out.routes = checkRoutes(L); out.moves = checkMoves(L); out.pull = checkPull(L); out.api = checkApi(L); out.keep = checkKeep(L); out.explore = checkExplore(L); out.apart = checkApart(L);
   return out;
 }
 
@@ -292,7 +321,11 @@ if (process.argv.includes('--self-test')) {
     ['keep', 'the earlier positions ignored', code.replace('(keep && keep[v] && isFinite(keep[v].x)', '(false && keep[v] && isFinite(keep[v].x)')],
     ['keep', 'relation classes left off their line', code.replace('if (!R.length || n > 1500) return P;', 'return P;')],
     ['explore', 'a drawing of one class sent to the layouts', code.replace(': boxes.length < 2 ? { pos: boxes.map(() => ({ x: 0, y: 0 })), algo: "single" }', ': false ? null')],
-    ['explore', 'straight routing ignored', code.replace('if (o.straight) { o.bends = false; o.crossBends = false; }', '').replace('if (!o.straight) { b.ks.forEach((k, i) => (R[k].bends = memberBends(b, i))); return; }', 'if (true) { b.ks.forEach((k, i) => (R[k].bends = memberBends(b, i))); return; }')],
+    ['explore', 'straight routing ignored', code.replace('if (o.straight) { o.bends = false; o.crossBends = false; }', '')],
+    ['apart', 'classes with no link left in the main graph', code.replace('if (!units.length) return pos;', 'return pos;')],
+    ['apart', 'parts moved over other classes', code.replace('if (hit) continue;', '')],
+    ['explore', 'repeated links straight in straight routing', code.replace('if (o.arcs !== false) { b.ks.forEach(', 'if (!o.straight) { b.ks.forEach(')],
+    ['explore', 'arcs: false ignored', code.replace('if (o.arcs !== false) { b.ks.forEach(', 'if (true) { b.ks.forEach(')],
     ['explore', 'repeated straight links on one line', code.replace('const d = (i - (b.ks.length - 1) / 2) * sp, q =', 'const d = 0, q =')],
     ['explore', 'a burst placed on the arc without a free-spot test', code.replace('const ok = spots.every((p, i) => { const v = B[i]; if (!free(v, p)) return false; P[v] = p; return true; });', 'const ok = spots.every((p, i) => { P[B[i]] = p; return true; });').replace('const blocked = (R) => { const iv = [];', 'const blocked = (R) => { return []; const iv = [];').replace('if (one <= best.c) {', 'if (false) {')],
     ['explore', 'an overlap only costs 1000 in the clean-up', code.replace('tight: 1, ov: 1e6, area: 6', 'tight: 1, ov: 1000, area: 6')],
