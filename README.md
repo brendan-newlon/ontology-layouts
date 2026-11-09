@@ -8,6 +8,7 @@ Layouts for drawing ontologies (classes as boxes, subclass and relationship link
 - **Best Read**: runs Tidy Stress and Mycelium and keeps the more readable drawing.
 - **Link routing**: after the layout, draws the links: parallel and reciprocal links as arcs, self-links as loops on the most open side, bends round classes in the way that stay inside the drawing, link ends spread along crowded boxes, link names on or beside their link where they cover nothing; a class a link still runs through is pushed off it when that helps.
 - **Keeping a drawing**: after an edit, new classes are placed round the old ones, which stay where the reader knows them.
+- **Exploring**: a drawing can start from one class and grow one expansion at a time; the new neighbours of a class go on an arc on its most open side, and nothing already drawn moves. Links can be drawn as straight lines only.
 - **Relation classes**: a relationship modelled as a class, when marked, sits on the line between the two classes it relates.
 - **Clean-up**: a pass after any layout that moves classes the way a person would (single moves into open space, leaf groups, spreading crowded regions), learned from recorded hand edits. After it: one-link classes trade places or move out of a fence of lines, classes are pushed off links, and parts that sprawl toward the edge (chains, small trees, whole groups) are pulled in where that makes the drawing smaller with no more problems.
 
@@ -22,7 +23,7 @@ Same input, same drawing on any computer: time limits count units of work, not w
 | `docs/ONTOLOGY-LAYOUT-ALGORITHMS.html` | The full write-up: interactive, self-contained, with drawings side by side against eleven open-source layouts. |
 | `docs/PLAYBACK-AND-LAB.md` | The Layout Playback and Layout Lab as a reusable pattern: watch any step-by-step algorithm work, switch steps off, reorder them, edit by hand and record why, then turn the demonstrations into rules. How to adapt it to another algorithm. |
 | `docs/BEYOND-LAYOUT.md` | For discussion: which of these methods could carry over to other optimization problems (warehouse slotting, scheduling, bin packing, routing, dependency solving), and which would not. |
-| `tests/check_ontology_layout.mjs` | Checks on the layout code (work clock only, clean-up grid equals checking every pair, same drawing twice, tree stays top-down, link routing, the passes after the clean-up, pulling in from the edge, the public entry points, keeping a drawing and relation classes); `--self-test` proves each check fires. |
+| `tests/check_ontology_layout.mjs` | Checks on the layout code (work clock only, clean-up grid equals checking every pair, same drawing twice, tree stays top-down, link routing, the passes after the clean-up, pulling in from the edge, the public entry points, keeping a drawing and relation classes, exploring); `--self-test` proves each check fires. |
 | `tools/layout-bench/` | Benchmark graphs, the Node and browser benches, the hands-on lab, recorded results and the script that builds the write-up. See its README. |
 | `tools/recv.py` | Local receiver for the lab: saves posted sessions into `_temp/`. |
 | `Start Layout Lab.cmd` | Double-click (Windows) to open the playback and the lab: starts a page server for this folder (first free port from 8611; one already serving this folder is reused) and the receiver (port 8613) in small windows; close them to stop. |
@@ -56,6 +57,10 @@ Or step by step: `bestRead` (or `tidyStress`, `mycelium`), `cleanUp`, `routeLink
 
 **After an edit,** pass the earlier drawing to keep the reader's picture: `draw(boxes, links, { keep: oldPos })`, with `null` in `oldPos` for each new class. The new classes are placed round the classes they link to, and the old ones move only a little (2–5% of the drawing, against about a third for a redraw); `exact: true` moves none. Keeping costs some crossings, so redraw from time to time.
 
+**Exploring a graph** (a browser that adds a class's neighbours when it is clicked): draw the first classes with `draw(boxes, links)`, then after each expansion `draw(boxes, links, { keep: oldPos, exact: true, route: { straight: true } })`, with `null` in `oldPos` for each new class. Nothing already drawn moves; new classes that link only to the expanded class go on an arc on its most open side, the others where they cause the fewest problems; one expansion takes a few milliseconds. Without `exact`, the clean-up may also move earlier classes a little, which suits a "tidy" command better than every click. A drawing of one class works, so an exploration can start from a single class.
+
+**Repeated links** between the same two classes (common when instance data is browsed) are drawn side by side, but the placement sees each pair once.
+
 **Relationships modelled as classes** (reification, association classes): give the box `between: [subject, object]`, and it is drawn on the line between the two.
 
 **Draw the classes at the positions the routing returns.** `routeLinks` returns `pos` with the routes: a class that a drawn link still runs through is pushed off it, and the routes belong to those positions. Pass `{ settle: false }` to keep every class where it is.
@@ -69,6 +74,7 @@ Measured over the 51 test graphs (15 development, 10 held-out, 26 public), Best 
 | `_ogSetTimeLimit(ms)` | 1500 | 500: about half the time (mean about 250 ms) for 10% more crossed links and nearly three times the links through classes. 3000: links through classes 65 → 47, crossed links about the same, mean time about 650 ms (up to 2.9 s on the densest graph); it helps the dense graphs and changes nothing on most small ones. |
 | `_ogRouteLinks(..., { settle })` | `true` | `false` keeps every class exactly where the layout put it (for a drawing the user has arranged by hand); links through classes are then left to the bends. |
 | `_ogRouteLinks(..., { labels, labelSide })` | `true`, `true` | `labels: false` when links carry no names. |
-| `_ogRouteLinks(..., { bends, crossBends })` | `true`, `true` | `false` for straight links only (arcs for parallel links and loops stay). |
+| `_ogRouteLinks(..., { bends, crossBends })` | `true`, `true` | `false` for no bends round classes (arcs for parallel links and loops stay). |
+| `_ogRouteLinks(..., { straight })` | `false` | `true`: every link one straight line; repeated links between two classes become parallel straight lines; only self-links stay loops. For browsers where links that curve round classes would confuse. Links through classes then remain where the placement could not avoid them. |
 
 The experiment switches in `_OG_TUNE` (`noSwap`, `noFence`, `noNudge`, `noPull`, `skip`, `order`, `pmdsScale`) are for the benchmarks and the playback and are empty in use. Links through classes count within 9 px of a box in `routeMetrics`, and within 3 px in `metrics` and in the ranking tables, as published comparisons of layouts do. The code expects a `log(level, message)` function in scope; `tests/check_ontology_layout.mjs` shows how to load it.

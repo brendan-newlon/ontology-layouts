@@ -703,6 +703,8 @@ boxes2[7].between = [2, 5];                                                     
 <tr><td class="l">redraw</td><td>685</td><td>13</td><td>30%</td><td>453 ms</td></tr>
 </tbody></table></div>
 <p>Keeping costs crossings, because the new links have to cross a picture that was not made for them; redrawing from time to time remains the way to a clean drawing. These numbers are the hard case: the added classes were picked at random, hubs included, where an edit usually adds a few classes in one place.</p>
+<p><strong>Exploring a graph.</strong> A graph browser usually starts from one class or a small part of a model and grows the drawing as the reader clicks: each click shows a class's hidden neighbours. Draw the first classes with <code>draw(boxes, links)</code>, then after each click <code>draw(boxes, links, { keep, exact: true, route: { straight: true } })</code> with <code>null</code> in <code>keep</code> for each new class. Nothing already drawn moves. New classes that link only to the clicked class go on an arc round it, on its most open side, on one ring or two, subclasses together; the arc is kept only when it scores better than placing them one at a time. In simulated sessions on 12 graphs (48 sessions, 425 drawings of up to 15 new classes each, straight links), each drawing had on average 22.6 crossed links, 4.7 links through classes and 3.2 link names covering a class or another name, in 3.9 ms; a d3-force layout with the earlier classes pinned left 65.0, 13.6 and 18.1. Allowing small moves (no <code>exact</code>) gives 21.1, 1.6 and 2.3 with earlier classes moving 3.4% of the drawing on average, better kept for a "tidy" command than for every click. The placement sees each pair of linked classes once, so data graphs with a dozen links between the same two classes stay quick.</p>
+<p><strong>Straight links.</strong> <code>routeLinks(…, { straight: true })</code> (or <code>route: { straight: true }</code> in <code>draw</code>) draws every link as one straight line; repeated links between two classes become parallel lines and only self-links stay loops. For a browser where links that bend round classes would confuse, at the price of the links through classes that bends would have avoided (about 1 per drawing instead of 4.7 in the sessions above).</p>
 <p><strong>Relation classes.</strong> A relationship modelled as a class (RDF reification, an association class, an n-ary relation pattern) reads best on the line between the two classes it relates. Give its box <code>between: [subject, object]</code>, and after the clean-up it moves onto that line, as near the middle as there is room, when that costs it at most one crossing. On the 15 development graphs with every third relationship made a class (225 relation classes): relation classes bent by more than 45 degrees 100 → 66, mean angle at the relation class 129° → 147°, crossed links 521 → 507, links through classes 16 → 12. Without the hint a relation class is an ordinary class, because which classes are relationships is a modelling decision the links alone do not show.</p>
 <p><strong>Draw the classes where the routing leaves them.</strong> <code>routeLinks</code> returns <code>pos</code> as well as the routes: when a drawn link still runs through a class, the class is pushed off it and the links are routed again, and the result is kept only if it has fewer problems. Those positions are the final ones. A renderer that keeps the earlier positions draws routes that miss their classes. Pass <code>{ settle: false }</code> to keep every class where it is.</p>
 <p><strong>Arrowheads.</strong> <code>routePaths</code> turns each route into points from the border of one box to the border of the other. With <code>arrow</code>, each path stops that many pixels short of its end class along its last direction, so an arrowhead drawn from there to <code>tip</code>, at <code>angle</code>, touches the box without entering it. Spreading the arrow ends further apart on a shared side was tried and not kept: on the 15 development graphs it changed no drawing. Where arrowheads crowd, it is at a hub with more incoming links than its side has room for, and spacing them further adds crossings.</p>
@@ -1403,7 +1405,7 @@ const _ogHandTidy = (function () {
     }
     return true;
   }
-  const DEF = { budgetMs: 2000, unitSize: 4, clearance: 8, groupDepth: 4, groups: true, spread: true, spreadRepair: true, finish: true, order: ['single', 'unit', 'spread', 'group'], cell: 0.3, repReach: 1.8, repOpen: 12, repCap: 99, crowdMax: 10, groupTop: 2, downGap: 20, W: { cross: 6, sharp: 3, thru: 10, tight: 1, ov: 1000, area: 6 } };
+  const DEF = { budgetMs: 2000, unitSize: 4, clearance: 8, groupDepth: 4, groups: true, spread: true, spreadRepair: true, finish: true, order: ['single', 'unit', 'spread', 'group'], cell: 0.3, repReach: 1.8, repOpen: 12, repCap: 99, crowdMax: 10, groupTop: 2, downGap: 20, W: { cross: 6, sharp: 3, thru: 10, tight: 1, ov: 1e6, area: 6 } };
 
   function Model(P0, D, E0, o) {
     const n = P0.length, seen = new Set(), E = [];
@@ -1972,10 +1974,64 @@ function _ogPlaceNew(keep, items, edges) {
       P[v] = p; let len = 0; nb.forEach((u) =&gt; (len += Math.hypot(P[u].x - p.x, P[u].y - p.y)));
       const sc = _ogVCost(P, items, EE, inc, v, 9) * 1e4 + len; P[v] = null; if (!best || sc &lt; best.sc) best = { sc, p }; }
     P[v] = best ? best.p : c; };
+  // Bursts (a graph browser expanding a class): new classes whose one placed neighbour is the same class go on an arc round
+  // it, in its most open direction, side by side (subclasses together), on one ring or two staggered rings, at the
+  // length the layouts give a link with its name. Placed one at a time instead, they fill whatever gaps the ring search
+  // finds first and their links cross each other.
+  const fanned = new Set();
+  if (!_OG_TUNE.noFan) {
+    const burst = new Map(), labTo = new Map(), subTo = new Set();
+    edges.forEach((e) =&gt; { if (e[0] === e[1]) return; for (const [v, u] of [[e[0], e[1]], [e[1], e[0]]]) { if (P[v] || !P[u]) continue; labTo.set(v, Math.max(labTo.get(v) || 0, e[3] || 0)); if (e[2] === 2) subTo.add(v); } });
+    for (const v of fresh) { const nb = [...new Set(nbr(v))]; if (nb.length === 1) { const a = nb[0]; if (!burst.has(a)) burst.set(a, []); burst.get(a).push(v); } }
+    for (const [a, B] of burst) {
+      if (B.length &lt; 2) continue;
+      B.sort((x, y) =&gt; subTo.has(y) - subTo.has(x) || x - y);
+      const A = P[a], size = Math.max(...B.map((v) =&gt; Math.max(N[v].w, N[v].h))), s0 = size + 14;
+      const R0 = Math.max(...B.map((v) =&gt; (N[a].w + N[v].w) / 2 + (labTo.get(v) || 0) + 24), (Math.max(N[a].w, N[a].h) + size) / 2 + 30);
+      const blocked = (R) =&gt; { const iv = []; _ogWorkN[2] += n;
+        for (let u = 0; u &lt; n; u++) { if (u === a || !P[u]) continue; const d = Math.hypot(P[u].x - A.x, P[u].y - A.y); if (d &lt; 1e-6) continue;
+          const th = Math.atan2(P[u].y - A.y, P[u].x - A.x), near = d &lt; R + 2 * s0;
+          const h = near ? Math.asin(Math.min(1, (Math.max(N[u].w, N[u].h) / 2 + s0 / 2 + 14) / Math.max(d, 1))) : 0;
+          const link = nbr(a).includes(u) ? Math.asin(Math.min(1, (s0 / 2 + 9) / R)) : 0; const w = Math.max(h, link); if (w &gt; 0) iv.push([th - w, th + w]); }
+        return iv; };
+      const largestGap = (iv) =&gt; { if (!iv.length) return { mid: 0, len: 2 * Math.PI };
+        const pts = iv.map(([x, y]) =&gt; [((x % (2 * Math.PI)) + 2 * Math.PI) % (2 * Math.PI), y - x]).sort((p, q) =&gt; p[0] - q[0]);
+        const cov = []; for (const [st, len] of pts) { const en = st + len; if (cov.length &amp;&amp; st &lt;= cov[cov.length - 1][1]) cov[cov.length - 1][1] = Math.max(cov[cov.length - 1][1], en); else cov.push([st, en]); }
+        if (cov[cov.length - 1][1] - 2 * Math.PI &gt;= cov[0][0]) return { mid: 0, len: 0 };
+        let best = { mid: 0, len: -1 }; for (let i = 0; i &lt; cov.length; i++) { const st = cov[i][1], en = i + 1 &lt; cov.length ? cov[i + 1][0] : cov[0][0] + 2 * Math.PI; if (en - st &gt; best.len) best = { mid: (st + en) / 2, len: en - st }; }
+        return best; };
+      // every arc (four radii, the three widest gaps, one ring or two) and the one-at-a-time placement are scored the
+      // same way (problems first, then link length); the cheapest wins
+      // a link name sits at the middle of its link: one covering a class or another new name counts 8, as in the routing
+      const costOf = () =&gt; { let c = 0; const nb = B.map((v) =&gt; ({ x: (P[v].x + A.x) / 2, y: (P[v].y + A.y) / 2, w: labTo.get(v) || 0 }));
+        for (let i = 0; i &lt; B.length; i++) { const v = B[i]; c += _ogVCost(P, items, EE, inc, v, 9) * 1e4 + Math.hypot(P[v].x - A.x, P[v].y - A.y); const q = nb[i]; if (!q.w) continue;
+          for (let u = 0; u &lt; n; u++) if (P[u] &amp;&amp; Math.abs(P[u].x - q.x) &lt; (items[u].w + q.w) / 2 + 2 &amp;&amp; Math.abs(P[u].y - q.y) &lt; items[u].h / 2 + 9) c += 8e4;
+          for (let j = i + 1; j &lt; B.length; j++) if (nb[j].w &amp;&amp; Math.abs(nb[j].x - q.x) &lt; (q.w + nb[j].w) / 2 + 2 &amp;&amp; Math.abs(nb[j].y - q.y) &lt; 16) c += 8e4; }
+        return c; };
+      let best = null;
+      for (const R of [R0, R0 * 1.35, R0 * 1.8, R0 * 2.4]) {
+        const iv = blocked(R); const gaps = [];
+        { const g0 = largestGap(iv); if (g0.len &gt; 0) gaps.push(g0); }
+        for (const sh of [-1, 1]) { const g0 = gaps[0]; if (!g0 || g0.len &lt; Math.PI / 2) continue; gaps.push({ mid: g0.mid + sh * g0.len / 4, len: g0.len / 2 }); }
+        for (const g of gaps) for (const rings of [1, 2]) {
+          const per = Math.ceil(B.length / rings), step = Math.min(1.5 * s0 / R, g.len / Math.max(per, 1)); if (step * R &lt; s0 * (rings === 1 ? 1 : 0.6)) continue;
+          const spots = B.map((v, i) =&gt; { const ring = rings === 1 ? 0 : i % 2, j = rings === 1 ? i : i &gt;&gt; 1, cnt = rings === 1 ? B.length : (ring ? B.length &gt;&gt; 1 : per);
+            const th = g.mid + (j - (cnt - 1) / 2) * step, rr = R + ring * s0 * 0.9; return { x: A.x + rr * Math.cos(th), y: A.y + rr * Math.sin(th) }; });
+          const ok = spots.every((p, i) =&gt; { const v = B[i]; if (!free(v, p)) return false; P[v] = p; return true; });
+          if (ok) { const c = costOf(); if (!best || c &lt; best.c) best = { c, spots }; }
+          B.forEach((v) =&gt; (P[v] = null));
+        }
+      }
+      if (!best) continue;
+      for (const v of B) place(v); const one = costOf(), oneAt = B.map((v) =&gt; P[v]); B.forEach((v) =&gt; (P[v] = null));
+      if (one &lt;= best.c) { B.forEach((v, i) =&gt; (P[v] = oneAt[i])); } else B.forEach((v, i) =&gt; (P[v] = best.spots[i]));
+      B.forEach((v) =&gt; fanned.add(v));
+    }
+  }
   // the new class with the most placed neighbours goes first
-  const todo = new Set(fresh);
+  const todo = new Set(fresh.filter((v) =&gt; !fanned.has(v)));
   while (todo.size) { let pick = -1, most = -1; for (const v of todo) { const c = nbr(v).length; if (c &gt; most) { most = c; pick = v; } } todo.delete(pick); place(pick); }
-  for (const v of fresh) { P[v] = null; place(v); }
+  for (const v of fresh) { if (fanned.has(v)) continue; P[v] = null; place(v); }
   if (_ogTr) _ogTr.snap("place", P);
   return P;
 }
@@ -2194,7 +2250,7 @@ function _ogPullIn(pos, items, edges, opt) {
 // fraction t along the line between the two centers and d px to its left (d &lt; 0: right); the path is a Catmull-Rom curve
 // from the start through the bends to the end (_ogRoutePoly). Same input, same routes: the time limit is on the work clock.
 // items [{w, h}] as drawn, edges [[s, t, kind, nameWidth?]] -&gt; { routes (one per edge), stats }.
-const _OG_ROUTE = { sep: 24, pad: 9, samples: 8, bends: true, crossBends: true, ports: 3, portGap: 10, labels: true, labelH: 14, labelSide: true, settle: true, budgetMs: 250, W: { thru: 10, cross: 6, sharp: 3, len: 5, bend: 1.5, turn: 3, out: 1 } };
+const _OG_ROUTE = { sep: 24, pad: 9, samples: 8, bends: true, crossBends: true, ports: 3, portGap: 10, labels: true, labelH: 14, labelSide: true, settle: true, straight: false, budgetMs: 250, W: { thru: 10, cross: 6, sharp: 3, len: 5, bend: 1.5, turn: 3, out: 1 } };
 function _ogRoutePts(A, B, bends) {
   const dx = B.x - A.x, dy = B.y - A.y, L = Math.hypot(dx, dy) || 1, nx = -dy / L, ny = dx / L;
   return bends.map((h) =&gt; ({ x: A.x + h.t * dx + h.d * nx, y: A.y + h.t * dy + h.d * ny }));
@@ -2267,6 +2323,9 @@ function _ogRouteLinks(pos, items, edges, opts) { const w0 = _ogWorkMs(); return
   r.stats.work = _ogWorkMs() - w0; return r; }); }
 function _ogRouteRun(pos, items, edges, opts) {
   const o = { ..._OG_ROUTE, ...(opts || {}), W: { ..._OG_ROUTE.W, ...((opts &amp;&amp; opts.W) || {}) } }, P = pos, N = items, n = P.length, t0 = _ogNow();
+  // straight: every link is one straight line (no bends, no arcs); repeated links between two classes become parallel
+  // straight lines, their ends spread across the two boxes; only self-links stay loops
+  if (o.straight) { o.bends = false; o.crossBends = false; }
   const E = edges.map(([s, t, w, lab]) =&gt; ({ s, t, sub: w === 2, lab: lab || 0 })), m = E.length;
   const R = E.map(() =&gt; ({ bends: [], ports: null, loop: null, label: null }));
   const stats = { parallel: 0, loops: 0, bent: 0, bends: 0, ported: 0, labels: 0, ms: 0, t: {} };
@@ -2283,7 +2342,13 @@ function _ogRouteRun(pos, items, edges, opts) {
     if (flip) w = w.map((h) =&gt; ({ t: 1 - h.t, d: -h.d })).reverse();
     return w;
   };
-  B.forEach((b) =&gt; { if (b.ks.length &gt; 1) stats.parallel += b.ks.length; b.ks.forEach((k, i) =&gt; (R[k].bends = memberBends(b, i))); });
+  B.forEach((b) =&gt; { if (b.ks.length &gt; 1) stats.parallel += b.ks.length;
+    if (!o.straight) { b.ks.forEach((k, i) =&gt; (R[k].bends = memberBends(b, i))); return; }
+    if (b.ks.length &lt; 2) return; // parallel straight lines: the same offset at both ends, kept inside the smaller box
+    const A = P[b.lo], Bp = P[b.hi], L = Math.hypot(Bp.x - A.x, Bp.y - A.y) || 1, nx = -(Bp.y - A.y) / L, ny = (Bp.x - A.x) / L;
+    const half = Math.min(N[b.lo].w, N[b.lo].h, N[b.hi].w, N[b.hi].h) * 0.4, sp = Math.min(o.sep, 2 * half / (b.ks.length - 1));
+    b.ks.forEach((k, i) =&gt; { const d = (i - (b.ks.length - 1) / 2) * sp, q = { x: nx * d, y: ny * d }; R[k].ports = [{ ...q }, { ...q }]; });
+  });
   lap("arcs");
   // 2. self-links: a loop on the side of the class (a corner, or along a side: 12 places in all) whose wedge is the most
   //    open: fewest links and classes inside the loop, fewest links crossing it, fewest link ends leaving that way
@@ -2518,11 +2583,21 @@ function _ogRoutePaths(pos, items, edges, routes, opts) {
 // off a link (settle), so draw the classes at pos, never at the layout's positions, or the paths will miss them.
 function _ogDraw(boxes, links, opts) {
   const o = opts || {}, t0 = _ogNow();
+  // The placement sees each pair of linked classes once (the widest name and a subclass link win); the routing draws every
+  // link. A model browsed as data can repeat a link between two classes a dozen times, which costs the placement time
+  // and tells it nothing more.
+  const pairAt = new Map(), lay1 = [];
+  for (const e of links) { const k = Math.min(e[0], e[1]) + "," + Math.max(e[0], e[1]), j = pairAt.get(k);
+    if (j == null) { pairAt.set(k, lay1.length); lay1.push(e.slice()); continue; }
+    const f = lay1[j]; if ((e[3] || 0) &gt; (f[3] || 0)) f[3] = e[3]; if (e[2] === 2) f[2] = 2; }
+  const layLinks = lay1.length &lt; links.length ? lay1 : links;
   // keep: an earlier drawing's positions (null for new classes). The new classes are placed round the old ones, then the
   // clean-up and the routing make local moves (old classes move a few percent of the drawing, a redraw about a third).
   // exact: true keeps every old class exactly where it was (no clean-up, the routing moves no class).
-  const ex = o.keep &amp;&amp; o.exact, lay = o.keep ? { pos: _ogClocked(() =&gt; _ogPlaceNew(o.keep, boxes, links)), algo: "keep" } : _ogAutoLayout(boxes, links, { seed: o.seed, roomy: o.roomy });
-  const clean = ex ? lay.pos : _ogLayoutCleanUp(lay.pos, boxes, links, t0, lay.algo === "tree");
+  const ex = o.keep &amp;&amp; o.exact, lay = o.keep ? { pos: _ogClocked(() =&gt; _ogPlaceNew(o.keep, boxes, layLinks)), algo: "keep" }
+    : boxes.length &lt; 2 ? { pos: boxes.map(() =&gt; ({ x: 0, y: 0 })), algo: "single" } // the layouts need two classes; an exploration starts from one
+    : _ogAutoLayout(boxes, layLinks, { seed: o.seed, roomy: o.roomy });
+  const clean = ex ? lay.pos : _ogLayoutCleanUp(lay.pos, boxes, layLinks, t0, lay.algo === "tree");
   const rr = _ogRouteLinks(clean, boxes, links, ex ? { settle: false, ...(o.route || {}) } : o.route);
   return { pos: rr.pos, routes: rr.routes, paths: _ogRoutePaths(rr.pos, boxes, links, rr.routes, { arrow: o.arrow || 0 }), groups: _ogGroups(boxes.length, links), algo: lay.algo };
 }
