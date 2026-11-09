@@ -24,12 +24,27 @@ for (const r of rows) {
   const side = OURS[r.algo] ? m.ours : m.pub, name = OURS[r.algo] || r.algo;
   side[name] = { pos: r.pos, cross: r.cross, thru: r.thru, fill: Math.round(r.fill * 10) / 10, score: Math.round(r.score), ms: Math.round(r.ms) };
 }
+// Curved links: our drawings again with the library's link routing (arcs for parallel links, bends round classes in the way;
+// the routing may push a class off a link). Stored as the paths of the links that are not straight, and the counts with the
+// change the routing makes, on the same 3 px margin as the straight counts.
+execSync('node build_base.mjs', { cwd: here }); execSync('node mkbundle.mjs', { cwd: here });
+const { OURS: OL } = await import('./_bundle.mjs');
+const r1 = (v) => Math.round(v * 10) / 10;
+for (const m of Object.values(DATA)) for (const L of Object.values(m.ours)) {
+  const D = m.box.map((w) => ({ w, h: 20 })), E = m.edges.map(([s, t, sub]) => [s, t, sub ? 2 : 1]), P = L.pos.map(([x, y]) => ({ x, y }));
+  const rr = OL.route(P, D, E), st = OL.routeMetrics(P, D, E, E.map(() => null), 3), cv = OL.routeMetrics(rr.pos, D, E, rr.routes, 3);
+  const paths = OL.routePaths(rr.pos, D, E, rr.routes, { samples: 4 }), bent = {};
+  rr.routes.forEach((r, k) => { if (r && paths[k].points.length > 2) bent[k] = paths[k].points.map((q) => [Math.round(q.x), Math.round(q.y)]); }); // straight links are drawn from the positions
+  const moved = []; rr.pos.forEach((q, i) => { if (Math.hypot(q.x - P[i].x, q.y - P[i].y) > 0.5) moved.push([i, r1(q.x), r1(q.y)]); });
+  L.cv = { bent, moved, cross: Math.max(0, L.cross + cv.cross - st.cross), thru: Math.max(0, L.thru + cv.thru - st.thru), hidden: st.hidden || 0 };
+}
 const dev = ['uni', 'hotel', 'org', 'brewery', 'trial', 'prov', 'telecom', 'sosa', 'crm', 'schema', 'health', 'fibo', 'pizza', 'bio', 'big'].filter((k) => DATA[k]);
 // an unseen graph is shown only when ours and every general-settings open-source layout are recorded for it
 const complete = (k) => Object.keys(DATA[k].ours).length === 2 && Object.keys(DATA[k].pub).length >= 11;
 const unseen = Object.keys(DATA).filter((k) => isUnseen(k) && complete(k)).sort((a, b) => DATA[a].labels.length - DATA[b].labels.length || a.localeCompare(b));
 for (const k of Object.keys(DATA)) if (isUnseen(k) && !unseen.includes(k)) delete DATA[k];
 const order = dev.concat(unseen);
+for (const k of Object.keys(DATA)) if (!order.includes(k)) delete DATA[k]; // only the graphs the page shows
 const data = JSON.stringify({ order, groups: [['The 15 development graphs', dev], ['Never seen during development', unseen]], graphs: DATA });
 const tpl = fs.readFileSync(path.join(here, 'doc_template.html'), 'utf8');
 // The full implementation, as the library runs it, with comments using the public names.
@@ -51,9 +66,17 @@ const esc = (t) => t.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, 
 execSync('node tables.mjs', { cwd: here });
 const tables = JSON.parse(fs.readFileSync(path.join(here, 'tables.json'), 'utf8'));
 const example = fs.readFileSync(path.join(here, 'example.json'), 'utf8');
-let out = tpl.replace('/*__DATA__*/null', () => data).replace('/*__EXAMPLE__*/null', () => example).replace('/*__FINISH__*/null', () => fs.readFileSync(path.join(here, 'finish.json'), 'utf8')).replace('<!--__CODE__-->', () => esc(code));
+let out = tpl.replace('/*__DATA__*/null', () => data).replace('/*__EXAMPLE__*/null', () => example).replace('/*__FINISH__*/null', () => fs.readFileSync(path.join(here, 'finish.json'), 'utf8')).replace('/*__FINISH2__*/null', () => fs.readFileSync(path.join(here, 'finish_hubs.json'), 'utf8')).replace('<!--__CODE__-->', () => esc(code));
 for (const [k, v] of Object.entries(tables)) { if (!out.includes('<!--__' + k + '__-->')) throw new Error('no place for ' + k); out = out.replace('<!--__' + k + '__-->', () => v); }
 if (/<!--__[A-Z_]+__-->/.test(out)) throw new Error('unfilled placeholder: ' + out.match(/<!--__[A-Z_]+__-->/)[0]);
-const dest = path.resolve(here, '..', '..', 'docs', 'ONTOLOGY-LAYOUT-ALGORITHMS.html');
-fs.writeFileSync(dest, out);
+// Two editions: the write-up, and the same page with the Layout Lab built in (the library, to run the clean-up on a drawing
+// made by hand, and the teaching sessions). Blocks between <!--LAB--> and <!--/LAB--> are in the lab edition only,
+// blocks between <!--NOLAB--> and <!--/NOLAB--> in the write-up only.
+const dest = path.resolve(here, '..', '..', 'docs', 'ONTOLOGY-LAYOUT-ALGORITHMS.html'), destLab = dest.replace(/\.html$/, '-LAB.html');
+const plain = out.replace(/<!--LAB-->[\s\S]*?<!--\/LAB-->\n?/g, '').replace(/<!--\/?NOLAB-->/g, '');
+const lib = code.replace(/<\/script/gi, '<\\/script'), teach = fs.existsSync(path.join(here, 'teaching_sessions.json')) ? fs.readFileSync(path.join(here, 'teaching_sessions.json'), 'utf8') : 'null';
+const labEd = out.replace(/<!--NOLAB-->[\s\S]*?<!--\/NOLAB-->\n?/g, '').replace(/<!--\/?LAB-->\n?/g, '').replace('/*__LIBRARY__*/', () => lib).replace('/*__TEACH__*/null', () => teach)
+  .replace('<title>', '<title>Lab edition: ');
+fs.writeFileSync(dest, plain); fs.writeFileSync(destLab, labEd);
+console.log('wrote', destLab, (labEd.length / 1024).toFixed(0), 'KB');
 console.log('wrote', dest, (out.length / 1024).toFixed(0), 'KB,', dev.length, 'development graphs,', unseen.length, 'unseen graphs in the explorer');

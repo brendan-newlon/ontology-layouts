@@ -56,10 +56,49 @@ pre { background: var(--code-bg); padding: 14px 16px; border-radius: 8px; overfl
 code { font: .9em Consolas, "SFMono-Regular", Menlo, monospace; background: var(--code-bg); padding: 1px 5px; border-radius: 4px; }
 pre code { background: none; padding: 0; font-size: 12.5px; }
 ul, ol { padding-left: 1.3rem; margin: 0 0 1rem; } li { margin: .25rem 0; }
+.fig { margin: 1rem 0 1.4rem; }
+.fig svg { width: 100%; height: auto; display: block; }
+.fig figcaption { font-size: .85rem; color: var(--muted); margin-top: 6px; }
+.fig .bx { fill: var(--box); stroke: var(--box-line); stroke-width: 1; }
+.fig .st { fill: var(--paper); stroke: var(--rule); stroke-width: 1.2; }
+.fig .st.ours { stroke: var(--ours); stroke-width: 1.6; }
+.fig .tx { font: 600 13px "Segoe UI", system-ui, sans-serif; fill: var(--ink); }
+.fig .sm { font: 11.5px "Segoe UI", system-ui, sans-serif; fill: var(--muted); }
+.fig .lk { stroke: var(--rel); stroke-width: 1.6; fill: none; }
+.fig .bad { stroke: var(--bad); stroke-width: 2.2; fill: none; }
+.fig .dot { fill: var(--bad); }
+.fig .ar { stroke: var(--muted); stroke-width: 1.4; fill: none; }
+.fig .arh { fill: var(--muted); }
 details.code { background: var(--paper); border: 1px solid var(--rule); border-radius: 10px; margin: 1rem 0; }
 details.code summary { cursor: pointer; padding: 12px 16px; font-weight: 600; }
 details.code .bar { display: flex; justify-content: flex-end; padding: 0 12px; }
 details.code pre { margin: 8px 12px 12px; max-height: 70vh; }
+/* the lab */
+.lab-wrap { padding: 0 14px 14px; }
+.lab-bar { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-bottom: 10px; font-size: .9rem; }
+.lab-bar .lab-gap { flex: 1; }
+.lab-bar .lab-export { background: var(--accent); border-color: var(--accent); color: var(--paper); font-weight: 600; }
+.lab-main { display: grid; grid-template-columns: minmax(0, 3fr) minmax(0, 1.2fr); gap: 12px; }
+@media (max-width: 860px) { .lab-main { grid-template-columns: 1fr; } }
+.lab-canvas { height: 560px; background: var(--bg); border: 1px solid var(--rule); border-radius: 10px; overflow: hidden; touch-action: none; }
+.lab-canvas svg { width: 100%; height: 100%; display: block; }
+.lab-side { display: flex; flex-direction: column; gap: 8px; min-width: 0; font-size: .9rem; }
+.lab-counts { display: grid; grid-template-columns: repeat(3, 1fr); gap: 4px; font-size: .8rem; color: var(--muted); }
+.lab-counts b { display: block; font-size: 1.05rem; color: var(--ink); font-variant-numeric: tabular-nums; }
+.lab-counts small { font-weight: 400; font-size: .7rem; }
+.lab-counts .down b { color: var(--ours); } .lab-counts .up b { color: var(--bad); }
+.lab-notel { display: flex; flex-direction: column; gap: 4px; font-weight: 600; }
+.lab-notel small { font-weight: 400; color: var(--muted); }
+.lab-note { font: inherit; padding: 6px 8px; border: 1px solid var(--rule); border-radius: 6px; background: var(--paper); color: var(--ink); resize: vertical; }
+.lab-loghead { font-weight: 600; } .lab-loghead small { font-weight: 400; color: var(--muted); }
+.lab-log, .lab-tlog { margin: 0; padding-left: 1.4rem; max-height: 300px; overflow-y: auto; font-size: .85rem; }
+.lab-log li, .lab-tlog li { margin: 0 0 4px; } .lab-log li.undone { text-decoration: line-through; opacity: .5; }
+.lab-log small, .lab-tlog small { color: var(--muted); }
+.lab-log q, .lab-tlog q { font-style: italic; }
+.lab-help { font-size: .85rem; color: var(--muted); margin: 10px 2px 0; }
+details.lab-teach { margin-top: 12px; border-top: 1px solid var(--rule); padding-top: 6px; font-size: .85rem; }
+details.lab-teach summary { cursor: pointer; color: var(--muted); }
+.lab-tbar { display: flex; gap: 8px; flex-wrap: wrap; margin: 8px 0; }
 button { font: inherit; font-size: .85rem; padding: 4px 12px; border: 1px solid var(--rule); border-radius: 6px; background: var(--paper); color: var(--ink); cursor: pointer; }
 button:hover { border-color: var(--accent); }
 /* comparison widget */
@@ -83,6 +122,10 @@ select { font: inherit; font-size: .9rem; padding: 4px 8px; border: 1px solid va
 .pane-stats b { display: block; font-size: 1.05rem; color: var(--ink); font-variant-numeric: tabular-nums; }
 .pane-stats .good b { color: var(--ours); }
 .cmp-cap { color: var(--muted); font-size: .85rem; margin: 10px 2px 0; }
+.pane-head .curv { margin-left: auto; font-size: .8rem; padding: 2px 8px; border-radius: 999px; border: 1px solid transparent; color: var(--muted); white-space: nowrap; }
+.pane-head .curv.hl { border-color: var(--accent); background: var(--accent-soft); color: var(--ink); }
+.curv-gain { font-size: .75rem; color: var(--accent); }
+kbd { font: inherit; font-size: .8em; border: 1px solid var(--rule); border-bottom-width: 2px; border-radius: 4px; padding: 0 4px; background: var(--paper); }
 .legend { display: inline-flex; gap: 12px; align-items: center; flex-wrap: wrap; }
 .legend i { display: inline-block; width: 18px; height: 0; border-top: 2px solid; vertical-align: middle; margin-right: 4px; }
 label.tog { display: inline-flex; gap: 6px; align-items: center; cursor: pointer; }
@@ -106,6 +149,11 @@ label.tog { display: inline-flex; gap: 6px; align-items: center; cursor: pointer
 .wx-t .eq { text-align: center; font-size: 1.05rem; }
 .wx-whole { font-size: .85rem; color: var(--muted); }
 .wx-key { grid-column: 1 / -1; margin: 4px 0 0; font-size: .8rem; }
+.wx-walks { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; margin-bottom: 12px; padding-bottom: 12px; border-bottom: 1px solid var(--rule); font-size: .9rem; }
+.wx-walks button.on { background: var(--auto-soft); border-color: var(--auto); color: var(--ink); font-weight: 600; }
+.wx-steps button:disabled { opacity: .4; cursor: not-allowed; }
+.wx-note { background: var(--auto-soft); border-left: 3px solid var(--auto); border-radius: 6px; padding: 8px 10px; margin: 0 0 10px; font-size: .9rem; }
+.wx-opts { display: flex; gap: 14px; flex-wrap: wrap; }
 /* help marks and ranking tabs */
 .qm { display: inline-flex; align-items: center; justify-content: center; width: 1.15em; height: 1.15em; border-radius: 50%; border: 1px solid var(--muted); color: var(--muted); font-size: .72rem; font-weight: 700; text-decoration: none; cursor: help; vertical-align: 1px; }
 .qm:focus { outline: 2px solid var(--accent); outline-offset: 1px; }
@@ -125,7 +173,7 @@ label.tog { display: inline-flex; gap: 6px; align-items: center; cursor: pointer
 .cols2 .lead { margin: 0; }
 tr.mine td:first-child { box-shadow: inset 4px 0 0 var(--accent); }
 .wx-part { font-size: .78rem; text-transform: uppercase; letter-spacing: .08em; color: var(--muted); font-weight: 700; align-self: center; margin: 0 4px 0 2px; }
-.wx-part:not(:first-child) { margin-left: 12px; }
+.wx-break { flex-basis: 100%; height: 0; }
 </style>
 </head>
 <body>
@@ -162,6 +210,7 @@ tr.mine td:first-child { box-shadow: inset 4px 0 0 var(--accent); }
 <div class="cmp" data-graph="big" data-right="Mycelium" data-problems="1"></div>
 
 <h2 id="layouts">The layouts</h2>
+<figure class="fig"><svg viewBox="0 0 870 104" role="img" aria-label="The pipeline: placement by Tidy Stress and Mycelium, Best Read keeps the better drawing, the clean-up, the finishing passes, then the link routing."><rect class="st ours" x="10" y="20" width="150" height="64" rx="10"/><text class="tx" x="85.0" y="46" text-anchor="middle">Placement</text><text class="sm" x="85.0" y="66" text-anchor="middle">Tidy Stress, Mycelium</text><rect class="st ours" x="190" y="20" width="120" height="64" rx="10"/><text class="tx" x="250.0" y="46" text-anchor="middle">Best Read</text><text class="sm" x="250.0" y="66" text-anchor="middle">keeps the better</text><rect class="st ours" x="350" y="20" width="150" height="64" rx="10"/><text class="tx" x="425.0" y="46" text-anchor="middle">Clean-up</text><text class="sm" x="425.0" y="66" text-anchor="middle">taught by a person</text><rect class="st ours" x="540" y="20" width="150" height="64" rx="10"/><text class="tx" x="615.0" y="46" text-anchor="middle">Finishing passes</text><text class="sm" x="615.0" y="66" text-anchor="middle">trade, fence, pull in</text><rect class="st ours" x="730" y="20" width="130" height="64" rx="10"/><text class="tx" x="795.0" y="46" text-anchor="middle">Link routing</text><text class="sm" x="795.0" y="66" text-anchor="middle">arcs, bends, names</text><path class="ar" d="M164,52H180"/><path class="arh" d="M186,52l-8,-4.5v9z"/><path class="ar" d="M314,52H340"/><path class="arh" d="M346,52l-8,-4.5v9z"/><path class="ar" d="M504,52H530"/><path class="arh" d="M536,52l-8,-4.5v9z"/><path class="ar" d="M694,52H720"/><path class="arh" d="M726,52l-8,-4.5v9z"/></svg><figcaption>What <code>OntologyLayouts.draw</code> does, left to right. Each stage can also be called on its own, and the clean-up, its finishing passes and the routing work after any layout.</figcaption></figure>
 <div class="cards">
   <div class="card"><h3>Tidy Stress <span class="tag">up to a few dozen classes</span></h3><p>Places classes so that straight-line distances match how many links apart they are, then tidies the drawing: it moves classes to remove crossings, to take them off links that run through them, and to shorten long links, keeping a move only if nothing else gets worse.</p></div>
   <div class="card"><h3>Mycelium <span class="tag">large and hub-heavy ontologies</span></h3><p>Draws groups of closely linked classes as compact pods joined by longer threads. Every hub gets a ring wide enough for all its neighbors, and classes with a single link fan out around the class they hang from, with room for the link's label.</p></div>
@@ -183,6 +232,7 @@ tr.mine td:first-child { box-shadow: inset 4px 0 0 var(--accent); }
 <div class="cmp" data-graph="health" data-right="Mycelium" data-problems="1"></div>
 
 <h2 id="results">How they rank</h2>
+<figure class="fig"><svg viewBox="0 0 830 170" role="img" aria-label="Four problems the measures count: crossed links, a link through a class, a sharp crossing and a cramped class."><g transform="translate(0,0)"><rect class="st" x="0" y="0" width="200" height="170" rx="10"/><path class="lk" d="M38,30L162,100"/><path class="lk" d="M38,100L162,30"/><circle class="dot" cx="100" cy="65" r="5"/><rect class="bx" x="15.0" y="19" width="46" height="22" rx="6"/><text class="sm" x="38" y="34" text-anchor="middle" style="fill:var(--ink)">A</text><rect class="bx" x="139.0" y="89" width="46" height="22" rx="6"/><text class="sm" x="162" y="104" text-anchor="middle" style="fill:var(--ink)">B</text><rect class="bx" x="15.0" y="89" width="46" height="22" rx="6"/><text class="sm" x="38" y="104" text-anchor="middle" style="fill:var(--ink)">C</text><rect class="bx" x="139.0" y="19" width="46" height="22" rx="6"/><text class="sm" x="162" y="34" text-anchor="middle" style="fill:var(--ink)">D</text><text class="tx" x="100" y="138" text-anchor="middle">Crossed links</text><text class="sm" x="100" y="156" text-anchor="middle">two links that cross</text></g><g transform="translate(210,0)"><rect class="st" x="0" y="0" width="200" height="170" rx="10"/><path class="bad" d="M30,64H170"/><rect class="bx" x="10.0" y="53" width="40" height="22" rx="6"/><text class="sm" x="30" y="68" text-anchor="middle" style="fill:var(--ink)">A</text><rect class="bx" x="150.0" y="53" width="40" height="22" rx="6"/><text class="sm" x="170" y="68" text-anchor="middle" style="fill:var(--ink)">B</text><rect x="72" y="52" width="56" height="24" rx="7" style="fill:var(--bad-soft);stroke:var(--bad)"/><text class="sm" x="100" y="68" text-anchor="middle" style="fill:var(--ink)">C</text><text class="tx" x="100" y="138" text-anchor="middle">Link through a class</text><text class="sm" x="100" y="156" text-anchor="middle">reads as if C were linked</text></g><g transform="translate(420,0)"><rect class="st" x="0" y="0" width="200" height="170" rx="10"/><path class="lk" d="M24,52L176,80"/><path class="lk" d="M24,86L176,44"/><circle class="dot" cx="100" cy="66" r="5"/><text class="tx" x="100" y="138" text-anchor="middle">Sharp crossing</text><text class="sm" x="100" y="156" text-anchor="middle">under 30°, hard to follow</text></g><g transform="translate(630,0)"><rect class="st" x="0" y="0" width="200" height="170" rx="10"/><path class="lk" d="M50,96L168,30"/><path class="lk" d="M50,96L176,52"/><rect class="bx" x="24.0" y="85" width="52" height="22" rx="6"/><text class="sm" x="50" y="100" text-anchor="middle" style="fill:var(--ink)">A</text><path class="bad" d="M86,76A40,40 0 0 1 90,82" style="stroke-width:3"/><text class="tx" x="100" y="138" text-anchor="middle">Cramped class</text><text class="sm" x="100" y="156" text-anchor="middle">two links under 15° apart</text></g></svg><figcaption>The two counts that matter most to a reader come first: crossed links, and links that run through a class box they do not belong to (counted within 3 px of the box). Sharp crossings and cramped classes are what the crossing angle and the angular resolution measure. Area is the fifth measure.</figcaption></figure>
 <div class="prose">
 <p>Each layout is ranked on each of the 15 development graphs (13 to 179 classes) on the five measures, and the ranks are averaged: 1 is best, and layouts with equal results share a rank. The open-source layouts are given their best chance. Each library tried several settings and seeds, its default run included, and kept the run with the fewest crossed links plus links through classes, the two counts we lead on. The settings are listed under <a href="#method">Benchmark method</a>. Layered layouts were given subclass links oriented parent to child. Ours appear with the clean-up.</p>
 <p>The main table ranks Best Read, the auto mode a user would call, against the eleven open-source layouts. Best Read always draws with one of our two layouts, so ranking all three together would count our drawings twice; the second table ranks Tidy Stress and Mycelium each on its own against the same eleven. The tabs add optional measures for readers who value them.</p>
@@ -252,10 +302,10 @@ tr.mine td:first-child { box-shadow: inset 4px 0 0 var(--accent); }
 <div class="tbl"><table>
 <thead><tr><th class="l">Each click drawn by</th><th>Crossed links per drawing</th><th>Links through classes</th><th>Names over a class or name</th><th>Earlier classes moved</th><th>Time per click, mean</th></tr></thead>
 <tbody>
-<tr><td class="l">Typical force-directed expansion</td><td>71.1</td><td>25.5</td><td>6.1</td><td class="best">none</td><td>12 ms</td></tr>
-<tr class="ours"><td class="l">Keep, exact</td><td>24.9</td><td>5.1</td><td>2.0</td><td class="best">none</td><td class="best">6 ms</td></tr>
-<tr class="ours"><td class="l">Keep</td><td>19.9</td><td class="best">0.9</td><td class="best">1.2</td><td>2.7% of the drawing</td><td>132 ms</td></tr>
-<tr><td class="l">Redraw</td><td class="best">13.2</td><td>1.5</td><td class="best">1.2</td><td>38.5% of the drawing</td><td>237 ms</td></tr>
+<tr><td class="l">Typical force-directed expansion</td><td>71.7</td><td>25.7</td><td>6.3</td><td class="best">none</td><td>12 ms</td></tr>
+<tr class="ours"><td class="l">Keep, exact</td><td>24.9</td><td>5.4</td><td>1.9</td><td class="best">none</td><td class="best">6 ms</td></tr>
+<tr class="ours"><td class="l">Keep</td><td>20.0</td><td class="best">1.1</td><td>1.2</td><td>2.7% of the drawing</td><td>132 ms</td></tr>
+<tr><td class="l">Redraw</td><td class="best">13.3</td><td>1.6</td><td class="best">1.1</td><td>38.5% of the drawing</td><td>237 ms</td></tr>
 </tbody></table></div>
 <div class="prose">
 <p>With nothing moving, each click draws a third of the crossings, a fifth of the links through classes and a third of the covered names of the force-directed expansion, in half the time. The mean time includes the first drawing of each session, which is a full layout of up to 15 classes; the clicks after it take a few milliseconds. Three things make the difference:</p>
@@ -271,7 +321,7 @@ tr.mine td:first-child { box-shadow: inset 4px 0 0 var(--accent); }
 <li><strong>Each click:</strong> append the new classes and their links, then call <code>draw(boxes, links, { keep, exact: true })</code>, with the earlier positions in <code>keep</code> and <code>null</code> for each new class.</li>
 <li><strong>A "tidy" button:</strong> the same call without <code>exact</code>. Classes move a little, and links through classes nearly disappear.</li>
 <li><strong>A "redraw" button,</strong> for when the picture has grown far from its first shape: <code>draw(boxes, links)</code>.</li>
-<li><strong>Straight links:</strong> where links that bend round classes would confuse, add <code>route: { straight: true }</code>. Every link is then one straight line, repeated links between two classes become parallel lines, and only self-links stay loops.</li>
+<li><strong>Straight links:</strong> where links that bend round classes would confuse, add <code>route: { straight: true }</code>. No link is then bent round a class; repeated and reciprocal links between two classes are still arcs side by side, and self-links loops. Add <code>arcs: false</code> as well to draw repeated links as parallel straight lines.</li>
 <li><strong>Drag:</strong> a class the reader has dragged stays where they put it if its position goes into <code>keep</code> with <code>exact: true</code>.</li>
 </ol>
 <h3>After an edit to the model</h3>
@@ -292,8 +342,8 @@ tr.mine td:first-child { box-shadow: inset 4px 0 0 var(--accent); }
 <div class="prose">
 <p>Both layouts place classes by a global rule: stress, pods, hub rings. What a global rule leaves behind is local: a leaf sitting on a line, a corner where five links cross, a class that could step two box-widths aside into empty space. A person sees these at a glance and fixes them in a minute. The clean-up does the same automatically. It was taught by a person who explained how they do it (see <a href="#learned">How the clean-up was learned</a>), in two rounds, and it runs in two parts:</p>
 <ol>
-<li><strong>The clean-up proper</strong> came from the person tidying drawings by hand: single moves into open space, turning what hangs off one class, spreading crowded regions and moving groups.</li>
-<li><strong>The finishing passes</strong> came from a second round: the person watched the first part work, step by step, in the Layout Playback and named what was still wrong in a few words. "Don't fence me in", "push it off the line" and "pull it in from the edge" each became a short pass that runs after it.</li>
+<li><strong>The clean-up proper</strong> came from Brendan tidying drawings by hand: single moves into open space, turning what hangs off one class, spreading crowded regions and moving groups.</li>
+<li><strong>The finishing passes</strong> came from a second round: he watched the first part work, step by step, in the Layout Playback and named what was still wrong in a few words. "Don't fence me in", "push it off the line" and "pull it in from the edge" each became a short pass that runs after it.</li>
 </ol>
 <p>Over the 15 test graphs, before and after the clean-up (totals; area is the drawing's bounding box divided by the total area of the class boxes). In each cell the value before the arrow is without the clean-up and the bold value after it is with the clean-up. Crossed links, links through classes, area and time are lower-is-better, so a lower value right of the arrow means the clean-up improved the drawing; the two angle measures are higher-is-better.</p>
 </div>
@@ -303,22 +353,24 @@ tr.mine td:first-child { box-shadow: inset 4px 0 0 var(--accent); }
 </div>
 
 <h3>A worked example</h3>
-<div class="prose"><p>Both parts, step by step, each on the graph where its steps are easiest to see. The clean-up proper runs on a 115-class biomedical taxonomy drawn by Best Read. Its steps follow the order a person works in: look at the whole drawing, find the worst region, make room there, then make the easy fixes. The finishing passes run on the 90-class Pizza taxonomy, after its clean-up proper. Each step has two tabs: the reasoning in plain terms, and the same step as the code computes it.</p></div>
+<div class="prose"><p>Both parts, step by step. The first walk-through puts each part on the graph where its steps are easiest to see: the clean-up proper on a 115-class biomedical taxonomy drawn by Best Read, and the finishing passes on the 90-class Pizza taxonomy, after its clean-up proper. The steps follow the order a person works in: look at the whole drawing, find the worst region, make room there, then make the easy fixes. The second walk-through runs every step on one graph of a very different shape, never seen during development: two big hubs that share many classes. There no region needs spreading, and other moves do the work. Each step has two tabs: the reasoning in plain terms, and the same step as the code computes it. <kbd>←</kbd> <kbd>→</kbd> step through.</p></div>
 <div class="wx" id="wx">
+  <div class="wx-walks" role="tablist" aria-label="Walk-through"><span class="wx-part">Walk through</span><button type="button" data-w="0" class="on">Biomedical taxonomy, then Pizza</button><button type="button" data-w="1">Two big hubs (57 classes, never seen during development)</button></div>
   <div class="wx-steps" role="tablist" aria-label="Steps">
     <span class="wx-part">The clean-up</span>
     <button type="button" data-s="1" class="on">1. Look at the whole drawing</button>
     <button type="button" data-s="2">2. Find the worst region</button>
     <button type="button" data-s="3">3. Spread it outward</button>
     <button type="button" data-s="4">4. Repair and easy fixes</button>
-    <span class="wx-part">Finishing passes</span>
+    <span class="wx-break"></span><span class="wx-part">Finishing passes</span>
     <button type="button" data-s="5">5. Trade places</button>
     <button type="button" data-s="6">6. Don't fence me in</button>
     <button type="button" data-s="7">7. Pull it in from the edge</button>
   </div>
   <div class="wx-grid">
-    <div class="wx-fig"><div class="wx-svg"></div><div class="wx-counts"></div><label class="tog wx-whole"><input type="checkbox" class="wx-wholecb"> Whole drawing</label></div>
+    <div class="wx-fig"><div class="wx-svg"></div><div class="wx-counts"></div><div class="wx-opts"><label class="tog wx-whole"><input type="checkbox" class="wx-wholecb"> Whole drawing</label><label class="tog wx-whole wx-beforel"><input type="checkbox" class="wx-beforecb"> Before this step</label></div></div>
     <div class="wx-text">
+      <div class="wx-note" hidden></div>
       <div class="wx-tabs" role="tablist"><button type="button" data-t="plain" class="on">In plain terms</button><button type="button" data-t="math">The math</button></div>
 
       <div class="wx-t" data-s="1" data-t="plain">
@@ -354,7 +406,7 @@ tr.mine td:first-child { box-shadow: inset 4px 0 0 var(--accent); }
       <div class="wx-t" data-s="4" data-t="plain" hidden>
         <p>With room made, a few single moves repair the region: a class at the end of a crossed link, or one a link runs through, moves into nearby open space. The spread is kept only if, after these repairs, the drawing is better than before it; otherwise everything goes back.</p>
         <p>Then the <strong>easy fixes</strong>. A leaf, a short chain of leaves or a leaf triangle hangs off one class, so it can always be turned around that class until its links are clear. A leaf left on a line is a sign that a step was missed, not that the drawing is hard. A long label goes beside its neighbor rather than above or below, because a long label reads best on a link that runs sideways.</p>
-        <p>Here the repairs after the spread take links through classes from 10 to 7, remove the sharp crossing and add one crossing. The rest of the clean-up (three smaller spreads, three single moves and four leaf units) takes links through classes to 1. The figure shows the end, with arrows from the drawing right after the push.</p>
+        <p class="w1">Here the repairs after the spread take links through classes from 10 to 7, remove the sharp crossing and add one crossing. The rest of the clean-up (three smaller spreads, three single moves and four leaf units) takes links through classes to 1. The figure shows the end, with arrows from the drawing right after the push.</p>
       </div>
       <div class="wx-t" data-s="4" data-t="math" hidden>
         <p>Cost <i>F</i> = 6·crossings + 3·sharp crossings + 10·links through classes + 1·cramped classes + 1000·overlapping boxes + 600·max(0, <i>A</i>/<i>A</i>₀ − 1), with <i>A</i> the bounding-box area and <i>A</i>₀ its value before the clean-up. Link length has no term. A move is costed locally, over the links and classes it touches.</p>
@@ -363,8 +415,9 @@ tr.mine td:first-child { box-shadow: inset 4px 0 0 var(--accent); }
       </div>
 
       <div class="wx-t" data-s="5" data-t="plain" hidden>
-        <p>A second drawing: the Pizza taxonomy after the clean-up proper. One link still runs through a class.</p>
-        <p>The first pass is the simplest. When two classes hang off the same class by one link each, they can <strong>trade places</strong>. A long name beside a link that passes close by is the usual case: the shorter box fits where the longer one was in the way. Here two leaves trade places. The counts, taken with a 6 px margin, do not change; the trade clears a link that passed within 9 px, the margin the drawn links keep.</p>
+        <p class="w1">A second drawing: the Pizza taxonomy after the clean-up proper. One link still runs through a class (red).</p>
+        <p>The first pass is the simplest. When two classes hang off the same class by one link each, they can <strong>trade places</strong>. A long name beside a link that passes close by is the usual case: the shorter box fits where the longer one was in the way.</p>
+        <p class="w1">Here American and Giardiniera trade places. The link from LaReine to NamedPizza passed within 9 px of Giardiniera, the margin drawn links keep (tick <em>Before this step</em> to see it, dashed amber); after the trade it is clear. The counts, taken with a 6 px margin, do not change. The red link, from Siciliana through SloppyGiuseppe, is the next pass's job.</p>
       </div>
       <div class="wx-t" data-s="5" data-t="math" hidden>
         <p>For every pair of one-link classes <i>a</i>, <i>b</i> of the same class, swap their positions. Keep the swap when the cost of the problems involving them falls by more than 0.5 and neither box comes within 4 px of another. Cost: 6 per crossing and 10 per link through a class, with a 9 px margin, as the drawing is measured after the link routing.</p>
@@ -373,7 +426,7 @@ tr.mine td:first-child { box-shadow: inset 4px 0 0 var(--accent); }
       <div class="wx-t" data-s="6" data-t="plain" hidden>
         <p><strong>"Don't fence me in."</strong> A one-link class whose link still crosses another link or runs through a class is boxed in by lines, often with open space round its neighbor. It looks there for the spot with the fewest problems, then the most room, then the shortest link.</p>
         <p><strong>"Push it off the line."</strong> A class that a link still runs through, or passes very close to, moves sideways off the line, just far enough. Or, when the link ends at a one-link class, that end turns a little round its neighbor. Each move is kept only if the problems involving the class fall.</p>
-        <p>Here a leaf steps out of its fence, and the last link through a class is gone.</p>
+        <p class="w1">Here Siciliana steps out of its fence, so the last link through a class, Siciliana's through SloppyGiuseppe, is gone; AmericanHot moves off the link from Rosa, which passed within 9 px of it.</p>
       </div>
       <div class="wx-t" data-s="6" data-t="math" hidden>
         <p>Fence: candidates round the neighbor in 48 directions, from just clear of its box out to three link lengths, in steps of 30 px. Candidate <i>c</i> scores 200&middot;<i>x</i>(<i>c</i>) &minus; room(<i>c</i>) + 0.2&middot;<i>r</i>. Here <i>x</i> counts 6 per crossing and 10 per link through a class (9 px margin), room is the clearance to the nearest box or link (capped at 120 px), and <i>r</i> is the distance to the neighbor. A candidate is taken only if <i>x</i> falls.</p>
@@ -382,7 +435,8 @@ tr.mine td:first-child { box-shadow: inset 4px 0 0 var(--accent); }
 
       <div class="wx-t" data-s="7" data-t="plain" hidden>
         <p><strong>"Pull it in from the edge."</strong> A chain or a small tree that hangs off the rest by one link and sprawls into empty canvas could fold up or down instead. Groups with an empty middle between them could sit closer. Use the open space inside the drawing before making the canvas bigger.</p>
-        <p>So a part that hangs by one link turns round the class it hangs from, or draws in toward it, and whole groups slide toward the middle. Parts nearest the edge go first. A move is kept only if the drawing gets smaller with no more problems. Here the drawing shrinks from 1,557 &times; 1,216 to 1,471 &times; 1,153 px, about 10% less area.</p>
+        <p>So a part that hangs by one link turns round the class it hangs from, or draws in toward it, and whole groups slide toward the middle. Parts nearest the edge go first. A move is kept only if the drawing gets smaller with no more problems.</p>
+        <p class="w1">Here the drawing shrinks from 1,557 &times; 1,216 to 1,471 &times; 1,153 px, about 10% less area.</p>
       </div>
       <div class="wx-t" data-s="7" data-t="math" hidden>
         <p>A part is what one class cuts off from the rest (a one-link class, a chain, a small tree), up to 40% of the classes. It turns round that class by up to 180° and/or draws in toward it, to 85, 70 or 55% of its reach. Whole groups (Louvain communities of four or more) slide toward the middle in one of 16 directions, by 40 to 640 px.</p>
@@ -409,6 +463,7 @@ tr.mine td:first-child { box-shadow: inset 4px 0 0 var(--accent); }
 <li><strong>Group moves:</strong> for each problem left, the classes on one side of the problem line, picked by position rather than by their links, move together away from it, with up to 4 repair moves; kept only if the drawing ends up better.</li>
 </ol>
 <p>A last pass over leaf units and single classes follows, because the group moves can leave a leaf on a line. A class or problem that could not be improved is tried again only once something near it has moved.</p>
+<p>After the finishing passes, one more tidy step: classes with no link, and small parts of the graph not linked to the rest, that sit among the classes of the main graph move out to one side of it, so that they neither crowd it nor look linked to it. It is kept only when it adds no crossed link or link through a class and grows the drawing by at most 10%.</p>
 <p>The example spreads first, the way a person works. In the layouts, spreading comes after the single moves and leaf units, because that order measured better. The 15 graphs, cleaned up from the same starting drawings with half a second each; they start with 138 links through classes:</p>
 </div>
 <div class="tbl"><table>
@@ -428,17 +483,17 @@ tr.mine td:first-child { box-shadow: inset 4px 0 0 var(--accent); }
 
 <h2 id="learned">How the clean-up was learned: show and tell</h2>
 <div class="prose">
-<p>The clean-up was not designed from the literature, and it does not replay anyone's moves. Brendan Newlon, who works with these ontologies, taught it to an AI coding assistant, Claude (Anthropic's Opus 5.5 model). Brendan solved the drawings by hand while saying what they were doing and why, named the principle behind each move, often with a metaphor (open space as a resource, a crowd pushed outward in pizza slices, a leaf that can always be solved), and suggested how a program could recognize the situation and carry the move out. The assistant's part was to distill that intuition into definitions, measures and steps a program can run, and to test whether each one held up on every graph, not only the one it was shown on. The loop had four parts.</p>
+<p>The clean-up was not designed from the literature, and it does not replay anyone's moves. Brendan Newlon, who works with these ontologies, taught it to an AI coding assistant, Claude (Anthropic's Opus 5.5 model). He solved the drawings by hand while saying what he was doing and why, named the principle behind each move, often with a metaphor (open space as a resource, a crowd pushed outward in pizza slices, a leaf that can always be solved), and suggested how a program could recognize the situation and carry the move out. The assistant's part was to distill that intuition into definitions, measures and steps a program can run, and to test whether each one held up on every graph, not only the one it was shown on. The loop had four parts.</p>
 <ol>
-<li><strong>Showing and telling.</strong> In the Layout Lab, Brendan tidied drawings by hand, typing what they were about to do and why before each move. The point was never the moves themselves, which only fit the graph they were made on, but the reasoning: what the person looked at first, what they treated as a problem and what as harmless, which move they reached for and when they gave up on one. Within about ten minutes per ontology, this observed problem solving took links through classes to zero or one on PROV-O, telecom, the loan ontology and the 179-class bank, with crossings about level.</li>
+<li><strong>Showing and telling.</strong> In the Layout Lab, he tidied drawings by hand, typing what he was about to do and why before each move. The point was never the moves themselves, which only fit the graph they were made on, but the reasoning: what he looked at first, what he treated as a problem and what as harmless, which move he reached for and when he gave up on one. Within about ten minutes per ontology, this observed problem solving took links through classes to zero or one on PROV-O, telecom, the loan ontology and the 179-class bank, with crossings about level.</li>
 <li><strong>From intuition to rules.</strong> The assistant turned each principle into something measurable: open space became a grid of empty cells, a crowd became the cells where problems pile up, "make room" became a push weighted by the room beyond each slice. Each rule was implemented and benchmarked on all the test graphs, and kept only if it helped across them. An early version came within a link or two of the hand-tidied drawings on every graph and beat them on several, but took 1 to 8 seconds.</li>
-<li><strong>A walk-through to critique.</strong> The clean-up can replay its own steps in the Lab and in the Layout Playback, one stage at a time, drawing the open-space grid, the problem regions, the slices and the moved classes. The person critiqued each step the way a teacher marks a student's work ("why didn't the leaf go to the right, where there was room?"), and those critiques became the next rules. The finishing passes came from this step.</li>
-<li><strong>Plain words both ways.</strong> The person described strategies in their own terms (grid, density, open space, crowd, pizza slices, center of gravity). The assistant turned them into the definitions in the tabs above, and explained back, in the same plain terms, where a rule was slow or did not work. One example: "a push always looks worse at first; only the repairs after it make it pay off." The person then refined the principle.</li>
+<li><strong>A walk-through to critique.</strong> The clean-up can replay its own steps in the Lab and in the Layout Playback, one stage at a time, drawing the open-space grid, the problem regions, the slices and the moved classes. Brendan critiqued each step the way a teacher marks a student's work ("why didn't the leaf go to the right, where there was room?"), and those critiques became the next rules. The finishing passes came from this step.</li>
+<li><strong>Plain words both ways.</strong> He described strategies in his own terms (grid, density, open space, crowd, pizza slices, center of gravity). The assistant turned them into the definitions in the tabs above, and explained back, in the same plain terms, where a rule was slow or did not work. One example: "a push always looks worse at first; only the repairs after it make it pay off." He then refined the principle.</li>
 </ol>
-<p>The principles the person taught, and what became of each:</p>
+<p>The principles Brendan taught, and what became of each:</p>
 </div>
 <div class="tbl"><table>
-<thead><tr><th class="l">The pattern, in the person's words</th><th class="l">What the clean-up does</th></tr></thead>
+<thead><tr><th class="l">The pattern, in Brendan's words</th><th class="l">What the clean-up does</th></tr></thead>
 <tbody>
 <tr><td class="l">Leaves, leaf chains and leaf triangles can always be solved. If one is crossed, a step was missed.</td><td class="l">Leaf units are turned around the class they hang from, and a last leaf pass runs at the end.</td></tr>
 <tr><td class="l">Look at the whole canvas first. Open space is a resource for solving problems.</td><td class="l">The open-space grid; candidate spots are open cells, not a fixed ring of positions.</td></tr>
@@ -457,6 +512,43 @@ tr.mine td:first-child { box-shadow: inset 4px 0 0 var(--accent); }
 </tbody></table></div>
 <div class="prose">
 <p><strong>Try it yourself.</strong> The Layout Lab and the Layout Playback are in this repository (<code>Start Layout Lab.cmd</code>, or <code>tools/layout-bench/lab.html</code> and <code>playback.html</code>). Readers can tidy drawings by hand, say why, and teach the layouts a principle we missed. The method is not specific to diagrams: any problem a person can look at and fix better than they can describe is a candidate. <code>docs/SHOW-AND-TELL-LABS.md</code> is a guide to the method and to building a lab of your own with an AI assistant, and <code>docs/PLAYBACK-AND-LAB.md</code> has the technical contract for adapting the two pages.</p>
+</div>
+<!--LAB-->
+<details class="code lab" id="lab">
+  <summary>Open the Layout Lab: tidy a drawing yourself, say why, and take the session to an AI assistant</summary>
+  <div class="lab-wrap">
+    <div class="lab-bar">
+      <label>Graph <select class="lab-g" aria-label="Graph"></select></label>
+      <label>Start from <select class="lab-l" aria-label="Starting layout"></select></label>
+      <span class="lab-gap"></span>
+      <button type="button" class="lab-undo" title="Undo the last move (Ctrl+Z)">Undo</button>
+      <button type="button" class="lab-reset" title="Back to the starting drawing; the steps stay in the log">Start over</button>
+      <button type="button" class="lab-clean" title="Run the library's clean-up and finishing passes on the drawing as it is now">Run our clean-up</button>
+      <button type="button" class="lab-export" title="One Markdown file with every graph you worked on, ready to give to an AI assistant">Download the session</button>
+    </div>
+    <div class="lab-main">
+      <div class="lab-canvas"></div>
+      <div class="lab-side">
+        <div class="lab-counts"></div>
+        <label class="lab-notel">Your note <small>(say what you are about to do and why; Enter saves it)</small>
+          <textarea class="lab-note" rows="3" placeholder="e.g. Plenty of open space left of Drug; Manufacturer is a leaf, so it can go there."></textarea></label>
+        <div class="lab-loghead">Session <small class="lab-logn"></small></div>
+        <ol class="lab-log"></ol>
+      </div>
+    </div>
+    <p class="lab-help">Drag a class to move it. Ctrl- or Shift-click classes to select several, then drag one of them to move them together; click empty space to clear the selection. Drag empty space to pan, scroll to zoom. <kbd>←</kbd> <kbd>→</kbd> switch graphs, <kbd>Ctrl</kbd>+<kbd>Z</kbd> undoes. Red marks the problems the counts measure. Your sessions stay in this browser until you download them.</p>
+    <p class="lab-help"><strong>What to do with the download.</strong> The file starts with a short brief for an AI coding assistant: what happened in the session, and what to do with it. That means turning your reasons into rules a program can run, trying them in <code>src/ontology-layouts.js</code>, and measuring them with the benchmarks in this repository, on graphs nobody tuned on. Give it the file and a copy of the repository. If a new rule holds up, please send it back as a pull request with the session attached. <code>docs/SHOW-AND-TELL-LABS.md</code> has the method and the prompts that worked.</p>
+    <details class="lab-teach">
+      <summary>The sessions that taught the clean-up</summary>
+      <p class="lab-help">Brendan Newlon's own sessions in the lab, on the development graphs: his notes in his own words, and every move he kept, with the crossed links and links through classes before and after. The clean-up's principles were distilled from these.</p>
+      <div class="lab-tbar"><select class="lab-tg" aria-label="Teaching session"></select> <button type="button" class="lab-topen">Open his last drawing in the lab</button></div>
+      <ol class="lab-tlog"></ol>
+    </details>
+  </div>
+</details>
+<!--/LAB-->
+<!--NOLAB--><p><strong>The lab, in this page.</strong> An edition of this write-up has the Layout Lab built in: <a href="ONTOLOGY-LAYOUT-ALGORITHMS-LAB.html#lab">ONTOLOGY-LAYOUT-ALGORITHMS-LAB.html</a>. Pick any graph, tidy it by hand while typing why, run our clean-up on your drawing to compare, and download the whole session as one file for an AI assistant. It also has the sessions in which the clean-up was taught.</p><!--/NOLAB-->
+<div class="prose">
 <p>Two ideas from the sessions are not in the clean-up yet: curving links around hubs at the edge of the drawing (on the clinical record with three super-hubs), and pulling the classes of a loop closer together or untwisting a pair of classes.</p>
 <p>Profiling the first version showed that the group moves took about 95% of its time and kept about one try in twenty. Two changes made the clean-up fast enough for the layouts: candidate spots come from the open-space grid (a few dozen instead of 96 fixed positions), and a class or problem that could not be improved is not tried again until something near it has moved.</p>
 </div>
@@ -469,7 +561,7 @@ tr.mine td:first-child { box-shadow: inset 4px 0 0 var(--accent); }
 <li><strong>Turning what hangs off one class.</strong> Cut vertices and the parts of a graph they separate are classical (Hopcroft and Tarjan, 1973), and a tree hanging off one vertex can always be drawn without crossings. Using this as a repair after a layout, with the label-aware choice of side, is ours.</li>
 <li><strong>Spreading a region in slices.</strong> A push outward from a point that fades with distance resembles a local fisheye distortion (Sarkar and Brown, 1992), and evening out density resembles density-equalizing maps (Gastner and Newman, 2004). We have not seen it used this way: the point chosen from a count of readability problems after the layout, each slice weighted by the open space beyond it, and the push kept only if a few repair moves then make the drawing better.</li>
 <li><strong>Judged as graph drawing theory, nothing here is new:</strong> no new model, no bounds. The building blocks were chosen because they are the established best for the job, not as stand-ins for something to write from scratch. Stress placement is the standard for general undirected drawings and Pivot MDS its usual start. The new parts are applied: the clean-up and its passes, the routing joined to the placement, the work clock, and the evaluation against eleven libraries on graphs never seen during development.</li>
-<li><strong>Learning the procedure from a person.</strong> Interactive optimization with user hints is established (do Nascimento and Eades, 2005), but there the person guides one run. Here the person's principles, taught once, became a fixed procedure that runs without them on graphs they never saw. The lab that made this possible is offered as a tool of its own; see <a href="#learned">Try it yourself</a>.</li>
+<li><strong>Learning the procedure from a person.</strong> Interactive optimization with user hints is established (do Nascimento and Eades, 2005), but there the person guides one run. Here one person's principles, taught once, became a fixed procedure that runs without him on graphs he never saw. The lab that made this possible is offered as a tool of its own; see <a href="#learned">Try it yourself</a>.</li>
 </ul>
 </div>
 
@@ -496,6 +588,7 @@ tr.mine td:first-child { box-shadow: inset 4px 0 0 var(--accent); }
 <tr class="ours"><td></td><td>Routed</td><td class="best">1,058</td><td class="best">16</td><td class="best">54</td><td class="best">0</td><td class="best">256</td><td class="best">193</td><td>269</td><td>12.1</td></tr>
 </tbody></table></div>
 <div class="prose">
+<p><strong>See it on any graph.</strong> Every drawing of ours in this page has a <strong>Curved links</strong> switch: it draws the links as the library does, with the routing, and gives the counts on the drawn links (3 px margin, as ranked). The switch is highlighted where curving removes problems or shows parallel links that straight lines hide; that is 58 of our 98 drawings (39 with fewer problems), and curving never adds a problem in these counts.</p>
 <p>Over the 51 graphs: 15% fewer crossed links, two thirds fewer links through classes, no parallel link hidden (171 before), a fifth of the sharp crossings, half the crowded link ends and 93% fewer names on top of classes or other names, for about 10 bends per graph (a third of them the arcs of parallel links) and 2 to 4% more area. It takes at most 250 ms on the work clock, under 60 ms on most graphs. <code>tools/layout-bench/routebench.mjs</code> adds the steps one at a time.</p>
 <p>Also tested for the review and not adopted: running the routing on the drawing before the clean-up instead of after it (twice the links through classes left, no smaller area: on these graphs the clean-up does not make the drawing sprawl); a smaller area penalty in the clean-up (half or a quarter: within 1% on crossings, a few links through classes fewer, up to 3% more area); a deeper look-ahead for group moves (8 repair moves, three tries instead of two: no clear gain, 6% more area on the development graphs); and giving the layout the names' widths so it reserves room for them (fewer names on names on the unseen graphs, but 15% more crossed links on the development graphs and up to 30% more area). <code>tools/layout-bench/ekgbench.mjs</code> runs these.</p>
 <h3>Refinements from watching the playback</h3>
@@ -685,7 +778,17 @@ clean:  rounds of single moves → leaf units → region spreading → group mov
 <li><strong>Ten held-out graphs</strong> of 18 to 304 classes, generated from fixed seeds in shapes the development graphs do not cover: sparse Rome-style graphs, dense links, process loops, two big hubs, multi-domain models and a deep taxonomy.</li>
 <li><strong>26 public benchmark graphs.</strong> Eight published ontologies (FOAF, Dublin Core terms, OWL-Time, DCAT 3, BFO 2020, DOLCE+DnS Ultralite, SAREF core and GoodRelations, 13 to 98 classes), drawn as their named classes with subclass links and a link from domain to range for each object property; and 18 graphs of the Rome collection, the classic graph-drawing benchmark (two per size from 20 to 100 nodes, the lowest graph numbers, so the choice involves no judgment).</li>
 </ul>
-<p><strong>Boxes.</strong> Sized from the label length.</p>
+<p><strong>Boxes.</strong> Sized from the label: 6.6 px a character plus 10 px wide, 20 px high. Links through classes are counted against these boxes, so the count depends on how big the boxes are. The layouts and the clean-up do not assume boxes shaped by labels: every step works on each box's own width and height. To check, the same graphs were drawn with every box 60 &times; 40 px (nodes drawn as same-size shapes) and with mixed boxes 40 to 220 px wide and 20 to 90 px high (icons, cards, several lines of text), by Best Read with the clean-up and by d3-force given each box's size, both with the same overlap removal (<code>tools/layout-bench/sizebench.mjs</code>). Totals over the 51 graphs:</p>
+</div>
+<div class="tbl"><table>
+<thead><tr><th>Boxes</th><th>Best Read: crossed links</th><th>links through classes</th><th>d3-force: crossed links</th><th>links through classes</th></tr></thead>
+<tbody>
+<tr><td>Sized from the label</td><td>2,017</td><td>177</td><td>7,562</td><td>2,594</td></tr>
+<tr><td>All the same size (60 &times; 40)</td><td>2,048</td><td>129</td><td>6,407</td><td>2,302</td></tr>
+<tr><td>Mixed, up to 220 &times; 90</td><td>2,306</td><td>353</td><td>8,371</td><td>3,438</td></tr>
+</tbody></table></div>
+<div class="prose">
+<p>With same-size boxes the counts are about the same. With mixed, taller boxes there are 14% more crossed links and twice the links through classes, since a tall box sits in the way of more links; that is still a quarter of d3-force's crossings and a tenth of its links through classes.</p>
 <p><strong>Contenders.</strong> Graphviz <code>neato</code>, <code>fdp</code> and <code>sfdp</code> (with Graphviz's own overlap removal), ELK stress, force and layered, WebCola, d3-force, dagre, and Cytoscape <code>cose</code> and <code>fcose</code>. The general-settings ranking used sensible general settings.</p>
 <p><strong>Tuned settings.</strong> For the comparison against tuned settings, each library kept the best of its default run and these, by fewest crossed links plus links through classes:</p>
 <ul>
@@ -713,6 +816,20 @@ clean:  rounds of single moves → leaf units → region spreading → group mov
 </tbody></table></div>
 <div class="prose">
 <p>The review is right that routing is a real alternative: placement plus bends draws a fifth fewer crossings in 9% less area, at about 18 bends per graph and twice the links through classes left over. Moving classes keeps every link straight. The cheapest gain is the third row: two bends per graph remove almost every link through a class that the moves leave. This became the link routing after the layout (see <a href="#routing">Link routing</a>), with arcs for parallel links, ports and name placement added. Whether a bend costs a reader less than a crossing is a question for a study; Purchase's studies rank bends as less harmful than crossings.</p>
+<p><strong>Retested with the link routing as it is now.</strong> Bending instead of moving was run again on all 51 graphs: the placement without its moves off links and without the clean-up, then the library's routing, against the full pipeline (<code>EB_NOCLEAN=1 node ekgbench.mjs dev '{"skip":{"thru":true}}'</code>). Measured on the drawn links, 9 px margin:</p>
+</div>
+<div class="tbl"><table>
+<thead><tr><th>Graphs</th><th>Approach</th><th>Crossed links</th><th>Links through classes</th><th>Bends</th><th>Mean time</th></tr></thead>
+<tbody>
+<tr class="ours"><td>15 development</td><td>Move classes, then route</td><td class="best">400</td><td class="best">4</td><td class="best">160</td><td>0.65 s</td></tr>
+<tr><td></td><td>Bend instead of moving</td><td>409</td><td>21</td><td>338</td><td class="best">0.28 s</td></tr>
+<tr class="ours"><td>10 held-out</td><td>Move classes, then route</td><td class="best">286</td><td class="best">8</td><td class="best">85</td><td>0.67 s</td></tr>
+<tr><td></td><td>Bend instead of moving</td><td>302</td><td>91</td><td>230</td><td class="best">0.30 s</td></tr>
+<tr class="ours"><td>26 public</td><td>Move classes, then route</td><td>1,022</td><td class="best">53</td><td class="best">269</td><td>0.55 s</td></tr>
+<tr><td></td><td>Bend instead of moving</td><td class="best">1,008</td><td>109</td><td>456</td><td class="best">0.31 s</td></tr>
+</tbody></table></div>
+<div class="prose">
+<p>With today's routing the earlier gain is gone: bending instead of moving leaves two to eleven times the links through classes and about twice the bends, for about as many crossings, in half the time. So the library moves classes and then routes. The routing itself is part of every drawing <code>OntologyLayouts.draw</code> makes (<code>route: { straight: true }</code> turns off the bends; <code>arcs: false</code> also straightens repeated links), and the drawings in this page can show it: tick <strong>Curved links</strong> above any of our drawings.</p>
 </div>
 
 <h2 id="limits">Limits</h2>
@@ -826,30 +943,39 @@ function clampView(svg) {
   svg.setAttribute("viewBox", svg._vb.join(" "));
 }
 function fit(svg) { svg._vb = svg._home.slice(); svg.setAttribute("viewBox", svg._vb.join(" ")); }
-function draw(box, graph, layout, problems) {
+function draw(box, graph, layout, problems, curved) {
   box.innerHTML = "";
-  const P = layout.pos, W = graph.box, n = P.length;
+  const cv = curved && layout.cv, W = graph.box;
+  let P = layout.pos; if (cv && cv.moved.length) { P = P.slice(); cv.moved.forEach(([i, x, y]) => (P[i] = [x, y])); }
+  const n = P.length;
   let x1 = Infinity, y1 = Infinity, x2 = -Infinity, y2 = -Infinity;
   P.forEach((p, i) => { x1 = Math.min(x1, p[0] - W[i] / 2); x2 = Math.max(x2, p[0] + W[i] / 2); y1 = Math.min(y1, p[1] - BOXH / 2); y2 = Math.max(y2, p[1] + BOXH / 2); });
   const pad = 24, vb = [x1 - pad, y1 - pad, x2 - x1 + 2 * pad, y2 - y1 + 2 * pad];
   const svg = el("svg", { viewBox: vb.join(" "), preserveAspectRatio: "xMidYMid meet" }, box);
   svg._home = vb.slice(); svg._vb = vb.slice();
   const thru = new Set(), hitBox = new Set();
-  if (problems) graph.edges.forEach(([a, b], k) => { for (let i = 0; i < n; i++) { if (i === a || i === b) continue; if (segBox(P[a], P[b], P[i][0], P[i][1], W[i] / 2 + 3, BOXH / 2 + 3)) { thru.add(k); hitBox.add(i); } } });
-  // Two or more links between the same two classes are drawn side by side, a few units apart, as the library draws them, so
-  // that a link crossing both shows both crossings (each pair of crossing links is counted).
+  // with curved links, a bent link is its polyline; otherwise every link is one segment
+  const PTS = graph.edges.map(([a, b], k) => (cv && cv.bent[k]) || [P[a], P[b]]);
+  if (problems) graph.edges.forEach(([a, b], k) => { const Q = PTS[k]; for (let i = 0; i < n; i++) { if (i === a || i === b) continue; for (let j = 0; j < Q.length - 1; j++) if (segBox(Q[j], Q[j + 1], P[i][0], P[i][1], W[i] / 2 + 3, BOXH / 2 + 3)) { thru.add(k); hitBox.add(i); break; } } });
+  // Two or more links between the same two classes (repeated or reciprocal) are drawn as arcs side by side, 24 px apart at
+  // the middle, as the library draws them by default, so that each can be seen and a link crossing both shows both crossings.
   const L = graph.edges.map(([a, b]) => [P[a], P[b]]), grp = {};
   graph.edges.forEach(([a, b], k) => { const key = Math.min(a, b) + "," + Math.max(a, b); (grp[key] = grp[key] || []).push(k); });
-  Object.values(grp).forEach((ks) => { if (ks.length < 2) return; const [a, b] = graph.edges[ks[0]], dx = P[b][0] - P[a][0], dy = P[b][1] - P[a][1], len = Math.hypot(dx, dy) || 1, off = Math.max(vb[2], vb[3]) / 160;
-    ks.forEach((k, i) => { const s = (i - (ks.length - 1) / 2) * off, ox = -dy / len * s, oy = dx / len * s, [p, q] = [P[graph.edges[k][0]], P[graph.edges[k][1]]]; L[k] = [[p[0] + ox, p[1] + oy], [q[0] + ox, q[1] + oy]]; }); });
+  Object.values(grp).forEach((ks) => { if (ks.length < 2) return; const e0 = graph.edges[ks[0]], lo = Math.min(e0[0], e0[1]), hi = Math.max(e0[0], e0[1]), A = P[lo], B = P[hi], dx = B[0] - A[0], dy = B[1] - A[1], len = Math.hypot(dx, dy) || 1;
+    ks.forEach((k, i) => { const s = (i - (ks.length - 1) / 2) * 24; if (!s) return; const c = [(A[0] + B[0]) / 2 - dy / len * 2 * s, (A[1] + B[1]) / 2 + dx / len * 2 * s], pts = [];
+      for (let j = 0; j <= 10; j++) { const t = j / 10, u = 1 - t; pts.push([u * u * A[0] + 2 * t * u * c[0] + t * t * B[0], u * u * A[1] + 2 * t * u * c[1] + t * t * B[1]]); }
+      L[k] = graph.edges[k][0] === lo ? pts : pts.reverse(); }); });
   const g = el("g", {}, svg);
-  graph.edges.forEach(([a, b, sub], k) => el("line", { x1: L[k][0][0], y1: L[k][0][1], x2: L[k][1][0], y2: L[k][1][1], stroke: thru.has(k) ? "var(--bad)" : sub ? "var(--sub)" : "var(--rel)", "stroke-width": thru.has(k) ? 2.2 : 1.3, "vector-effect": "non-scaling-stroke" }, g));
+  graph.edges.forEach(([a, b, sub], k) => { const at = { stroke: thru.has(k) ? "var(--bad)" : sub ? "var(--sub)" : "var(--rel)", "stroke-width": thru.has(k) ? 2.2 : 1.3, "vector-effect": "non-scaling-stroke", fill: "none" };
+    if (cv && cv.bent[k]) el("polyline", { points: cv.bent[k].map((q) => q.join(",")).join(" "), ...at }, g);
+    else if (L[k].length > 2) el("polyline", { points: L[k].map((q) => q.join(",")).join(" "), ...at }, g);
+    else el("line", { x1: L[k][0][0], y1: L[k][0][1], x2: L[k][1][0], y2: L[k][1][1], ...at }, g); });
   if (problems) {
-    const E = graph.edges;
+    const E = graph.edges, SG = PTS.map((Q, k) => (cv && cv.bent[k] ? Q : L[k]));
     for (let i = 0; i < E.length; i++) for (let j = i + 1; j < E.length; j++) {
       const [a, b] = E[i], [c, d] = E[j]; if (a === c || a === d || b === c || b === d) continue;
-      if (!segX(P[a], P[b], P[c], P[d])) continue;
-      const q = segX(L[i][0], L[i][1], L[j][0], L[j][1]) || segX(P[a], P[b], P[c], P[d]); el("circle", { cx: q[0], cy: q[1], r: 4, fill: "var(--bad)", opacity: 0.8 }, g);
+      if (SG[i].length === 2 && SG[j].length === 2 && !segX(SG[i][0], SG[i][1], SG[j][0], SG[j][1])) continue;
+      for (let u = 0; u < SG[i].length - 1; u++) for (let v = 0; v < SG[j].length - 1; v++) { const q = segX(SG[i][u], SG[i][u + 1], SG[j][v], SG[j][v + 1]); if (q) el("circle", { cx: q[0], cy: q[1], r: 4, fill: "var(--bad)", opacity: 0.8 }, g); }
     }
   }
   P.forEach((p, i) => {
@@ -889,26 +1015,45 @@ document.querySelectorAll(".rgroup").forEach((g) => {
   const tabs = [...g.querySelectorAll(".rtabs button")], panels = [...g.querySelectorAll(".rpanel")];
   tabs.forEach((b, i) => b.addEventListener("click", () => { tabs.forEach((t, j) => t.setAttribute("aria-selected", String(i === j))); panels.forEach((p, j) => (p.hidden = i !== j)); }));
 });
+// Keyboard: ← and → switch graphs (or steps) in the interactive area last pointed at or focused, or else the one most in view.
+// Typing in a text box is left alone.
+const NAV = [];
+let navLast = null;
+function navTarget(el, step) { NAV.push({ el, step }); const mark = () => (navLast = el); el.addEventListener("pointerenter", mark); el.addEventListener("focusin", mark); }
+document.addEventListener("keydown", (ev) => {
+  if (ev.key !== "ArrowLeft" && ev.key !== "ArrowRight" || ev.altKey || ev.ctrlKey || ev.metaKey) return;
+  const t = ev.target; if (t && (t.isContentEditable || /^(TEXTAREA|INPUT)$/.test(t.tagName) && !/^(checkbox|radio|button)$/.test(t.type))) return;
+  const vis = (el) => { const r = el.getBoundingClientRect(); return Math.max(0, Math.min(r.bottom, innerHeight) - Math.max(r.top, 0)); };
+  let n = NAV.find((x) => x.el === navLast && vis(x.el) > 80);
+  if (!n) n = NAV.filter((x) => vis(x.el) > 80).sort((a, b) => vis(b.el) - vis(a.el))[0];
+  if (!n) return; ev.preventDefault(); n.step(ev.key === "ArrowRight" ? 1 : -1);
+});
 function buildCompare(host) {
   let key = host.dataset.graph; const pick = !!host.dataset.pick;
   host.innerHTML = `<div class="cmp-head"><div class="cmp-title"></div><div class="cmp-ctl">${pick ? '<select class="gsel" aria-label="Graph"></select>' : ""}<label class="tog"><input type="checkbox" class="prob"${host.dataset.problems ? " checked" : ""}> Mark problems</label><button type="button" class="fitboth">Fit both</button><span class="legend"><span><i style="border-color:var(--sub)"></i>subclass</span><span><i style="border-color:var(--rel)"></i>relationship</span></span></div></div>
   <div class="cmp-grid"><div class="pane pub"><div class="pane-head"><span class="side">Open source</span><select class="lsel" aria-label="Open-source layout"></select></div><div class="svgbox lsvg"></div><div class="pane-stats lst"></div></div>
-  <div class="pane ours"><div class="pane-head"><span class="side">Ours</span><select class="rsel" aria-label="Our layout"></select></div><div class="svgbox rsvg"></div><div class="pane-stats rst"></div></div></div>
-  <div class="cmp-cap">★ marks the layout with the fewest crossed links plus links through classes on this graph, on each side. Every count is lower-is-better; a green count on the right is lower than the one on the left, so our layout improved on it. Hover or focus a <span class="qm">?</span> for what a count means.</div>`;
-  const q = (c) => host.querySelector(c), lsel = q(".lsel"), rsel = q(".rsel"), prob = q(".prob");
-  if (pick) { const gs = q(".gsel"); (DATA.groups || [["", DATA.order]]).forEach(([label, keys]) => { const grp = document.createElement("optgroup"); grp.label = label; keys.forEach((k) => { const o = document.createElement("option"); o.value = k; o.textContent = DATA.graphs[k].name + " (" + DATA.graphs[k].labels.length + " classes)"; grp.appendChild(o); }); gs.appendChild(grp); }); gs.value = key; gs.addEventListener("change", () => { key = gs.value; fill(); }); }
+  <div class="pane ours"><div class="pane-head"><span class="side">Ours</span><select class="rsel" aria-label="Our layout"></select><label class="tog curv" title="Draw our links as the library draws them: parallel links as arcs side by side, and a bend round a class a link would run through. The rankings measure straight links."><input type="checkbox" class="curvcb"> Curved links<span class="curv-gain"></span></label></div><div class="svgbox rsvg"></div><div class="pane-stats rst"></div></div></div>
+  <div class="cmp-cap">★ marks the layout with the fewest crossed links plus links through classes on this graph, on each side. Every count is lower-is-better; a green count on the right is lower than the one on the left, so our layout improved on it. Hover or focus a <span class="qm">?</span> for what a count means.${pick ? " <kbd>←</kbd> <kbd>→</kbd> switch graphs." : ""}</div>`;
+  const q = (c) => host.querySelector(c), lsel = q(".lsel"), rsel = q(".rsel"), prob = q(".prob"), curv = q(".curvcb");
+  if (pick) { const gs = q(".gsel"); (DATA.groups || [["", DATA.order]]).forEach(([label, keys]) => { const grp = document.createElement("optgroup"); grp.label = label; keys.forEach((k) => { const o = document.createElement("option"); o.value = k; o.textContent = DATA.graphs[k].name + " (" + DATA.graphs[k].labels.length + " classes)"; grp.appendChild(o); }); gs.appendChild(grp); }); gs.value = key; gs.addEventListener("change", () => { key = gs.value; fill(); });
+    // ← and → step through the graphs in the list (see the keyboard handler below)
+    navTarget(host, (d) => { const o = [...gs.options], i = o.findIndex((x) => x.value === key), j = (i + d + o.length) % o.length; gs.value = o[j].value; key = gs.value; fill(); }); }
   const fillSel = (sel, side, want) => { const r = ranked(side); sel.innerHTML = ""; r.forEach((k, i) => { const o = document.createElement("option"); o.value = k; o.textContent = (i === 0 ? "★ " : "") + k; sel.appendChild(o); }); sel.value = want && side[want] ? want : r[0]; };
   function render() {
     const m = DATA.graphs[key], L = m.pub[lsel.value], R = m.ours[rsel.value];
-    draw(q(".lsvg"), m, L, prob.checked); draw(q(".rsvg"), m, R, prob.checked);
-    stats(q(".lst"), L); stats(q(".rst"), R, L);
+    draw(q(".lsvg"), m, L, prob.checked); draw(q(".rsvg"), m, R, prob.checked, curv.checked);
+    stats(q(".lst"), L); stats(q(".rst"), curv.checked && R.cv ? { ...R, cross: R.cv.cross, thru: R.cv.thru } : R, L);
+    // the toggle stands out where curving the links changes the counts or shows parallel links that straight lines hide
+    const d = R.cv ? R.cv.cross + R.cv.thru - R.cross - R.thru : 0, tg = q(".curv");
+    tg.classList.toggle("hl", !!R.cv && (d < 0 || R.cv.hidden > 0));
+    q(".curv-gain").textContent = !R.cv ? "" : d < 0 ? ` (${-d} fewer problem${d === -1 ? "" : "s"})` : R.cv.hidden > 0 ? ` (shows ${R.cv.hidden} hidden link${R.cv.hidden > 1 ? "s" : ""})` : "";
   }
   function fill() {
     const m = DATA.graphs[key];
     q(".cmp-title").innerHTML = m.name + `<small>${m.labels.length} classes · ${m.edges.length} links</small>` + (m.unseen ? ' <span class="tag unseen" title="Never shown while the layouts and the clean-up were developed or tuned">never seen during development</span>' : "");
     fillSel(lsel, m.pub, null); fillSel(rsel, m.ours, host.dataset.right || null); render();
   }
-  [lsel, rsel, prob].forEach((s) => s.addEventListener("change", render));
+  [lsel, rsel, prob, curv].forEach((s) => s.addEventListener("change", render));
   q(".fitboth").addEventListener("click", () => host.querySelectorAll(".svgbox svg").forEach(fit));
   fill();
 }
@@ -917,23 +1062,47 @@ document.querySelectorAll(".cmp").forEach(buildCompare);
 const EX = /*__EXAMPLE__*/null;
 // The finishing passes, on a second graph (data from gen_finish.mjs)
 const FX = /*__FINISH__*/null;
+// The second walk-through: every step on one graph never seen during development (data from gen_finish.mjs hx_hubs)
+const FX2 = /*__FINISH2__*/null;
 function buildWalk() {
   const host = document.getElementById("wx"); if (!host || !EX) return;
-  let step = 1, tab = "plain";
-  const R = EX.region, whole = host.querySelector(".wx-wholecb");
-  const POS = { 1: EX.before, 2: EX.before, 3: EX.pushed, 4: EX.end, 5: FX.swap.pos, 6: FX.fence.pos, 7: FX.pull.pos }, PREV = { 3: EX.before, 4: EX.pushed, 5: FX.clean.pos, 6: FX.swap.pos, 7: FX.fence.pos };
-  const CNT = { 1: EX.measures.before, 2: EX.measures.before, 3: EX.measures.pushed, 4: EX.measures.end, 5: FX.swap.m, 6: FX.fence.m, 7: FX.pull.m }, CNT0 = { 5: FX.clean.m };
+  let step = 1, tab = "plain", walk = 0;
+  const R = EX.region, whole = host.querySelector(".wx-wholecb"), beforeCb = host.querySelector(".wx-beforecb");
   const maxRoom = Math.max(...R.room) || 1, c = R.center;
+  // per walk: the graph each step is drawn on, the drawing after the step and before it, the counts after and before
+  const WALKS = [
+    { G: (s) => (s >= 5 ? FX : EX), open: EX.open, skip: [],
+      POS: { 1: EX.before, 2: EX.before, 3: EX.pushed, 4: EX.end, 5: FX.swap.pos, 6: FX.fence.pos, 7: FX.pull.pos },
+      PREV: { 3: EX.before, 4: EX.pushed, 5: FX.clean.pos, 6: FX.swap.pos, 7: FX.fence.pos },
+      CNT: { 1: EX.measures.before, 2: EX.measures.before, 3: EX.measures.pushed, 4: EX.measures.end, 5: FX.swap.m, 6: FX.fence.m, 7: FX.pull.m },
+      PCNT: { 3: EX.measures.before, 4: EX.measures.pushed, 5: FX.clean.m, 6: FX.swap.m, 7: FX.fence.m }, notes: {} }];
+  if (FX2) { const st = FX2.cleanSteps || {}, sz = (m) => m.size.map((v) => v.toLocaleString("en-US")).join(" &times; ");
+    WALKS.push({ G: () => FX2, open: FX2.open, skip: [2, 3],
+      POS: { 1: FX2.start.pos, 4: FX2.clean.pos, 5: FX2.swap.pos, 6: FX2.fence.pos, 7: FX2.pull.pos },
+      PREV: { 4: FX2.start.pos, 5: FX2.clean.pos, 6: FX2.swap.pos, 7: FX2.fence.pos },
+      CNT: { 1: FX2.start.m, 4: FX2.clean.m, 5: FX2.swap.m, 6: FX2.fence.m, 7: FX2.pull.m },
+      PCNT: { 4: FX2.start.m, 5: FX2.clean.m, 6: FX2.swap.m, 7: FX2.fence.m },
+      notes: {
+        1: `A graph of a different shape: two big hubs that share many of their classes, 57 classes in all, one of the graphs kept back and never looked at while the layouts were developed. Best Read's drawing before the clean-up has ${FX2.start.m.thru} links through classes.`,
+        4: `No region here gathers enough problems to be worth spreading, so steps 2 and 3 do nothing. Single moves into open space (${st.move || 0}) and group moves (${st.group || 0}) do the work: links through classes ${FX2.start.m.thru} &rarr; ${FX2.clean.m.thru}, for ${FX2.clean.m.cross - FX2.start.m.cross} new crossing. The arrows start from the drawing before the clean-up.`,
+        5: `Two pairs of leaves trade places. The counts do not change, but two links that passed within 9 px of a class are clear (tick <em>Before this step</em>: dashed amber).`,
+        6: `Four classes step out of a fence or off a line: the last crossing goes, and links through classes fall from ${FX2.swap.m.thru} to ${FX2.fence.m.thru}. The drawing grows to make the room (${sz(FX2.swap.m)} &rarr; ${sz(FX2.fence.m)} px).`,
+        7: `Pulled in: ${sz(FX2.fence.m)} &rarr; ${sz(FX2.pull.m)} px, with no new problem. On this graph the best open-source layout, Graphviz <code>neato</code> with tuned settings, draws 1 crossed link and 3 links through classes in about 56 times the area of the boxes; Best Read draws none and 3, in 5.4 times (as ranked, 3 px margin).`
+      } }); }
+  const NEAR = (G, P) => { const W = G.w, out = []; G.edges.forEach(([a, b], k) => { for (let i = 0; i < P.length; i++) { if (i === a || i === b) continue;
+    if (segBox(P[a], P[b], P[i][0], P[i][1], W[i] / 2 + 9, BOXH / 2 + 9) && !segBox(P[a], P[b], P[i][0], P[i][1], W[i] / 2 + 6, BOXH / 2 + 6)) { out.push(k); break; } } }); return new Set(out); };
   function render() {
-    const P = POS[step], prev = PREV[step], box = host.querySelector(".wx-svg"), fin = step >= 5, G = fin ? FX : EX, W = G.w, E = G.edges, n = W.length; box.innerHTML = "";
+    const w = WALKS[walk], G = w.G(step), W = G.w, E = G.edges, n = W.length, box = host.querySelector(".wx-svg");
+    const showBefore = beforeCb.checked && !!w.PREV[step], P = showBefore ? w.PREV[step] : w.POS[step], prev = showBefore ? null : w.PREV[step];
+    const fin = step >= 5, region = walk === 0 && step >= 2 && step <= 4; box.innerHTML = "";
     let vb;
-    const zoomMoved = fin && step < 7 && !whole.checked && prev && P.some((p, i) => Math.hypot(p[0] - prev[i][0], p[1] - prev[i][1]) >= 3);
-    if (zoomMoved) { // the classes this pass moved, where they were and where they went, with room round them
-      let x1 = Infinity, y1 = Infinity, x2 = -Infinity, y2 = -Infinity;
-      P.forEach((p, i) => { const o = prev[i]; if (Math.hypot(p[0] - o[0], p[1] - o[1]) < 3) return; for (const q of [p, o]) { x1 = Math.min(x1, q[0] - W[i] / 2); x2 = Math.max(x2, q[0] + W[i] / 2); y1 = Math.min(y1, q[1]); y2 = Math.max(y2, q[1]); } });
-      const cx = (x1 + x2) / 2, cy = (y1 + y2) / 2, w = Math.max(x2 - x1 + 300, 640), h = Math.max(y2 - y1 + 240, w * 0.7);
-      vb = [cx - w / 2, cy - h / 2, w, h];
-    } else if (whole.checked || step === 1 || fin) {
+    const moving = w.PREV[step] && w.POS[step].some((p, i) => Math.hypot(p[0] - w.PREV[step][i][0], p[1] - w.PREV[step][i][1]) >= 3);
+    if (fin && step < 7 && !whole.checked && moving) { // the classes this pass moved, where they were and where they went, with room round them
+      let x1 = Infinity, y1 = Infinity, x2 = -Infinity, y2 = -Infinity; const A = w.POS[step], B = w.PREV[step];
+      A.forEach((p, i) => { const o = B[i]; if (Math.hypot(p[0] - o[0], p[1] - o[1]) < 3) return; for (const q of [p, o]) { x1 = Math.min(x1, q[0] - W[i] / 2); x2 = Math.max(x2, q[0] + W[i] / 2); y1 = Math.min(y1, q[1]); y2 = Math.max(y2, q[1]); } });
+      const cx = (x1 + x2) / 2, cy = (y1 + y2) / 2, ww = Math.max(x2 - x1 + 300, 640), h = Math.max(y2 - y1 + 240, ww * 0.7);
+      vb = [cx - ww / 2, cy - h / 2, ww, h];
+    } else if (whole.checked || step === 1 || !region) {
       let x1 = Infinity, y1 = Infinity, x2 = -Infinity, y2 = -Infinity;
       P.forEach((p, i) => { x1 = Math.min(x1, p[0] - W[i] / 2); x2 = Math.max(x2, p[0] + W[i] / 2); y1 = Math.min(y1, p[1] - BOXH / 2); y2 = Math.max(y2, p[1] + BOXH / 2); });
       vb = [x1 - 30, y1 - 30, x2 - x1 + 60, y2 - y1 + 60];
@@ -942,41 +1111,51 @@ function buildWalk() {
     const defs = el("defs", {}, svg), mk = el("marker", { id: "wxah", viewBox: "0 0 10 10", refX: 9, refY: 5, markerWidth: 6, markerHeight: 6, orient: "auto-start-reverse" }, defs);
     el("path", { d: "M0,0L10,5L0,10z", fill: "var(--ink)" }, mk);
     const g = el("g", {}, svg), ns = { "vector-effect": "non-scaling-stroke" };
-    if (step === 1) { const s = EX.open.s; EX.open.cells.forEach(([x, y]) => el("rect", { x: x - s / 2 + 1, y: y - s / 2 + 1, width: s - 2, height: s - 2, rx: 3, fill: "var(--open)", opacity: 0.16 }, g)); }
-    if (step === 2 || step === 3) {
+    if (step === 1) { const s = w.open.s; w.open.cells.forEach(([x, y]) => el("rect", { x: x - s / 2 + 1, y: y - s / 2 + 1, width: s - 2, height: s - 2, rx: 3, fill: "var(--open)", opacity: 0.16 }, g)); }
+    if (region && (step === 2 || step === 3)) {
       const Rr = 3 * R.r0;
       for (let k = 0; k < 8; k++) { const a0 = -Math.PI + k * Math.PI / 4, a1 = a0 + Math.PI / 4;
         el("path", { d: `M${c.x},${c.y}L${c.x + Rr * Math.cos(a0)},${c.y + Rr * Math.sin(a0)}A${Rr},${Rr} 0 0 1 ${c.x + Rr * Math.cos(a1)},${c.y + Rr * Math.sin(a1)}Z`, fill: "var(--open)", opacity: 0.03 + 0.22 * R.room[k] / maxRoom, stroke: "var(--hot)", "stroke-width": 1.4, "stroke-dasharray": "6 4", ...ns }, g); }
       R.cells.forEach(([x, y]) => el("rect", { x: x - R.cell / 2, y: y - R.cell / 2, width: R.cell, height: R.cell, fill: "var(--hot)", opacity: 0.22 }, g));
     }
-    if (step >= 2 && !fin) { el("circle", { cx: c.x, cy: c.y, r: R.r0, fill: "none", stroke: "var(--hot)", "stroke-width": 2, "stroke-dasharray": "6 4", opacity: step === 4 ? 0.5 : 1, ...ns }, g); el("circle", { cx: c.x, cy: c.y, r: 6, fill: "var(--hot)" }, g); }
-    // problems
-    const thru = new Set(), hit = new Set();
+    if (region) { el("circle", { cx: c.x, cy: c.y, r: R.r0, fill: "none", stroke: "var(--hot)", "stroke-width": 2, "stroke-dasharray": "6 4", opacity: step === 4 ? 0.5 : 1, ...ns }, g); el("circle", { cx: c.x, cy: c.y, r: 6, fill: "var(--hot)" }, g); }
+    // problems: red for a crossing or a link through a class (6 px margin); in the finishing passes, dashed amber for a link that
+    // passes within 9 px of a class, the clearance the drawn links keep
+    const thru = new Set(), hit = new Set(), near = fin ? NEAR(G, P) : new Set();
     E.forEach(([a, b], k) => { for (let i = 0; i < n; i++) { if (i === a || i === b) continue; if (segBox(P[a], P[b], P[i][0], P[i][1], W[i] / 2 + 6, BOXH / 2 + 6)) { thru.add(k); hit.add(i); } } });
-    E.forEach(([a, b, sub], k) => el("line", { x1: P[a][0], y1: P[a][1], x2: P[b][0], y2: P[b][1], stroke: thru.has(k) ? "var(--bad)" : sub ? "var(--sub)" : "var(--rel)", "stroke-width": thru.has(k) ? 2.4 : 1.3, ...ns }, g));
+    E.forEach(([a, b, sub], k) => el("line", { x1: P[a][0], y1: P[a][1], x2: P[b][0], y2: P[b][1], stroke: thru.has(k) ? "var(--bad)" : near.has(k) ? "var(--hot)" : sub ? "var(--sub)" : "var(--rel)", "stroke-width": thru.has(k) || near.has(k) ? 2.4 : 1.3, ...(near.has(k) && !thru.has(k) ? { "stroke-dasharray": "7 4" } : {}), ...ns }, g));
     for (let i = 0; i < E.length; i++) for (let j = i + 1; j < E.length; j++) { const [a, b] = E[i], [p, q] = E[j]; if (a === p || a === q || b === p || b === q) continue; const x = segX(P[a], P[b], P[p], P[q]); if (x) el("circle", { cx: x[0], cy: x[1], r: 4.5, fill: "var(--bad)", opacity: 0.85 }, g); }
     // where classes were, and where they went
     const moved = new Set();
     if (prev) P.forEach((p, i) => { const o = prev[i]; if (Math.hypot(p[0] - o[0], p[1] - o[1]) < 3) return; moved.add(i);
       el("rect", { x: o[0] - W[i] / 2, y: o[1] - BOXH / 2, width: W[i], height: BOXH, rx: 6, fill: "none", stroke: "var(--muted)", "stroke-dasharray": "4 3", ...ns }, g);
       el("line", { x1: o[0], y1: o[1], x2: p[0], y2: p[1], stroke: "var(--ink)", "stroke-width": 1.4, opacity: 0.7, "marker-end": "url(#wxah)", ...ns }, g); });
+    // before the step: the classes it is about to move, outlined
+    if (showBefore) w.POS[step].forEach((p, i) => { const o = P[i]; if (Math.hypot(p[0] - o[0], p[1] - o[1]) >= 3) moved.add(i); });
     P.forEach((p, i) => {
-      el("rect", { x: p[0] - W[i] / 2, y: p[1] - BOXH / 2, width: W[i], height: BOXH, rx: 6, fill: hit.has(i) ? "var(--bad-soft)" : moved.has(i) ? "var(--accent-soft)" : "var(--box)", stroke: hit.has(i) ? "var(--bad)" : moved.has(i) ? "var(--accent)" : "var(--box-line)", "stroke-width": moved.has(i) ? 1.6 : 1, ...ns }, g);
+      el("rect", { x: p[0] - W[i] / 2, y: p[1] - BOXH / 2, width: W[i], height: BOXH, rx: 6, fill: hit.has(i) ? "var(--bad-soft)" : moved.has(i) ? "var(--accent-soft)" : "var(--box)", stroke: hit.has(i) ? "var(--bad)" : moved.has(i) ? "var(--accent)" : "var(--box-line)", "stroke-width": moved.has(i) ? 1.6 : 1, ...(showBefore && moved.has(i) ? { "stroke-dasharray": "5 3" } : {}), ...ns }, g);
       const t = el("text", { x: p[0], y: p[1] + 4, "text-anchor": "middle", "font-size": 11, fill: "var(--ink)", "font-family": "Segoe UI, system-ui, sans-serif" }, g); t.textContent = G.labels[i];
     });
-    const m = CNT[step], pm = step === 5 ? CNT0[5] : step > 1 ? CNT[step - 1] : null;
+    const m = showBefore ? w.PCNT[step] : w.CNT[step], pm = showBefore ? null : w.PCNT[step];
     const cell = (label, k) => { const v = m[k], d = pm ? v - pm[k] : 0; return `<div class="${d < 0 ? "down" : d > 0 ? "up" : ""}"><b>${v}${d ? ` <small>(${d > 0 ? "+" : ""}${d})</small>` : ""}</b>${label}</div>`; };
-    const size = () => { const a = m.size[0] * m.size[1], b = pm.size[0] * pm.size[1], d = Math.round((a / b - 1) * 100); return `<div class="${d < 0 ? "down" : d > 0 ? "up" : ""}"><b>${m.size[0].toLocaleString("en-US")} × ${m.size[1].toLocaleString("en-US")}${d ? ` <small>(${d > 0 ? "+" : ""}${d}%)</small>` : ""}</b>drawing size, px</div>`; };
-    host.querySelector(".wx-counts").innerHTML = cell("crossed links", "cross") + cell("links through classes", "thru") + (fin ? size() : cell("sharp crossings", "sharp")) + cell("cramped classes", "tight") +
-      `<p class="wx-key">All four are lower-is-better. ${fin ? "Steps 5 and 6 zoom to the classes the pass moved (tick Whole drawing for all of Pizza); dashed boxes and arrows show where classes moved from. " : ""}The number in brackets is the change since the step before: green when it went down (the step helped), red when it went up. <abbr class="qm" tabindex="0" title="Sharp crossings cross at under 30°. Cramped classes have two links leaving them less than 15° apart." aria-label="Sharp crossings cross at under 30 degrees. Cramped classes have two links leaving them less than 15 degrees apart.">?</abbr></p>`;
-    host.querySelectorAll(".wx-steps button").forEach((b) => b.classList.toggle("on", +b.dataset.s === step));
+    const size = () => { const d = pm && pm.size ? Math.round((m.size[0] * m.size[1] / (pm.size[0] * pm.size[1]) - 1) * 100) : 0; return `<div class="${d < 0 ? "down" : d > 0 ? "up" : ""}"><b>${m.size[0].toLocaleString("en-US")} × ${m.size[1].toLocaleString("en-US")}${d ? ` <small>(${d > 0 ? "+" : ""}${d}%)</small>` : ""}</b>drawing size, px</div>`; };
+    host.querySelector(".wx-counts").innerHTML = cell("crossed links", "cross") + cell("links through classes", "thru") + (m.size ? size() : cell("sharp crossings", "sharp")) + cell("cramped classes", "tight") +
+      `<p class="wx-key">All four are lower-is-better. ${showBefore ? "This is the drawing before the step; the classes it moves are outlined. " : fin && step < 7 ? "Steps 5 and 6 zoom to the classes the pass moved (tick Whole drawing for all of it); dashed boxes and arrows show where classes moved from. " : ""}${fin ? "Dashed amber: a link that passes within 9 px of a class, the clearance drawn links keep. " : ""}${showBefore ? "" : "The number in brackets is the change since the step before: green when it went down (the step helped), red when it went up. "}<abbr class="qm" tabindex="0" title="Sharp crossings cross at under 30°. Cramped classes have two links leaving them less than 15° apart." aria-label="Sharp crossings cross at under 30 degrees. Cramped classes have two links leaving them less than 15 degrees apart.">?</abbr></p>`;
+    host.querySelectorAll(".wx-walks button").forEach((b) => b.classList.toggle("on", +b.dataset.w === walk));
+    host.querySelectorAll(".wx-steps button").forEach((b) => { b.classList.toggle("on", +b.dataset.s === step); b.disabled = w.skip.includes(+b.dataset.s); b.title = b.disabled ? "No region on this graph gathers enough problems to be worth spreading" : ""; });
     host.querySelectorAll(".wx-tabs button").forEach((b) => b.classList.toggle("on", b.dataset.t === tab));
     host.querySelectorAll(".wx-t").forEach((d) => (d.hidden = !(+d.dataset.s === step && d.dataset.t === tab)));
-    host.querySelector(".wx-whole").hidden = step === 1 || step === 7;
+    host.querySelectorAll(".wx-t .w1").forEach((p) => (p.hidden = walk !== 0));
+    const note = host.querySelector(".wx-note"); note.hidden = !w.notes[step]; note.innerHTML = w.notes[step] || "";
+    host.querySelector(".wx-whole").hidden = step === 1 || step === 7 || (!region && !fin);
+    host.querySelector(".wx-beforel").hidden = !w.PREV[step];
   }
+  const go = (s) => { const w = WALKS[walk]; while (w.skip.includes(s)) s++; step = Math.min(7, Math.max(1, s)); render(); };
+  host.querySelectorAll(".wx-walks button").forEach((b) => { if (+b.dataset.w >= WALKS.length) b.hidden = true; b.addEventListener("click", () => { walk = +b.dataset.w; go(step); }); });
   host.querySelectorAll(".wx-steps button").forEach((b) => b.addEventListener("click", () => { step = +b.dataset.s; render(); }));
+  navTarget(host, (d) => { let s = step + d; while (WALKS[walk].skip.includes(s)) s += d; if (s >= 1 && s <= 7) { step = s; render(); } });
   host.querySelectorAll(".wx-tabs button").forEach((b) => b.addEventListener("click", () => { tab = b.dataset.t; render(); }));
-  whole.addEventListener("change", render);
+  whole.addEventListener("change", render); beforeCb.addEventListener("change", render);
   render();
 }
 buildWalk();
@@ -987,5 +1166,147 @@ document.getElementById("copyCode").addEventListener("click", async (ev) => {
   setTimeout(() => (btn.textContent = "Copy"), 2500);
 });
 </script>
+<!--LAB-->
+<script>
+// The library itself, so the lab can run the clean-up on a drawing made by hand
+window.OntologyLayouts = (() => {
+/*__LIBRARY__*/
+return OntologyLayouts; })();
+// The teaching sessions (teaching_sessions.mjs): per graph, the notes and kept moves, and the last drawing
+const TEACH = /*__TEACH__*/null;
+// ── The Layout Lab ──
+(function buildLab() {
+  const host = document.getElementById("lab"); if (!host || !DATA) return;
+  const q = (c) => host.querySelector(c), gsel = q(".lab-g"), lsel = q(".lab-l"), canvas = q(".lab-canvas"), note = q(".lab-note"), log = q(".lab-log");
+  const STORE = "ontology-layouts-lab-v1";
+  let S = {}; try { S = JSON.parse(localStorage.getItem(STORE) || "{}") || {}; } catch (e) { S = {}; }
+  const save = () => { try { localStorage.setItem(STORE, JSON.stringify(S)); } catch (e) { /* private window: the session lives until the page closes */ } };
+  let key = DATA.order[0], sel = new Set(), svg = null, view = null;
+  (DATA.groups || [["", DATA.order]]).forEach(([label, keys]) => { const g = document.createElement("optgroup"); g.label = label; keys.forEach((k) => { const o = document.createElement("option"); o.value = k; o.textContent = DATA.graphs[k].name + " (" + DATA.graphs[k].labels.length + ")"; g.appendChild(o); }); gsel.appendChild(g); });
+  const layouts = (m) => [...ranked(m.ours).map((k) => ["ours:" + k, "Ours: " + k]), ...ranked(m.pub).map((k) => ["pub:" + k, k])];
+  const posOf = (m, l) => { const [side, name] = [l.slice(0, l.indexOf(":")), l.slice(l.indexOf(":") + 1)]; const L = (side === "ours" ? m.ours : side === "pub" ? m.pub : {})[name]; return L ? L.pos.map((p) => [p[0], p[1]]) : null; };
+  // the counts the rankings use: crossed links, links through classes within 3 px, area / box area
+  function measure(m, P) {
+    const E = m.edges, W = m.box; let cross = 0, thru = 0;
+    for (let i = 0; i < E.length; i++) for (let j = i + 1; j < E.length; j++) { const [a, b] = E[i], [c, d] = E[j]; if (a === c || a === d || b === c || b === d) continue; if (segX(P[a], P[b], P[c], P[d])) cross++; }
+    E.forEach(([a, b]) => { for (let i = 0; i < P.length; i++) if (i !== a && i !== b && segBox(P[a], P[b], P[i][0], P[i][1], W[i] / 2 + 3, BOXH / 2 + 3)) { thru++; break; } });
+    let x1 = Infinity, y1 = Infinity, x2 = -Infinity, y2 = -Infinity, A = 0;
+    P.forEach((p, i) => { x1 = Math.min(x1, p[0] - W[i] / 2); x2 = Math.max(x2, p[0] + W[i] / 2); y1 = Math.min(y1, p[1] - BOXH / 2); y2 = Math.max(y2, p[1] + BOXH / 2); A += W[i] * BOXH; });
+    return { cross, thru, area: Math.round((x2 - x1) * (y2 - y1) / A * 10) / 10 };
+  }
+  function session(k, l) {
+    const m = DATA.graphs[k]; let s = S[k];
+    if (!s || (l && s.layout !== l)) { const lay = l || layouts(m)[0][0], P = posOf(m, lay); s = S[k] = { layout: lay, start: P, P: P.map((p) => p.slice()), steps: [], undo: [] }; s.steps.push({ kind: "start", layout: lay, after: measure(m, P) }); save(); }
+    return s;
+  }
+  const step = (s, st) => { s.steps.push(st); save(); };
+  function render() {
+    const m = DATA.graphs[key], s = session(key), P = s.P, W = m.box, n = P.length, E = m.edges;
+    if (!svg) {
+      svg = el("svg", {}, canvas);
+      svg.addEventListener("wheel", (ev) => { ev.preventDefault(); const r = svg.getBoundingClientRect(), f = Math.exp(Math.max(-60, Math.min(60, ev.deltaY)) * 0.0015), sc = view[2] / r.width;
+        const mx = view[0] + (ev.clientX - r.left) * sc, my = view[1] + (ev.clientY - r.top) * view[3] / r.height; view = [mx - (mx - view[0]) * f, my - (my - view[1]) * f, view[2] * f, view[3] * f]; svg.setAttribute("viewBox", view.join(" ")); }, { passive: false });
+      let drag = null;
+      svg.addEventListener("pointerdown", (ev) => {
+        const t = ev.target.closest("[data-i]"), r = svg.getBoundingClientRect(), sc = Math.max(view[2] / r.width, view[3] / r.height);
+        if (t) { const i = +t.dataset.i; if (ev.ctrlKey || ev.shiftKey || ev.metaKey) { sel.has(i) ? sel.delete(i) : sel.add(i); render(); return; }
+          if (!sel.has(i)) { sel = new Set([i]); }
+          const ss = session(key); drag = { kind: "move", x: ev.clientX, y: ev.clientY, sc, from: ss.P.map((p) => p.slice()), moved: false }; }
+        else drag = { kind: "pan", x: ev.clientX, y: ev.clientY, sc, v: view.slice(), moved: false };
+        svg.setPointerCapture(ev.pointerId);
+      });
+      svg.addEventListener("pointermove", (ev) => { if (!drag) return; const dx = (ev.clientX - drag.x) * drag.sc, dy = (ev.clientY - drag.y) * drag.sc; if (Math.abs(dx) + Math.abs(dy) > 1) drag.moved = true;
+        if (drag.kind === "pan") { view = [drag.v[0] - dx, drag.v[1] - dy, view[2], view[3]]; svg.setAttribute("viewBox", view.join(" ")); return; }
+        const ss = session(key); sel.forEach((i) => (ss.P[i] = [drag.from[i][0] + dx, drag.from[i][1] + dy])); paint(); });
+      svg.addEventListener("pointerup", (ev) => { const d = drag; drag = null; if (!d) return;
+        if (d.kind === "pan") { if (!d.moved) { sel.clear(); paint(); } return; }
+        if (!d.moved) { paint(); return; }
+        const m2 = DATA.graphs[key], ss = session(key), i0 = [...sel][0], dx = Math.round(ss.P[i0][0] - d.from[i0][0]), dy = Math.round(ss.P[i0][1] - d.from[i0][1]);
+        ss.undo.push(d.from); step(ss, { kind: "move", classes: [...sel].map((i) => m2.labels[i]), dx, dy, before: measure(m2, d.from), after: measure(m2, ss.P) }); render(); });
+    }
+    if (!view || view.key !== key) { let x1 = Infinity, y1 = Infinity, x2 = -Infinity, y2 = -Infinity; P.forEach((p, i) => { x1 = Math.min(x1, p[0] - W[i] / 2); x2 = Math.max(x2, p[0] + W[i] / 2); y1 = Math.min(y1, p[1] - BOXH / 2); y2 = Math.max(y2, p[1] + BOXH / 2); });
+      view = [x1 - 40, y1 - 40, x2 - x1 + 80, y2 - y1 + 80]; view.key = key; svg.setAttribute("viewBox", view.join(" ")); svg.setAttribute("preserveAspectRatio", "xMidYMid meet"); }
+    paint();
+    // the counts, the log
+    const c = measure(m, P), c0 = s.steps[0].after;
+    const cell = (label, k, unit) => { const d = Math.round((c[k] - c0[k]) * 10) / 10; return `<div class="${d < 0 ? "down" : d > 0 ? "up" : ""}"><b>${c[k]}${unit || ""}${d ? ` <small>(${d > 0 ? "+" : ""}${d} since the start)</small>` : ""}</b>${label}</div>`; };
+    q(".lab-counts").innerHTML = cell("crossed links", "cross") + cell("links through classes", "thru") + cell("area ÷ class area", "area", "×");
+    log.innerHTML = ""; const live = s.steps.filter((x) => !x.undone);
+    q(".lab-logn").textContent = `${live.filter((x) => x.kind === "move").length} moves, ${live.filter((x) => x.kind === "note").length} notes on this graph; ${Object.keys(S).filter((k) => S[k].steps.length > 1).length} graph(s) worked on`;
+    s.steps.forEach((x) => { const li = document.createElement("li"); if (x.undone) li.className = "undone";
+      const cc = (a, b) => `crossed ${a.cross}&rarr;${b.cross}, through ${a.thru}&rarr;${b.thru}`;
+      li.innerHTML = x.kind === "note" ? `<q>${x.text.replace(/&/g, "&amp;").replace(/</g, "&lt;")}</q>` : x.kind === "move" ? `Moved ${x.classes.length > 3 ? x.classes.slice(0, 3).join(", ") + ` and ${x.classes.length - 3} more` : x.classes.join(", ")} <small>${cc(x.before, x.after)}</small>` : x.kind === "cleanup" ? `Ran our clean-up <small>${cc(x.before, x.after)}</small>` : x.kind === "reset" ? `Started over <small>${cc(x.before, x.after)}</small>` : `Started from ${x.layout.replace(/^ours:/, "ours, ").replace(/^pub:/, "")} <small>crossed ${x.after.cross}, through ${x.after.thru}</small>`;
+      log.appendChild(li); });
+    log.scrollTop = log.scrollHeight;
+  }
+  function paint() {
+    const m = DATA.graphs[key], P = session(key).P, W = m.box, n = P.length, E = m.edges; svg.innerHTML = "";
+    const g = el("g", {}, svg), ns = { "vector-effect": "non-scaling-stroke" }, thru = new Set(), hit = new Set();
+    E.forEach(([a, b], k) => { for (let i = 0; i < n; i++) if (i !== a && i !== b && segBox(P[a], P[b], P[i][0], P[i][1], W[i] / 2 + 3, BOXH / 2 + 3)) { thru.add(k); hit.add(i); } });
+    E.forEach(([a, b, sub], k) => el("line", { x1: P[a][0], y1: P[a][1], x2: P[b][0], y2: P[b][1], stroke: thru.has(k) ? "var(--bad)" : sub ? "var(--sub)" : "var(--rel)", "stroke-width": thru.has(k) ? 2.2 : 1.3, ...ns }, g));
+    for (let i = 0; i < E.length; i++) for (let j = i + 1; j < E.length; j++) { const [a, b] = E[i], [c, d] = E[j]; if (a === c || a === d || b === c || b === d) continue; const x = segX(P[a], P[b], P[c], P[d]); if (x) el("circle", { cx: x[0], cy: x[1], r: 4, fill: "var(--bad)", opacity: 0.8 }, g); }
+    P.forEach((p, i) => { const gg = el("g", { "data-i": i, style: "cursor:grab" }, g);
+      el("rect", { x: p[0] - W[i] / 2, y: p[1] - BOXH / 2, width: W[i], height: BOXH, rx: 6, fill: sel.has(i) ? "var(--accent-soft)" : hit.has(i) ? "var(--bad-soft)" : "var(--box)", stroke: sel.has(i) ? "var(--accent)" : hit.has(i) ? "var(--bad)" : "var(--box-line)", "stroke-width": sel.has(i) ? 2 : 1, ...ns }, gg);
+      const t = el("text", { x: p[0], y: p[1] + 4, "text-anchor": "middle", "font-size": 11, fill: "var(--ink)", "font-family": "Segoe UI, system-ui, sans-serif", style: "pointer-events:none;user-select:none" }, gg); t.textContent = m.labels[i]; });
+  }
+  function fillLayouts() { const m = DATA.graphs[key], s = session(key); lsel.innerHTML = ""; layouts(m).forEach(([v, t]) => { const o = document.createElement("option"); o.value = v; o.textContent = t; lsel.appendChild(o); }); lsel.value = s.layout; }
+  function open(k) { key = k; gsel.value = k; sel = new Set(); fillLayouts(); render(); }
+  gsel.addEventListener("change", () => open(gsel.value));
+  lsel.addEventListener("change", () => { const s = S[key]; if (s && s.steps.length > 1 && !confirm("Start this graph again from " + lsel.options[lsel.selectedIndex].text + "? The steps so far on this graph are dropped.")) { lsel.value = s.layout; return; } session(key, lsel.value); sel = new Set(); render(); });
+  const undo = () => { const s = session(key); const prev = s.undo.pop(); if (!prev) return; s.P = prev; const last = [...s.steps].reverse().find((x) => (x.kind === "move" || x.kind === "cleanup" || x.kind === "reset") && !x.undone); if (last) last.undone = true; save(); render(); };
+  q(".lab-undo").addEventListener("click", undo);
+  q(".lab-reset").addEventListener("click", () => { const s = session(key); s.undo.push(s.P); s.P = s.start.map((p) => p.slice()); step(s, { kind: "cleanup", reset: true, before: measure(DATA.graphs[key], s.undo[s.undo.length - 1]), after: measure(DATA.graphs[key], s.P) }); s.steps[s.steps.length - 1].kind = "reset"; render(); });
+  q(".lab-clean").addEventListener("click", () => { const OL = window.OntologyLayouts; if (!OL) return; const m = DATA.graphs[key], s = session(key), before = s.P.map((p) => p.slice());
+    const boxes = m.box.map((w) => ({ w, h: BOXH })), links = m.edges.map(([a, b, sub]) => [a, b, sub ? 2 : 1]), out = OL.cleanUp(before.map(([x, y]) => ({ x, y })), boxes, links, OL.now());
+    s.undo.push(before); s.P = out.map((p) => [Math.round(p.x * 10) / 10, Math.round(p.y * 10) / 10]); step(s, { kind: "cleanup", before: measure(m, before), after: measure(m, s.P) }); render(); });
+  note.addEventListener("keydown", (ev) => { if (ev.key === "Enter" && !ev.shiftKey) { ev.preventDefault(); const t = note.value.trim(); if (!t) return; step(session(key), { kind: "note", text: t }); note.value = ""; render(); } else if (ev.key === "z" && (ev.ctrlKey || ev.metaKey) && !note.value) { ev.preventDefault(); undo(); } });
+  host.addEventListener("keydown", (ev) => { if (ev.key === "z" && (ev.ctrlKey || ev.metaKey) && !/^(TEXTAREA|INPUT)$/.test(ev.target.tagName)) { ev.preventDefault(); undo(); } });
+  navTarget(canvas, (d) => { const o = [...gsel.options], i = o.findIndex((x) => x.value === key); open(o[(i + d + o.length) % o.length].value); });
+  // ── the download: one Markdown file for an AI assistant ──
+  q(".lab-export").addEventListener("click", () => {
+    const worked = Object.keys(S).filter((k) => DATA.graphs[k] && S[k].steps.some((x) => !x.undone && (x.kind === "move" || x.kind === "note" || x.kind === "cleanup" || x.kind === "reset")));
+    if (!worked.length) { alert("Nothing to download yet: move a class or write a note first."); return; }
+    const L = [], day = new Date().toISOString().slice(0, 10);
+    L.push(`# Layout Lab session, ${day}`, "",
+      "## Brief for the AI assistant (read this first)",
+      "This file records a session in the Layout Lab of **ontology-layouts**, an open-source library that draws ontology diagrams (https://github.com/brendan-newlon/ontology-layouts, Apache-2.0). A person tidied drawings by hand. Before most moves they typed what they were about to do and why. The notes are the important part: the clean-up in the library was distilled from notes like these, and the moves only show what the person meant on one graph.", "",
+      "Measures, all lower-is-better: **crossed links** (pairs of links whose straight lines cross), **links through classes** (a link passing within 3 px of a class box it does not belong to), **area** (bounding box divided by the total area of the class boxes). Each box is as wide as its label (6.6 px a character + 10) and 20 px high.", "",
+      "What I would like you to do:",
+      "1. Read the notes and moves for each graph. Leave out nothing marked as undone (undone steps are already removed here). List the principles the person used, each in their own words, with the graph and steps that show it.",
+      "2. For each principle, propose how a program could recognise the situation and make the move: a definition it can test, and the smallest change that carries it out. The clean-up is `_ogHandTidy` and `_ogLayoutCleanUp` in `src/ontology-layouts.js`; the finishing passes are `_ogLeafSwap` and `_ogPullIn`.",
+      "3. Implement the most promising principle. Measure it with the benchmarks in `tools/layout-bench` (see its README): first on the 15 development graphs, then on the held-out and public graphs, which must never be used for tuning. Keep it only if it helps on both.",
+      "4. Tell me in plain words what it did, where it failed, and why, so I can refine the idea.", "",
+      "If a principle holds up on the graphs nobody tuned on, please help me send it back to the repository as a pull request, with this file attached. The method is described in `docs/SHOW-AND-TELL-LABS.md`.", "");
+    const C = (a) => `crossed ${a.cross}, through ${a.thru}, area ${a.area}×`;
+    worked.forEach((k) => {
+      const m = DATA.graphs[k], s = S[k], live = s.steps.filter((x) => !x.undone);
+      L.push(`## Graph: ${m.name} (${m.labels.length} classes, ${m.edges.length} links)`, "", `Started from: ${s.layout.replace(/^ours:/, "our layout ").replace(/^pub:/, "")}. At the start: ${C(s.steps[0].after)}. At the end: ${C(measure(m, s.P))}.`, "", "### Steps, in order");
+      let i = 1; live.slice(1).forEach((x) => L.push(`${i++}. ` + (x.kind === "note" ? `Note: "${x.text}"` : x.kind === "move" ? `Moved ${x.classes.join(", ")} by (${x.dx}, ${x.dy}) px. ${C(x.before)} -> ${C(x.after)}` : x.kind === "reset" ? `Started over from the starting drawing.` : `Ran the library's clean-up on the drawing. ${C(x.before)} -> ${C(x.after)}`)));
+      L.push("", "### Classes (index: name, box width px)", m.labels.map((t, j) => `${j}: ${t} (${Math.round(m.box[j])})`).join("; "), "",
+        "### Links (from -> to; sub = subclass of, rel = relationship)", m.edges.map(([a, b, sub]) => `${a}->${b} ${sub ? "sub" : "rel"}`).join("; "), "",
+        "### Drawing at the start (class centers, px, in class order)", "```json", JSON.stringify(s.start.map((p) => [Math.round(p[0]), Math.round(p[1])])), "```",
+        "### Drawing at the end", "```json", JSON.stringify(s.P.map((p) => [Math.round(p[0]), Math.round(p[1])])), "```", "");
+    });
+    const blob = new Blob([L.join("\n")], { type: "text/markdown" }), a = document.createElement("a");
+    a.href = URL.createObjectURL(blob); a.download = `layout-lab-session-${day}.md`; document.body.appendChild(a); a.click(); setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 1000);
+  });
+  // ── the teaching sessions ──
+  if (TEACH && TEACH.length) {
+    const tg = q(".lab-tg"), tl = q(".lab-tlog"), tb = q(".lab-topen");
+    TEACH.forEach((t, j) => { const o = document.createElement("option"); o.value = j; o.textContent = (DATA.graphs[t.graph] ? DATA.graphs[t.graph].name : t.graph) + ` (${t.steps.filter((x) => x[0] === "note").length} notes)`; tg.appendChild(o); });
+    const match = (t) => DATA.graphs[t.graph] && t.last && JSON.stringify(DATA.graphs[t.graph].labels) === JSON.stringify(t.labels);
+    const show = () => { const t = TEACH[+tg.value]; tl.innerHTML = ""; tb.hidden = !match(t);
+      t.steps.forEach((x) => { const li = document.createElement("li"), cc = (a, b) => (a && b ? ` <small>crossed ${a[0]}&rarr;${b[0]}, through ${a[1]}&rarr;${b[1]}</small>` : "");
+        li.innerHTML = x[0] === "note" ? `<q>${x[1].replace(/&/g, "&amp;").replace(/</g, "&lt;")}</q>` : x[0] === "move" ? `Moved ${x[1].length > 4 ? x[1].slice(0, 4).join(", ") + ` and ${x[1].length - 4} more` : x[1].join(", ")}${cc(x[2], x[3])}` : x[0] === "cleanup" ? `Ran the clean-up of the time${cc(x[2], x[3])}` : `Started from ${x[1]}` + (x[2] ? ` <small>crossed ${x[2][0]}, through ${x[2][1]}</small>` : "");
+        tl.appendChild(li); }); };
+    tg.addEventListener("change", show); show();
+    tb.addEventListener("click", () => { const t = TEACH[+tg.value], m = DATA.graphs[t.graph]; open(t.graph); const s = session(t.graph); s.undo.push(s.P); s.P = t.last.map((p) => p.slice()); step(s, { kind: "note", text: "(Loaded Brendan Newlon's last drawing of this graph from the teaching sessions.)" }); render(); canvas.scrollIntoView({ block: "center", behavior: "smooth" }); });
+  } else q(".lab-teach").hidden = true;
+  // draw on first open (an SVG sized while the fold is closed has no size)
+  host.addEventListener("toggle", () => { if (host.open && !svg) open(key); });
+  if (location.hash === "#lab") { host.open = true; open(key); }
+})();
+</script>
+<!--/LAB-->
 </body>
 </html>

@@ -1,6 +1,6 @@
 # Show and tell: turning a person's intuition into a program, with an AI
 
-The clean-up in this repository was not designed from the literature. A person who could tidy an ontology diagram at a glance, but could not have written down the rules, tidied drawings by hand while saying why. An AI assistant, Claude (Opus 5.5), turned those explanations into definitions, measures and code, and tested every rule on graphs the person never saw. The result beats every open-source layout we measured on the problems it was taught to fix (see the [write-up](ONTOLOGY-LAYOUT-ALGORITHMS.html#learned)).
+The clean-up in this repository was not designed from the literature. Brendan Newlon, who could tidy an ontology diagram at a glance but could not have written down the rules, tidied drawings by hand while saying why. An AI assistant, Claude (Opus 5.5), turned those explanations into definitions, measures and code, and tested every rule on graphs he never saw. The result beats every open-source layout we measured on the problems it was taught to fix (see the [write-up](ONTOLOGY-LAYOUT-ALGORITHMS.html#learned)).
 
 This guide covers the method behind that result and the tools that made it work: the Layout Lab and the Layout Playback. They are first-class parts of this repository, not leftovers from building the layouts. Use them in three ways:
 - **Try your hand** at the layouts here, and teach them something new.
@@ -33,6 +33,16 @@ The person stays the source of the ideas. The AI is the distiller and the tester
 Repeat from step 2 or 5. The write-up has a [table of the principles](ONTOLOGY-LAYOUT-ALGORITHMS.html#learned), each in the person's words beside what the code now does.
 
 ## Try your hand here
+**In a browser, nothing installed.** Open the [lab edition of the write-up](ONTOLOGY-LAYOUT-ALGORITHMS-LAB.html#lab) and unfold the lab:
+1. Pick a graph and the drawing to start from (one of ours, or any of the eleven open-source layouts).
+2. Before each move, type in the note box what you are about to do and why, then press Enter. Drag a class to move it; Ctrl- or Shift-click to move several together. The counts update after each move.
+3. **Run our clean-up** on your drawing at any point to see what the program would do from there; Undo takes it back.
+4. Work on as many graphs as you like. **Download the session**: one Markdown file with every graph you worked on, your notes and moves with the counts before and after, and the drawings at the start and the end. It starts with a brief for an AI assistant, which says what happened and what to do next: distill your reasons into rules, try them in the code, measure them on graphs nobody tuned on, and report back in plain words.
+5. Give the file and a copy of this repository to your AI assistant. If a rule holds up, please send it back as a pull request with the session attached.
+
+Under the lab, **The sessions that taught the clean-up** shows Brendan Newlon's own sessions: his notes in his words and the moves he kept, graph by graph. Each can be opened in the lab at the point where he left it.
+
+**With the playback.** The full lab and the Layout Playback run from this repository:
 1. Double-click `Start Layout Lab.cmd` (Windows), or follow [PLAYBACK-AND-LAB.md](PLAYBACK-AND-LAB.md#running-it). The playback opens.
 2. Pick a graph and a layout, and watch it play. Switch steps off, reorder them, or change the time limit to see what each step is worth.
 3. Click **Open in Layout Lab** on a frame where something looks wrong. Move classes until the drawing reads well. Before each move, type in the note box what you are doing and why.
