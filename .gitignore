@@ -1,2 +1,4 @@
 _temp/
 node_modules/
+# local only: material about other products (not open source) and graphs copied from them
+private/
