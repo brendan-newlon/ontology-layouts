@@ -63,7 +63,7 @@ const _ogHandTidy = (function () {
     }
     return true;
   }
-  const DEF = { budgetMs: 2000, unitSize: 4, clearance: 8, groupDepth: 4, groups: true, spread: true, spreadRepair: true, finish: true, order: ['single', 'unit', 'spread', 'group'], cell: 0.3, repReach: 1.8, repOpen: 12, repCap: 99, crowdMax: 10, groupTop: 2, downGap: 20, W: { cross: 6, sharp: 3, thru: 10, tight: 1, ov: 1000, area: 6 } };
+  const DEF = { budgetMs: 2000, unitSize: 4, clearance: 8, groupDepth: 4, groups: true, spread: true, spreadRepair: true, finish: true, order: ['single', 'unit', 'spread', 'group'], cell: 0.3, repReach: 1.8, repOpen: 12, repCap: 99, crowdMax: 10, groupTop: 2, downGap: 20, W: { cross: 6, sharp: 3, thru: 10, tight: 1, ov: 1e6, area: 6 } };
 
   function Model(P0, D, E0, o) {
     const n = P0.length, seen = new Set(), E = [];
@@ -632,10 +632,64 @@ function _ogPlaceNew(keep, items, edges) {
       P[v] = p; let len = 0; nb.forEach((u) => (len += Math.hypot(P[u].x - p.x, P[u].y - p.y)));
       const sc = _ogVCost(P, items, EE, inc, v, 9) * 1e4 + len; P[v] = null; if (!best || sc < best.sc) best = { sc, p }; }
     P[v] = best ? best.p : c; };
+  // Bursts (a graph browser expanding a class): new classes whose one placed neighbour is the same class go on an arc round
+  // it, in its most open direction, side by side (subclasses together), on one ring or two staggered rings, at the
+  // length the layouts give a link with its name. Placed one at a time instead, they fill whatever gaps the ring search
+  // finds first and their links cross each other.
+  const fanned = new Set();
+  if (!_OG_TUNE.noFan) {
+    const burst = new Map(), labTo = new Map(), subTo = new Set();
+    edges.forEach((e) => { if (e[0] === e[1]) return; for (const [v, u] of [[e[0], e[1]], [e[1], e[0]]]) { if (P[v] || !P[u]) continue; labTo.set(v, Math.max(labTo.get(v) || 0, e[3] || 0)); if (e[2] === 2) subTo.add(v); } });
+    for (const v of fresh) { const nb = [...new Set(nbr(v))]; if (nb.length === 1) { const a = nb[0]; if (!burst.has(a)) burst.set(a, []); burst.get(a).push(v); } }
+    for (const [a, B] of burst) {
+      if (B.length < 2) continue;
+      B.sort((x, y) => subTo.has(y) - subTo.has(x) || x - y);
+      const A = P[a], size = Math.max(...B.map((v) => Math.max(N[v].w, N[v].h))), s0 = size + 14;
+      const R0 = Math.max(...B.map((v) => (N[a].w + N[v].w) / 2 + (labTo.get(v) || 0) + 24), (Math.max(N[a].w, N[a].h) + size) / 2 + 30);
+      const blocked = (R) => { const iv = []; _ogWorkN[2] += n;
+        for (let u = 0; u < n; u++) { if (u === a || !P[u]) continue; const d = Math.hypot(P[u].x - A.x, P[u].y - A.y); if (d < 1e-6) continue;
+          const th = Math.atan2(P[u].y - A.y, P[u].x - A.x), near = d < R + 2 * s0;
+          const h = near ? Math.asin(Math.min(1, (Math.max(N[u].w, N[u].h) / 2 + s0 / 2 + 14) / Math.max(d, 1))) : 0;
+          const link = nbr(a).includes(u) ? Math.asin(Math.min(1, (s0 / 2 + 9) / R)) : 0; const w = Math.max(h, link); if (w > 0) iv.push([th - w, th + w]); }
+        return iv; };
+      const largestGap = (iv) => { if (!iv.length) return { mid: 0, len: 2 * Math.PI };
+        const pts = iv.map(([x, y]) => [((x % (2 * Math.PI)) + 2 * Math.PI) % (2 * Math.PI), y - x]).sort((p, q) => p[0] - q[0]);
+        const cov = []; for (const [st, len] of pts) { const en = st + len; if (cov.length && st <= cov[cov.length - 1][1]) cov[cov.length - 1][1] = Math.max(cov[cov.length - 1][1], en); else cov.push([st, en]); }
+        if (cov[cov.length - 1][1] - 2 * Math.PI >= cov[0][0]) return { mid: 0, len: 0 };
+        let best = { mid: 0, len: -1 }; for (let i = 0; i < cov.length; i++) { const st = cov[i][1], en = i + 1 < cov.length ? cov[i + 1][0] : cov[0][0] + 2 * Math.PI; if (en - st > best.len) best = { mid: (st + en) / 2, len: en - st }; }
+        return best; };
+      // every arc (four radii, the three widest gaps, one ring or two) and the one-at-a-time placement are scored the
+      // same way (problems first, then link length); the cheapest wins
+      // a link name sits at the middle of its link: one covering a class or another new name counts 8, as in the routing
+      const costOf = () => { let c = 0; const nb = B.map((v) => ({ x: (P[v].x + A.x) / 2, y: (P[v].y + A.y) / 2, w: labTo.get(v) || 0 }));
+        for (let i = 0; i < B.length; i++) { const v = B[i]; c += _ogVCost(P, items, EE, inc, v, 9) * 1e4 + Math.hypot(P[v].x - A.x, P[v].y - A.y); const q = nb[i]; if (!q.w) continue;
+          for (let u = 0; u < n; u++) if (P[u] && Math.abs(P[u].x - q.x) < (items[u].w + q.w) / 2 + 2 && Math.abs(P[u].y - q.y) < items[u].h / 2 + 9) c += 8e4;
+          for (let j = i + 1; j < B.length; j++) if (nb[j].w && Math.abs(nb[j].x - q.x) < (q.w + nb[j].w) / 2 + 2 && Math.abs(nb[j].y - q.y) < 16) c += 8e4; }
+        return c; };
+      let best = null;
+      for (const R of [R0, R0 * 1.35, R0 * 1.8, R0 * 2.4]) {
+        const iv = blocked(R); const gaps = [];
+        { const g0 = largestGap(iv); if (g0.len > 0) gaps.push(g0); }
+        for (const sh of [-1, 1]) { const g0 = gaps[0]; if (!g0 || g0.len < Math.PI / 2) continue; gaps.push({ mid: g0.mid + sh * g0.len / 4, len: g0.len / 2 }); }
+        for (const g of gaps) for (const rings of [1, 2]) {
+          const per = Math.ceil(B.length / rings), step = Math.min(1.5 * s0 / R, g.len / Math.max(per, 1)); if (step * R < s0 * (rings === 1 ? 1 : 0.6)) continue;
+          const spots = B.map((v, i) => { const ring = rings === 1 ? 0 : i % 2, j = rings === 1 ? i : i >> 1, cnt = rings === 1 ? B.length : (ring ? B.length >> 1 : per);
+            const th = g.mid + (j - (cnt - 1) / 2) * step, rr = R + ring * s0 * 0.9; return { x: A.x + rr * Math.cos(th), y: A.y + rr * Math.sin(th) }; });
+          const ok = spots.every((p, i) => { const v = B[i]; if (!free(v, p)) return false; P[v] = p; return true; });
+          if (ok) { const c = costOf(); if (!best || c < best.c) best = { c, spots }; }
+          B.forEach((v) => (P[v] = null));
+        }
+      }
+      if (!best) continue;
+      for (const v of B) place(v); const one = costOf(), oneAt = B.map((v) => P[v]); B.forEach((v) => (P[v] = null));
+      if (one <= best.c) { B.forEach((v, i) => (P[v] = oneAt[i])); } else B.forEach((v, i) => (P[v] = best.spots[i]));
+      B.forEach((v) => fanned.add(v));
+    }
+  }
   // the new class with the most placed neighbours goes first
-  const todo = new Set(fresh);
+  const todo = new Set(fresh.filter((v) => !fanned.has(v)));
   while (todo.size) { let pick = -1, most = -1; for (const v of todo) { const c = nbr(v).length; if (c > most) { most = c; pick = v; } } todo.delete(pick); place(pick); }
-  for (const v of fresh) { P[v] = null; place(v); }
+  for (const v of fresh) { if (fanned.has(v)) continue; P[v] = null; place(v); }
   if (_ogTr) _ogTr.snap("place", P);
   return P;
 }
