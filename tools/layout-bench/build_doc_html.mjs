@@ -66,7 +66,7 @@ const esc = (t) => t.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, 
 execSync('node tables.mjs', { cwd: here });
 const tables = JSON.parse(fs.readFileSync(path.join(here, 'tables.json'), 'utf8'));
 const example = fs.readFileSync(path.join(here, 'example.json'), 'utf8');
-let out = tpl.replace('/*__DATA__*/null', () => data).replace('/*__EXAMPLE__*/null', () => example).replace('/*__FINISH__*/null', () => fs.readFileSync(path.join(here, 'finish.json'), 'utf8')).replace('/*__FINISH2__*/null', () => fs.readFileSync(path.join(here, 'finish_hubs.json'), 'utf8')).replace('<!--__CODE__-->', () => esc(code));
+let out = tpl.replace('/*__DATA__*/null', () => data).replace('/*__EXAMPLE__*/null', () => example).replace('/*__FINISH__*/null', () => fs.readFileSync(path.join(here, 'finish_bio.json'), 'utf8')).replace('/*__FINISH2__*/null', () => fs.readFileSync(path.join(here, 'finish_hubs.json'), 'utf8')).replace('<!--__CODE__-->', () => esc(code));
 for (const [k, v] of Object.entries(tables)) { if (!out.includes('<!--__' + k + '__-->')) throw new Error('no place for ' + k); out = out.replace('<!--__' + k + '__-->', () => v); }
 if (/<!--__[A-Z_]+__-->/.test(out)) throw new Error('unfilled placeholder: ' + out.match(/<!--__[A-Z_]+__-->/)[0]);
 // Two editions: the write-up, and the same page with the Layout Lab built in (the library, to run the clean-up on a drawing

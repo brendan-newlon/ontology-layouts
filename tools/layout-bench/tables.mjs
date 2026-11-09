@@ -66,8 +66,8 @@ function setOf(rows, keys) {
     const place = (R, a) => [a, ...others].sort((x, y) => R[x].mean - R[y].mean).indexOf(a) + 1;
     const body2 = [[TS, RT], [MY, RM]].map(([a, R]) => `<tr class="ours"><td>${ord(place(R, a))} of ${pool}</td><td>${show(a)}</td>${cols(a, R, null)}</tr>`).join('');
     const html = `<div class="tbl"><table>${head('Place')}<tbody>${body}</tbody></table></div>` +
-      `<p class="rnote">Best Read draws with one of our two layouts. Each of them, ranked on its own against the same ${others.length} layouts:</p>` +
-      `<div class="tbl"><table>${head('Place')}<tbody>${body2}</tbody></table></div>`;
+      `<p class="rnote">Best Read draws with one of our two layouts. Each of them, ranked on its own against the same ${others.length} layouts: two separate rankings of ${pool}, one without Mycelium and one without Tidy Stress (and neither with Best Read). So "1st of ${pool}" means first in its own ranking, not a tie between the two.</p>` +
+      `<div class="tbl"><table>${head('Place in its own ranking')}<tbody>${body2}</tbody></table></div>`;
     return { html, RB, RT, RM, R: Object.fromEntries([BR, TS, MY, ...others].map((a) => [a, a === TS ? RT[a] : a === MY ? RM[a] : RB[a]])), places: { [BR]: place(RB, BR), [TS]: place(RT, TS), [MY]: place(RM, MY) }, next: sorted.find((a) => a !== BR) };
   }
   // the tabs: the five measures, then the same ranking with optional measures added

@@ -1,10 +1,11 @@
 # Tidy Stress and Mycelium: layouts for readable ontology diagrams
 
 The full write-up is [ONTOLOGY-LAYOUT-ALGORITHMS.html](ONTOLOGY-LAYOUT-ALGORITHMS.html), and [ONTOLOGY-LAYOUT-ALGORITHMS-LAB.html](ONTOLOGY-LAYOUT-ALGORITHMS-LAB.html) is the same page with the Layout Lab built in. Each is a single self-contained page with:
+- an executive summary, and the five problems the rankings count, pictured;
 - side-by-side drawings: an open-source layout on the left, ours on the right, on the 15 development graphs and on 34 graphs never seen during development; ours can be shown with straight or curved (routed) links, and ← → flip through the graphs;
 - the rankings and per-graph results, with tabs that add optional measures (subclass links top-down; distance fidelity and even link lengths);
 - top-down drawings of hierarchies, and drawings that change: keeping a drawing after an edit, and growing it click by click in a graph browser;
-- a worked example of the clean-up and its finishing passes, step by step, each step explained in plain terms and in math, on the biomedical and Pizza taxonomies and again on a held-out graph with two big hubs;
+- a worked example of the clean-up and its finishing passes, step by step, each step explained in plain terms and in math, each walk-through on one graph from start to finish: the biomedical taxonomy, and a held-out graph with two big hubs;
 - how the clean-up was taught by show and tell: Brendan Newlon explained and demonstrated how he tidies these drawings, and an AI assistant, Claude (Opus 5.5), distilled the principles into rules a program can run; in the lab edition, the lab itself, with a download of the session for an AI assistant, and the teaching sessions;
 - link routing, time and scale, how the layouts work, the prior work they use, the benchmark method, its limits, and what did not work;
 - an appendix on using the code, with the complete source.
