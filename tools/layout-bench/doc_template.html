@@ -37,6 +37,10 @@ a { color: var(--accent); }
 .card { background: var(--paper); border: 1px solid var(--rule); border-radius: 10px; padding: 16px 18px; min-width: 0; }
 .card h3 { margin-top: 0; }
 .tag { display: inline-block; font-size: .75rem; padding: 1px 8px; border-radius: 99px; background: var(--accent-soft); color: var(--accent); font-weight: 600; margin-left: 6px; vertical-align: middle; }
+.exec { background: var(--paper); border: 1px solid var(--rule); border-left: 4px solid var(--accent); border-radius: 10px; padding: 14px 20px; margin: 0 0 1.4rem; max-width: 82ch; }
+.exec h2 { margin: 0 0 .5rem; font-size: 1.25rem; border: 0; padding: 0; }
+.exec ul { margin: .3rem 0 .2rem; padding-left: 1.2rem; } .exec li { margin: 0 0 .45rem; } .exec p { margin: .4rem 0; }
+.takeaway { max-width: 82ch; margin: 1.2rem 0 .5rem; padding: 8px 14px; border-left: 4px solid var(--accent); background: var(--accent-soft); border-radius: 0 8px 8px 0; font-weight: 600; font-size: .95rem; color: var(--ink); }
 .auto { background: var(--auto-soft); border: 1px solid var(--rule); border-left: 4px solid var(--auto); border-radius: 10px; padding: 14px 18px; margin: 1.2rem 0; max-width: 78ch; }
 .auto h3 { margin: 0 0 .4rem; color: var(--auto); }
 .auto p:last-child { margin-bottom: 0; }
@@ -92,7 +96,13 @@ details.code pre { margin: 8px 12px 12px; max-height: 70vh; }
 .lab-note { font: inherit; padding: 6px 8px; border: 1px solid var(--rule); border-radius: 6px; background: var(--paper); color: var(--ink); resize: vertical; }
 .lab-loghead { font-weight: 600; } .lab-loghead small { font-weight: 400; color: var(--muted); }
 .lab-log, .lab-tlog { margin: 0; padding-left: 1.4rem; max-height: 300px; overflow-y: auto; font-size: .85rem; }
-.lab-log li, .lab-tlog li { margin: 0 0 4px; } .lab-log li.undone { text-decoration: line-through; opacity: .5; }
+.lab-log li, .lab-tlog li { margin: 0 0 4px; } .lab-log li.undone .lab-t { text-decoration: line-through; opacity: .5; }
+.lab-log li { position: relative; padding-right: 22px; border-radius: 4px; }
+.lab-log li:hover, .lab-log li:focus-within { background: var(--accent-soft); }
+.lab-log .lab-del { position: absolute; right: 2px; top: 0; padding: 0 5px; border: 0; background: none; color: var(--muted); font-size: 1rem; line-height: 1.2; cursor: pointer; opacity: 0; }
+.lab-log li:hover .lab-del, .lab-log .lab-del:focus { opacity: 1; } .lab-log .lab-del:hover { color: var(--bad); }
+.lab-log .lab-del[aria-disabled="true"] { cursor: help; } .lab-log .lab-del[aria-disabled="true"]:hover { color: var(--muted); }
+.lab-bar .lab-forget { color: var(--muted); }
 .lab-log small, .lab-tlog small { color: var(--muted); }
 .lab-log q, .lab-tlog q { font-style: italic; }
 .lab-help { font-size: .85rem; color: var(--muted); margin: 10px 2px 0; }
@@ -151,7 +161,7 @@ label.tog { display: inline-flex; gap: 6px; align-items: center; cursor: pointer
 .wx-key { grid-column: 1 / -1; margin: 4px 0 0; font-size: .8rem; }
 .wx-walks { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; margin-bottom: 12px; padding-bottom: 12px; border-bottom: 1px solid var(--rule); font-size: .9rem; }
 .wx-walks button.on { background: var(--auto-soft); border-color: var(--auto); color: var(--ink); font-weight: 600; }
-.wx-steps button:disabled { opacity: .4; cursor: not-allowed; }
+.wx-steps button[aria-disabled="true"] { opacity: .4; cursor: help; }
 .wx-note { background: var(--auto-soft); border-left: 3px solid var(--auto); border-radius: 6px; padding: 8px 10px; margin: 0 0 10px; font-size: .9rem; }
 .wx-opts { display: flex; gap: 14px; flex-wrap: wrap; }
 /* help marks and ranking tabs */
@@ -183,6 +193,16 @@ tr.mine td:first-child { box-shadow: inset 4px 0 0 var(--accent); }
 <h1>Tidy Stress and Mycelium</h1>
 <p class="sub">Layouts that draw ontologies with about half the crossed links of the widely used open-source layouts, even when those are tuned, and a small fraction of the links that run through a class. The same methods draw hierarchies top-down and grow a drawing click by click as a reader explores a graph. A clean-up, distilled from how a person explained and demonstrated tidying these drawings, removes most of what the layouts leave.</p>
 
+<section class="exec" aria-labelledby="summary"><h2 id="summary">Executive summary</h2>
+<p><strong>Tidy Stress and Mycelium are two new layouts for ontology diagrams</strong>, built so that a reader follows each link to the right class. Tidy Stress suits the 10 to 30 classes of a typical ontology; Mycelium suits large and hub-heavy ones. <strong>Best Read</strong>, the auto mode, runs both and keeps the more readable drawing. A clean-up and a link routing then run after the layout, and both also work after any other layout. The package is plain JavaScript with no dependencies, under the Apache 2.0 licence.</p>
+<ul>
+<li><strong>Value:</strong> Best Read draws about half the crossed links and an eighth of the links through classes of the best tuned open-source layouts. Its drawings stay compact (a median of 6.3 times the area of the class boxes) and take under a second. The same methods grow a drawing click by click as a reader explores, without moving the classes already shown, and can draw hierarchies top-down (an experiment for now).</li>
+<li><strong>Benchmark scope:</strong> 11 open-source layouts (Graphviz, ELK, WebCola, d3-force, dagre and Cytoscape), each at general settings and tuned for its best chance. They were run on 15 development graphs of 13 to 179 classes and on 36 graphs never seen during development: held-out graphs, eight published ontologies and graphs from the Rome benchmark. Every ranking uses five measures, pictured below.</li>
+<li><strong>Results:</strong> Best Read ranks first of 12 at general and at tuned settings, and again on the 36 unseen graphs. Others lead on some things: some layouts draw smaller by letting links run through classes, Graphviz is faster, WebCola keeps graph distances more faithfully, and d3-force does better above 3,000 classes.</li>
+<li><strong>Also in the package:</strong> the clean-up was taught by a person, not designed from the literature. He tidied drawings by hand in an interactive Layout Lab while saying why, and an AI assistant distilled his reasons into rules and tested them on graphs nobody had looked at. The package includes the Layout Lab, the Layout Playback that replays the clean-up step by step, the teaching sessions, and a guide to using this show-and-tell method on other problems. <!--NOLAB-->The <a href="ONTOLOGY-LAYOUT-ALGORITHMS-LAB.html#lab">lab edition of this page</a> has the lab built in.<!--/NOLAB--><!--LAB-->This edition has the lab built in (<a href="#lab">open it</a>).<!--/LAB--> The page ends with the full reference implementation, and the benchmarks can be rerun from the repository.</li>
+</ul>
+</section>
+
 <div class="stats">
   <div class="stat"><b>About half the crossings</b><span>of the best tuned open-source layouts: 452 for Best Read against 960 for tuned <code>neato</code> and 971 for tuned WebCola, over 15 test graphs</span></div>
   <div class="stat"><b>An eighth of the links through classes</b><span>of tuned WebCola (39 against 307). Tuned <code>neato</code> comes closer (81), in about 16 times the area</span></div>
@@ -193,86 +213,92 @@ tr.mine td:first-child { box-shadow: inset 4px 0 0 var(--accent); }
 </div>
 
 <nav class="toc" aria-label="Contents"><b>On this page</b>
-<a href="#results">How they rank</a><a href="#topdown">Top-down hierarchies</a><a href="#change">Editing and exploring</a><a href="#cleanup">The clean-up</a><a href="#learned">How it was learned</a><a href="#routing">Link routing</a><a href="#explore">Every test graph</a><a href="#time">Time and scale</a><a href="#how">How the layouts work</a><a href="#method">Method</a><a href="#limits">Limits</a><a href="#code">Appendix: the code</a></nav>
+<a href="#summary">Summary</a><a href="#results">Rankings</a><a href="#topdown">Top-down hierarchies</a><a href="#change">Editing and exploring</a><a href="#cleanup">The clean-up</a><a href="#learned">How it was learned</a><a href="#routing">Link routing</a><a href="#explore">Every test graph</a><a href="#time">Time and scale</a><a href="#how">How the layouts work</a><a href="#method">Method</a><a href="#limits">Limits</a><a href="#code">Appendix: the code</a></nav>
 
 <div class="prose">
-<p>An ontology diagram is only useful if a reader can follow each link from one class to another. Two things make that hard: links that cross, and links that pass under a class box, so that two unrelated classes look connected. General-purpose layouts reduce the first only as a side effect and do little about the second. Tidy Stress and Mycelium are built to minimize both, without letting the drawing sprawl.</p>
+<p>An ontology diagram is only useful if a reader can follow each link from one class to another. Five problems get in the way, pictured below. The two that matter most are links that cross, and links that pass under a class box, so that two unrelated classes look connected. Then come links that cross at a shallow angle, links that leave a class almost together, and a drawing that sprawls over far more canvas than its classes need. General-purpose layouts reduce crossings only as a side effect and do little about links under boxes. Tidy Stress and Mycelium are built to minimize both, without letting the drawing sprawl.</p>
 <p><strong>What we value, and what we deliberately do not.</strong> These layouts are for ontologies, not for graphs in general, and that decides which measures count. All rankings on this page use these five:</p>
 <ul>
 <li><strong>Crossed links and links through classes come first.</strong> Each can make a reader follow the wrong link.</li>
 <li><strong>Crossing angle and angular resolution come next.</strong> A shallow crossing is harder to follow than a square one, and links that leave a class in almost the same direction are hard to tell apart.</li>
 <li><strong>Area matters,</strong> but less than all four.</li>
 </ul>
+</div>
+<figure class="fig"><svg viewBox="0 0 1040 170" role="img" aria-label="The five problems the measures count: crossed links, a link through a class, a sharp crossing, a cramped class and a sprawling drawing."><g transform="translate(0,0)"><rect class="st" x="0" y="0" width="200" height="170" rx="10"/><path class="lk" d="M38,30L162,100"/><path class="lk" d="M38,100L162,30"/><circle class="dot" cx="100" cy="65" r="5"/><rect class="bx" x="15.0" y="19" width="46" height="22" rx="6"/><text class="sm" x="38" y="34" text-anchor="middle" style="fill:var(--ink)">A</text><rect class="bx" x="139.0" y="89" width="46" height="22" rx="6"/><text class="sm" x="162" y="104" text-anchor="middle" style="fill:var(--ink)">B</text><rect class="bx" x="15.0" y="89" width="46" height="22" rx="6"/><text class="sm" x="38" y="104" text-anchor="middle" style="fill:var(--ink)">C</text><rect class="bx" x="139.0" y="19" width="46" height="22" rx="6"/><text class="sm" x="162" y="34" text-anchor="middle" style="fill:var(--ink)">D</text><text class="tx" x="100" y="138" text-anchor="middle">Crossed links</text><text class="sm" x="100" y="156" text-anchor="middle">two links that cross</text></g><g transform="translate(210,0)"><rect class="st" x="0" y="0" width="200" height="170" rx="10"/><path class="bad" d="M30,64H170"/><rect class="bx" x="10.0" y="53" width="40" height="22" rx="6"/><text class="sm" x="30" y="68" text-anchor="middle" style="fill:var(--ink)">A</text><rect class="bx" x="150.0" y="53" width="40" height="22" rx="6"/><text class="sm" x="170" y="68" text-anchor="middle" style="fill:var(--ink)">B</text><rect x="72" y="52" width="56" height="24" rx="7" style="fill:var(--bad-soft);stroke:var(--bad)"/><text class="sm" x="100" y="68" text-anchor="middle" style="fill:var(--ink)">C</text><text class="tx" x="100" y="138" text-anchor="middle">Link through a class</text><text class="sm" x="100" y="156" text-anchor="middle">reads as if C were linked</text></g><g transform="translate(420,0)"><rect class="st" x="0" y="0" width="200" height="170" rx="10"/><path class="lk" d="M24,52L176,80"/><path class="lk" d="M24,86L176,44"/><circle class="dot" cx="100" cy="66" r="5"/><text class="tx" x="100" y="138" text-anchor="middle">Sharp crossing</text><text class="sm" x="100" y="156" text-anchor="middle">under 30°, hard to follow</text></g><g transform="translate(630,0)"><rect class="st" x="0" y="0" width="200" height="170" rx="10"/><path class="lk" d="M50,96L168,30"/><path class="lk" d="M50,96L176,52"/><rect class="bx" x="24.0" y="85" width="52" height="22" rx="6"/><text class="sm" x="50" y="100" text-anchor="middle" style="fill:var(--ink)">A</text><path class="bad" d="M86,76A40,40 0 0 1 90,82" style="stroke-width:3"/><text class="tx" x="100" y="138" text-anchor="middle">Cramped class</text><text class="sm" x="100" y="156" text-anchor="middle">two links under 15° apart</text></g><g transform="translate(840,0)"><rect class="st" x="0" y="0" width="200" height="170" rx="10"/><rect x="12" y="12" width="176" height="104" rx="4" style="fill:none;stroke:var(--bad);stroke-dasharray:5 4"/><path class="lk" d="M38,30L162,98"/><path class="lk" d="M38,30L46,98"/><rect class="bx" x="18.0" y="19" width="40" height="22" rx="6"/><text class="sm" x="38" y="34" text-anchor="middle" style="fill:var(--ink)">A</text><rect class="bx" x="142.0" y="87" width="40" height="22" rx="6"/><text class="sm" x="162" y="102" text-anchor="middle" style="fill:var(--ink)">B</text><rect class="bx" x="26.0" y="87" width="40" height="22" rx="6"/><text class="sm" x="46" y="102" text-anchor="middle" style="fill:var(--ink)">C</text><text class="tx" x="100" y="138" text-anchor="middle">Sprawling drawing</text><text class="sm" x="100" y="156" text-anchor="middle">far more canvas than classes</text></g></svg><figcaption>The five problems every ranking on this page counts, most important first. Crossed links and links that run through a class box they do not belong to (counted within 3 px of the box) can each make a reader follow the wrong link. Sharp crossings and cramped classes are what the crossing angle and the angular resolution measure. A sprawling drawing is what area measures: the bounding box divided by the total area of the class boxes.</figcaption></figure>
+<div class="prose">
 <p>Two common measures are left out on purpose: how faithfully drawn distance follows graph distance (normalized stress), and how even the link lengths are. A business ontology often joins several domains, such as sales, finance and operations, each linked back to shared classes like Person or Organization. Drawing every related class close would pull the domains into each other; keeping each domain together, even when that makes a link to a shared class long, is the point. Length and distance are therefore not goals here, and the main rankings leave them out. Readers who value them, or a top-down hierarchy, can add them with the tabs above each ranking table; our layouts do poorly on distance and length. (For models where the hierarchy is the content, see <a href="#topdown">Top-down hierarchies</a>.) Measured over the 51 graphs: normalized stress is 0.085 after the stress placement alone, 0.132 after Tidy Stress's search, 0.146 for Best Read and 0.159 after the clean-up and the routing. Global distances are therefore about half as faithful. Local closeness is not lost: the share of a class's linked classes that are among its nearest classes is 55.8% after the stress placement and 55.6% at the end. A reader can still take nearness as linked; they should not read a long distance as unrelated.</p>
 <p>Below, a 179-class banking ontology: eleven class hierarchies joined by relationships. On the left is the open-source layout with the fewest crossed links plus links through classes on this ontology; on the right, ours. <em>Mark problems</em> shows every crossing (dot) and every link that runs through a class (red).</p>
 </div>
 
 <div class="cmp" data-graph="big" data-right="Mycelium" data-problems="1"></div>
 
-<h2 id="layouts">The layouts</h2>
+<h2 id="layouts">Two layouts and an auto mode that keeps the better drawing; the clean-up and routing work after any layout</h2>
 <figure class="fig"><svg viewBox="0 0 870 104" role="img" aria-label="The pipeline: placement by Tidy Stress and Mycelium, Best Read keeps the better drawing, the clean-up, the finishing passes, then the link routing."><rect class="st ours" x="10" y="20" width="150" height="64" rx="10"/><text class="tx" x="85.0" y="46" text-anchor="middle">Placement</text><text class="sm" x="85.0" y="66" text-anchor="middle">Tidy Stress, Mycelium</text><rect class="st ours" x="190" y="20" width="120" height="64" rx="10"/><text class="tx" x="250.0" y="46" text-anchor="middle">Best Read</text><text class="sm" x="250.0" y="66" text-anchor="middle">keeps the better</text><rect class="st ours" x="350" y="20" width="150" height="64" rx="10"/><text class="tx" x="425.0" y="46" text-anchor="middle">Clean-up</text><text class="sm" x="425.0" y="66" text-anchor="middle">taught by a person</text><rect class="st ours" x="540" y="20" width="150" height="64" rx="10"/><text class="tx" x="615.0" y="46" text-anchor="middle">Finishing passes</text><text class="sm" x="615.0" y="66" text-anchor="middle">trade, fence, pull in</text><rect class="st ours" x="730" y="20" width="130" height="64" rx="10"/><text class="tx" x="795.0" y="46" text-anchor="middle">Link routing</text><text class="sm" x="795.0" y="66" text-anchor="middle">arcs, bends, names</text><path class="ar" d="M164,52H180"/><path class="arh" d="M186,52l-8,-4.5v9z"/><path class="ar" d="M314,52H340"/><path class="arh" d="M346,52l-8,-4.5v9z"/><path class="ar" d="M504,52H530"/><path class="arh" d="M536,52l-8,-4.5v9z"/><path class="ar" d="M694,52H720"/><path class="arh" d="M726,52l-8,-4.5v9z"/></svg><figcaption>What <code>OntologyLayouts.draw</code> does, left to right. Each stage can also be called on its own, and the clean-up, its finishing passes and the routing work after any layout.</figcaption></figure>
 <div class="cards">
   <div class="card"><h3>Tidy Stress <span class="tag">up to a few dozen classes</span></h3><p>Places classes so that straight-line distances match how many links apart they are, then tidies the drawing: it moves classes to remove crossings, to take them off links that run through them, and to shorten long links, keeping a move only if nothing else gets worse.</p></div>
   <div class="card"><h3>Mycelium <span class="tag">large and hub-heavy ontologies</span></h3><p>Draws groups of closely linked classes as compact pods joined by longer threads. Every hub gets a ring wide enough for all its neighbors, and classes with a single link fan out around the class they hang from, with room for the link's label.</p></div>
-  <div class="card"><h3>Top-down <span class="tag">hierarchies, on request</span></h3><p>The same placement with every subclass at least 40 px below its superclass, then the clean-up and its finishing passes, which keep it that way. For models where the hierarchy is the content. It draws a third to a half of the crossings of tuned ELK layered, the usual choice for top-down drawings. An experiment for now, not yet among the entry points; see <a href="#topdown">Top-down hierarchies</a>.</p></div>
+  <div class="card"><h3>Top-down <span class="tag">hierarchies, on request</span></h3><p>The same placement with every subclass at least 40 px below its superclass, then the clean-up and its finishing passes, which keep it that way. For models where the hierarchy is the content. It draws a third to a half of the crossings of tuned ELK layered, the usual choice for top-down drawings. An experiment for now, not yet among the entry points; see <a href="#topdown">Top-down</a>.</p></div>
   <div class="card"><h3>Link routing <span class="tag">after any layout</span></h3><p>Draws the links on the final positions: parallel and reciprocal links as arcs side by side, self-links as loops on the most open side, links still running through a class bent round it inside the drawing, link ends spread along the side of a crowded class, and link names placed on or beside their link where they cover nothing; a class that a link still runs through is pushed off it when that helps. See <a href="#routing">Link routing</a>.</p></div>
   <div class="card"><h3>Clean-up <span class="tag">after any layout</span></h3><p>Fixes what is left the way a person does: moves a class off a link into nearby open space, turns leaves and small groups that hang from one class until their links are clear, and spreads the regions where problems pile up. It uses what is left of 1.5 s, at most half a second. See <a href="#cleanup">Clean-up after the layout</a>.</p></div>
 </div>
 <div class="auto">
-  <h3>Auto mode: Best Read</h3>
+  <h3>Best Read runs both layouts and keeps the more readable drawing</h3>
   <p>Best Read chooses between the two layouts for a given ontology: it runs Tidy Stress and Mycelium, scores both drawings for readability, keeps the better one, and cleans it up. Above 100 classes it runs Mycelium alone: at that size Mycelium drew far fewer crossings and links through classes in every test, and running both would double the time. It changes no setting inside either layout; it only chooses between their results, by crossed links, links through classes, near misses, overlaps, mean link length and area.</p>
 </div>
 
-<h3>Tidy Stress on a typical ontology</h3>
+<h3>On a typical small ontology, Tidy Stress draws no crossing and no link through a class</h3>
 <div class="prose"><p>Most ontologies people draw have 10 to 30 classes. There the open-source layouts are already decent, and the difference is in the details: fewer crossings and no link through a class.</p></div>
 <div class="cmp" data-graph="uni" data-right="Tidy Stress"></div>
 
-<h3>Mycelium on the hardest case: hubs</h3>
+<h3>On hub-heavy ontologies, Mycelium gives each hub room so its links stop running through other classes</h3>
 <div class="prose"><p>A 53-class clinical record in which three classes link to almost everything. No placement can untangle this fully. Mycelium gives each hub a ring of room so that its links stop running through other classes, at the cost of a larger drawing.</p></div>
 <div class="cmp" data-graph="health" data-right="Mycelium" data-problems="1"></div>
 
-<h2 id="results">How they rank</h2>
-<figure class="fig"><svg viewBox="0 0 830 170" role="img" aria-label="Four problems the measures count: crossed links, a link through a class, a sharp crossing and a cramped class."><g transform="translate(0,0)"><rect class="st" x="0" y="0" width="200" height="170" rx="10"/><path class="lk" d="M38,30L162,100"/><path class="lk" d="M38,100L162,30"/><circle class="dot" cx="100" cy="65" r="5"/><rect class="bx" x="15.0" y="19" width="46" height="22" rx="6"/><text class="sm" x="38" y="34" text-anchor="middle" style="fill:var(--ink)">A</text><rect class="bx" x="139.0" y="89" width="46" height="22" rx="6"/><text class="sm" x="162" y="104" text-anchor="middle" style="fill:var(--ink)">B</text><rect class="bx" x="15.0" y="89" width="46" height="22" rx="6"/><text class="sm" x="38" y="104" text-anchor="middle" style="fill:var(--ink)">C</text><rect class="bx" x="139.0" y="19" width="46" height="22" rx="6"/><text class="sm" x="162" y="34" text-anchor="middle" style="fill:var(--ink)">D</text><text class="tx" x="100" y="138" text-anchor="middle">Crossed links</text><text class="sm" x="100" y="156" text-anchor="middle">two links that cross</text></g><g transform="translate(210,0)"><rect class="st" x="0" y="0" width="200" height="170" rx="10"/><path class="bad" d="M30,64H170"/><rect class="bx" x="10.0" y="53" width="40" height="22" rx="6"/><text class="sm" x="30" y="68" text-anchor="middle" style="fill:var(--ink)">A</text><rect class="bx" x="150.0" y="53" width="40" height="22" rx="6"/><text class="sm" x="170" y="68" text-anchor="middle" style="fill:var(--ink)">B</text><rect x="72" y="52" width="56" height="24" rx="7" style="fill:var(--bad-soft);stroke:var(--bad)"/><text class="sm" x="100" y="68" text-anchor="middle" style="fill:var(--ink)">C</text><text class="tx" x="100" y="138" text-anchor="middle">Link through a class</text><text class="sm" x="100" y="156" text-anchor="middle">reads as if C were linked</text></g><g transform="translate(420,0)"><rect class="st" x="0" y="0" width="200" height="170" rx="10"/><path class="lk" d="M24,52L176,80"/><path class="lk" d="M24,86L176,44"/><circle class="dot" cx="100" cy="66" r="5"/><text class="tx" x="100" y="138" text-anchor="middle">Sharp crossing</text><text class="sm" x="100" y="156" text-anchor="middle">under 30°, hard to follow</text></g><g transform="translate(630,0)"><rect class="st" x="0" y="0" width="200" height="170" rx="10"/><path class="lk" d="M50,96L168,30"/><path class="lk" d="M50,96L176,52"/><rect class="bx" x="24.0" y="85" width="52" height="22" rx="6"/><text class="sm" x="50" y="100" text-anchor="middle" style="fill:var(--ink)">A</text><path class="bad" d="M86,76A40,40 0 0 1 90,82" style="stroke-width:3"/><text class="tx" x="100" y="138" text-anchor="middle">Cramped class</text><text class="sm" x="100" y="156" text-anchor="middle">two links under 15° apart</text></g></svg><figcaption>The two counts that matter most to a reader come first: crossed links, and links that run through a class box they do not belong to (counted within 3 px of the box). Sharp crossings and cramped classes are what the crossing angle and the angular resolution measure. Area is the fifth measure.</figcaption></figure>
+<h2 id="results">Best Read ranks first of 12 layouts, with about half the crossings of the best tuned open-source layouts</h2>
 <div class="prose">
 <p>Each layout is ranked on each of the 15 development graphs (13 to 179 classes) on the five measures, and the ranks are averaged: 1 is best, and layouts with equal results share a rank. The open-source layouts are given their best chance. Each library tried several settings and seeds, its default run included, and kept the run with the fewest crossed links plus links through classes, the two counts we lead on. The settings are listed under <a href="#method">Benchmark method</a>. Layered layouts were given subclass links oriented parent to child. Ours appear with the clean-up.</p>
 <p>The main table ranks Best Read, the auto mode a user would call, against the eleven open-source layouts. Best Read always draws with one of our two layouts, so ranking all three together would count our drawings twice; the second table ranks Tidy Stress and Mycelium each on its own against the same eleven. The tabs add optional measures for readers who value them.</p>
 </div>
+<p class="takeaway">Against tuned open-source layouts, Best Read ranks first on the five measures (mean rank 2.9; next, WebCola, 4.8). It draws 452 crossed links and 39 links through classes over the 15 graphs; the closest open-source layout, tuned <code>neato</code>, draws 960 and 81, in about 16 times the area.</p>
 <!--__TABLE_TUNED__-->
 <div class="cols2">
-<div class="lead"><h3>Where our layouts lead</h3><ul>
+<div class="lead"><h3>Ours lead on the two problems that mislead a reader</h3><ul>
 <li><strong>Crossed links:</strong> 452 for Best Read, against 960 for tuned <code>neato</code>, 971 for tuned WebCola and 1,070 for tuned <code>sfdp</code>.</li>
 <li><strong>Links through classes:</strong> 39 for Best Read, against 307 for tuned WebCola. Tuned <code>neato</code> draws 81, in about 16 times the area: its median drawing is 104 times the area of its boxes, against Best Read's 6.3.</li>
 <li><strong>Every graph:</strong> Best Read has the fewest crossed links plus links through classes, or ties for the fewest, on all 15 development graphs and on all 36 graphs never seen during development.</li>
 <li><strong>Angles:</strong> Tidy Stress ranks first on crossing angle and Best Read narrowly first on angular resolution.</li>
 <li><strong>After tuning:</strong> tuning brought the open-source layouts closer (WebCola, <code>sfdp</code> and <code>neato</code> draw 13%, 17% and 34% fewer crossings tuned than at general settings), and the lead holds.</li>
 </ul></div>
-<div class="lead"><h3>Where others lead</h3><ul>
+<div class="lead"><h3>Others lead on area, speed and faithful distances</h3><ul>
 <li><strong>Area:</strong> Cytoscape <code>cose</code>, dagre and <code>fcose</code> draw tighter, <code>cose</code> and dagre by letting links run through boxes (4,092 and 1,330 of them). Mycelium's drawings are about 40% larger than Best Read's.</li>
 <li><strong>Time:</strong> Best Read takes 0.5 s at the median; Graphviz at general settings takes tens of milliseconds. See <a href="#time">Time and scale</a>.</li>
 <li><strong>Distance and even lengths:</strong> with those two measures added (third tab), WebCola ranks first and Best Read second; Mycelium, which lets links between groups run long on purpose, falls to fifth.</li>
-<li><strong>Very large graphs:</strong> at 3,335 classes d3-force draws fewer problems. See <a href="#verylarge">Graphs of over a thousand classes</a>.</li>
+<li><strong>Very large graphs:</strong> at 3,335 classes d3-force draws fewer problems. See <a href="#verylarge">Very large graphs</a>.</li>
 </ul></div>
 </div>
 <div class="prose">
 <p><strong>Taken together.</strong> On the five measures, Best Read places first of twelve with a mean rank of 2.9; the next, tuned WebCola, has 4.8. That gap is mostly the two counts that make a reader follow the wrong link: about half the crossings and an eighth of the links through classes of the nearest contenders. The others lead where a drawing can be smaller or faster by letting those problems stand. Which measures matter most is a judgment backed by Purchase's studies of crossings, not by a study of our own (see <a href="#limits">Limits</a>).</p>
 </div>
-<h3 id="scoreboard">At general settings</h3>
+<h3 id="scoreboard">At general settings, Best Read also ranks first</h3>
 <div class="prose"><p>The same ranking with each open-source library at sensible general settings, one run each:</p></div>
+<p class="takeaway">With every open-source layout at general settings, Best Read again ranks first (mean rank 2.6; next, WebCola, 4.4).</p>
 <!--__TABLE_DEFAULT__-->
-<h3 id="unseen">On graphs never seen during development</h3>
+<h3 id="unseen">The lead holds on 36 graphs never seen during development</h3>
 <div class="prose">
 <p>The layouts and the clean-up were developed on the 15 graphs above, so their lead there could partly be fitted to those graphs. To check, they were run, unchanged, on 36 graphs that were never viewed or used for tuning: ten held-out graphs in shapes the development graphs do not cover (18 to 304 classes), eight published ontologies (FOAF, Dublin Core terms, OWL-Time, DCAT 3, BFO 2020, DOLCE+DnS Ultralite, SAREF core and GoodRelations) and 18 graphs of the Rome collection, the classic graph-drawing benchmark (20 to 100 nodes). Same open-source layouts and tuned settings, same measures. All but the two largest can be opened in the <a href="#explore">explorer below</a>.</p>
 <p><strong>The lead holds.</strong> Over the 36 graphs, Best Read draws 1,565 crossed links and 138 links through classes, against 2,160 and 212 for tuned <code>neato</code> (in nearly ten times the area), 2,429 and 780 for tuned WebCola, and 2,411 and 601 for tuned <code>sfdp</code>. It places first of twelve with a mean rank of 3.0, ahead of tuned <code>neato</code> (4.6) and WebCola (4.8).</p>
 <p>These graphs also caught a fault the development graphs had hidden. On the published ontologies and the Rome graphs, Mycelium alone drew fewer crossings than Best Read, because Best Read chose with a score that also penalized long links and passed over Mycelium's pod layouts. It now chooses without those penalties. That change was decided on the 15 development graphs (6.5% fewer crossed links plus links through classes, 7% more area) and only then measured here: 1,297 → 1,284 crossings and 134 → 108 links through classes on the public graphs.</p>
 </div>
+<p class="takeaway">On the 36 unseen graphs Best Read still ranks first (mean rank 3.0; next, tuned <code>neato</code>, 4.6), so the lead is not fitted to the development graphs.</p>
 <!--__TABLE_UNSEEN__-->
 
-<h2 id="topdown">Top-down hierarchies</h2>
+<h2 id="topdown">Top-down, every subclass link points down, with a third to a half of the crossings of ELK layered</h2>
 <div class="prose">
 <p>Tidy Stress, Mycelium and Best Read are built for conceptual ontologies, where classes are joined mostly by relationships. There a subclass link is one relationship among many, and about half of them point down. For a taxonomy, or any model where the hierarchy is the content, a reader rightly expects general classes above specific ones. A reviewer called the first stance a defect for such models, and we agree.</p>
 <p>The same methods draw hierarchies top-down. The placement is the same stress placement, with every subclass at least 40 px below its superclass: the constraints are applied by projection after each placement sweep, in the spirit of Dwyer, Koren and Marriott's constrained stress majorization (IPSep-CoLa, 2006). Every tidy-up move and leaf placement must keep them. The clean-up and its finishing passes then run in a top-down mode, where no move may lift a subclass to less than 20 px below its superclass. Best Read, top-down, chooses between the two layouts drawn that way, as Best Read does.</p>
 <p>The usual tools for top-down drawings are layered layouts: ELK layered and dagre, given subclass links oriented parent to child and tuned as in the rankings. On the development graphs they and WebCola were given only runs that keep subclass links top-down; on the unseen graphs, the tuned runs. Totals:</p>
 </div>
+<p class="takeaway">Drawn top-down, Best Read points every subclass link down and draws a third to a half of tuned ELK layered's crossings and a quarter to an eighth of its links through classes, on every set of graphs.</p>
 <!--__TABLE_TOPDOWN__-->
 <div class="prose">
 <p><strong>Every subclass link points down, with a third to a half of the crossings of tuned ELK layered</strong> (588 against 1,663 on the development graphs, 420 against 1,433 and 1,391 against 3,100 on the graphs never seen during development) <strong>and between a quarter and an eighth of its links through classes</strong> (141 against 516, 63 against 509, 135 against 751). The layered layouts keep a strict layering, which costs crossings on ontologies whose relationships cut across the hierarchy, and even then they leave some subclass links pointing up or sideways. dagre packs tighter by letting many more links run through classes. WebCola with the same constraints comes closest on the development graphs, in twice the area and about 40 times the time.</p>
@@ -287,10 +313,10 @@ tr.mine td:first-child { box-shadow: inset 4px 0 0 var(--accent); }
 <p>Readers who value a top-down hierarchy can also rank every layout by it: the ranking tables have a tab that adds it as a sixth measure.</p>
 </div>
 
-<h2 id="change">Drawings that change: editing and exploring</h2>
+<h2 id="change">When a drawing grows, the classes already shown stay put and the new ones are placed cleanly</h2>
 <div class="prose">
 <p>A diagram is rarely drawn once. A modeller adds classes, and a reader of a graph browser clicks a class to see its neighbours. Each time, redrawing from scratch would move the classes the reader already knows. These layouts can keep the earlier drawing and place only what is new.</p>
-<h3>Exploring a graph, one click at a time</h3>
+<h3>Exploring a graph: each click draws a third of the crossings of a force-directed expansion, and moves nothing</h3>
 <p>A graph browser usually starts from one class or a small part of a model, and each click adds a class's hidden neighbours. To measure that, simulated sessions were run on 12 of the test graphs, two starts each (one class, or a class and its neighbourhood) and two seeds. That gave 48 sessions of up to 8 clicks, each click adding up to 15 classes: 425 drawings in all, every link drawn straight. Each click was drawn four ways:</p>
 <ul>
 <li><strong>A typical force-directed expansion:</strong> d3-force with the classes already shown pinned, and the new ones started beside the clicked class. The settings are a 170 px link distance, repulsion −300, collision on the boxes and 300 ticks. This is the usual way graph browsers grow a drawing.</li>
@@ -299,6 +325,7 @@ tr.mine td:first-child { box-shadow: inset 4px 0 0 var(--accent); }
 <li><strong>Redraw:</strong> <code>draw</code> from scratch at every click.</li>
 </ul>
 </div>
+<p class="takeaway">Keeping the drawing exactly (nothing moves) gives a third of the crossings and a fifth of the links through classes of a typical force-directed expansion, in half the time.</p>
 <div class="tbl"><table>
 <thead><tr><th class="l">Each click drawn by</th><th>Crossed links per drawing</th><th>Links through classes</th><th>Names over a class or name</th><th>Earlier classes moved</th><th>Time per click, mean</th></tr></thead>
 <tbody>
@@ -315,7 +342,7 @@ tr.mine td:first-child { box-shadow: inset 4px 0 0 var(--accent); }
 <li>The placement sees each pair of linked classes once, so data graphs with a dozen links between the same two classes stay quick.</li>
 </ul>
 <p>A redraw is cleaner still but moves the earlier classes by over a third of the drawing, so the reader loses their place. <strong>Allowing small moves</strong> (keep without <code>exact</code>) almost removes links through classes, but earlier classes move 2.7% of the drawing on average. That suits a "tidy" command better than every click. <strong>With the link routing</strong> instead of straight links, keep-exact leaves 20.7 crossed links and 1.0 link through a class per drawing: the bends take most of the rest off the classes, for about 25 ms per click.</p>
-<h3>How to use it in a graph browser</h3>
+<h3>How to call it from a graph browser</h3>
 <ol>
 <li><strong>The first view:</strong> <code>draw(boxes, links)</code>. A single class works, so an exploration can start from one.</li>
 <li><strong>Each click:</strong> append the new classes and their links, then call <code>draw(boxes, links, { keep, exact: true })</code>, with the earlier positions in <code>keep</code> and <code>null</code> for each new class.</li>
@@ -324,9 +351,10 @@ tr.mine td:first-child { box-shadow: inset 4px 0 0 var(--accent); }
 <li><strong>Straight links:</strong> where links that bend round classes would confuse, add <code>route: { straight: true }</code>. No link is then bent round a class; repeated and reciprocal links between two classes are still arcs side by side, and self-links loops. Add <code>arcs: false</code> as well to draw repeated links as parallel straight lines.</li>
 <li><strong>Drag:</strong> a class the reader has dragged stays where they put it if its position goes into <code>keep</code> with <code>exact: true</code>.</li>
 </ol>
-<h3>After an edit to the model</h3>
+<h3>After an edit, keeping the old positions costs some crossings; redrawing moves every class</h3>
 <p>Redrawing a model after an edit moves the classes a reader already knows: with 10% more classes, a redraw moves the old ones by about a third of the drawing's diagonal on average (25 graphs). <code>draw(…, { keep })</code> takes the earlier positions, with <code>null</code> for each new class. It places the new classes round the classes they link to, then lets the clean-up and the routing make local moves. With <code>exact: true</code> no old class moves at all, which suits a drawing arranged by hand. Over the 15 development and 10 held-out graphs:</p>
 </div>
+<p class="takeaway">Keeping the old positions costs 18 to 22% more crossed links than a redraw, but a redraw moves the old classes by 30% of the diagonal.</p>
 <div class="tbl"><table>
 <thead><tr><th class="l">Classes added</th><th class="l">Drawing</th><th>Crossed links</th><th>Links through classes</th><th>Old classes moved</th><th>Mean time</th></tr></thead>
 <tbody>
@@ -338,7 +366,7 @@ tr.mine td:first-child { box-shadow: inset 4px 0 0 var(--accent); }
 <p>Keeping costs crossings, because the new links have to cross a picture that was not made for them; redrawing from time to time remains the way to a clean drawing. These numbers are the hard case: the added classes were picked at random, hubs included, where an edit usually adds a few classes in one place.</p>
 </div>
 
-<h2 id="cleanup">Clean-up after the layout</h2>
+<h2 id="cleanup">The clean-up removes two thirds of the links through classes, after any layout</h2>
 <div class="prose">
 <p>Both layouts place classes by a global rule: stress, pods, hub rings. What a global rule leaves behind is local: a leaf sitting on a line, a corner where five links cross, a class that could step two box-widths aside into empty space. A person sees these at a glance and fixes them in a minute. The clean-up does the same automatically. It was taught by a person who explained how they do it (see <a href="#learned">How the clean-up was learned</a>), in two rounds, and it runs in two parts:</p>
 <ol>
@@ -347,15 +375,16 @@ tr.mine td:first-child { box-shadow: inset 4px 0 0 var(--accent); }
 </ol>
 <p>Over the 15 test graphs, before and after the clean-up (totals; area is the drawing's bounding box divided by the total area of the class boxes). In each cell the value before the arrow is without the clean-up and the bold value after it is with the clean-up. Crossed links, links through classes, area and time are lower-is-better, so a lower value right of the arrow means the clean-up improved the drawing; the two angle measures are higher-is-better.</p>
 </div>
+<p class="takeaway">The clean-up takes Best Read's links through classes from 124 to 39, removes 7% of its crossed links and makes the drawing about a fifth smaller, for about 0.25 s more at the median.</p>
 <!--__TABLE_CLEANUP__-->
 <div class="prose">
 <p>Links through classes fall by two thirds (Best Read 124 → 39). Crossings fall a little (Best Read draws 7% fewer), crossing angles get slightly squarer, and the drawing gets smaller (Best Read's area 8.0 → 6.3 times its boxes, from pulling sprawling parts and groups in from the edge). The cost is time: Best Read's median rises from 0.2 to 0.5 s. The clean-up takes whatever is left of 1.5 s after the layout, at most half a second, and is skipped when less than 0.1 s is left. Above 100 classes the layout is given 0.6 s so that the clean-up keeps its half second: on large graphs that gives fewer problems than a longer layout. To fit in that time, the clean-up looks only at the links and classes near each move, through a grid of cells one link long, with the same results as checking every pair.</p>
 </div>
 
-<h3>A worked example</h3>
-<div class="prose"><p>Both parts, step by step. The first walk-through puts each part on the graph where its steps are easiest to see: the clean-up proper on a 115-class biomedical taxonomy drawn by Best Read, and the finishing passes on the 90-class Pizza taxonomy, after its clean-up proper. The steps follow the order a person works in: look at the whole drawing, find the worst region, make room there, then make the easy fixes. The second walk-through runs every step on one graph of a very different shape, never seen during development: two big hubs that share many classes. There no region needs spreading, and other moves do the work. Each step has two tabs: the reasoning in plain terms, and the same step as the code computes it. <kbd>←</kbd> <kbd>→</kbd> step through.</p></div>
+<h3>Worked example: every step of the clean-up on two graphs</h3>
+<div class="prose"><p>Both parts, step by step, each walk-through on one graph from start to finish: a 115-class biomedical taxonomy drawn by Best Read, and a graph of a very different shape never seen during development, two big hubs that share many classes. The steps follow the order a person works in: look at the whole drawing, find the worst region, make room there, then make the easy fixes. Not every step has work to do on every graph; a step that changes nothing on the chosen graph is greyed out, and its tooltip says why. Each step has two tabs: the reasoning in plain terms, and the same step as the code computes it. <kbd>←</kbd> <kbd>→</kbd> step through.</p></div>
 <div class="wx" id="wx">
-  <div class="wx-walks" role="tablist" aria-label="Walk-through"><span class="wx-part">Walk through</span><button type="button" data-w="0" class="on">Biomedical taxonomy, then Pizza</button><button type="button" data-w="1">Two big hubs (57 classes, never seen during development)</button></div>
+  <div class="wx-walks" role="tablist" aria-label="Walk-through"><span class="wx-part">Walk through</span><button type="button" data-w="0" class="on">Biomedical taxonomy (115 classes)</button><button type="button" data-w="1">Two big hubs (57 classes, never seen during development)</button></div>
   <div class="wx-steps" role="tablist" aria-label="Steps">
     <span class="wx-part">The clean-up</span>
     <button type="button" data-s="1" class="on">1. Look at the whole drawing</button>
@@ -415,9 +444,9 @@ tr.mine td:first-child { box-shadow: inset 4px 0 0 var(--accent); }
       </div>
 
       <div class="wx-t" data-s="5" data-t="plain" hidden>
-        <p class="w1">A second drawing: the Pizza taxonomy after the clean-up proper. One link still runs through a class (red).</p>
+        <p class="w1">The taxonomy after the clean-up proper. One link still runs through a class (red).</p>
         <p>The first pass is the simplest. When two classes hang off the same class by one link each, they can <strong>trade places</strong>. A long name beside a link that passes close by is the usual case: the shorter box fits where the longer one was in the way.</p>
-        <p class="w1">Here American and Giardiniera trade places. The link from LaReine to NamedPizza passed within 9 px of Giardiniera, the margin drawn links keep (tick <em>Before this step</em> to see it, dashed amber); after the trade it is clear. The counts, taken with a 6 px margin, do not change. The red link, from Siciliana through SloppyGiuseppe, is the next pass's job.</p>
+        <p class="w1">Here Influenza and Malaria trade places. The link from Malaria to InfectiousDisease passed within 9 px of Influenza, the margin drawn links keep (tick <em>Before this step</em> to see it, dashed amber); after the trade it is clear. The counts, taken with a 6 px margin, do not change.</p>
       </div>
       <div class="wx-t" data-s="5" data-t="math" hidden>
         <p>For every pair of one-link classes <i>a</i>, <i>b</i> of the same class, swap their positions. Keep the swap when the cost of the problems involving them falls by more than 0.5 and neither box comes within 4 px of another. Cost: 6 per crossing and 10 per link through a class, with a 9 px margin, as the drawing is measured after the link routing.</p>
@@ -426,7 +455,6 @@ tr.mine td:first-child { box-shadow: inset 4px 0 0 var(--accent); }
       <div class="wx-t" data-s="6" data-t="plain" hidden>
         <p><strong>"Don't fence me in."</strong> A one-link class whose link still crosses another link or runs through a class is boxed in by lines, often with open space round its neighbor. It looks there for the spot with the fewest problems, then the most room, then the shortest link.</p>
         <p><strong>"Push it off the line."</strong> A class that a link still runs through, or passes very close to, moves sideways off the line, just far enough. Or, when the link ends at a one-link class, that end turns a little round its neighbor. Each move is kept only if the problems involving the class fall.</p>
-        <p class="w1">Here Siciliana steps out of its fence, so the last link through a class, Siciliana's through SloppyGiuseppe, is gone; AmericanHot moves off the link from Rosa, which passed within 9 px of it.</p>
       </div>
       <div class="wx-t" data-s="6" data-t="math" hidden>
         <p>Fence: candidates round the neighbor in 48 directions, from just clear of its box out to three link lengths, in steps of 30 px. Candidate <i>c</i> scores 200&middot;<i>x</i>(<i>c</i>) &minus; room(<i>c</i>) + 0.2&middot;<i>r</i>. Here <i>x</i> counts 6 per crossing and 10 per link through a class (9 px margin), room is the clearance to the nearest box or link (capped at 120 px), and <i>r</i> is the distance to the neighbor. A candidate is taken only if <i>x</i> falls.</p>
@@ -436,7 +464,7 @@ tr.mine td:first-child { box-shadow: inset 4px 0 0 var(--accent); }
       <div class="wx-t" data-s="7" data-t="plain" hidden>
         <p><strong>"Pull it in from the edge."</strong> A chain or a small tree that hangs off the rest by one link and sprawls into empty canvas could fold up or down instead. Groups with an empty middle between them could sit closer. Use the open space inside the drawing before making the canvas bigger.</p>
         <p>So a part that hangs by one link turns round the class it hangs from, or draws in toward it, and whole groups slide toward the middle. Parts nearest the edge go first. A move is kept only if the drawing gets smaller with no more problems.</p>
-        <p class="w1">Here the drawing shrinks from 1,557 &times; 1,216 to 1,471 &times; 1,153 px, about 10% less area.</p>
+        <p class="w1">Here 19 classes fold in, and the drawing narrows from 2,153 &times; 1,625 to 2,061 &times; 1,625 px, about 4% less area, with no new crossing or link through a class.</p>
       </div>
       <div class="wx-t" data-s="7" data-t="math" hidden>
         <p>A part is what one class cuts off from the rest (a one-link class, a chain, a small tree), up to 40% of the classes. It turns round that class by up to 180° and/or draws in toward it, to 85, 70 or 55% of its reach. Whole groups (Louvain communities of four or more) slide toward the middle in one of 16 directions, by 40 to 640 px.</p>
@@ -453,7 +481,7 @@ tr.mine td:first-child { box-shadow: inset 4px 0 0 var(--accent); }
   </div>
 </div>
 
-<h3>All the steps, and what each adds</h3>
+<h3>Single moves into open space do most of the work; each other step adds a little</h3>
 <div class="prose">
 <p>In the layouts the clean-up runs in rounds, each round in this order, until nothing improves or the time is up:</p>
 <ol>
@@ -466,6 +494,7 @@ tr.mine td:first-child { box-shadow: inset 4px 0 0 var(--accent); }
 <p>After the finishing passes, one more tidy step: classes with no link, and small parts of the graph not linked to the rest, that sit among the classes of the main graph move out to one side of it, so that they neither crowd it nor look linked to it. It is kept only when it adds no crossed link or link through a class and grows the drawing by at most 10%.</p>
 <p>The example spreads first, the way a person works. In the layouts, spreading comes after the single moves and leaf units, because that order measured better. The 15 graphs, cleaned up from the same starting drawings with half a second each; they start with 138 links through classes:</p>
 </div>
+<p class="takeaway">Single moves alone take links through classes from 138 to 57; all the steps together reach 36. Spreading first, as the worked example does, is worse than the order the layouts use.</p>
 <div class="tbl"><table>
 <thead><tr><th>Variant</th><th>Links through classes after</th><th>Crossed links after (465 before)</th><th>Sharp crossings after (37 before)</th></tr></thead>
 <tbody>
@@ -481,7 +510,7 @@ tr.mine td:first-child { box-shadow: inset 4px 0 0 var(--accent); }
 <p>Most of the gain comes from the simplest step: single moves into open space alone take 138 links through classes down to 57. Leaf units, region spreading and group moves each add a little; spreading and group moves together remove about a quarter of what is left after the single moves and leaf units. None of the steps reduces crossings much. That is the layout's job; the clean-up mainly takes links off classes and opens sharp crossings.</p>
 </div>
 
-<h2 id="learned">How the clean-up was learned: show and tell</h2>
+<h2 id="learned">The clean-up was taught by a person and turned into rules by an AI assistant</h2>
 <div class="prose">
 <p>The clean-up was not designed from the literature, and it does not replay anyone's moves. Brendan Newlon, who works with these ontologies, taught it to an AI coding assistant, Claude (Anthropic's Opus 5.5 model). He solved the drawings by hand while saying what he was doing and why, named the principle behind each move, often with a metaphor (open space as a resource, a crowd pushed outward in pizza slices, a leaf that can always be solved), and suggested how a program could recognize the situation and carry the move out. The assistant's part was to distill that intuition into definitions, measures and steps a program can run, and to test whether each one held up on every graph, not only the one it was shown on. The loop had four parts.</p>
 <ol>
@@ -492,6 +521,7 @@ tr.mine td:first-child { box-shadow: inset 4px 0 0 var(--accent); }
 </ol>
 <p>The principles Brendan taught, and what became of each:</p>
 </div>
+<p class="takeaway">Each principle the person taught became a specific rule in the clean-up.</p>
 <div class="tbl"><table>
 <thead><tr><th class="l">The pattern, in Brendan's words</th><th class="l">What the clean-up does</th></tr></thead>
 <tbody>
@@ -525,6 +555,7 @@ tr.mine td:first-child { box-shadow: inset 4px 0 0 var(--accent); }
       <button type="button" class="lab-reset" title="Back to the starting drawing; the steps stay in the log">Start over</button>
       <button type="button" class="lab-clean" title="Run the library's clean-up and finishing passes on the drawing as it is now">Run our clean-up</button>
       <button type="button" class="lab-export" title="One Markdown file with every graph you worked on, ready to give to an AI assistant">Download the session</button>
+      <button type="button" class="lab-forget" title="Forget everything done in the lab on every graph: moves, notes and the log. Asks first.">Clear session</button>
     </div>
     <div class="lab-main">
       <div class="lab-canvas"></div>
@@ -536,7 +567,7 @@ tr.mine td:first-child { box-shadow: inset 4px 0 0 var(--accent); }
         <ol class="lab-log"></ol>
       </div>
     </div>
-    <p class="lab-help">Drag a class to move it. Ctrl- or Shift-click classes to select several, then drag one of them to move them together; click empty space to clear the selection. Drag empty space to pan, scroll to zoom. <kbd>←</kbd> <kbd>→</kbd> switch graphs, <kbd>Ctrl</kbd>+<kbd>Z</kbd> undoes. Red marks the problems the counts measure. Your sessions stay in this browser until you download them.</p>
+    <p class="lab-help">Drag a class to move it. Ctrl- or Shift-click classes to select several, then drag one of them to move them together; click empty space to clear the selection. Drag empty space to pan, scroll to zoom. <kbd>←</kbd> <kbd>→</kbd> switch graphs, <kbd>Ctrl</kbd>+<kbd>Z</kbd> undoes. Red marks the problems the counts measure. Hover over a step in the log and click &times; to delete it: a note or a crossed-out step goes for good, and the latest move is undone and removed. <em>Clear session</em> forgets everything. Your sessions stay in this browser until you download them.</p>
     <p class="lab-help"><strong>What to do with the download.</strong> The file starts with a short brief for an AI coding assistant: what happened in the session, and what to do with it. That means turning your reasons into rules a program can run, trying them in <code>src/ontology-layouts.js</code>, and measuring them with the benchmarks in this repository, on graphs nobody tuned on. Give it the file and a copy of the repository. If a new rule holds up, please send it back as a pull request with the session attached. <code>docs/SHOW-AND-TELL-LABS.md</code> has the method and the prompts that worked.</p>
     <details class="lab-teach">
       <summary>The sessions that taught the clean-up</summary>
@@ -553,7 +584,7 @@ tr.mine td:first-child { box-shadow: inset 4px 0 0 var(--accent); }
 <p>Profiling the first version showed that the group moves took about 95% of its time and kept about one try in twenty. Two changes made the clean-up fast enough for the layouts: candidate spots come from the open-space grid (a few dozen instead of 96 fixed positions), and a class or problem that could not be improved is not tried again until something near it has moved.</p>
 </div>
 
-<h3 id="novel">What is new here, and what is not</h3>
+<h3 id="novel">New here: repairs chosen by readability counts, taught by a person; most single ingredients have precedents</h3>
 <div class="prose">
 <p>Most single ingredients have precedents. What we have not seen elsewhere is the combination: repairs chosen and judged by readability counts after a layout, the regions picked by where those counts pile up, and the steps distilled from a person's explained problem solving. Readers may know closer prior work; we would welcome pointers.</p>
 <ul>
@@ -565,7 +596,7 @@ tr.mine td:first-child { box-shadow: inset 4px 0 0 var(--accent); }
 </ul>
 </div>
 
-<h2 id="routing">Link routing after the layout</h2>
+<h2 id="routing">Link routing removes most remaining links through classes and shows every parallel link</h2>
 <div class="prose">
 <p>The routing answers three gaps that a review pointed out for business ontologies: parallel and reciprocal links (Organization employs Person, Person manages Organization) drawn as straight lines lie exactly on top of each other; link names are not part of the drawing; and moving classes is the only way the layouts clear a link out of a class's way. The routing draws the links on the final positions and never moves a class:</p>
 <ul>
@@ -577,6 +608,7 @@ tr.mine td:first-child { box-shadow: inset 4px 0 0 var(--accent); }
 </ul>
 <p>Measured on the drawn curves, on Best Read's drawings before the refinements below (no class moved). <strong>Two margins.</strong> Here and in every table about the routing, a link counts as running through a class when it passes within 9 px of its box: closer than that, a drawn line with its arrowhead reads as touching the box, and the routing keeps that clearance. The rankings below count within 3 px, as published comparisons of layouts do, so the same drawing has more links through classes here. That, and the earlier drawings, is why Best Read's straight links show 61 links through classes on the 15 development graphs in this table and 39 in the rankings. The graphs carry no link names, so the names are made up: "has" plus the target class, "relatedTo" plus the target for a second link the same way, and so on; subclass links have none. Totals:</p>
 </div>
+<p class="takeaway">Routing the links leaves 15% fewer crossed links, two thirds fewer links through classes and 93% fewer names on a class or another name, and hides no parallel link, for about 10 bends per graph.</p>
 <div class="tbl"><table>
 <thead><tr><th>Graphs</th><th>Links drawn</th><th>Crossed links</th><th>Sharp crossings</th><th>Links through classes</th><th>Parallel links hidden</th><th>Link ends within 4 px</th><th>Names over a class or name</th><th>Bends</th><th>Area ÷ class area</th></tr></thead>
 <tbody>
@@ -591,7 +623,7 @@ tr.mine td:first-child { box-shadow: inset 4px 0 0 var(--accent); }
 <p><strong>See it on any graph.</strong> Every drawing of ours in this page has a <strong>Curved links</strong> switch: it draws the links as the library does, with the routing, and gives the counts on the drawn links (3 px margin, as ranked). The switch is highlighted where curving removes problems or shows parallel links that straight lines hide; that is 58 of our 98 drawings (39 with fewer problems), and curving never adds a problem in these counts.</p>
 <p>Over the 51 graphs: 15% fewer crossed links, two thirds fewer links through classes, no parallel link hidden (171 before), a fifth of the sharp crossings, half the crowded link ends and 93% fewer names on top of classes or other names, for about 10 bends per graph (a third of them the arcs of parallel links) and 2 to 4% more area. It takes at most 250 ms on the work clock, under 60 ms on most graphs. <code>tools/layout-bench/routebench.mjs</code> adds the steps one at a time.</p>
 <p>Also tested for the review and not adopted: running the routing on the drawing before the clean-up instead of after it (twice the links through classes left, no smaller area: on these graphs the clean-up does not make the drawing sprawl); a smaller area penalty in the clean-up (half or a quarter: within 1% on crossings, a few links through classes fewer, up to 3% more area); a deeper look-ahead for group moves (8 repair moves, three tries instead of two: no clear gain, 6% more area on the development graphs); and giving the layout the names' widths so it reserves room for them (fewer names on names on the unseen graphs, but 15% more crossed links on the development graphs and up to 30% more area). <code>tools/layout-bench/ekgbench.mjs</code> runs these.</p>
-<h3>Refinements from watching the playback</h3>
+<h3>Watching the routing step by step led to four fixes</h3>
 <p>Watching the routing step by step showed four faults: loops took a fixed corner even where links left the class, names sat on top of the line, a bend could swing far outside the drawing, and some one-link classes ended fenced in by lines with open space nearby. Changes, each kept only where it measured better:</p>
 <ul>
 <li><strong>Loops on the open side.</strong> A self-link's loop now tries 12 places (four corners, and the middle and both ends of each side) and takes the one with the fewest links, classes and crossings in its wedge, counting the class's own links. On the five graphs with a self-link, four loops crossed a link before; none does now.</li>
@@ -600,6 +632,7 @@ tr.mine td:first-child { box-shadow: inset 4px 0 0 var(--accent); }
 <li><strong>Classes moved off links.</strong> After the clean-up, three short passes (at most 120 ms of the work clock): two one-link classes of the same class trade places when that leaves fewer problems; a one-link class whose link still crosses or runs through something moves to the most open spot round its neighbor (fewest problems, then the most room, then the shorter link); a class that a link runs through, or passes within 9 px of, is pushed sideways off the line just far enough. After the routing, a class that a drawn curve still runs through is pushed off it the same way, the links are routed again, and the result is kept only if it has fewer problems. On straight links, links through classes 216 &rarr; 178.</li>
 <li><strong>Time limit.</strong> <code>_ogSetTimeLimit(ms)</code> sets the time the layouts, the clean-up and the routing may take, as a multiple of the default 1.5 s on the work clock (so still the same drawing on any computer).</li>
 </ul>
+<p class="takeaway">The four fixes cut names on a class or name by more than half and links through classes by a fifth, for about 25 ms more per graph.</p>
 <div class="tbl"><table>
 <thead><tr><th>51 graphs, Best Read with clean-up and routing</th><th>Crossed links</th><th>Sharp crossings</th><th>Links through classes</th><th>Names over a class or name</th><th>Names with a link across</th><th>Bends</th><th>Mean time</th></tr></thead>
 <tbody>
@@ -607,6 +640,7 @@ tr.mine td:first-child { box-shadow: inset 4px 0 0 var(--accent); }
 <tr class="ours"><td>After</td><td class="best">1,714</td><td>26</td><td class="best">59</td><td class="best">147</td><td class="best">882</td><td class="best">503</td><td>about 455 ms</td></tr>
 </tbody></table></div>
 <p><strong>Then, pulled in from the edge</strong> (described with the clean-up above). Same 51 graphs, routed, without and with it:</p>
+<p class="takeaway">Pulling in from the edge makes the drawings 9% smaller on the development graphs and 27 to 29% smaller on the unseen ones, with about as many problems.</p>
 <div class="tbl"><table>
 <thead><tr><th>51 graphs, routed</th><th>Crossed links</th><th>Sharp crossings</th><th>Links through classes</th><th>Names over a class or name</th><th>Names with a link across</th><th>Bends</th><th>Area: 15 dev / 10 held-out / 26 public</th><th>Mean time</th></tr></thead>
 <tbody>
@@ -617,22 +651,24 @@ tr.mine td:first-child { box-shadow: inset 4px 0 0 var(--accent); }
 <p>Area is 0 to 2% larger before pulling in. The slowest graph (SAREF, 98 classes and 160 links) takes about 1.6 s. Also tested and not adopted: starting the placement at the matching size, or at two or three times it, instead of five times too large. Over the 51 graphs and three seeds the four come within 0.5% of each other on crossed links, links through classes and sharp crossings together: the matching size has the most sharp crossings, twice the size the fewest links through classes but the most crossed links. That is the spread between seeds, not a gain, so five times stays. Trading two one-link classes' places alone rarely helps: where two of them lie on one ray from their neighbor, the far one's link runs through the near one whichever is farther.</p>
 </div>
 
-<h2 id="explore">Explore every test graph</h2>
+<h2 id="explore">Compare the drawings of every test graph yourself</h2>
 <div class="prose"><p>Pick any of the 15 development graphs, or one of the 34 graphs never seen during development, listed below them in the menu. The open-source side shows each library at general settings; ours are shown with the clean-up. Each side's list puts the layout with the fewest crossed links plus links through classes on that graph first, marked ★.</p></div>
 <div class="cmp" data-graph="schema" data-pick="1"></div>
 
-<h3>Per graph</h3>
+<h3>Best Read has the fewest problems, or ties for the fewest, on every development graph</h3>
 <div class="prose"><p>Crossed links / links through classes, one run each, ours with the clean-up. The last column is the tuned open-source layout with the fewest of both on that graph.</p></div>
+<p class="takeaway">On each of the 15 development graphs, Best Read has the fewest crossed links plus links through classes, or ties for the fewest, against every tuned open-source layout.</p>
 <!--__TABLE_PERGRAPH__-->
 
-<h3>Per graph, never seen during development</h3>
+<h3>The same holds on every graph never seen during development</h3>
 <div class="prose"><p>The same, on the held-out graphs and the public benchmark graphs.</p></div>
+<p class="takeaway">The same is true on all 36 graphs never seen during development.</p>
 <h4>Held-out graphs</h4>
 <!--__TABLE_HELDOUT_PERGRAPH__-->
 <h4>Public benchmark graphs</h4>
 <!--__TABLE_PUBLIC_PERGRAPH__-->
 
-<h2 id="time">Time and scale</h2>
+<h2 id="time">Under a second per diagram; Graphviz is faster for large batches</h2>
 <div class="prose">
 <p><strong>One diagram.</strong> For a single ontology of up to 100 classes, Best Read takes about 0.3 to 0.5 s at the median and at most about 1.3 s, clean-up included, on a consumer laptop; Graphviz <code>neato</code> at general settings takes 20 to 50 ms. Below a second, the difference is not something a person opening one diagram will notice.</p>
 <p><strong>Many diagrams.</strong> It does add up for someone laying out many graphs in a batch. Our layouts stop at a fixed amount of work, so their time hardly grows with size: about 1.0 to 1.1 s each from 120 to 537 classes. On the same laptop:</p>
@@ -641,8 +677,9 @@ tr.mine td:first-child { box-shadow: inset 4px 0 0 var(--accent); }
 <li>100 graphs of about 400 classes: about 2 minutes with Best Read, about 1.5 minutes with <code>neato</code> at general settings (8 to 15 minutes tuned), and hours with WebCola, which took 8 s to 3 minutes per graph, or ELK stress, 7 to 38 s per graph.</li>
 </ul>
 <p>A computer half as fast takes twice as long and draws the same picture, up to 2.5 times slower; beyond that, the wait stays bounded and the drawing gets less work.</p>
-<h3 id="verylarge">Graphs of over a thousand classes</h3>
+<h3 id="verylarge">Above a thousand classes, Best Read leads at 1,204 classes and d3-force at 3,335</h3>
 <p>Two graphs never seen during development test the scale: a generated multi-domain model of 1,204 classes and 1,626 links (seed fixed before any run), and the Cell Ontology, 3,335 classes and 5,063 links (92% subclass links, many classes with several superclasses). Open-source layouts at general settings only: the tuned runs repeat each layout several times, and at this size Graphviz alone takes 11 to 21 s per run in the browser. All drawings counted by the same counter as the Layout Lab. Each graph's rows are in order of crossed links plus links through classes, fewest first; the best value in each column is in bold:</p>
+<p class="takeaway">At 1,204 classes Best Read has the fewest problems, in a twelfth of Graphviz's time; at 3,335 classes d3-force draws about 30% fewer.</p>
 <div class="tbl"><table>
 <thead><tr><th>Graph</th><th>Place</th><th>Layout</th><th>Crossed links plus links through classes</th><th>Crossed links</th><th>Links through classes</th><th>Time</th></tr></thead>
 <tbody>
@@ -746,6 +783,7 @@ clean:  rounds of single moves → leaf units → region spreading → group mov
 <div class="prose">
 <p>Each layout combines established techniques with steps of its own. These are the established parts and where they come from. Our own parts are the tidy-up passes, the hub rings, the pod length factors, leaf fanning with room for labels, the readability score, the clean-up (see <a href="#novel">What is new here</a>) and the settings, each chosen by benchmark.</p>
 </div>
+<p class="takeaway">The established techniques each layout builds on, and where they come from.</p>
 <div class="tbl"><table>
 <thead><tr><th>Technique</th><th class="l">Source</th><th class="l">Used for</th></tr></thead>
 <tbody>
@@ -780,6 +818,7 @@ clean:  rounds of single moves → leaf units → region spreading → group mov
 </ul>
 <p><strong>Boxes.</strong> Sized from the label: 6.6 px a character plus 10 px wide, 20 px high. Links through classes are counted against these boxes, so the count depends on how big the boxes are. The layouts and the clean-up do not assume boxes shaped by labels: every step works on each box's own width and height. To check, the same graphs were drawn with every box 60 &times; 40 px (nodes drawn as same-size shapes) and with mixed boxes 40 to 220 px wide and 20 to 90 px high (icons, cards, several lines of text), by Best Read with the clean-up and by d3-force given each box's size, both with the same overlap removal (<code>tools/layout-bench/sizebench.mjs</code>). Totals over the 51 graphs:</p>
 </div>
+<p class="takeaway">The results do not depend on boxes sized from labels: with same-size boxes the counts barely change, and with mixed tall boxes Best Read still draws a quarter of d3-force's crossings.</p>
 <div class="tbl"><table>
 <thead><tr><th>Boxes</th><th>Best Read: crossed links</th><th>links through classes</th><th>d3-force: crossed links</th><th>links through classes</th></tr></thead>
 <tbody>
@@ -803,10 +842,11 @@ clean:  rounds of single moves → leaf units → region spreading → group mov
 <p><strong>Runs.</strong> One run per layout and graph, seed 1, on one consumer laptop, so the times compare with each other but are not absolute. The open-source layouts ran in a browser tab; ours ran at native speed in Node.js with the same code the library runs, which takes about as long as a browser tab in front. Our time limits count work rather than seconds, so our drawings do not depend on the machine or how busy it was.</p>
 </div>
 
-<h2 id="experiments">Experiment: bending links instead of moving classes</h2>
+<h2 id="experiments">Bending links instead of moving classes leaves more links through classes</h2>
 <div class="prose">
 <p>The layouts and the clean-up remove links through classes by moving classes, which costs area. The alternative, standard in yFiles, MSAGL and ELK, is to leave the classes where the placement put them and route each offending link around the classes in its way. We tested a simple router: one or two bends at the padded corners of the boxes in the way, choosing the bends that cross the fewest other links (a full obstacle-avoiding router would do better). Rerun with the current layouts, averages per graph over the 15 development graphs:</p>
 </div>
+<p class="takeaway">With the first, simple router, bending links instead of moving classes drew a fifth fewer crossings but left twice the links through classes.</p>
 <div class="tbl"><table>
 <thead><tr><th>Approach</th><th>Crossed links</th><th>Links through classes</th><th>Bends</th><th>Area ÷ class area</th></tr></thead>
 <tbody>
@@ -818,6 +858,7 @@ clean:  rounds of single moves → leaf units → region spreading → group mov
 <p>The review is right that routing is a real alternative: placement plus bends draws a fifth fewer crossings in 9% less area, at about 18 bends per graph and twice the links through classes left over. Moving classes keeps every link straight. The cheapest gain is the third row: two bends per graph remove almost every link through a class that the moves leave. This became the link routing after the layout (see <a href="#routing">Link routing</a>), with arcs for parallel links, ports and name placement added. Whether a bend costs a reader less than a crossing is a question for a study; Purchase's studies rank bends as less harmful than crossings.</p>
 <p><strong>Retested with the link routing as it is now.</strong> Bending instead of moving was run again on all 51 graphs: the placement without its moves off links and without the clean-up, then the library's routing, against the full pipeline (<code>EB_NOCLEAN=1 node ekgbench.mjs dev '{"skip":{"thru":true}}'</code>). Measured on the drawn links, 9 px margin:</p>
 </div>
+<p class="takeaway">With today's routing, moving classes and then routing leaves two to eleven times fewer links through classes than bending alone, for about as many crossings.</p>
 <div class="tbl"><table>
 <thead><tr><th>Graphs</th><th>Approach</th><th>Crossed links</th><th>Links through classes</th><th>Bends</th><th>Mean time</th></tr></thead>
 <tbody>
@@ -842,7 +883,7 @@ clean:  rounds of single moves → leaf units → region spreading → group mov
 <li><strong>No study with people.</strong> The rankings use geometric measures only. A task-based study (find the common superclass of two classes, name a relationship's domain and range), timed and scored against tuned Graphviz, WebCola and a commercial engine with orthogonal routing, would settle which drawings read best; it has not been done.</li>
 <li><strong>Test graphs.</strong> The 15 development graphs are reconstructions and inventions of typical shapes. The graphs never seen during development add eight published ontologies and 18 Rome graphs, but not a large corpus such as the OBO Foundry or the Manchester OWL corpus, and the ontologies were drawn as classes with subclass and domain-to-range links only.</li>
 <li><strong>Commercial engines were not tested.</strong> yFiles, Tom Sawyer Perspectives, GoJS, KeyLines and the like are closed source, and we found no published drawing of theirs of a graph we could rebuild exactly, so not even an informal comparison is possible yet. The nearest route is yEd, a free editor built on yFiles. Its licence allows it to be used by hand but not as part of an automated process, so a comparison would mean laying out each test graph by hand and scoring the saved files.</li>
-<li><strong>Very large graphs.</strong> Best Read leads up to the 1,204-class graph tested; at 3,335 classes d3-force draws far fewer problems (see <a href="#verylarge">Graphs of over a thousand classes</a>). Models of thousands of classes need a multilevel placement, which these layouts do not have. At 537 classes, tuned WebCola matches Mycelium's crossings (2,005 against 2,012), with more links through classes, after three minutes against Mycelium's one second.</li>
+<li><strong>Very large graphs.</strong> Best Read leads up to the 1,204-class graph tested; at 3,335 classes d3-force draws far fewer problems (see <a href="#verylarge">Very large graphs</a>). Models of thousands of classes need a multilevel placement, which these layouts do not have. At 537 classes, tuned WebCola matches Mycelium's crossings (2,005 against 2,012), with more links through classes, after three minutes against Mycelium's one second.</li>
 <li><strong>Greedy local search and hand-set weights.</strong> The tidy-up and the clean-up keep only moves that improve the drawing, so they stop at local optima, and their weights (a crossed link costs 6, a link through a class 10) were set by benchmark on the development graphs, not derived. The unseen graphs show the settings carry over; they are not shown to be optimal. Two tests since: with every class name three times as long (15 development graphs) and on dense random graphs (40 to 150 classes, 6 to 10 links per class), every run finished within its time limit, gave the same drawing twice, and the clean-up still improved the drawing by its own weights. With long names it trades crossings for links through classes: 439 → 499 crossed links, 107 → 35 links through classes. On the dense graphs it reduced both in total (crossed links 27,920 → 25,600, links through classes 2,874 → 2,250). Turning or mirroring a whole branch round the one class that joins it to the rest (the move a greedy search cannot make one class at a time) was tried; see <a href="#tried">What did not work</a>.</li>
 <li><strong>The clean-up was taught by one person.</strong> Its principles come from one expert, shown on eight ontologies. Another reader may tidy differently, and the ideas not yet built in (curving links around hubs, tightening loops) may matter more elsewhere.</li>
 <li><strong>Seed-to-seed variation.</strong> The time limits count work rather than seconds, so a model gets the same drawing on any computer up to 2.5 times slower than the one the layouts were tuned on. The layouts do use a random seed, and different seeds give different drawings: over five seeds, totals over the 15 graphs differ by a few percent. Every result on this page uses seed 1.</li>
@@ -1060,7 +1101,7 @@ function buildCompare(host) {
 document.querySelectorAll(".cmp").forEach(buildCompare);
 // The worked example: one recorded clean-up, shown in four steps (data from gen_example.mjs)
 const EX = /*__EXAMPLE__*/null;
-// The finishing passes, on a second graph (data from gen_finish.mjs)
+// The finishing passes on the same graph, after the worked example's clean-up (data from gen_finish.mjs with FX_FROM=example.json)
 const FX = /*__FINISH__*/null;
 // The second walk-through: every step on one graph never seen during development (data from gen_finish.mjs hx_hubs)
 const FX2 = /*__FINISH2__*/null;
@@ -1071,13 +1112,14 @@ function buildWalk() {
   const maxRoom = Math.max(...R.room) || 1, c = R.center;
   // per walk: the graph each step is drawn on, the drawing after the step and before it, the counts after and before
   const WALKS = [
-    { G: (s) => (s >= 5 ? FX : EX), open: EX.open, skip: [],
+    { G: () => EX, open: EX.open, skip: { 6: "Nothing moves on this graph: no class here can step out of a fence or off a line without adding a problem elsewhere." },
       POS: { 1: EX.before, 2: EX.before, 3: EX.pushed, 4: EX.end, 5: FX.swap.pos, 6: FX.fence.pos, 7: FX.pull.pos },
       PREV: { 3: EX.before, 4: EX.pushed, 5: FX.clean.pos, 6: FX.swap.pos, 7: FX.fence.pos },
-      CNT: { 1: EX.measures.before, 2: EX.measures.before, 3: EX.measures.pushed, 4: EX.measures.end, 5: FX.swap.m, 6: FX.fence.m, 7: FX.pull.m },
+      CNT: { 1: EX.measures.before, 2: EX.measures.before, 3: EX.measures.pushed, 4: FX.clean.m, 5: FX.swap.m, 6: FX.fence.m, 7: FX.pull.m },
       PCNT: { 3: EX.measures.before, 4: EX.measures.pushed, 5: FX.clean.m, 6: FX.swap.m, 7: FX.fence.m }, notes: {} }];
   if (FX2) { const st = FX2.cleanSteps || {}, sz = (m) => m.size.map((v) => v.toLocaleString("en-US")).join(" &times; ");
-    WALKS.push({ G: () => FX2, open: FX2.open, skip: [2, 3],
+    const noSpread = "Nothing to spread on this graph: no region gathers enough problems to be worth it. Single moves and group moves (step 4) do the work instead.";
+    WALKS.push({ G: () => FX2, open: FX2.open, skip: { 2: noSpread, 3: noSpread },
       POS: { 1: FX2.start.pos, 4: FX2.clean.pos, 5: FX2.swap.pos, 6: FX2.fence.pos, 7: FX2.pull.pos },
       PREV: { 4: FX2.start.pos, 5: FX2.clean.pos, 6: FX2.swap.pos, 7: FX2.fence.pos },
       CNT: { 1: FX2.start.m, 4: FX2.clean.m, 5: FX2.swap.m, 6: FX2.fence.m, 7: FX2.pull.m },
@@ -1142,7 +1184,7 @@ function buildWalk() {
     host.querySelector(".wx-counts").innerHTML = cell("crossed links", "cross") + cell("links through classes", "thru") + (m.size ? size() : cell("sharp crossings", "sharp")) + cell("cramped classes", "tight") +
       `<p class="wx-key">All four are lower-is-better. ${showBefore ? "This is the drawing before the step; the classes it moves are outlined. " : fin && step < 7 ? "Steps 5 and 6 zoom to the classes the pass moved (tick Whole drawing for all of it); dashed boxes and arrows show where classes moved from. " : ""}${fin ? "Dashed amber: a link that passes within 9 px of a class, the clearance drawn links keep. " : ""}${showBefore ? "" : "The number in brackets is the change since the step before: green when it went down (the step helped), red when it went up. "}<abbr class="qm" tabindex="0" title="Sharp crossings cross at under 30°. Cramped classes have two links leaving them less than 15° apart." aria-label="Sharp crossings cross at under 30 degrees. Cramped classes have two links leaving them less than 15 degrees apart.">?</abbr></p>`;
     host.querySelectorAll(".wx-walks button").forEach((b) => b.classList.toggle("on", +b.dataset.w === walk));
-    host.querySelectorAll(".wx-steps button").forEach((b) => { b.classList.toggle("on", +b.dataset.s === step); b.disabled = w.skip.includes(+b.dataset.s); b.title = b.disabled ? "No region on this graph gathers enough problems to be worth spreading" : ""; });
+    host.querySelectorAll(".wx-steps button").forEach((b) => { b.classList.toggle("on", +b.dataset.s === step); const why = w.skip[+b.dataset.s]; b.setAttribute("aria-disabled", why ? "true" : "false"); b.title = why || ""; });
     host.querySelectorAll(".wx-tabs button").forEach((b) => b.classList.toggle("on", b.dataset.t === tab));
     host.querySelectorAll(".wx-t").forEach((d) => (d.hidden = !(+d.dataset.s === step && d.dataset.t === tab)));
     host.querySelectorAll(".wx-t .w1").forEach((p) => (p.hidden = walk !== 0));
@@ -1150,10 +1192,10 @@ function buildWalk() {
     host.querySelector(".wx-whole").hidden = step === 1 || step === 7 || (!region && !fin);
     host.querySelector(".wx-beforel").hidden = !w.PREV[step];
   }
-  const go = (s) => { const w = WALKS[walk]; while (w.skip.includes(s)) s++; step = Math.min(7, Math.max(1, s)); render(); };
+  const go = (s) => { const w = WALKS[walk]; while (w.skip[s]) s++; step = Math.min(7, Math.max(1, s)); render(); };
   host.querySelectorAll(".wx-walks button").forEach((b) => { if (+b.dataset.w >= WALKS.length) b.hidden = true; b.addEventListener("click", () => { walk = +b.dataset.w; go(step); }); });
-  host.querySelectorAll(".wx-steps button").forEach((b) => b.addEventListener("click", () => { step = +b.dataset.s; render(); }));
-  navTarget(host, (d) => { let s = step + d; while (WALKS[walk].skip.includes(s)) s += d; if (s >= 1 && s <= 7) { step = s; render(); } });
+  host.querySelectorAll(".wx-steps button").forEach((b) => b.addEventListener("click", () => { if (WALKS[walk].skip[+b.dataset.s]) return; step = +b.dataset.s; render(); }));
+  navTarget(host, (d) => { let s = step + d; while (WALKS[walk].skip[s]) s += d; if (s >= 1 && s <= 7) { step = s; render(); } });
   host.querySelectorAll(".wx-tabs button").forEach((b) => b.addEventListener("click", () => { tab = b.dataset.t; render(); }));
   whole.addEventListener("change", render); beforeCb.addEventListener("change", render);
   render();
@@ -1233,9 +1275,15 @@ const TEACH = /*__TEACH__*/null;
     q(".lab-counts").innerHTML = cell("crossed links", "cross") + cell("links through classes", "thru") + cell("area ÷ class area", "area", "×");
     log.innerHTML = ""; const live = s.steps.filter((x) => !x.undone);
     q(".lab-logn").textContent = `${live.filter((x) => x.kind === "move").length} moves, ${live.filter((x) => x.kind === "note").length} notes on this graph; ${Object.keys(S).filter((k) => S[k].steps.length > 1).length} graph(s) worked on`;
-    s.steps.forEach((x) => { const li = document.createElement("li"); if (x.undone) li.className = "undone";
+    // the latest change still in the drawing: the only change that can be deleted, by undoing it (earlier ones need the later ones undone first)
+    const lastLive = [...s.steps].reverse().find((x) => (x.kind === "move" || x.kind === "cleanup" || x.kind === "reset") && !x.undone);
+    s.steps.forEach((x, j) => { const li = document.createElement("li"); if (x.undone) li.className = "undone";
       const cc = (a, b) => `crossed ${a.cross}&rarr;${b.cross}, through ${a.thru}&rarr;${b.thru}`;
       li.innerHTML = x.kind === "note" ? `<q>${x.text.replace(/&/g, "&amp;").replace(/</g, "&lt;")}</q>` : x.kind === "move" ? `Moved ${x.classes.length > 3 ? x.classes.slice(0, 3).join(", ") + ` and ${x.classes.length - 3} more` : x.classes.join(", ")} <small>${cc(x.before, x.after)}</small>` : x.kind === "cleanup" ? `Ran our clean-up <small>${cc(x.before, x.after)}</small>` : x.kind === "reset" ? `Started over <small>${cc(x.before, x.after)}</small>` : `Started from ${x.layout.replace(/^ours:/, "ours, ").replace(/^pub:/, "")} <small>crossed ${x.after.cross}, through ${x.after.thru}</small>`;
+      li.innerHTML = `<span class="lab-t">${li.innerHTML}</span>`;
+      if (j > 0) { const del = document.createElement("button"), ok = x.kind === "note" || x.undone || x === lastLive; del.type = "button"; del.className = "lab-del"; del.dataset.j = j; del.innerHTML = "&times;";
+        del.title = ok ? (x.kind === "note" || x.undone ? "Delete this step" : "Undo this change and delete it") : "Still in the drawing: undo the later changes first, then delete this one";
+        del.setAttribute("aria-label", del.title); del.setAttribute("aria-disabled", ok ? "false" : "true"); li.appendChild(del); }
       log.appendChild(li); });
     log.scrollTop = log.scrollHeight;
   }
@@ -1255,6 +1303,15 @@ const TEACH = /*__TEACH__*/null;
   lsel.addEventListener("change", () => { const s = S[key]; if (s && s.steps.length > 1 && !confirm("Start this graph again from " + lsel.options[lsel.selectedIndex].text + "? The steps so far on this graph are dropped.")) { lsel.value = s.layout; return; } session(key, lsel.value); sel = new Set(); render(); });
   const undo = () => { const s = session(key); const prev = s.undo.pop(); if (!prev) return; s.P = prev; const last = [...s.steps].reverse().find((x) => (x.kind === "move" || x.kind === "cleanup" || x.kind === "reset") && !x.undone); if (last) last.undone = true; save(); render(); };
   q(".lab-undo").addEventListener("click", undo);
+  // delete a step for good: a note or an undone step is removed; the latest change still in the drawing is undone, then removed
+  log.addEventListener("click", (ev) => { const b = ev.target.closest(".lab-del"); if (!b || b.getAttribute("aria-disabled") === "true") return;
+    const s = session(key), x = s.steps[+b.dataset.j]; if (!x) return;
+    if (x.kind !== "note" && !x.undone) { undo(); if (!x.undone) return; }
+    s.steps.splice(s.steps.indexOf(x), 1); save(); render(); });
+  q(".lab-forget").addEventListener("click", () => {
+    const n = Object.keys(S).filter((k) => S[k].steps.length > 1).length;
+    if (n && !confirm(`Forget the whole lab session: the moves, notes and log on ${n} graph${n > 1 ? "s" : ""}? This cannot be undone. Download the session first to keep a copy.`)) return;
+    S = {}; try { localStorage.removeItem(STORE); } catch (e) { /* nothing stored */ } sel = new Set(); fillLayouts(); render(); });
   q(".lab-reset").addEventListener("click", () => { const s = session(key); s.undo.push(s.P); s.P = s.start.map((p) => p.slice()); step(s, { kind: "cleanup", reset: true, before: measure(DATA.graphs[key], s.undo[s.undo.length - 1]), after: measure(DATA.graphs[key], s.P) }); s.steps[s.steps.length - 1].kind = "reset"; render(); });
   q(".lab-clean").addEventListener("click", () => { const OL = window.OntologyLayouts; if (!OL) return; const m = DATA.graphs[key], s = session(key), before = s.P.map((p) => p.slice());
     const boxes = m.box.map((w) => ({ w, h: BOXH })), links = m.edges.map(([a, b, sub]) => [a, b, sub ? 2 : 1]), out = OL.cleanUp(before.map(([x, y]) => ({ x, y })), boxes, links, OL.now());

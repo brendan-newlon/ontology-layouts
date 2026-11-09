@@ -2,14 +2,19 @@
 // out of a fence of lines and off a line they run through, pulled in from the edge), on one graph drawn by Best Read and
 // cleaned up. Stores the drawing after the clean-up and after each pass that moved something, with the counts.
 // Output: finish.json. Run: node gen_finish.mjs [graph]   (run build_base.mjs and mkbundle.mjs first)
+// FX_FROM=example.json takes the drawing before and after the clean-up from the worked example instead of running it, so that
+// the first walk-through goes on with the finishing passes on the same graph: FX_FROM=example.json FX_OUT=finish_bio.json node gen_finish.mjs bio
 import fs from 'node:fs';
 const { MODELS, OURS } = await import('./_bundle.mjs');
 await import('./handtidy.js');
 const HT = globalThis.HandTidy, g = process.argv[2] || 'pizza';
 const Md = await MODELS[g].load(), D = Md.labels.map((l) => ({ w: String(l).length * 6.6 + 10, h: 20 }));
 const edges = Md.edges.filter((e) => e.s !== e.t).map((e) => [e.s, e.t, e.kind === 'sub' ? 2 : 1]), E = edges.map(([s, t]) => ({ s, t }));
-const P0 = OURS.auto(D.map((d) => ({ ...d })), edges, { seed: 1 }).pos.map((p) => ({ x: p.x, y: p.y })); OURS.sep(P0, D.map((d) => ({ w: d.w + 16, h: d.h + 12 })), 6, 200);
-const run = HT.run(P0, D, E, { budgetMs: 500, record: true }), P1 = run.P, snaps = {};
+const FROM = process.env.FX_FROM ? JSON.parse(fs.readFileSync(new URL(process.env.FX_FROM, import.meta.url), 'utf8')) : null;
+if (FROM && FROM.graph !== g) throw new Error(process.env.FX_FROM + ' is of ' + FROM.graph);
+const xy = (A) => A.map(([x, y]) => ({ x, y }));
+const P0 = FROM ? xy(FROM.start) : OURS.auto(D.map((d) => ({ ...d })), edges, { seed: 1 }).pos.map((p) => ({ x: p.x, y: p.y })); if (!FROM) OURS.sep(P0, D.map((d) => ({ w: d.w + 16, h: d.h + 12 })), 6, 200);
+const run = FROM ? { P: xy(FROM.end), log: [] } : HT.run(P0, D, E, { budgetMs: 500, record: true }), P1 = run.P, snaps = {};
 OURS.traced({ snap: (k, P) => (snaps[k] = P.map((p) => ({ x: p.x, y: p.y }))), begin() {}, restart() {}, score() {}, chosen() {} }, () => { const Q = OURS.leafSwap(P1, D, edges); OURS.pullIn(Q, D, edges); });
 const round = (A) => A.map((p) => [Math.round(p.x * 10) / 10, Math.round(p.y * 10) / 10]);
 const size = (P) => { let a = Infinity, b = Infinity, c = -Infinity, d = -Infinity; P.forEach((p, i) => { a = Math.min(a, p.x - D[i].w / 2); c = Math.max(c, p.x + D[i].w / 2); b = Math.min(b, p.y - 10); d = Math.max(d, p.y + 10); }); return [Math.round(c - a), Math.round(d - b)]; };
