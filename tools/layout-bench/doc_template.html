@@ -8,16 +8,16 @@
 :root {
   --bg: #f7f6f2; --paper: #ffffff; --ink: #1d232b; --muted: #5b6573; --rule: #dcdad2; --accent: #2f6b4f; --accent-soft: #e3efe8;
   --ours: #2f6b4f; --pub: #5a5f8a; --box: #eef3fb; --box-line: #6d86b0; --sub: #6f9a54; --rel: #8b97a8; --bad: #c43d32; --bad-soft: rgba(196,61,50,.14);
-  --code-bg: #f0eee7; --auto: #7a5a1f; --auto-soft: #f6efe0; --open: #3f9d5a; --hot: #d9822b;
+  --code-bg: #f0eee7; --auto: #7a5a1f; --auto-soft: #f6efe0; --open: #3f9d5a; --hot: #d9822b; --move: #9b3fd6;
 }
 @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
   --bg: #15181c; --paper: #1c2026; --ink: #e6e8eb; --muted: #9aa4b1; --rule: #30353d; --accent: #7cc39e; --accent-soft: #1f3329;
   --ours: #7cc39e; --pub: #a7acd9; --box: #233041; --box-line: #6f8db8; --sub: #8fbf6f; --rel: #6f7b8c; --bad: #ff6f61; --bad-soft: rgba(255,111,97,.18);
-  --code-bg: #232830; --auto: #e0b56a; --auto-soft: #2c261b; --open: #5fc47c; --hot: #f0a35a; color-scheme: dark; } }
+  --code-bg: #232830; --auto: #e0b56a; --auto-soft: #2c261b; --open: #5fc47c; --hot: #f0a35a; --move: #d08cff; color-scheme: dark; } }
 :root[data-theme="dark"] {
   --bg: #15181c; --paper: #1c2026; --ink: #e6e8eb; --muted: #9aa4b1; --rule: #30353d; --accent: #7cc39e; --accent-soft: #1f3329;
   --ours: #7cc39e; --pub: #a7acd9; --box: #233041; --box-line: #6f8db8; --sub: #8fbf6f; --rel: #6f7b8c; --bad: #ff6f61; --bad-soft: rgba(255,111,97,.18);
-  --code-bg: #232830; --auto: #e0b56a; --auto-soft: #2c261b; --open: #5fc47c; --hot: #f0a35a; color-scheme: dark; }
+  --code-bg: #232830; --auto: #e0b56a; --auto-soft: #2c261b; --open: #5fc47c; --hot: #f0a35a; --move: #d08cff; color-scheme: dark; }
 * { box-sizing: border-box; }
 body { margin: 0; background: var(--bg); color: var(--ink); font: 16px/1.6 "Segoe UI", system-ui, -apple-system, "Helvetica Neue", Arial, sans-serif; }
 .wrap { max-width: 1120px; margin: 0 auto; padding-block: 40px 80px; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
@@ -191,24 +191,22 @@ tr.mine td:first-child { box-shadow: inset 4px 0 0 var(--accent); }
 
 <div class="kicker">Graph layout for ontologies</div>
 <h1>Tidy Stress and Mycelium</h1>
-<p class="sub">Layouts that draw ontologies with about half the crossed links of the widely used open-source layouts, even when those are tuned, and a small fraction of the links that run through a class. The same methods draw hierarchies top-down and grow a drawing click by click as a reader explores a graph. A clean-up, distilled from how a person explained and demonstrated tidying these drawings, removes most of what the layouts leave.</p>
-
 <section class="exec" aria-labelledby="summary"><h2 id="summary">Executive summary</h2>
 <p><strong>Tidy Stress and Mycelium are two new layouts for ontology diagrams</strong>, built so that a reader follows each link to the right class. Tidy Stress suits the 10 to 30 classes of a typical ontology; Mycelium suits large and hub-heavy ones. <strong>Best Read</strong>, the auto mode, runs both and keeps the more readable drawing. A clean-up and a link routing then run after the layout, and both also work after any other layout. The package is plain JavaScript with no dependencies, under the Apache 2.0 licence.</p>
 <ul>
 <li><strong>Value:</strong> Best Read draws about half the crossed links and an eighth of the links through classes of the best tuned open-source layouts. Its drawings stay compact (a median of 6.3 times the area of the class boxes) and take under a second. The same methods grow a drawing click by click as a reader explores, without moving the classes already shown, and can draw hierarchies top-down (an experiment for now).</li>
-<li><strong>Benchmark scope:</strong> 11 open-source layouts (Graphviz, ELK, WebCola, d3-force, dagre and Cytoscape), each at general settings and tuned for its best chance. They were run on 15 development graphs of 13 to 179 classes and on 36 graphs never seen during development: held-out graphs, eight published ontologies and graphs from the Rome benchmark. Every ranking uses five measures, pictured below.</li>
-<li><strong>Results:</strong> Best Read ranks first of 12 at general and at tuned settings, and again on the 36 unseen graphs. Others lead on some things: some layouts draw smaller by letting links run through classes, Graphviz is faster, WebCola keeps graph distances more faithfully, and d3-force does better above 3,000 classes.</li>
-<li><strong>Also in the package:</strong> the clean-up was taught by a person, not designed from the literature. He tidied drawings by hand in an interactive Layout Lab while saying why, and an AI assistant distilled his reasons into rules and tested them on graphs nobody had looked at. The package includes the Layout Lab, the Layout Playback that replays the clean-up step by step, the teaching sessions, and a guide to using this show-and-tell method on other problems. <!--NOLAB-->The <a href="ONTOLOGY-LAYOUT-ALGORITHMS-LAB.html#lab">lab edition of this page</a> has the lab built in.<!--/NOLAB--><!--LAB-->This edition has the lab built in (<a href="#lab">open it</a>).<!--/LAB--> The page ends with the full reference implementation, and the benchmarks can be rerun from the repository.</li>
+<li><strong>Benchmark scope:</strong> 11 open-source layouts (Graphviz <code>neato</code>, <code>fdp</code> and <code>sfdp</code>; ELK stress, force and layered; WebCola; d3-force; dagre; Cytoscape <code>cose</code> and <code>fcose</code>), each at general settings and tuned for its best chance. They were run on 15 development graphs of 13 to 179 classes and on 36 graphs never seen during development: held-out graphs, eight published ontologies and graphs from the Rome benchmark. Every ranking uses five measures, pictured below.</li>
+<li><strong>Results:</strong> Best Read ranks first of 12 at general and at tuned settings, and again on the 36 unseen graphs. Others lead on some things: some layouts draw smaller by letting links run through classes, Graphviz is faster, WebCola keeps graph distances more faithfully, and d3-force does better above 3,000 classes, even when Best Read runs seven times as long as d3-force.</li>
+<li><strong>Also in the package:</strong> an interactive Layout Lab, and a method for working with an AI assistant to turn a person's sense of a good drawing into code.</li>
 </ul>
 </section>
 
 <div class="stats">
   <div class="stat"><b>About half the crossings</b><span>of the best tuned open-source layouts: 452 for Best Read against 960 for tuned <code>neato</code> and 971 for tuned WebCola, over 15 test graphs</span></div>
   <div class="stat"><b>An eighth of the links through classes</b><span>of tuned WebCola (39 against 307). Tuned <code>neato</code> comes closer (81), in about 16 times the area</span></div>
-  <div class="stat"><b>First of 12 on the five measures</b><span>that count for ontologies, against tuned settings: mean rank 2.9, next WebCola at 4.8. First again on 36 graphs never seen during development</span></div>
-  <div class="stat"><b>Top-down too</b><span>every subclass link pointing down, with a third to a half of the crossings of tuned ELK layered, the usual top-down layout, and a quarter to an eighth of its links through classes. An experiment for now</span></div>
-  <div class="stat"><b>Exploring without reshuffling</b><span>a graph grown one click at a time: nothing already drawn moves, with a third of the crossings of a typical force-directed expansion, in about 6 ms per click</span></div>
+  <div class="stat"><b>First of 12 on the five measures</b><span>that count for ontologies, against tuned settings: an average place of 2.9 across the measures (lower is better), against 4.8 for the next, WebCola. First again on 36 graphs never seen during development</span></div>
+  <div class="stat"><b>Up to two thirds fewer crossings top-down</b><span>every subclass link pointing down, with a third to a half of the crossings of tuned ELK layered, the usual top-down layout, and a quarter to an eighth of its links through classes. An experiment for now</span></div>
+  <div class="stat"><b>Stable and tidy as a graph grows</b><span>expand a class and nothing already drawn moves; the new classes come in with a third of the crossings of a typical force-directed expansion, in about 6 ms per click</span></div>
   <div class="stat"><b>Under a second</b><span>median, clean-up included; at most about 1.3 s up to 537 classes, and the same drawing on any computer</span></div>
 </div>
 
@@ -256,10 +254,10 @@ tr.mine td:first-child { box-shadow: inset 4px 0 0 var(--accent); }
 
 <h2 id="results">Best Read ranks first of 12 layouts, with about half the crossings of the best tuned open-source layouts</h2>
 <div class="prose">
-<p>Each layout is ranked on each of the 15 development graphs (13 to 179 classes) on the five measures, and the ranks are averaged: 1 is best, and layouts with equal results share a rank. The open-source layouts are given their best chance. Each library tried several settings and seeds, its default run included, and kept the run with the fewest crossed links plus links through classes, the two counts we lead on. The settings are listed under <a href="#method">Benchmark method</a>. Layered layouts were given subclass links oriented parent to child. Ours appear with the clean-up.</p>
+<p>Each layout is ranked on each of the 15 development graphs (13 to 179 classes) on the five measures, and the places are averaged over the graphs: 1 is best and lower is better, and layouts with equal results share a place. In the tables each measure's column is that average place, and the overall score is the average of the five; the Place column orders the layouts by that score. The open-source layouts are given their best chance. Each library tried several settings and seeds, its default run included, and kept the run with the fewest crossed links plus links through classes, the two counts we lead on. The settings are listed under <a href="#method">Benchmark method</a>. Layered layouts were given subclass links oriented parent to child. Ours appear with the clean-up.</p>
 <p>The main table ranks Best Read, the auto mode a user would call, against the eleven open-source layouts. Best Read always draws with one of our two layouts, so ranking all three together would count our drawings twice; the second table ranks Tidy Stress and Mycelium each on its own against the same eleven. The tabs add optional measures for readers who value them.</p>
 </div>
-<p class="takeaway">Against tuned open-source layouts, Best Read ranks first on the five measures (mean rank 2.9; next, WebCola, 4.8). It draws 452 crossed links and 39 links through classes over the 15 graphs; the closest open-source layout, tuned <code>neato</code>, draws 960 and 81, in about 16 times the area.</p>
+<p class="takeaway">Against tuned open-source layouts, Best Read ranks first on the five measures, with an overall score of 2.9 (its average place; lower is better), against 4.8 for the next, tuned WebCola. It draws 452 crossed links and 39 links through classes over the 15 graphs; the closest open-source layout, tuned <code>neato</code>, draws 960 and 81, in about 16 times the area.</p>
 <!--__TABLE_TUNED__-->
 <div class="cols2">
 <div class="lead"><h3>Ours lead on the two problems that mislead a reader</h3><ul>
@@ -270,26 +268,26 @@ tr.mine td:first-child { box-shadow: inset 4px 0 0 var(--accent); }
 <li><strong>After tuning:</strong> tuning brought the open-source layouts closer (WebCola, <code>sfdp</code> and <code>neato</code> draw 13%, 17% and 34% fewer crossings tuned than at general settings), and the lead holds.</li>
 </ul></div>
 <div class="lead"><h3>Others lead on area, speed and faithful distances</h3><ul>
-<li><strong>Area:</strong> Cytoscape <code>cose</code>, dagre and <code>fcose</code> draw tighter, <code>cose</code> and dagre by letting links run through boxes (4,092 and 1,330 of them). Mycelium's drawings are about 40% larger than Best Read's.</li>
+<li><strong>Area:</strong> Cytoscape <code>cose</code>, dagre and <code>fcose</code> draw tighter, <code>cose</code> and dagre by letting links run through boxes (4,092 and 1,330 of them).</li>
 <li><strong>Time:</strong> Best Read takes 0.5 s at the median; Graphviz at general settings takes tens of milliseconds. See <a href="#time">Time and scale</a>.</li>
 <li><strong>Distance and even lengths:</strong> with those two measures added (third tab), WebCola ranks first and Best Read second; Mycelium, which lets links between groups run long on purpose, falls to fifth.</li>
 <li><strong>Very large graphs:</strong> at 3,335 classes d3-force draws fewer problems. See <a href="#verylarge">Very large graphs</a>.</li>
 </ul></div>
 </div>
 <div class="prose">
-<p><strong>Taken together.</strong> On the five measures, Best Read places first of twelve with a mean rank of 2.9; the next, tuned WebCola, has 4.8. That gap is mostly the two counts that make a reader follow the wrong link: about half the crossings and an eighth of the links through classes of the nearest contenders. The others lead where a drawing can be smaller or faster by letting those problems stand. Which measures matter most is a judgment backed by Purchase's studies of crossings, not by a study of our own (see <a href="#limits">Limits</a>).</p>
+<p><strong>Taken together.</strong> On the five measures, Best Read places first of twelve, with an overall score (average place) of 2.9 against 4.8 for the next, tuned WebCola. That gap is mostly the two counts that make a reader follow the wrong link: about half the crossings and an eighth of the links through classes of the nearest contenders. The others lead where a drawing can be smaller or faster by letting those problems stand. Which measures matter most is a judgment backed by Purchase's studies of crossings, not by a study of our own (see <a href="#limits">Limits</a>).</p>
 </div>
 <h3 id="scoreboard">At general settings, Best Read also ranks first</h3>
 <div class="prose"><p>The same ranking with each open-source library at sensible general settings, one run each:</p></div>
-<p class="takeaway">With every open-source layout at general settings, Best Read again ranks first (mean rank 2.6; next, WebCola, 4.4).</p>
+<p class="takeaway">With every open-source layout at general settings, Best Read again ranks first, with an overall score of 2.6 against 4.4 for WebCola (average place; lower is better).</p>
 <!--__TABLE_DEFAULT__-->
 <h3 id="unseen">The lead holds on 36 graphs never seen during development</h3>
 <div class="prose">
 <p>The layouts and the clean-up were developed on the 15 graphs above, so their lead there could partly be fitted to those graphs. To check, they were run, unchanged, on 36 graphs that were never viewed or used for tuning: ten held-out graphs in shapes the development graphs do not cover (18 to 304 classes), eight published ontologies (FOAF, Dublin Core terms, OWL-Time, DCAT 3, BFO 2020, DOLCE+DnS Ultralite, SAREF core and GoodRelations) and 18 graphs of the Rome collection, the classic graph-drawing benchmark (20 to 100 nodes). Same open-source layouts and tuned settings, same measures. All but the two largest can be opened in the <a href="#explore">explorer below</a>.</p>
-<p><strong>The lead holds.</strong> Over the 36 graphs, Best Read draws 1,565 crossed links and 138 links through classes, against 2,160 and 212 for tuned <code>neato</code> (in nearly ten times the area), 2,429 and 780 for tuned WebCola, and 2,411 and 601 for tuned <code>sfdp</code>. It places first of twelve with a mean rank of 3.0, ahead of tuned <code>neato</code> (4.6) and WebCola (4.8).</p>
+<p><strong>The lead holds.</strong> Over the 36 graphs, Best Read draws 1,565 crossed links and 138 links through classes, against 2,160 and 212 for tuned <code>neato</code> (in nearly ten times the area), 2,429 and 780 for tuned WebCola, and 2,411 and 601 for tuned <code>sfdp</code>. It places first of twelve with an overall score (average place) of 3.0, ahead of tuned <code>neato</code> (4.6) and WebCola (4.8).</p>
 <p>These graphs also caught a fault the development graphs had hidden. On the published ontologies and the Rome graphs, Mycelium alone drew fewer crossings than Best Read, because Best Read chose with a score that also penalized long links and passed over Mycelium's pod layouts. It now chooses without those penalties. That change was decided on the 15 development graphs (6.5% fewer crossed links plus links through classes, 7% more area) and only then measured here: 1,297 → 1,284 crossings and 134 → 108 links through classes on the public graphs.</p>
 </div>
-<p class="takeaway">On the 36 unseen graphs Best Read still ranks first (mean rank 3.0; next, tuned <code>neato</code>, 4.6), so the lead is not fitted to the development graphs.</p>
+<p class="takeaway">On the 36 unseen graphs Best Read still ranks first, with an overall score of 3.0 against 4.6 for tuned <code>neato</code> (average place; lower is better), so the lead is not fitted to the development graphs.</p>
 <!--__TABLE_UNSEEN__-->
 
 <h2 id="topdown">Top-down, every subclass link points down, with a third to a half of the crossings of ELK layered</h2>
@@ -696,6 +694,22 @@ tr.mine td:first-child { box-shadow: inset 4px 0 0 var(--accent); }
 <tr><td></td><td>5</td><td>Cytoscape <code>fcose</code></td><td>980,899</td><td>476,423</td><td>504,476</td><td>4.3 s</td></tr>
 </tbody></table></div>
 <p>At 1,204 classes Best Read still draws the fewest crossed links plus links through classes, in 1.6 s, against 19 to 21 s for Graphviz. At 3,335 classes it does not: d3-force draws a fifth fewer crossings (60,264 against 75,127) and less than half the links through classes, and Graphviz <code>sfdp</code> did not finish within ten minutes in the browser. Our placement is single-level: at this size it gets few sweeps within its time limit, and the clean-up has no time left. Models of thousands of classes need a multilevel placement (for example FM³, Hachul and Jünger, 2004), which these layouts do not have. The Tree does not rescue the Cell Ontology either: its many second superclasses give it 212,000 crossings, though only 6,000 links through classes.</p>
+<p><strong>Would more time help?</strong> Best Read was run again on both graphs with longer time limits (<code>tools/layout-bench/bigtime.mjs</code>, same counter):</p>
+<p class="takeaway">More time helps at 1,204 classes but does not close the gap at 3,335: even at 44 s, Best Read draws about 28% more problems than d3-force does in 6.4 s.</p>
+<div class="tbl"><table>
+<thead><tr><th>Graph</th><th>Time limit</th><th>Time taken</th><th>Crossed links plus links through classes</th><th>Crossed links</th><th>Links through classes</th></tr></thead>
+<tbody>
+<tr class="mine"><td>Multi-domain, 1,204 classes</td><td>1.5 s (default)</td><td>1.6 s</td><td>6,176</td><td>3,935</td><td>2,241</td></tr>
+<tr><td></td><td>6 s</td><td>4.3 s</td><td>4,881</td><td>3,543</td><td>1,338</td></tr>
+<tr><td></td><td>24 s</td><td>18 s</td><td>4,509</td><td>3,400</td><td>1,109</td></tr>
+<tr><td></td><td>60 s</td><td>38 s</td><td class="best">4,314</td><td class="best">3,305</td><td class="best">1,009</td></tr>
+<tr class="split mine"><td>Cell Ontology, 3,335 classes</td><td>1.5 s (default)</td><td>9.8 s</td><td>102,600</td><td>75,124</td><td>27,476</td></tr>
+<tr><td></td><td>6 s</td><td>16 s</td><td>113,230</td><td>84,562</td><td>28,668</td></tr>
+<tr><td></td><td>24 s</td><td>22 s</td><td>106,199</td><td>79,259</td><td>26,940</td></tr>
+<tr><td></td><td>60 s</td><td>44 s</td><td class="best">92,316</td><td class="best">68,202</td><td class="best">24,114</td></tr>
+<tr><td></td><td colspan="2">d3-force, for comparison: 6.4 s</td><td>72,111</td><td>60,264</td><td>11,847</td></tr>
+</tbody></table></div>
+<p>At 1,204 classes four seconds take a fifth off the problems, mostly links through classes, and widen the lead; beyond that the returns shrink. At 3,335 classes extra time buys little and not steadily: at 6 s the placement packs the drawing five times tighter (area 3.4 against 16) and draws more crossings, and only at 60 s does the clean-up get far enough to bring the total 10% below the default run. Even then d3-force draws a fifth fewer problems in a seventh of the time. The limit is the single-level placement, not the time allowed: each sweep and each clean-up check costs more as the graph grows, so at this size the steps that matter get through only part of the graph. Above about 3,000 classes a multilevel placement is the fix, not a longer wait.</p>
 <p>The first run at this size also found two faults, both fixed before the numbers above: the starting placement came out at an arbitrary scale and offset, and a class with a single link and no free spot near its neighbor was left where it started. Together they put part of the Cell Ontology a million pixels from the rest.</p>
 </div>
 
@@ -1151,7 +1165,7 @@ function buildWalk() {
     } else { const r = 2 * R.r0; vb = [c.x - r * 1.25, c.y - r, 2.5 * r, 2 * r]; }
     const svg = el("svg", { viewBox: vb.join(" "), preserveAspectRatio: "xMidYMid meet" }, box);
     const defs = el("defs", {}, svg), mk = el("marker", { id: "wxah", viewBox: "0 0 10 10", refX: 9, refY: 5, markerWidth: 6, markerHeight: 6, orient: "auto-start-reverse" }, defs);
-    el("path", { d: "M0,0L10,5L0,10z", fill: "var(--ink)" }, mk);
+    el("path", { d: "M0,0L10,5L0,10z", fill: "var(--move)" }, mk);
     const g = el("g", {}, svg), ns = { "vector-effect": "non-scaling-stroke" };
     if (step === 1) { const s = w.open.s; w.open.cells.forEach(([x, y]) => el("rect", { x: x - s / 2 + 1, y: y - s / 2 + 1, width: s - 2, height: s - 2, rx: 3, fill: "var(--open)", opacity: 0.16 }, g)); }
     if (region && (step === 2 || step === 3)) {
@@ -1169,20 +1183,29 @@ function buildWalk() {
     for (let i = 0; i < E.length; i++) for (let j = i + 1; j < E.length; j++) { const [a, b] = E[i], [p, q] = E[j]; if (a === p || a === q || b === p || b === q) continue; const x = segX(P[a], P[b], P[p], P[q]); if (x) el("circle", { cx: x[0], cy: x[1], r: 4.5, fill: "var(--bad)", opacity: 0.85 }, g); }
     // where classes were, and where they went
     const moved = new Set();
-    if (prev) P.forEach((p, i) => { const o = prev[i]; if (Math.hypot(p[0] - o[0], p[1] - o[1]) < 3) return; moved.add(i);
-      el("rect", { x: o[0] - W[i] / 2, y: o[1] - BOXH / 2, width: W[i], height: BOXH, rx: 6, fill: "none", stroke: "var(--muted)", "stroke-dasharray": "4 3", ...ns }, g);
-      el("line", { x1: o[0], y1: o[1], x2: p[0], y2: p[1], stroke: "var(--ink)", "stroke-width": 1.4, opacity: 0.7, "marker-end": "url(#wxah)", ...ns }, g); });
+    if (prev) P.forEach((p, i) => { const o = prev[i]; if (Math.hypot(p[0] - o[0], p[1] - o[1]) >= 3) moved.add(i); });
     // before the step: the classes it is about to move, outlined
     if (showBefore) w.POS[step].forEach((p, i) => { const o = P[i]; if (Math.hypot(p[0] - o[0], p[1] - o[1]) >= 3) moved.add(i); });
     P.forEach((p, i) => {
       el("rect", { x: p[0] - W[i] / 2, y: p[1] - BOXH / 2, width: W[i], height: BOXH, rx: 6, fill: hit.has(i) ? "var(--bad-soft)" : moved.has(i) ? "var(--accent-soft)" : "var(--box)", stroke: hit.has(i) ? "var(--bad)" : moved.has(i) ? "var(--accent)" : "var(--box-line)", "stroke-width": moved.has(i) ? 1.6 : 1, ...(showBefore && moved.has(i) ? { "stroke-dasharray": "5 3" } : {}), ...ns }, g);
       const t = el("text", { x: p[0], y: p[1] + 4, "text-anchor": "middle", "font-size": 11, fill: "var(--ink)", "font-family": "Segoe UI, system-ui, sans-serif" }, g); t.textContent = G.labels[i];
     });
+    // the moves, drawn over the classes in their own colour: the old place as a dashed box, and a dotted curve that bows out
+    // to one side (wide enough to clear the box), from the old place to the new, so a move never reads as a link
+    if (prev) moved.forEach((i) => { const o = prev[i], p = P[i], dx = p[0] - o[0], dy = p[1] - o[1], d = Math.hypot(dx, dy);
+      el("rect", { x: o[0] - W[i] / 2, y: o[1] - BOXH / 2, width: W[i], height: BOXH, rx: 6, fill: "none", stroke: "var(--move)", "stroke-width": 1.8, "stroke-dasharray": "5 3", ...ns }, g);
+      const bow = Math.max(0.35 * d, W[i] + 50) / d, mx = (o[0] + p[0]) / 2 - dy * bow, my = (o[1] + p[1]) / 2 + dx * bow;
+      // the curve from the edge of the old box to the edge of the new one, so the arrow does not cover a name
+      const at = (t) => [(1 - t) * (1 - t) * o[0] + 2 * t * (1 - t) * mx + t * t * p[0], (1 - t) * (1 - t) * o[1] + 2 * t * (1 - t) * my + t * t * p[1]];
+      const inside = (q, c) => Math.abs(q[0] - c[0]) < W[i] / 2 + 4 && Math.abs(q[1] - c[1]) < BOXH / 2 + 4;
+      let t0 = 0, t1 = 1; while (t0 < 0.45 && inside(at(t0), o)) t0 += 0.01; while (t1 > 0.55 && inside(at(t1), p)) t1 -= 0.01;
+      const pts = []; for (let k = 0; k <= 24; k++) pts.push(at(t0 + (t1 - t0) * k / 24).map((v) => v.toFixed(1)).join(","));
+      el("path", { d: "M" + pts.join("L"), fill: "none", stroke: "var(--move)", "stroke-width": 2.6, "stroke-linecap": "round", "stroke-dasharray": "0.1 6", "marker-end": "url(#wxah)", ...ns }, g); });
     const m = showBefore ? w.PCNT[step] : w.CNT[step], pm = showBefore ? null : w.PCNT[step];
     const cell = (label, k) => { const v = m[k], d = pm ? v - pm[k] : 0; return `<div class="${d < 0 ? "down" : d > 0 ? "up" : ""}"><b>${v}${d ? ` <small>(${d > 0 ? "+" : ""}${d})</small>` : ""}</b>${label}</div>`; };
     const size = () => { const d = pm && pm.size ? Math.round((m.size[0] * m.size[1] / (pm.size[0] * pm.size[1]) - 1) * 100) : 0; return `<div class="${d < 0 ? "down" : d > 0 ? "up" : ""}"><b>${m.size[0].toLocaleString("en-US")} × ${m.size[1].toLocaleString("en-US")}${d ? ` <small>(${d > 0 ? "+" : ""}${d}%)</small>` : ""}</b>drawing size, px</div>`; };
     host.querySelector(".wx-counts").innerHTML = cell("crossed links", "cross") + cell("links through classes", "thru") + (m.size ? size() : cell("sharp crossings", "sharp")) + cell("cramped classes", "tight") +
-      `<p class="wx-key">All four are lower-is-better. ${showBefore ? "This is the drawing before the step; the classes it moves are outlined. " : fin && step < 7 ? "Steps 5 and 6 zoom to the classes the pass moved (tick Whole drawing for all of it); dashed boxes and arrows show where classes moved from. " : ""}${fin ? "Dashed amber: a link that passes within 9 px of a class, the clearance drawn links keep. " : ""}${showBefore ? "" : "The number in brackets is the change since the step before: green when it went down (the step helped), red when it went up. "}<abbr class="qm" tabindex="0" title="Sharp crossings cross at under 30°. Cramped classes have two links leaving them less than 15° apart." aria-label="Sharp crossings cross at under 30 degrees. Cramped classes have two links leaving them less than 15 degrees apart.">?</abbr></p>`;
+      `<p class="wx-key">All four are lower-is-better. ${showBefore ? "This is the drawing before the step; the classes it moves are outlined. " : fin && step < 7 ? "Steps 5 and 6 zoom to the classes the pass moved (tick Whole drawing for all of it). " : ""}${!showBefore && moved.size ? "Dashed purple boxes show where classes were; dotted purple arrows show where they went. " : ""}${fin ? "Dashed amber: a link that passes within 9 px of a class, the clearance drawn links keep. " : ""}${showBefore ? "" : "The number in brackets is the change since the step before: green when it went down (the step helped), red when it went up. "}<abbr class="qm" tabindex="0" title="Sharp crossings cross at under 30°. Cramped classes have two links leaving them less than 15° apart." aria-label="Sharp crossings cross at under 30 degrees. Cramped classes have two links leaving them less than 15 degrees apart.">?</abbr></p>`;
     host.querySelectorAll(".wx-walks button").forEach((b) => b.classList.toggle("on", +b.dataset.w === walk));
     host.querySelectorAll(".wx-steps button").forEach((b) => { b.classList.toggle("on", +b.dataset.s === step); const why = w.skip[+b.dataset.s]; b.setAttribute("aria-disabled", why ? "true" : "false"); b.title = why || ""; });
     host.querySelectorAll(".wx-tabs button").forEach((b) => b.classList.toggle("on", b.dataset.t === tab));
