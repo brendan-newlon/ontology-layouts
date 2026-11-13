@@ -27,7 +27,8 @@ This file is the technical contract. For the method (how a person's demonstratio
 - **Edits flow back.** A manual edit comes back to the playback as its own step, and the steps after it rerun from there, so a person can fix one thing and watch the algorithm continue.
 - **Sessions are saved.** Moves, comments and the steps they belong to are recorded per session in localStorage and posted to a local receiver (`tools/recv.py`, which writes `_temp/<session>.json`). On the public site, where there is no receiver, File, then Download this session saves the session as one JSON file.
 - **Your own graph.** File, then Open a Turtle file reads an ontology (`tools/layout-bench/ttl.js`: classes, subclass links, object properties from their domain to their range, someValuesFrom and allValuesFrom restrictions). The graph is kept in the browser, and the Playback lists it too. File also exports the drawing as SVG, PNG, JSON (positions, sizes, link paths) or GraphML.
-- **Node style.** Both pages draw classes as label boxes or as circles with the name underneath (`tools/layout-bench/graphs.js`). The layout gets the box that covers the circle and its name, centered on the circle.
+- **Node style.** Both pages draw classes as boxes or circles, with the name on the shape (sized to fit it) or under a small shape (**Nodes** and **Labels**, `tools/layout-bench/graphs.js`). With the name underneath, the layout gets the box that covers the shape and its name, centered on the shape.
+- **Lines (Lab).** Straight (bends only by hand), bend where they overlap (after every change, links through a class are bent round it and repeated links drawn apart), or auto-bend (the same, plus bends away from crossings where they pay off).
 
 ## How it was used here: from demonstration to rules
 The clean-up after the layouts (`_ogHandTidy`) was taught this way:
