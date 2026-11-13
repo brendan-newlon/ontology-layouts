@@ -690,7 +690,7 @@
           }
           return true;
         }
-        const DEF = { budgetMs: 2000, unitSize: 4, clearance: 8, groupDepth: 4, groups: true, spread: true, spreadRepair: true, finish: true, order: ['single', 'unit', 'spread', 'group'], cell: 0.3, repReach: 1.8, repOpen: 12, repCap: 99, crowdMax: 10, groupTop: 2, downGap: 20, W: { cross: 6, sharp: 3, thru: 10, tight: 1, ov: 1e6, area: 6 } };
+        const DEF = { budgetMs: 2000, idleMs: 110, unitSize: 4, clearance: 8, groupDepth: 4, groups: true, spread: true, spreadRepair: true, finish: true, order: ['single', 'unit', 'spread', 'group'], cell: 0.3, repReach: 1.8, repOpen: 12, repCap: 99, crowdMax: 10, groupTop: 2, downGap: 20, W: { cross: 6, sharp: 3, thru: 10, tight: 1, ov: 1e6, area: 6 } };
 
         function Model(P0, D, E0, o) {
           const n = P0.length, seen = new Set(), E = [];
@@ -1049,14 +1049,17 @@
         function run(P0, D, E0, opts = {}) {
           const o = { ...DEF, ...opts, W: { ...DEF.W, ...(opts.W || {}) } }, t0 = _ogNow(), M = Model(P0, D, E0, o), log = [];
           // budgetMs is the whole clean-up: the rounds get 80% of it, the final leaf pass the rest
-          const timeUp = () => _ogNow() - t0 > o.budgetMs * (o.finish ? 0.8 : 1), rec = !!o.record;
+          // idleMs: the rounds also stop once that long (work clock) has passed without a kept move; late moves were rare and small,
+          // and the final pass then gets the time (tested 2026-11-12 on 25 graphs, two seeds: same measures, about 8% faster)
+          let keptAt = t0;
+          const timeUp = () => { const t = _ogNow(); return t - t0 > o.budgetMs * (o.finish ? 0.8 : 1) || (o.idleMs > 0 && t - keptAt > o.idleMs); }, rec = !!o.record;
           const units = o.unitSize > 0 ? findUnits(M, o.unitSize) : [];
           const start = total(M, true); let cur = start.c, rounds = 0;
           const stats = { start: start.c, units: units.length, unitMoves: 0, singleMoves: 0, groupTried: 0, groupKept: 0, skipped: 0 };
           // "Nothing changed here since it last failed": each class carries the time of its last move; a class or problem that was
           // tried without success is tried again only once something within reach has moved.
           const stamp = new Int32Array(M.n); let clock = 1;
-          const moved = (S) => { clock++; S.forEach((v) => (stamp[v] = clock)); };
+          const moved = (S) => { clock++; S.forEach((v) => (stamp[v] = clock)); keptAt = _ogNow(); };
           const quietSince = (q, R, c) => { for (let v = 0; v < M.n; v++) if (stamp[v] > c && Math.abs(M.P[v].x - q.x) < R && Math.abs(M.P[v].y - q.y) < R) return false; return true; };
           const failedV = new Map(), failedIssue = new Map(), failedCrowd = [], reach = 2 * M.medLen;
           let grid = openGrid(M);

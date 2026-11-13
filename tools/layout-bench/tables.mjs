@@ -61,7 +61,7 @@ function setOf(rows, keys) {
     const cell = (v, f, b) => `<td${b && Math.abs(v - b[f]) < 1e-9 ? ' class="best"' : ''}>${n1(v)}</td>`;
     const cols = (a, src, b) => M.map(([f]) => cell(src[a][f], f, b)).join('') + cell(src[a].mean, 'mean', b) + `<td>${int(sum(a, 'cross'))}</td><td>${int(sum(a, 'thru'))}</td><td>${msf(med(a, 'ms'))}</td>`;
     const sorted = [BR, ...others].sort((x, y) => RB[x].mean - RB[y].mean);
-    const head = (first) => `<thead><tr><th>${first}</th><th>Layout</th>${M.map(([, l]) => `<th>${l}</th>`).join('')}<th>Mean rank</th><th>Crossed links, total</th><th>Links through classes, total</th><th>Median time</th></tr></thead>`;
+    const head = (first) => `<thead><tr><th>${first}</th><th>Layout</th>${M.map(([, l]) => `<th>${l}</th>`).join('')}<th>Overall score (average place, lower is better)</th><th>Crossed links, total</th><th>Links through classes, total</th><th>Median time</th></tr></thead>`;
     const body = sorted.map((a, i) => `<tr${a === BR ? ' class="ours"' : ''}><td>${i + 1}</td><td>${a === BR ? 'Best Read (ours)' : show(a)}</td>${cols(a, RB, best)}</tr>`).join('');
     const place = (R, a) => [a, ...others].sort((x, y) => R[x].mean - R[y].mean).indexOf(a) + 1;
     const body2 = [[TS, RT], [MY, RM]].map(([a, R]) => `<tr class="ours"><td>${ord(place(R, a))} of ${pool}</td><td>${show(a)}</td>${cols(a, R, null)}</tr>`).join('');

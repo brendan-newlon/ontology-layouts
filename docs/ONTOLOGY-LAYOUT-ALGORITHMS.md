@@ -27,7 +27,7 @@ Over 15 development graphs of 13 to 179 classes, one run each, ours with the cle
 |---|---|
 | **About half the crossings** | Best Read 452 against 960 for tuned `neato` and 971 for tuned WebCola |
 | **An eighth of the links through classes of tuned WebCola** | 39 against 307. Tuned `neato` draws 81, in about 16 times the area |
-| **First of 12 on the five measures** | Best Read's mean rank is 2.9 among itself and the 11 open-source layouts; next come WebCola (4.8) and `neato` (4.9). Tidy Stress and Mycelium, each ranked on its own against the same 11, also place first |
+| **First of 12 on the five measures** | Best Read's overall score, its average place over the graphs and the five measures (lower is better), is 2.9 among itself and the 11 open-source layouts; next come WebCola (4.8) and `neato` (4.9). Tidy Stress and Mycelium, each ranked on its own against the same 11, also place first |
 | **Every graph** | Best Read has the fewest crossed links plus links through classes, or ties, on all 15 graphs |
 | **Under a second** | Median 0.5 s, clean-up included; at most about 1.3 s up to 537 classes; the same drawing on any computer |
 
@@ -90,7 +90,7 @@ The tidy tree in the library (`_ogTreeLayout`, after Reingold–Tilford, levels 
 ## Limits
 - As graph-drawing theory nothing here is new: no new model and no bounds. The new parts are applied: the clean-up taught by demonstration, routing joined to placement, the work clock, and the evaluation on unseen graphs.
 - No study with people reading the diagrams has been done. Which measures matter most is a judgment backed by Purchase's studies of crossings; a task-based study is the missing evidence.
-- At 3,335 classes d3-force draws fewer problems; thousands of classes need a multilevel placement.
+- At 3,335 classes d3-force draws fewer problems (72,111 in 6.4 s, against 102,600 in 9.8 s). More time does not close the gap: with a 60 s limit Best Read takes 44 s and draws 92,316. At 1,204 classes more time helps (6,176 problems at the default, 4,881 in 4.3 s). Thousands of classes need a multilevel placement.
 - Boxes: every benchmark sizes boxes from their labels. The layouts work on any box sizes; with all boxes 60 × 40 the counts are about the same, and with mixed boxes up to 220 × 90 there are 14% more crossed links and twice the links through classes, still a quarter of d3-force's crossings and a tenth of its links through classes (`sizebench.mjs`).
 - The clean-up's principles come from one person. The layouts use a random seed, and totals differ by a few percent between seeds; every result uses seed 1.
 - The tuned settings are a reasonable search, not an exhaustive one. The rankings measure straight links.
