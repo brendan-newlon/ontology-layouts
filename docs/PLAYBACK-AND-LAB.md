@@ -31,7 +31,7 @@ This file is the technical contract. For the method (how a person's demonstratio
 
 ## How it was used here: from demonstration to rules
 The clean-up after the layouts (`_ogHandTidy`) was taught this way:
-1. A person moved classes in the Lab until the drawing read well, saying why in the comments: "this leaf is fenced in", "slide this group into the open space", "turn the chain so it hangs down".
+1. A person designed the Lab for this, then moved classes in it until the drawing read well, saying why in the comments: "this leaf is fenced in", "slide this group into the open space", "turn the chain so it hangs down".
 2. The recorded sessions were read, and each recurring move with its reason was written down as a principle.
 3. Each principle became a rule a program can run, measured on graphs the person never saw, and kept only where it measured better.
 
