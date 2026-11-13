@@ -25,7 +25,9 @@ This file is the technical contract. For the method (how a person's demonstratio
 **Lab** is where the person works:
 - **Opens on the playback's current frame** and follows the playback until the person moves something.
 - **Edits flow back.** A manual edit comes back to the playback as its own step, and the steps after it rerun from there, so a person can fix one thing and watch the algorithm continue.
-- **Sessions are saved.** Moves, comments and the steps they belong to are recorded per session in localStorage and posted to a local receiver (`tools/recv.py`, which writes `_temp/<session>.json`).
+- **Sessions are saved.** Moves, comments and the steps they belong to are recorded per session in localStorage and posted to a local receiver (`tools/recv.py`, which writes `_temp/<session>.json`). On the public site, where there is no receiver, File, then Download this session saves the session as one JSON file.
+- **Your own graph.** File, then Open a Turtle file reads an ontology (`tools/layout-bench/ttl.js`: classes, subclass links, object properties from their domain to their range, someValuesFrom and allValuesFrom restrictions). The graph is kept in the browser, and the Playback lists it too. File also exports the drawing as SVG, PNG, JSON (positions, sizes, link paths) or GraphML.
+- **Node style.** Both pages draw classes as label boxes or as circles with the name underneath (`tools/layout-bench/graphs.js`). The layout gets the box that covers the circle and its name, centered on the circle.
 
 ## How it was used here: from demonstration to rules
 The clean-up after the layouts (`_ogHandTidy`) was taught this way:

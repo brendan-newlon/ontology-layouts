@@ -42,10 +42,10 @@ aside { border-left: 1px solid var(--rule); background: var(--paper); display: g
 #walk .legend { display: grid; grid-template-columns: 1fr 1fr; gap: 2px 8px; font-size: 11.5px; color: var(--muted); }
 #walk .legend label { display: flex; gap: 5px; align-items: center; cursor: pointer; }
 #walk .sw { width: 14px; height: 10px; border-radius: 3px; display: inline-block; flex: none; }
-.node.crowd rect { fill: var(--crowd); stroke: var(--crowd-line); stroke-width: 1.6; }
-.node.unit rect { fill: var(--unit); stroke: var(--unit-line); stroke-width: 1.6; }
-.node.anchor rect { stroke: var(--unit-line); stroke-width: 3.5; }
-.node.mover rect { fill: var(--mover); stroke: var(--warn); stroke-width: 1.8; }
+.node.crowd .shape { fill: var(--crowd); stroke: var(--crowd-line); stroke-width: 1.6; }
+.node.unit .shape { fill: var(--unit); stroke: var(--unit-line); stroke-width: 1.6; }
+.node.anchor .shape { stroke: var(--unit-line); stroke-width: 3.5; }
+.node.mover .shape { fill: var(--mover); stroke: var(--warn); stroke-width: 1.8; }
 .opencell { fill: var(--open); opacity: .16; }
 .densecell { fill: var(--warn); opacity: .22; }
 .slice { fill: none; stroke: var(--warn); stroke-width: 1.4; stroke-dasharray: 6 4; opacity: .8; }
@@ -78,9 +78,10 @@ aside h2 { font-size: 13px; margin: 0; padding: 8px 12px; border-bottom: 1px sol
 .link.thru { stroke: var(--bad); stroke-width: 2.2; }
 .link.picked { stroke: var(--handle); stroke-width: 2.6; }
 .hit { fill: none; stroke: transparent; stroke-width: 12; cursor: crosshair; }
-.node rect { fill: var(--box); stroke: var(--box-line); stroke-width: 1; }
-.node.sel rect { stroke: var(--sel); stroke-width: 2.5; }
-.node.tight rect { stroke: var(--warn); stroke-dasharray: 3 2; }
+.node .shape { fill: var(--box); stroke: var(--box-line); stroke-width: 1; }
+.node.sel .shape { stroke: var(--sel); stroke-width: 2.5; }
+.node.tight .shape { stroke: var(--warn); stroke-dasharray: 3 2; }
+.node rect.lbg { fill: var(--paper); opacity: .85; stroke: none; }
 .node text { font-size: 11px; fill: var(--ink); pointer-events: none; }
 .node { cursor: grab; }
 .xdot { stroke: none; }
@@ -88,18 +89,39 @@ aside h2 { font-size: 13px; margin: 0; padding: 8px 12px; border-bottom: 1px sol
 .ink { fill: none; stroke: var(--pen); stroke-width: 3; stroke-linecap: round; stroke-linejoin: round; vector-effect: non-scaling-stroke; opacity: .85; pointer-events: none; }
 .ink.old { opacity: .45; }
 #svg.pen, #svg.pen * { cursor: crosshair !important; }
+.fmenu { position: relative; display: inline-block; }
+.fmenu .fm { display: none; position: absolute; left: 0; top: calc(100% + 4px); z-index: 50; min-width: 260px; background: var(--paper); border: 1px solid var(--rule); border-radius: 8px; box-shadow: 0 8px 24px rgba(0,0,0,.18); padding: 5px; }
+.fmenu.open .fm { display: block; }
+.fmenu .fm button { display: block; width: 100%; text-align: left; border: 0; background: none; padding: 5px 9px; border-radius: 5px; }
+.fmenu .fm button:hover { background: var(--bg); }
+.fmenu .fm button[hidden] { display: none; }
+.fmenu .fm .h { font-size: 11px; text-transform: uppercase; letter-spacing: .05em; color: var(--muted); padding: 6px 9px 2px; }
 #penBtn.on { background: var(--pen); border-color: var(--pen); color: #fff; }
 .ev.ink { border-left-color: var(--pen); }
 .ev.note .ink { display: block; font-size: 11px; color: var(--pen); margin-bottom: 2px; }
 .marquee { fill: color-mix(in srgb, var(--sel) 15%, transparent); stroke: var(--sel); stroke-dasharray: 4 3; }
 @media (max-width: 860px) { main { grid-template-columns: 1fr; grid-template-rows: 60vh auto; } aside { border-left: 0; border-top: 1px solid var(--rule); } }
 </style>
+<script src="../../site-nav.js" data-page="lab" defer></script>
 </head>
 <body>
 <header>
   <h1>Layout Lab</h1>
   <select id="graph" title="Graph"></select>
   <select id="algo" title="Starting layout"><option value="auto">Best Read</option><option value="compact">Tidy Stress</option><option value="grouped">Mycelium</option></select>
+  <span class="fmenu" id="fileMenu"><button id="fileBtn" title="Open your own graph (Turtle), export the drawing, download this session">File ▾</button>
+    <span class="fm">
+      <div class="h">Your graph</div>
+      <button data-f="ttl">Open a Turtle file (.ttl)…</button>
+      <button data-f="forget" id="fForget">Remove this graph from the list</button>
+      <div class="h">Export the drawing</div>
+      <button data-f="svg">SVG image</button><button data-f="png">PNG image</button>
+      <button data-f="json">JSON: positions, sizes and link paths</button><button data-f="graphml">GraphML (yEd, Gephi, Cytoscape)</button>
+      <div class="h">Your session</div>
+      <button data-f="session">Download this session (JSON)</button>
+    </span></span>
+  <input type="file" id="ttlFile" accept=".ttl,.nt,.turtle,text/turtle,application/n-triples" hidden>
+  <label class="tog" title="How each class is drawn. The layout is given each class's own size: boxes sized by their names, or circles with the name underneath (as many graph browsers draw them)">Nodes <select id="nstyle"><option value="box">Boxes</option><option value="circle">Circles</option></select></label>
   <button id="relayout">Lay out again</button>
   <button id="undo" title="Ctrl+Z">Undo</button>
   <button id="tidy" title="Clean up the drawing the way the recorded hand sessions did: single moves into open space, leaf units, crowds spread outward, group moves with look-ahead, a last leaf pass">Clean up</button>
@@ -149,6 +171,8 @@ aside h2 { font-size: 13px; margin: 0; padding: 8px 12px; border-bottom: 1px sol
 <script src="models6.js"></script>
 <script src="engines3.js"></script>
 <script src="handtidy.js"></script>
+<script src="ttl.js"></script>
+<script src="graphs.js"></script>
 <script>
 // Every action and note is kept in order, with the metrics before and after and the full positions after, so that a session
 // can be replayed and studied. Sessions are posted to the local receiver (tools/recv.py, port 8613) and kept in localStorage.
@@ -208,8 +232,8 @@ function measure() {
     }
   }
   let thru = 0;
-  G.E.forEach((e, k) => { const pl = PL[k]; for (let v = 0; v < n; v++) { if (v === e.s || v === e.t) continue; const hw = G.D[v].w / 2 + 6, hh = G.D[v].h / 2 + 6;
-    for (let i = 0; i < pl.length - 1; i++) if (O.segBox(pl[i].x - G.P[v].x, pl[i].y - G.P[v].y, pl[i + 1].x - G.P[v].x, pl[i + 1].y - G.P[v].y, hw, hh)) { thru++; thruL.add(k); break; } } });
+  G.E.forEach((e, k) => { const pl = PL[k]; for (let v = 0; v < n; v++) { if (v === e.s || v === e.t) continue; // through the box, or the circle and its name
+    for (let i = 0; i < pl.length - 1; i++) if (LayoutGraphs.hits(G.D[v], pl[i].x - G.P[v].x, pl[i].y - G.P[v].y, pl[i + 1].x - G.P[v].x, pl[i + 1].y - G.P[v].y, 6, O.segBox)) { thru++; thruL.add(k); break; } } });
   // angle between links at a class: each link's direction where it leaves the box
   const dirs = Array.from({ length: n }, () => []);
   G.E.forEach((e, k) => { const pl = PL[k];
@@ -242,7 +266,7 @@ function draw() {
   if (marks) M.X.forEach((c) => (s += `<circle class="xdot" cx="${c.x}" cy="${c.y}" r="${c.ang < 30 ? 5 : 3.5}" fill="${c.ang < 30 ? 'var(--bad)' : 'var(--warn)'}"><title>crossing at ${c.ang.toFixed(0)}°</title></circle>`));
   s += '</g><g>';
   G.P.forEach((p, i) => { const d = G.D[i], cls = 'node' + (G.sel.has(i) ? ' sel' : '') + (marks && M.tightN.has(i) ? ' tight' : '') + (WL && WL.cls[i] ? ' ' + WL.cls[i] : '');
-    s += `<g class="${cls}" data-v="${i}" transform="translate(${p.x},${p.y})"><rect x="${-d.w / 2}" y="${-d.h / 2}" width="${d.w}" height="${d.h}" rx="4"/><text text-anchor="middle" y="4">${esc(G.labels[i])}</text></g>`; });
+    s += `<g class="${cls}" data-v="${i}" transform="translate(${p.x},${p.y})">${LayoutGraphs.nodeSvg(G.labels[i], d, esc)}</g>`; });
   s += '</g><g>';
   if (showH) G.E.forEach((e, k) => handlePts(k).forEach((h, j) => (s += `<circle class="handle" data-k="${k}" data-j="${j}" cx="${h.x}" cy="${h.y}" r="5"/>`)));
   s += '</g>';
@@ -278,6 +302,8 @@ function describe(ev) {
     case 'bend-move': return `<span class="d">Reshaped ${esc(ev.link)}</span>` + m;
     case 'bend-remove': return `<span class="d">Removed a bend from ${esc(ev.link)}</span>` + m;
     case 'straighten': return `<span class="d">Straightened ${esc(ev.link)}</span>` + m;
+    case 'import': return `<span class="d">Opened ${esc(ev.file)}: ${ev.classes} classes, ${ev.subclassLinks} subclass links, ${ev.relationshipLinks} relationship links${ev.skipped ? ` (${ev.skipped} restrictions or properties without a class at both ends left out)` : ''}</span>`;
+    case 'export': return `<span class="d">Exported the drawing as ${esc(ev.format.toUpperCase())}</span>`;
     case 'select': return `<span class="d">Selected ${ev.classes.length ? esc(ev.classes.join(', ')) : 'nothing'}</span>`;
     case 'layout': return `<span class="d">Laid out ${esc(ev.graph)} with ${esc(ev.algo)}</span> <span class="m">crossings ${ev.after.cross}, through ${ev.after.thru}, sharp ${ev.after.sharp}, cramped ${ev.after.tight}</span>`;
     case 'undo': return `<span class="d">Undid step ${ev.undid} (a trial)</span>` + m;
@@ -309,8 +335,9 @@ $('log').addEventListener('click', (e) => {
   ev.ignored = !ev.ignored; ev.ignoredAt = new Date().toISOString(); b.textContent = ev.ignored ? 'keep' : 'ignore'; b.parentElement.classList.toggle('ignored', ev.ignored); persist();
 });
 let saveT = null;
+const sessionBody = () => JSON.stringify({ id: S.id, graph: G.key, graphName: MODELS[G.key] && MODELS[G.key].name, algo: $('algo').value, style: LayoutGraphs.style(), labels: G.labels, links: G.E.map((e) => [e.s, e.t, e.sub ? 1 : 0]), boxes: G.D.map((d) => d.w), events: S.events });
 function persist() {
-  const body = JSON.stringify({ id: S.id, graph: G.key, algo: $('algo').value, labels: G.labels, links: G.E.map((e) => [e.s, e.t, e.sub ? 1 : 0]), boxes: G.D.map((d) => d.w), events: S.events });
+  const body = sessionBody();
   try { localStorage.setItem('layout-lab:' + S.id, body); } catch (e) {}
   clearTimeout(saveT); if (!LOCAL) { $('save').textContent = 'kept in this browser only'; return; } // the receiver (tools/recv.py) runs only on your own computer
   saveT = setTimeout(() => fetch('http://127.0.0.1:8613/' + S.id + '.json', { method: 'POST', body })
@@ -320,9 +347,9 @@ function persist() {
 
 // ---------- loading ----------
 // The latest session for a graph, so that coming back to a graph continues it instead of starting over
-function latestSession(key) {
-  try { const ks = Object.keys(localStorage).filter((k) => k.startsWith('layout-lab:lab_' + key + '_')).sort();
-    return ks.length ? JSON.parse(localStorage.getItem(ks[ks.length - 1])) : null; } catch (e) { return null; }
+function latestSession(key, style) { // the latest drawn with the same node style (boxes and circles take different room)
+  try { const ks = Object.keys(localStorage).filter((k) => k.startsWith('layout-lab:lab_' + key + '_')).sort().reverse();
+    for (const k of ks) { const s = JSON.parse(localStorage.getItem(k)); if ((s.style || 'box') === style) return s; } return null; } catch (e) { return null; }
 }
 function resume(sess) {
   const last = sess && sess.labels && sess.labels.length === G.labels.length && [...sess.events].reverse().find((e) => e.state);
@@ -346,12 +373,13 @@ function journal(action) {
 async function load(key, algo, logIt = true) {
   if (W) walkEnd(false);
   const Md = await MODELS[key].load();
-  G.key = key; G.labels = Md.labels; G.ink = []; $('pbLink').href = 'playback.html?graph=' + key + '&algo=' + algo; G.D = Md.labels.map((l) => ({ w: String(l).length * 6.6 + 10, h: 20 }));
+  G.key = key; G.labels = Md.labels; G.iris = Md.iris || null; G.ink = []; $('pbLink').href = 'playback.html?graph=' + key + '&algo=' + algo; G.D = LayoutGraphs.boxes(Md.labels, LayoutGraphs.style());
+  $('fForget').hidden = !(MODELS[key] && MODELS[key].imported);
   const edges = Md.edges.filter((e) => e.s !== e.t).map((e) => [e.s, e.t, e.kind === 'sub' ? 2 : 1]);
   G.E = edges.map(([s, t, w]) => ({ s, t, sub: w === 2 }));
   G.P = freshLayout(algo);
   G.H = G.E.map(() => []); G.sel.clear(); G.pick = -1; S.undo = [];
-  if (logIt === 'open' && resume(latestSession(key))) { journal('resume'); return; }
+  if (logIt === 'open' && resume(latestSession(key, LayoutGraphs.style()))) { journal('resume'); return; }
   if (!S.id || logIt === 'new' || logIt === 'open') { S.id = 'lab_' + key + '_' + new Date().toISOString().replace(/[-:]/g, '').replace('T', '-').slice(0, 15); S.events = []; S.started = performance.now(); $('log').innerHTML = ''; }
   fit(); S.base = measure();
   record('layout', { graph: key, algo: $('algo').selectedOptions[0].textContent }, S.base);
@@ -690,12 +718,73 @@ function startSync() {
 }
 if (SYNC.bc) SYNC.bc.onmessage = (ev) => { const m = ev.data || {}; if (m.type === 'frame' && SYNC.on && SYNC.follow && !drag && !W && applyFrame(m)) draw(); };
 $('syncFollow').onchange = () => { SYNC.follow = $('syncFollow').checked; showSync(); if (SYNC.follow && SYNC.bc) SYNC.bc.postMessage({ type: 'hello' }); };
+// ---------- file menu: your own graph, exports, the session ----------
+$('nstyle').value = LayoutGraphs.style();
+$('nstyle').onchange = () => { LayoutGraphs.setStyle($('nstyle').value); load(G.key, $('algo').value, 'open'); record('toggle', { nodes: $('nstyle').value }); };
+$('fileBtn').onclick = (ev) => { ev.stopPropagation(); $('fileMenu').classList.toggle('open'); };
+document.addEventListener('click', () => $('fileMenu').classList.remove('open'));
+const baseName = () => String((MODELS[G.key] && MODELS[G.key].name) || G.key).replace(/^Public: /, '').replace(/[^\w.-]+/g, '_').replace(/_+$/, '') || 'graph';
+$('fileMenu').querySelector('.fm').onclick = (ev) => { const b = ev.target.closest('button'); if (!b) return; $('fileMenu').classList.remove('open'); const f = b.dataset.f;
+  if (f === 'ttl') $('ttlFile').click();
+  else if (f === 'forget') { if (!MODELS[G.key].imported) return; LayoutGraphs.remove(G.key); ownGraphs(); $('graph').value = 'prov'; load('prov', $('algo').value, 'open'); }
+  else if (f === 'svg') LayoutGraphs.download(baseName() + '.svg', exportSvg(), 'image/svg+xml');
+  else if (f === 'png') exportPng();
+  else if (f === 'json') LayoutGraphs.download(baseName() + '.layout.json', exportJson(), 'application/json');
+  else if (f === 'graphml') LayoutGraphs.download(baseName() + '.graphml', exportGraphml(), 'application/xml');
+  else if (f === 'session') LayoutGraphs.download(S.id + '.json', sessionBody(), 'application/json');
+  if (f !== 'ttl' && f !== 'forget') record('export', { format: f }); };
+$('ttlFile').onchange = async () => { const file = $('ttlFile').files[0]; $('ttlFile').value = ''; if (!file) return;
+  let g; try { g = OntologyTTL.load(await file.text()); } catch (err) { alert('Could not read ' + file.name + ':\n' + err.message); return; }
+  if (!g.labels.length) { alert(file.name + ' has no classes: the lab draws classes (owl:Class, rdfs:Class, anything in rdfs:subClassOf) and the object properties between them.'); return; }
+  if (g.labels.length > 600 && !confirm(`${file.name} has ${g.labels.length} classes. Laying it out may take several seconds. Go on?`)) return;
+  const key = LayoutGraphs.add({ name: file.name.replace(/\.[^.]+$/, '') + ` (${g.labels.length})`, labels: g.labels, edges: g.edges, iris: g.iris });
+  ownGraphs(); $('graph').value = key; await load(key, $('algo').value, 'new');
+  record('import', { file: file.name, classes: g.stats.classes, subclassLinks: g.stats.subclassLinks, relationshipLinks: g.stats.relationshipLinks, skipped: g.stats.skipped }); };
+// the drawing as data and as pictures: what is on screen (bends included), without the problem marks
+function drawnBox() { const b = bbox(G.P.flatMap((p, i) => [{ x: p.x - G.D[i].w / 2, y: p.y - G.D[i].h / 2 }, { x: p.x + G.D[i].w / 2, y: p.y + G.D[i].h / 2 }]).concat(G.E.flatMap((e, k) => poly(k)))); return { x: b.x1 - 20, y: b.y1 - 20, w: b.x2 - b.x1 + 40, h: b.y2 - b.y1 + 40 }; }
+function exportSvg() {
+  const b = drawnBox(), r1 = (x) => Math.round(x * 10) / 10;
+  let s = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="${r1(b.x)} ${r1(b.y)} ${r1(b.w)} ${r1(b.h)}" width="${Math.round(b.w)}" height="${Math.round(b.h)}" font-family="Segoe UI, system-ui, sans-serif">`
+    + '<style>.link{fill:none;stroke:#8b97a8;stroke-width:1.4}.link.sub{stroke:#6f9a54;stroke-width:1.8}.shape{fill:#eef3fb;stroke:#6d86b0;stroke-width:1}.lbg{fill:#fff;opacity:.85}text{font-size:11px;fill:#1d232b}</style>'
+    + `<rect x="${r1(b.x)}" y="${r1(b.y)}" width="${r1(b.w)}" height="${r1(b.h)}" fill="#fff"/>`;
+  G.E.forEach((e, k) => (s += `<path class="link${e.sub ? ' sub' : ''}" d="${pathD(k)}"/>`));
+  G.P.forEach((p, i) => (s += `<g transform="translate(${r1(p.x)},${r1(p.y)})">${LayoutGraphs.nodeSvg(G.labels[i], G.D[i], esc)}</g>`));
+  return s + '</svg>';
+}
+function exportPng() {
+  const b = drawnBox(), k = Math.min(3, 4000 / Math.max(b.w, b.h)) || 1, img = new Image(), url = URL.createObjectURL(new Blob([exportSvg()], { type: 'image/svg+xml' }));
+  img.onload = () => { const c = document.createElement('canvas'); c.width = Math.round(b.w * k); c.height = Math.round(b.h * k); const x = c.getContext('2d'); x.drawImage(img, 0, 0, c.width, c.height); URL.revokeObjectURL(url);
+    c.toBlob((blob) => LayoutGraphs.download(baseName() + '.png', blob), 'image/png'); };
+  img.src = url;
+}
+function exportJson() {
+  const r1 = (x) => Math.round(x * 10) / 10;
+  return JSON.stringify({ graph: (MODELS[G.key] && MODELS[G.key].name) || G.key, nodeStyle: LayoutGraphs.style(), generator: 'Ontology Layouts, Layout Lab',
+    nodes: G.labels.map((l, i) => ({ id: i, label: l, iri: G.iris ? G.iris[i] : undefined, x: r1(G.P[i].x), y: r1(G.P[i].y), w: r1(G.D[i].w), h: r1(G.D[i].h), shape: G.D[i].shape || 'box', r: G.D[i].r })),
+    links: G.E.map((e, k) => ({ source: e.s, target: e.t, kind: e.sub ? 'subClassOf' : 'relationship', path: poly(k).map((q) => [r1(q.x), r1(q.y)]) })) }, null, 1);
+}
+function exportGraphml() {
+  const x = (t) => String(t).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/"/g, '&quot;'), r1 = (v) => Math.round(v * 10) / 10;
+  let s = '<?xml version="1.0" encoding="UTF-8"?>\n<graphml xmlns="http://graphml.graphdrawing.org/xmlns">\n'
+    + ['label', 'iri', 'x', 'y', 'width', 'height'].map((k) => `<key id="${k}" for="node" attr.name="${k}" attr.type="${/^(x|y|width|height)$/.test(k) ? 'double' : 'string'}"/>`).join('\n')
+    + '\n<key id="kind" for="edge" attr.name="kind" attr.type="string"/>\n<graph id="G" edgedefault="directed">\n';
+  G.labels.forEach((l, i) => (s += `<node id="n${i}"><data key="label">${x(l)}</data>${G.iris ? `<data key="iri">${x(G.iris[i])}</data>` : ''}<data key="x">${r1(G.P[i].x)}</data><data key="y">${r1(G.P[i].y)}</data><data key="width">${r1(G.D[i].w)}</data><data key="height">${r1(G.D[i].h)}</data></node>\n`));
+  G.E.forEach((e, k) => (s += `<edge id="e${k}" source="n${e.s}" target="n${e.t}"><data key="kind">${e.sub ? 'subClassOf' : 'relationship'}</data></edge>\n`));
+  return s + '</graph>\n</graphml>\n';
+}
 // graph list: the 15 graphs of the write-up first
 const ORDER = ['prov', 'uni', 'hotel', 'org', 'brewery', 'trial', 'telecom', 'sosa', 'crm', 'schema', 'health', 'fibo', 'pizza', 'bio', 'big'];
 const names = { prov: 'PROV-O (30)', uni: 'University (14)', hotel: 'Hotel booking (13)', org: 'W3C ORG (15)', brewery: 'Brewery IoT (23)', trial: 'Clinical trial (24)', telecom: 'Telecom network (34)', sosa: 'SOSA/SSN (36)', crm: 'Customer 360 (31)', schema: 'schema.org core (49)', health: 'Clinical record, 3 hubs (53)', fibo: 'FIBO-like loans (59)', pizza: 'Pizza taxonomy (90)', bio: 'Biomedical taxonomy (115)', big: 'Bank (179)' };
 ORDER.filter((k) => MODELS[k]).forEach((k) => { const o = document.createElement('option'); o.value = k; o.textContent = names[k] || k; $('graph').appendChild(o); });
+function ownGraphs() { // the graphs read from files, in their own group of the list
+  let g = $('graph').querySelector('optgroup[data-own]'); if (g) g.remove();
+  const ks = LayoutGraphs.imported(); if (!ks.length) return;
+  g = document.createElement('optgroup'); g.label = 'Your graphs'; g.dataset.own = '1';
+  ks.forEach((k) => { const o = document.createElement('option'); o.value = k; o.textContent = MODELS[k].name; g.appendChild(o); }); $('graph').prepend(g);
+}
+ownGraphs();
 const QS = new URLSearchParams(location.search), start = MODELS[QS.get('graph')] ? QS.get('graph') : 'prov';
-if (!ORDER.includes(start)) { const o = document.createElement('option'); o.value = start; o.textContent = (MODELS[start].name || start).replace(/^Public: /, ''); $('graph').appendChild(o); }
+if (!ORDER.includes(start) && !MODELS[start].imported) { const o = document.createElement('option'); o.value = start; o.textContent = (MODELS[start].name || start).replace(/^Public: /, ''); $('graph').appendChild(o); }
 $('graph').value = start;
 if (QS.get('sync')) { const a = QS.get('algo'); if (a && [...$('algo').options].some((o) => o.value === a)) $('algo').value = a; load(start, $('algo').value, 'new').then(startSync); }
 else load(start, 'auto', 'open');
