@@ -31,30 +31,30 @@ a { color: var(--accent); }
 main { display: grid; grid-template-columns: 1fr 420px; min-height: 0; }
 #stage { position: relative; min-width: 0; min-height: 0; }
 #svg { width: 100%; height: 100%; display: block; background: var(--bg); touch-action: none; user-select: none; cursor: grab; }
-#caption { position: absolute; left: 12px; top: 10px; max-width: max(200px, min(520px, calc(100% - 330px))); background: color-mix(in srgb, var(--paper) 90%, transparent); border: 1px solid var(--rule); border-radius: 8px; padding: 8px 10px; pointer-events: none; }
-#caption .k { font-size: 11px; text-transform: uppercase; letter-spacing: .05em; color: var(--muted); }
+#caption { position: absolute; left: 6px; top: 6px; max-width: max(200px, min(460px, calc(100% - 90px))); background: color-mix(in srgb, var(--paper) 88%, transparent); border: 1px solid var(--rule); border-radius: 6px; padding: 3px 7px; pointer-events: none; font-size: 12px; line-height: 1.35; }
+#caption .t1 { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 #caption .t { font-weight: 600; }
-#caption .d { font-size: 12.5px; color: var(--muted); margin-top: 2px; }
-#caption .x { font-size: 12.5px; color: var(--ink); margin-top: 3px; }
-#counts { position: absolute; right: 12px; top: 10px; background: color-mix(in srgb, var(--paper) 90%, transparent); border: 1px solid var(--rule); border-radius: 8px; padding: 6px 10px; font-size: 12px; font-variant-numeric: tabular-nums; color: var(--muted); display: grid; grid-template-columns: auto auto; gap: 0 10px; pointer-events: none; }
-#counts b { color: var(--ink); text-align: right; }
-#legend { position: absolute; left: 12px; bottom: 10px; max-width: min(460px, calc(100% - 24px)); background: color-mix(in srgb, var(--paper) 92%, transparent); border: 1px solid var(--rule); border-radius: 8px; padding: 6px 10px; font-size: 12px; color: var(--muted); pointer-events: none; display: none; }
-#legend div { display: flex; gap: 7px; align-items: baseline; padding: 1px 0; }
-#legend i { flex: none; width: 14px; height: 10px; border-radius: 2px; display: inline-block; }
-#legend b { color: var(--ink); font-weight: 600; }
+#caption .k { color: var(--muted); font-size: 11px; }
+#caption .d { color: var(--muted); display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+#caption .body { pointer-events: auto; }
+#counts { position: absolute; right: 4px; top: 6px; background: color-mix(in srgb, var(--paper) 88%, transparent); border: 1px solid var(--rule); border-radius: 6px; padding: 2px 4px 3px; font-size: 11.5px; font-variant-numeric: tabular-nums; color: var(--muted); pointer-events: none; }
+#countsB { display: grid; grid-template-columns: 16px auto; gap: 3px 4px; align-items: center; pointer-events: auto; }
+#countsB svg { width: 16px; height: 16px; fill: none; stroke: var(--muted); stroke-width: 1.6; stroke-linecap: round; }
+#countsB b { color: var(--ink); text-align: right; font-weight: 600; }
+#legend { position: absolute; left: 0; right: 0; bottom: 0; background: color-mix(in srgb, var(--paper) 88%, transparent); border-top: 1px solid var(--rule); padding: 1px 6px; font-size: 11px; line-height: 16px; color: var(--muted); pointer-events: none; display: none; white-space: nowrap; overflow: hidden; }
+#legendB { display: inline-flex; gap: 12px; pointer-events: auto; }
+#legend span { display: inline-flex; gap: 4px; align-items: center; cursor: help; }
+#legend i { flex: none; width: 10px; height: 8px; border-radius: 2px; display: inline-block; }
+#counts .pb, #legend .pb { position: static; display: flex; }
+#counts .pb { justify-content: center; margin-bottom: 1px; }
+#counts .pb [data-a=min], #legend .pb [data-a=min] { display: none; }
+#legend .pb { float: right; }
 .pnl { pointer-events: none; }
 .pnl .pb { position: absolute; top: 3px; right: 4px; display: flex; gap: 2px; pointer-events: auto; }
 .pnl .pb button { border: 0; background: none; padding: 0 4px; font-size: 12px; line-height: 16px; color: var(--muted); cursor: pointer; border-radius: 4px; }
 .pnl .pb button:hover { background: var(--rule); color: var(--ink); }
-.pnl { padding-right: 46px !important; }
-.pnl.min .body > :not(.keep) { display: none !important; }
-.pnl.min .body .keep { margin: 0 !important; }
-#counts.min .body { display: block !important; }
-#counts.min .body::before { content: 'Counts'; font-weight: 600; color: var(--ink); }
-#legend.min .body span { display: none; }
-#legend.min .body div { display: inline-flex !important; margin-right: 10px; }
-#legend.min { padding-top: 4px; padding-bottom: 4px; }
-#legend.min .body div::after { content: attr(data-n); }
+#caption { padding-right: 40px !important; }
+#caption.min .d { display: none; }
 .pnl.gone { display: none !important; }
 #drawer { position: absolute; left: 0; top: 50%; transform: translateY(-50%); display: flex; flex-direction: column; gap: 4px; z-index: 3; }
 #drawer button { writing-mode: vertical-rl; transform: rotate(180deg); border: 1px solid var(--rule); border-left: 0; border-radius: 0 6px 6px 0; background: var(--paper); color: var(--muted); font-size: 11.5px; padding: 8px 3px; cursor: pointer; }
@@ -169,8 +169,8 @@ footer .grp { display: flex; gap: 4px; align-items: center; }
 <main>
   <div id="stage">
     <svg id="svg"></svg>
-    <div id="caption" class="pnl" data-name="Step"><div class="body"><div class="k" id="cK"></div><div class="t keep" id="cT"></div><div class="d" id="cD"></div><div class="x" id="cX"></div></div></div>
-    <div id="counts" class="pnl" data-name="Counts"><div class="body" id="countsB" style="display:contents"></div></div>
+    <div id="caption" class="pnl" data-name="Step"><div class="body"><div class="t1"><span class="t" id="cT"></span> <span class="k" id="cK"></span></div><div class="d" id="cD"></div></div></div>
+    <div id="counts" class="pnl" data-name="Counts"><div class="body" id="countsB"></div></div>
     <div id="legend" class="pnl" data-name="Legend"><div class="body" id="legendB"></div></div>
     <div id="drawer"></div>
   </div>
@@ -216,7 +216,7 @@ footer .grp { display: flex; gap: 4px; align-items: center; }
   </div>
   <span id="time"></span>
   <label class="tog" title="Playing speed as a share of the real speed. 100%: the layout plays as fast as it ran in this browser; 10%: ten times as long. Every frame plays for its share of the measured work, so the progress bar's proportions are the work's proportions.">Speed <input type="range" id="speed" min="-1" max="2" step="0.01" value="0.7" style="width:120px"> <span id="speedV">5%</span> <small>of real speed</small></label>
-  <label class="tog"><input type="checkbox" id="follow" checked> Follow the drawing</label>
+  <label class="tog" title="Keep the whole drawing in view. The view holds still while classes move, and changes only when the drawing grows or shrinks a lot (or another variant is shown)."><input type="checkbox" id="follow" checked> Follow the drawing</label>
   <label class="tog"><input type="checkbox" id="names" checked> Link names</label>
   <label class="tog"><input type="checkbox" id="marks" checked> Mark links through classes</label>
   <span id="result"></span>
@@ -494,7 +494,7 @@ $('editDrop').onclick = () => { if (!R || !R.base) return; note('edit-discarded'
 // A step not shown keeps its time; the drawing holds the last frame shown until the step is over (disp: the frame drawn).
 let TL = null; // { at: [time of each frame, s of work], total, disp: [frame drawn at each frame] }
 const frameDur = (f) => Math.max(0, f.ms || 0) / 1000;
-function timeline() { const F = R.frames, at = [0], disp = [0];
+function timeline() { R.scenes = null; const F = R.frames, at = [0], disp = [0];
   for (let j = 1; j < F.length; j++) { at.push(at[j - 1] + frameDur(F[j])); disp.push(ctl(F[j].key).show ? j : disp[j - 1]); }
   TL = { at, disp, total: at[at.length - 1] || 0.001 }; }
 const meta = (k) => k.startsWith('variant:') ? ['variant', 'Variants not kept', `Variant "${k.slice(8)}"`, 'Best Read (and Tidy Stress on small graphs) runs several variants and keeps the best-scoring drawing; this one was not kept.', '#b0b7c3', false] : STEPS[SI[k]] || [k, '', k, '', '#888', false];
@@ -555,8 +555,23 @@ function clearRect() {
   return { W, H, list: xs1.flatMap((x1) => xs2.flatMap((x2) => ys1.flatMap((y1) => ys2.map((y2) => ({ x1, y1, x2, y2 })))))
     .filter((r) => r.x2 - r.x1 > 80 && r.y2 - r.y1 > 80 && r.x1 >= 0 && r.y1 >= 0 && r.x2 <= W && r.y2 <= H && !obs.some((o) => o.x1 < r.x2 && r.x1 < o.x2 && o.y1 < r.y2 && r.y1 < o.y2)) };
 }
-function fitView(P, snap) {
-  const { x1, y1, x2, y2 } = bounds(P); if (x1 > x2) return; const pad = 30, dw = x2 - x1 + 2 * pad, dh = y2 - y1 + 2 * pad, cr = clearRect();
+// The camera holds still so the classes can be seen moving: frames are grouped, from the end backwards, into stretches whose
+// extent stays within 1.6 times the area of the stretch's last frame (and that belong to one run); each stretch is shown in
+// one fixed view that holds all of it, and the view changes only between stretches.
+function sceneBounds(j) {
+  if (!R.scenes) { const F = R.frames, sc = new Array(F.length); let cur = null, seed = 0, run;
+    const area = (b) => Math.max(1, (b.x2 - b.x1) * (b.y2 - b.y1)), uni = (a, b) => ({ x1: Math.min(a.x1, b.x1), y1: Math.min(a.y1, b.y1), x2: Math.max(a.x2, b.x2), y2: Math.max(a.y2, b.y2) });
+    for (let i = F.length - 1; i >= 0; i--) { const b = bounds(unflat(F[i].P));
+      if (b.x1 <= b.x2) { const u = cur && F[i].run === run ? uni(cur.b, b) : null;
+        if (u && area(u) <= 1.6 * seed) cur.b = u; else { cur = { b: { ...b } }; seed = area(b); run = F[i].run; } }
+      sc[i] = cur; }
+    for (let i = 0; i < F.length && !sc[i]; i++) sc[i] = sc.find((x) => x); // empty frames before the first class: the next view
+    R.scenes = sc; }
+  return R.scenes[j] && R.scenes[j].b;
+}
+let CR = null; // the clear rectangles between the panels, measured once until the window or the panels change
+function fitView(P, snap, b) {
+  const { x1, y1, x2, y2 } = b || bounds(P); if (!(x1 <= x2)) return; const pad = 30, dw = x2 - x1 + 2 * pad, dh = y2 - y1 + 2 * pad, cr = CR || (CR = clearRect());
   const W = Math.max(1, cr.W), H = Math.max(1, cr.H); let best = { x1: 0, y1: 0, x2: W, y2: H }, bs = 0;
   for (const r of cr.list) { const sc = Math.min((r.x2 - r.x1) / dw, (r.y2 - r.y1) / dh); if (sc > bs) { bs = sc; best = r; } }
   // when the clear space is small (a narrow window), drawing under the panels beats drawing tiny
@@ -571,14 +586,14 @@ function panels() {
   document.querySelectorAll('#stage .pnl').forEach((el) => {
     if (!el.querySelector('.pb')) { const b = document.createElement('div'); b.className = 'pb';
       b.innerHTML = '<button data-a="min" title="Shrink to its title">–</button><button data-a="gone" title="Close into the drawer at the left edge">×</button>';
-      b.onclick = (ev) => { const a = ev.target.dataset.a; if (!a) return; const st = PNL[el.id] || (el.id === 'legend' ? { min: true } : {}); st[a] = !st[a]; PNL[el.id] = st; store.set('panels', PNL); panels(); if (R) { userView = false; render(); } };
+      b.onclick = (ev) => { const a = ev.target.dataset.a; if (!a) return; const st = PNL[el.id] || {}; st[a] = !st[a]; PNL[el.id] = st; store.set('panels', PNL); panels(); CR = null; if (R) { userView = false; render(); } };
       el.appendChild(b); }
-    const st = PNL[el.id] || (el.id === 'legend' ? { min: true } : {}); el.classList.toggle('min', !!st.min); el.classList.toggle('gone', !!st.gone);
-    el.querySelector('[data-a=min]').textContent = st.min ? '+' : '–'; el.querySelector('[data-a=min]').title = el.id === 'legend' ? (st.min ? 'Show what each color means' : 'Names only') : st.min ? 'Show in full' : 'Shrink to its title';
+    const st = PNL[el.id] || {}; el.classList.toggle('min', el.id === 'caption' && !!st.min); el.classList.toggle('gone', !!st.gone);
+    el.querySelector('[data-a=min]').textContent = st.min ? '+' : '–'; el.querySelector('[data-a=min]').title = st.min ? 'Show the description' : 'Title only';
   });
   $('drawer').innerHTML = [...document.querySelectorAll('#stage .pnl.gone')].map((el) => `<button data-id="${el.id}" title="Show the ${el.dataset.name.toLowerCase()} panel again">${el.dataset.name}</button>`).join('');
 }
-$('drawer').onclick = (ev) => { const id = ev.target.dataset && ev.target.dataset.id; if (!id) return; PNL[id] = { ...(PNL[id] || {}), gone: false }; store.set('panels', PNL); panels(); if (R) { userView = false; render(); } };
+$('drawer').onclick = (ev) => { const id = ev.target.dataset && ev.target.dataset.id; if (!id) return; PNL[id] = { ...(PNL[id] || {}), gone: false }; store.set('panels', PNL); panels(); CR = null; if (R) { userView = false; render(); } };
 panels();
 function pathOf(A, B, r) {
   const pl = O.routePoly(A, B, r, 6); if (pl.length === 2) return `M${pl[0].x.toFixed(1)},${pl[0].y.toFixed(1)}L${pl[1].x.toFixed(1)},${pl[1].y.toFixed(1)}`;
@@ -587,6 +602,7 @@ function pathOf(A, B, r) {
 
 // ---------- the math made visible: one color per idea, drawn faintly behind the graph ----------
 const OV = store.get('ov', {}); document.querySelectorAll('[data-ov]').forEach((el) => { el.checked = !!OV[el.dataset.ov]; el.onchange = () => { OV[el.dataset.ov] = el.checked; store.set('ov', OV); if (R) render(); }; });
+const OVS = { grid: 'Grid', slice: 'Slices', group: 'Group side', stress: 'Stress', extent: 'Extent', clear: 'Clearance' };
 const OVL = { grid: ['var(--ov-grid)', 'Open-space grid', 'tinted cells hold no class and no link; the dashed circle is how far the class may jump (moves into open space)'],
   slice: ['var(--ov-slice)', 'Spreading slices', 'the 8 slices round a crowd; the darker, the more open space beyond, so pushed further (crowd spreading)'],
   group: ['var(--ov-group)', 'Group-move side', 'the problem fixed (ring), the side that moves together (tint) and where to (arrow) (group moves)'],
@@ -627,8 +643,8 @@ function overlays(P) {
       for (let r = 1; r <= n; r++) { const o = r * gap; s += `<rect x="${(p.x - d.w / 2 - o).toFixed(1)}" y="${(p.y - d.h / 2 - o).toFixed(1)}" width="${(d.w + 2 * o).toFixed(1)}" height="${(d.h + 2 * o).toFixed(1)}" rx="${(6 + o).toFixed(1)}" fill="none" stroke="var(--ov-stress)" stroke-opacity="${(0.65 - 0.12 * r).toFixed(2)}" stroke-width="1.1" ${nse}/>`; } }); now.push('stress'); } }
   if (on('clear') && f.key.startsWith('r-')) { const pad = (O.ROUTE && O.ROUTE.pad) || 9; P.forEach((p, v) => { if (!p) return; const d = R.D[v]; s += `<rect x="${p.x - d.w / 2 - pad}" y="${p.y - d.h / 2 - pad}" width="${d.w + 2 * pad}" height="${d.h + 2 * pad}" rx="${4 + pad}" fill="var(--ov-clear)" fill-opacity=".07" stroke="var(--ov-clear)" stroke-opacity=".5" stroke-width="1" stroke-dasharray="2 3" ${nse}/>`; }); now.push('clear'); }
   const ks = Object.keys(OVL).filter(on); // the legend lists every overlay that is on; the ones drawn on this frame in full
-  $('legend').style.display = ks.length ? 'block' : 'none';
-  $('legendB').innerHTML = ks.map((k) => `<div data-n="${OVL[k][1]}" title="${OVL[k][1]}: ${OVL[k][2]}" style="opacity:${now.includes(k) ? 1 : 0.5}"><i style="background:${OVL[k][0]};opacity:.75"></i><span><b>${OVL[k][1]}</b>: ${OVL[k][2]}</span></div>`).join('');
+  if ($('legend').style.display !== (ks.length ? 'block' : 'none')) { $('legend').style.display = ks.length ? 'block' : 'none'; CR = null; }
+  $('legendB').innerHTML = ks.map((k) => `<span title="${OVL[k][1]}: ${OVL[k][2]}${now.includes(k) ? '' : ' (not drawn on this frame)'}" style="opacity:${now.includes(k) ? 1 : 0.5}"><i style="background:${OVL[k][0]};opacity:.75"></i>${OVS[k]}</span>`).join('');
   return s;
 }
 
@@ -636,7 +652,7 @@ function overlays(P) {
 let C = null;
 function render() {
   if (!R) return; C = current(); if (EDITP) C.P = EDITP;
-  if ($('follow').checked && !userView) fitView(C.P, !playing); // smooth while playing, exact when paused or jumping
+  if ($('follow').checked && !userView) fitView(C.P, !playing, sceneBounds(C.dj)); // smooth while playing, exact when paused or jumping
   svg.setAttribute('viewBox', `${view.x} ${view.y} ${view.w} ${view.h}`);
   const thru = new Set(); const paused = !playing;
   if ($('marks').checked && (paused || R.n < 120)) {
@@ -657,8 +673,10 @@ function render() {
   INK.forEach((k) => (s += `<path class="ink${k.noted ? ' old' : ''}" d="${inkD(k.pts)}"/>`));
   if (idrag) s += `<path class="ink" d="${inkD(idrag.pts)}"/>`;
   svg.innerHTML = s;
-  const m = meta(C.key); $('cK').textContent = `${m[1]} · frame ${C.fj + 1} of ${R.frames.length}`; $('cT').textContent = m[2]; $('cD').textContent = m[3];
-  $('cX').textContent = C.fj > 0 ? `${C.hid ? '(Not animated: the drawing shows where the last animated step left it.) ' : ''}${C.f.note ? C.f.note + ' ' : ''}${C.key === 'edit' ? '' : `This frame: ${fmtMs(C.f.ms || 0)} of work.`}` : '';
+  const m = meta(C.key); $('cT').textContent = m[2];
+  $('cK').textContent = `${m[1]} · ${C.fj + 1}/${R.frames.length}${C.fj > 0 && C.key !== 'edit' ? ' · ' + fmtMs(C.f.ms || 0) : ''}${C.hid ? ' · not animated' : ''}`;
+  $('cK').title = `Frame ${C.fj + 1} of ${R.frames.length}${C.fj > 0 && C.key !== 'edit' ? `; this frame: ${fmtMs(C.f.ms || 0)} of work` : ''}${C.hid ? '. Not animated: the drawing shows where the last animated step left it.' : ''}`;
+  const desc = (C.fj > 0 && C.f.note ? C.f.note + ' ' : '') + m[3]; $('cD').textContent = desc; $('cD').title = desc;
   $('time').textContent = `${fmtMs(T * 1000)} of ${fmtMs(TL.total * 1000)} (${Math.round(100 * T / TL.total)}%)`;
   const hd = $('scrub').querySelector('.head'); if (hd) hd.style.left = (100 * T / TL.total) + '%';
   const fl = $('scrub').querySelector('.fill'); if (fl) fl.style.width = (100 * T / TL.total) + '%';
@@ -681,12 +699,16 @@ function metricsAt(j) {
   const m = vis.length ? O.routeMetrics(P, D, edges, routes, 3) : { cross: 0, sharp: 0, thru: 0, hidden: 0, labelOver: 0, bends: 0 }; m.placed = vis.length;
   R.mcache.set(j, m); return m;
 }
+// the problems as small drawings (as in the write-up), the words on hover
+const ICON = { cross: '<path d="M2,3L14,13M2,13L14,3"/>', sharp: '<path d="M1,6L15,10M1,10L15,6"/><circle cx="8" cy="8" r="1.6" fill="var(--muted)" stroke="none"/>',
+  thru: '<rect x="4.5" y="4.5" width="7" height="7" rx="1.5"/><path d="M1,8H15" stroke="var(--bad)"/>', bend: '<path d="M2,13L7,4L14,9"/>', placed: '<rect x="2.5" y="4.5" width="11" height="7" rx="1.5"/>' };
 let countsFor = -1, countsT = null;
 function showCounts() {
   const j = C.dj; if (j === countsFor) return; // the counts of the drawing on screen
   clearTimeout(countsT); countsT = setTimeout(() => {
     countsFor = j; const f = R.frames[j], m = metricsAt(j);
-    $('countsB').innerHTML = [['Crossings', m.cross], ['Sharp crossings', m.sharp], ['Through classes', m.thru], ['Hidden parallel links', m.hidden], ['Names on names or classes', f.routes ? m.labelOver : '–'], ['Bends', m.bends], ['Classes placed', m.placed + ' of ' + R.n]].map(([l, v]) => `<span>${l}</span><b>${v}</b>`).join('');
+    $('countsB').innerHTML = [['Crossings', m.cross, 'cross'], ['Sharp crossings (under 30°)', m.sharp, 'sharp'], ['Links through a class', m.thru, 'thru'], ['Bends', m.bends, 'bend'], ['Classes placed', m.placed === R.n ? m.placed : m.placed + '/' + R.n, 'placed']]
+      .map(([l, v, ic]) => `<svg viewBox="0 0 16 16"><title>${l}</title>${ICON[ic]}</svg><b title="${l}: ${v}">${v}</b>`).join('');
   }, playing ? 250 : 30);
 }
 
@@ -921,7 +943,7 @@ function showResult() {
 }
 svg.addEventListener('wheel', (ev) => { ev.preventDefault(); const p = svg.createSVGPoint(); p.x = ev.clientX; p.y = ev.clientY; const q = p.matrixTransform(svg.getScreenCTM().inverse()), f = Math.exp(Math.max(-60, Math.min(60, ev.deltaY)) * 0.0015);
   view = { x: q.x - (q.x - view.x) * f, y: q.y - (q.y - view.y) * f, w: view.w * f, h: view.h * f }; userView = true; svg.setAttribute('viewBox', `${view.x} ${view.y} ${view.w} ${view.h}`); }, { passive: false });
-window.addEventListener('resize', () => { if (R) render(); });
+window.addEventListener('resize', () => { CR = null; if (R) render(); });
 
 // ---------- the Layout Lab, kept in step ----------
 // The lab opens on the frame shown here and follows the playback until a class is moved there; each move comes back here
