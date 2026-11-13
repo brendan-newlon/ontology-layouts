@@ -6,7 +6,7 @@ The full write-up is [ONTOLOGY-LAYOUT-ALGORITHMS.html](ONTOLOGY-LAYOUT-ALGORITHM
 - the rankings and per-graph results, with tabs that add optional measures (subclass links top-down; distance fidelity and even link lengths);
 - top-down drawings of hierarchies, and drawings that change: keeping a drawing after an edit, and growing it click by click in a graph browser;
 - a worked example of the clean-up and its finishing passes, step by step, each step explained in plain terms and in math, each walk-through on one graph from start to finish: the biomedical taxonomy, and a held-out graph with two big hubs;
-- how the clean-up was taught by show and tell: Brendan Newlon explained and demonstrated how he tidies these drawings, and an AI assistant, Claude (Opus 5.5), distilled the principles into rules a program can run; in the lab edition, the lab itself, with a download of the session for an AI assistant, and the teaching sessions;
+- how the clean-up was taught by show and tell: Brendan Newlon designed the lab for teaching it, demonstrated and explained there how he tidies these drawings, and directed an AI assistant, Claude (Opus 5.5), to distill the principles into rules a program can run; in the lab edition, the lab itself, with a download of the session for an AI assistant, and the teaching sessions;
 - link routing, time and scale, how the layouts work, the prior work they use, the benchmark method, its limits, and what did not work;
 - an appendix on using the code, with the complete source.
 
@@ -60,7 +60,7 @@ The tidy tree in the library (`_ogTreeLayout`, after Reingold–Tilford, levels 
 - **Tidy Stress** (up to a few dozen classes). Stress majorization on graph distances, then tidy-up moves that remove crossings, links through boxes and long links. It tries several settings and keeps the most readable drawing.
 - **Mycelium** (large and hub-heavy ontologies). The same placement and tidy-up, plus Louvain pods (shorter links inside groups, longer between), hub rings and leaf fanning.
 - **Best Read** (auto mode). Runs Tidy Stress and Mycelium, scores the drawings (problems, mean length and area; no long-link penalty), and keeps the better one. Above 100 classes it runs Mycelium alone.
-- **Clean-up, first part** (after any layout). Taught by Brendan Newlon, who explained and demonstrated how he tidies these drawings in the Layout Lab. His principles were distilled into:
+- **Clean-up, first part** (after any layout). Taught by Brendan Newlon, who designed the Layout Lab for teaching it and demonstrated there how he tidies these drawings and why. At his direction, his principles were distilled into:
   - single moves: a class in a problem moves into nearby open space (an open-space grid);
   - leaf units: leaves, leaf chains and leaf triangles hanging off one class are turned around it; long labels go sideways;
   - region spreading: the regions where problems pile up are pushed outward in 8 slices, more toward open space, then repaired;

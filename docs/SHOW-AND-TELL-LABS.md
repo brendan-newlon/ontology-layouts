@@ -1,6 +1,6 @@
 # Show and tell: turning a person's intuition into a program, with an AI
 
-The clean-up in this repository was not designed from the literature. Brendan Newlon, who could tidy an ontology diagram at a glance but could not have written down the rules, tidied drawings by hand while saying why. An AI assistant, Claude (Opus 5.5), turned those explanations into definitions, measures and code, and tested every rule on graphs he never saw. The result beats every open-source layout we measured on the problems it was taught to fix (see the [write-up](ONTOLOGY-LAYOUT-ALGORITHMS.html#learned)).
+The clean-up in this repository was not designed from the literature. Brendan Newlon, who could tidy an ontology diagram at a glance but could not have written down the rules, designed a lab in which to teach them: he tidied drawings there by hand while explaining how he recognizes problems, which to fix first and how he approaches each. At his direction, an AI assistant, Claude (Opus 5.5), turned that practice and those explanations into definitions, measures and code, and tested every rule on graphs he never saw. The result beats every open-source layout we measured on the problems it was taught to fix (see the [write-up](ONTOLOGY-LAYOUT-ALGORITHMS.html#learned)).
 
 This guide covers the method behind that result and the tools that made it work: the Layout Lab and the Layout Playback. They are first-class parts of this repository, not leftovers from building the layouts. Use them in three ways:
 - **Try your hand** at the layouts here, and teach them something new.
@@ -78,4 +78,4 @@ These are the prompts that worked, in order. Give the assistant this repository 
 - **One person's taste is one data point.** The clean-up here was taught by one person on eight ontologies. A second teacher would find other principles, and some might disagree.
 
 ## Credit
-The principles of the clean-up and their metaphors came from Brendan Newlon, who tidied the drawings by hand in the lab, explained each move, and critiqued every step of the clean-up. Claude (Opus 5.5), an AI coding assistant from Anthropic, distilled the principles into definitions and code, wrote the lab and the playback to that direction, and ran the benchmarks.
+The principles of the clean-up and their metaphors came from Brendan Newlon, who designed the teaching method and specified the lab and the playback, tidied the drawings by hand in the lab, explained each move, and critiqued every step of the clean-up. Claude (Opus 5.5), an AI coding assistant from Anthropic, distilled the principles into definitions and code, built the lab and the playback to his specification, and ran the benchmarks.

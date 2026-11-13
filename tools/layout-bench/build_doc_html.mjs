@@ -94,7 +94,7 @@ const lc = cut(labEd), parts = Object.fromEntries(Object.entries(lc.parts).map((
 const b0 = labEd.indexOf('<!--BODY-->'), b1 = labEd.indexOf('<!--/BODY-->'); if (b0 < 0 || b1 < 0) throw new Error('BODY markers not found');
 const storyHead = `<div class="kicker">The development story</div>
 <h1>How it was built</h1>
-<p class="sub">How the layouts work, how a person taught the clean-up to an AI assistant, the published work it builds on, and what was tried and dropped on the way. The results are on the <a href="../index.html#benchmarks" target="_top">Benchmarks</a> page.</p>
+<p class="sub">How the layouts work, how a person designed a way to teach the clean-up and taught it, with an AI assistant working out the math, the published work it builds on, and what was tried and dropped on the way. The results are on the <a href="../index.html#benchmarks" target="_top">Benchmarks</a> page.</p>
 <nav class="toc" aria-label="Contents"><b>On this page</b><a href="#how">How the layouts work</a><a href="#learned">How the clean-up was taught</a><a href="#lab">Try the lab here</a><a href="#prior">What it builds on</a><a href="#tried">What did not work</a></nav>
 `;
 const story = labEd.slice(0, b0) + storyHead + STORY.map((k) => parts[k]).join('\n') + labEd.slice(b1);
