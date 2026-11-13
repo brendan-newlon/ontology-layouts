@@ -193,6 +193,7 @@ tr.mine td:first-child { box-shadow: inset 4px 0 0 var(--accent); }
 <body>
 <header class="sitebar"><h1>Benchmarks</h1><span class="sp"></span><a href="https://github.com/brendan-newlon/ontology-layouts">Source on GitHub</a></header>
 <div class="wrap">
+<!--BODY-->
 
 <div class="kicker">Graph layout for ontologies</div>
 <h1>Tidy Stress and Mycelium</h1>
@@ -215,8 +216,8 @@ tr.mine td:first-child { box-shadow: inset 4px 0 0 var(--accent); }
   <div class="stat"><b>Under a second</b><span>median, clean-up included; at most about 1.3 s up to 537 classes, and the same drawing on any computer</span></div>
 </div>
 
-<nav class="toc" aria-label="Contents"><b>On this page</b>
-<a href="#summary">Summary</a><a href="#results">Rankings</a><a href="#topdown">Top-down hierarchies</a><a href="#change">Editing and exploring</a><a href="#cleanup">The clean-up</a><a href="#learned">How it was learned</a><a href="#routing">Link routing</a><a href="#explore">Every test graph</a><a href="#time">Time and scale</a><a href="#how">How the layouts work</a><a href="#method">Method</a><a href="#limits">Limits</a><a href="#code">Appendix: the code</a></nav>
+<nav class="toc" aria-label="Contents"><b>On this page</b><a href="../index.html#story" target="_top">How it was built (its own page) →</a>
+<a href="#summary">Summary</a><a href="#results">Rankings</a><a href="#topdown">Top-down hierarchies</a><a href="#change">Editing and exploring</a><a href="#cleanup">The clean-up</a><a href="#routing">Link routing</a><a href="#explore">Every test graph</a><a href="#time">Time and scale</a><a href="#method">Method</a><a href="#limits">Limits</a><a href="#code">Appendix: the code</a></nav>
 
 <div class="prose">
 <p>An ontology diagram is only useful if a reader can follow each link from one class to another. Five problems get in the way, pictured below. The two that matter most are links that cross, and links that pass under a class box, so that two unrelated classes look connected. Then come links that cross at a shallow angle, links that leave a class almost together, and a drawing that sprawls over far more canvas than its classes need. General-purpose layouts reduce crossings only as a side effect and do little about links under boxes. Tidy Stress and Mycelium are built to minimize both, without letting the drawing sprawl.</p>
@@ -371,7 +372,7 @@ tr.mine td:first-child { box-shadow: inset 4px 0 0 var(--accent); }
 
 <h2 id="cleanup">The clean-up removes two thirds of the links through classes, after any layout</h2>
 <div class="prose">
-<p>Both layouts place classes by a global rule: stress, pods, hub rings. What a global rule leaves behind is local: a leaf sitting on a line, a corner where five links cross, a class that could step two box-widths aside into empty space. A person sees these at a glance and fixes them in a minute. The clean-up does the same automatically. It was taught by a person who explained how they do it (see <a href="#learned">How the clean-up was learned</a>), in two rounds, and it runs in two parts:</p>
+<p>Both layouts place classes by a global rule: stress, pods, hub rings. What a global rule leaves behind is local: a leaf sitting on a line, a corner where five links cross, a class that could step two box-widths aside into empty space. A person sees these at a glance and fixes them in a minute. The clean-up does the same automatically. It was taught by a person who explained how they do it (see <a href="../index.html#story:learned" target="_top">How the clean-up was learned</a>), in two rounds, and it runs in two parts:</p>
 <ol>
 <li><strong>The clean-up proper</strong> came from Brendan tidying drawings by hand: single moves into open space, turning what hangs off one class, spreading crowded regions and moving groups.</li>
 <li><strong>The finishing passes</strong> came from a second round: he watched the first part work, step by step, in the Layout Playback and named what was still wrong in a few words. "Don't fence me in", "push it off the line" and "pull it in from the edge" each became a short pass that runs after it.</li>
@@ -514,58 +515,6 @@ tr.mine td:first-child { box-shadow: inset 4px 0 0 var(--accent); }
 <p>Most of the gain comes from the simplest step: single moves into open space alone take 138 links through classes down to 57. Leaf units, region spreading and group moves each add a little; spreading and group moves together remove about a quarter of what is left after the single moves and leaf units. None of the steps reduces crossings much. That is the layout's job; the clean-up mainly takes links off classes and opens sharp crossings.</p>
 </div>
 
-<h2 id="learned">The clean-up was taught by a person and turned into rules by an AI assistant</h2>
-<div class="prose">
-<p>The clean-up was not designed from the literature, and it does not replay anyone's moves. Brendan Newlon, who works with these ontologies, taught it to an AI coding assistant, Claude (Anthropic's Opus 5.5 model). He solved the drawings by hand while saying what he was doing and why, named the principle behind each move, often with a metaphor (open space as a resource, a crowd pushed outward in pizza slices, a leaf that can always be solved), and suggested how a program could recognize the situation and carry the move out. The assistant's part was to distill that intuition into definitions, measures and steps a program can run, and to test whether each one held up on every graph, not only the one it was shown on. The loop had four parts.</p>
-<ol>
-<li><strong>Showing and telling.</strong> In the Layout Lab, he tidied drawings by hand, typing what he was about to do and why before each move. The point was never the moves themselves, which only fit the graph they were made on, but the reasoning: what he looked at first, what he treated as a problem and what as harmless, which move he reached for and when he gave up on one. Within about ten minutes per ontology, this observed problem solving took links through classes to zero or one on PROV-O, telecom, the loan ontology and the 179-class bank, with crossings about level.</li>
-<li><strong>From intuition to rules.</strong> The assistant turned each principle into something measurable: open space became a grid of empty cells, a crowd became the cells where problems pile up, "make room" became a push weighted by the room beyond each slice. Each rule was implemented and benchmarked on all the test graphs, and kept only if it helped across them. An early version came within a link or two of the hand-tidied drawings on every graph and beat them on several, but took 1 to 8 seconds.</li>
-<li><strong>A walk-through to critique.</strong> The clean-up can replay its own steps in the Lab and in the Layout Playback, one stage at a time, drawing the open-space grid, the problem regions, the slices and the moved classes. Brendan critiqued each step the way a teacher marks a student's work ("why didn't the leaf go to the right, where there was room?"), and those critiques became the next rules. The finishing passes came from this step.</li>
-<li><strong>Plain words both ways.</strong> He described strategies in his own terms (grid, density, open space, crowd, pizza slices, center of gravity). The assistant turned them into the definitions in the tabs above, and explained back, in the same plain terms, where a rule was slow or did not work. One example: "a push always looks worse at first; only the repairs after it make it pay off." He then refined the principle.</li>
-</ol>
-<p>The principles Brendan taught, and what became of each:</p>
-</div>
-<p class="takeaway">Each principle the person taught became a specific rule in the clean-up.</p>
-<div class="tbl"><table>
-<thead><tr><th class="l">The pattern, in Brendan's words</th><th class="l">What the clean-up does</th></tr></thead>
-<tbody>
-<tr><td class="l">Leaves, leaf chains and leaf triangles can always be solved. If one is crossed, a step was missed.</td><td class="l">Leaf units are turned around the class they hang from, and a last leaf pass runs at the end.</td></tr>
-<tr><td class="l">Look at the whole canvas first. Open space is a resource for solving problems.</td><td class="l">The open-space grid; candidate spots are open cells, not a fixed ring of positions.</td></tr>
-<tr><td class="l">Fix where problems pile up. A crowded region often causes many problems at once.</td><td class="l">Problems are counted per cell; the regions with the most come first.</td></tr>
-<tr><td class="l">Make room by pushing the crowd outward in slices toward open space, and push what lies beyond too.</td><td class="l">The slice push, weighted by the room beyond each slice and fading with distance.</td></tr>
-<tr><td class="l">Why spread a crowd with no problem in it? The layout is good, even if crowded.</td><td class="l">Only regions with problems are spread. An earlier version spread every dense region, and none of those spreads was kept.</td></tr>
-<tr><td class="l">A group move can make things worse before it makes them better.</td><td class="l">Spreads and group moves are judged after a few repair moves, not on their immediate effect.</td></tr>
-<tr><td class="l">Line length doesn't matter.</td><td class="l">The clean-up's cost has no length term.</td></tr>
-<tr><td class="l">Long labels are easier when the line to them runs sideways.</td><td class="l">A leaf with a long label tries sideways spots first.</td></tr>
-<tr><td class="l">Use the open space inside the drawing before making the canvas bigger.</td><td class="l">Growing the bounding box is costed (600 per doubling of area beyond the start).</td></tr>
-<tr><td class="l">Small nudges give a leaf clearance from a line; moving one end opens a sharp crossing.</td><td class="l">Nudges of 0.1 and 0.25 link lengths; sharp crossings and cramped classes are in the cost.</td></tr>
-<tr><td class="l">Don't fence me in: a leaf boxed in by lines should step out to the open side of its parent.</td><td class="l">A one-link class whose link still crosses something moves to the most open spot round its neighbor (fewest problems, then most room, then shortest link). From the playback.</td></tr>
-<tr><td class="l">Push the class off the line, even a curved one.</td><td class="l">A class a link runs through moves sideways just far enough, after the clean-up on straight links and after the routing on the drawn curves; kept only if better.</td></tr>
-<tr><td class="l">Shrink in from the canvas edge: a chain sprawling into empty canvas can fold up or down; groups with empty space between them can move closer. When time is short, the moves that make the canvas smaller come first.</td><td class="l">Pull-in: parts hanging by one link turn or draw in round their anchor, and whole groups slide toward the middle, edge-most first; kept only if the box shrinks (or links get much shorter) with no more problems. 9% less area on the development graphs, 27–29% on unseen ones.</td></tr>
-<tr><td class="l">A loop goes where nothing is.</td><td class="l">Self-link loops try 12 places round the class and take the emptiest.</td></tr>
-</tbody></table></div>
-<div class="prose">
-<p><strong>Try it yourself.</strong> The Layout Lab and the Layout Playback are in this repository (<code>Start Layout Lab.cmd</code>, or <code>tools/layout-bench/lab.html</code> and <code>playback.html</code>). Readers can tidy drawings by hand, say why, and teach the layouts a principle we missed. The method is not specific to diagrams: any problem a person can look at and fix better than they can describe is a candidate. <code>docs/SHOW-AND-TELL-LABS.md</code> is a guide to the method and to building a lab of your own with an AI assistant, and <code>docs/PLAYBACK-AND-LAB.md</code> has the technical contract for adapting the two pages.</p>
-</div>
-
-<p><strong>The lab, in this page.</strong> An edition of this write-up has the Layout Lab built in: <a href="ONTOLOGY-LAYOUT-ALGORITHMS-LAB.html#lab">ONTOLOGY-LAYOUT-ALGORITHMS-LAB.html</a>. Pick any graph, tidy it by hand while typing why, run our clean-up on your drawing to compare, and download the whole session as one file for an AI assistant. It also has the sessions in which the clean-up was taught.</p>
-<div class="prose">
-<p>Two ideas from the sessions are not in the clean-up yet: curving links around hubs at the edge of the drawing (on the clinical record with three super-hubs), and pulling the classes of a loop closer together or untwisting a pair of classes.</p>
-<p>Profiling the first version showed that the group moves took about 95% of its time and kept about one try in twenty. Two changes made the clean-up fast enough for the layouts: candidate spots come from the open-space grid (a few dozen instead of 96 fixed positions), and a class or problem that could not be improved is not tried again until something near it has moved.</p>
-</div>
-
-<h3 id="novel">New here: repairs chosen by readability counts, taught by a person; most single ingredients have precedents</h3>
-<div class="prose">
-<p>Most single ingredients have precedents. What we have not seen elsewhere is the combination: repairs chosen and judged by readability counts after a layout, the regions picked by where those counts pile up, and the steps distilled from a person's explained problem solving. Readers may know closer prior work; we would welcome pointers.</p>
-<ul>
-<li><strong>Moving one class to a better spot</strong> to remove crossings is an established heuristic: Radermacher, Reichard, Rutter and Wagner (2018) move a vertex into its crossing-minimal region. The single moves here sample open cells instead of computing regions, and count links through classes and angles as well as crossings.</li>
-<li><strong>Turning what hangs off one class.</strong> Cut vertices and the parts of a graph they separate are classical (Hopcroft and Tarjan, 1973), and a tree hanging off one vertex can always be drawn without crossings. Using this as a repair after a layout, with the label-aware choice of side, is ours.</li>
-<li><strong>Spreading a region in slices.</strong> A push outward from a point that fades with distance resembles a local fisheye distortion (Sarkar and Brown, 1992), and evening out density resembles density-equalizing maps (Gastner and Newman, 2004). We have not seen it used this way: the point chosen from a count of readability problems after the layout, each slice weighted by the open space beyond it, and the push kept only if a few repair moves then make the drawing better.</li>
-<li><strong>Judged as graph drawing theory, nothing here is new:</strong> no new model, no bounds. The building blocks were chosen because they are the established best for the job, not as stand-ins for something to write from scratch. Stress placement is the standard for general undirected drawings and Pivot MDS its usual start. The new parts are applied: the clean-up and its passes, the routing joined to the placement, the work clock, and the evaluation against eleven libraries on graphs never seen during development.</li>
-<li><strong>Learning the procedure from a person.</strong> Interactive optimization with user hints is established (do Nascimento and Eades, 2005), but there the person guides one run. Here one person's principles, taught once, became a fixed procedure that runs without him on graphs he never saw. The lab that made this possible is offered as a tool of its own; see <a href="#learned">Try it yourself</a>.</li>
-</ul>
-</div>
-
 <h2 id="routing">Link routing removes most remaining links through classes and shows every parallel link</h2>
 <div class="prose">
 <p>The routing answers three gaps that a review pointed out for business ontologies: parallel and reciprocal links (Organization employs Person, Person manages Organization) drawn as straight lines lie exactly on top of each other; link names are not part of the drawing; and moving classes is the only way the layouts clear a link out of a class's way. The routing draws the links on the final positions and never moves a class:</p>
@@ -686,110 +635,6 @@ tr.mine td:first-child { box-shadow: inset 4px 0 0 var(--accent); }
 <p>The first run at this size also found two faults, both fixed before the numbers above: the starting placement came out at an arbitrary scale and offset, and a class with a single link and no free spot near its neighbor was left where it started. Together they put part of the Cell Ontology a million pixels from the rest.</p>
 </div>
 
-<h2 id="how">How the layouts work</h2>
-<h3>Steps both layouts share</h3>
-<div class="prose">
-<ol>
-<li><strong>Target distances.</strong> Every link gets a target length (170 px by default; subclass links slightly shorter; a link with a label is long enough for the label). The target distance between any two classes is the length of the shortest path of links between them.</li>
-<li><strong>Placement.</strong> Classes are placed so that straight-line distances match the target distances as closely as possible (stress majorization), starting from a pivot-MDS placement, which gives the same result every time. Overlapping boxes are then pushed apart.</li>
-<li><strong>Tidy-up.</strong> Four local searches run in this order. Each keeps a move only if it adds no crossing, no link through a box and no overlap:
-  <ol>
-    <li>Swap two classes, or move one beside a neighbor, when that reduces crossings.</li>
-    <li>Move a class off links that run through it.</li>
-    <li>Pull classes toward their neighbors to shorten long links, then shrink the whole drawing evenly as far as the boxes allow.</li>
-    <li>Move classes off links once more.</li>
-  </ol>
-  Without these steps (placement alone, as in Graphviz <code>neato</code>) a drawing has typically 2–3× as many links through classes and about twice as many crossings.</li>
-<li><strong>Leaf fanning</strong>, when used. Classes linked to a single other class are left out of placement and put back last.
-  <ul>
-    <li>Each is placed around its neighbor by trying 48 directions at the nearest free distances.</li>
-    <li>The chosen spot minimizes 100 × crossings + 80 × links touching the box + distance.</li>
-    <li>Each keeps at least max(40 px, label width + 16 px) from its neighbor, so the link's label fits.</li>
-    <li>Any whose link ends up crossed or touched is placed again.</li>
-  </ul>
-  Ontologies have many classes of this kind, such as leaf subclasses.</li>
-<li><strong>Clean-up.</strong> The drawing chosen is cleaned up as described under <a href="#cleanup">Clean-up after the layout</a>.</li>
-</ol>
-</div>
-<h3>Tidy Stress</h3>
-<div class="prose">
-<p>Tidy Stress tries four settings of the shared steps within the time limit (1 s by default), scores each drawing, and keeps the most readable. The settings differ only in their options, not in the order of the steps:</p>
-<ul>
-<li>random starts instead of the pivot-MDS start, keeping the start with the fewest crossings;</li>
-<li>the pivot-MDS start, then moving any single-link class to a better free spot if there is one;</li>
-<li>leaf fanning, with extra room round classes that have many links (the hub rings described below);</li>
-<li>leaf fanning alone.</li>
-</ul>
-<p>From 31 to 60 classes it tries three of these, and above 60 only the second, because sharing the time between settings leaves each too little time to tidy up.</p>
-</div>
-<h3>Mycelium</h3>
-<div class="prose"><ul>
-<li><strong>Pods.</strong> Louvain community detection finds groups of closely linked classes. Links inside a group get 0.85× the target length and links between groups 1.6×, so placement separates the groups while still letting a class shared by two groups sit between them.</li>
-<li><strong>Hub rings.</strong> A link at a class with <i>k</i> neighbors is at least Σ(neighbor width + 20 px) / 2π long, the radius of a ring that holds all the neighbors side by side. On the clinical-record graph this rule alone cuts links through classes from about 80 to about 43.</li>
-<li><strong>Leaf fanning</strong>, as above.</li>
-<li><strong>Target length.</strong> 260 px from 100 classes.</li>
-<li><strong>Limits.</strong> It needs at least 8 classes and has a 1 s budget.</li>
-</ul></div>
-
-<h3 id="score">How readability is scored</h3>
-<div class="prose">
-<p>Tidy Stress (between its settings) and Best Read (between the two layouts) choose the drawing with the lowest score. This score is how the layouts choose; it is not used to rank layouts on this page, because it has terms for link length. The score adds up:</p>
-<ul>
-<li>10 for every pair of crossed links;</li>
-<li>8 for every link that runs through a class box;</li>
-<li>2 for every pair of links that come within 30 px of each other;</li>
-<li>40 for every pair of overlapping boxes;</li>
-<li>a tenth of the mean link length, plus a penalty when the mean exceeds 350 px;</li>
-<li>a penalty for area beyond eight times the total area of the boxes, growing with the number of classes;</li>
-<li>25 for every multiple, beyond 1.8, of the median link length by which a link is longer.</li>
-</ul>
-<p>The last two terms matter. A layout can avoid crossings by pushing classes far apart or by stretching a few links across the whole drawing. Without those terms, such drawings would win on crossings alone even though they are hard to read.</p>
-</div>
-
-<h3>Best Read</h3>
-<div class="prose"><ul>
-<li><strong>Up to 30 classes:</strong> runs Tidy Stress's four settings and Mycelium, and keeps the lowest score.</li>
-<li><strong>31 to 100 classes:</strong> runs Tidy Stress's settings for that size and Mycelium. For dense ontologies (more than two links per class) it runs only one Tidy Stress setting, so Mycelium has enough time.</li>
-<li><strong>Above 100 classes:</strong> runs Mycelium alone.</li>
-</ul>
-<p>Its budget is the whole time limit up to 30 classes (1 s by default), 60% of it up to 100 classes and 40% above; the clean-up gets what is left.</p></div>
-
-<pre>for each link (u, v):
-    len := L   (170 px; subclass links 0.9 L; Mycelium: L = 260 px from 100 classes)
-    Mycelium:      len := max(len, min(3 L, ring(u), ring(v)))     ring(x) = Σ(neighbor width + 20) / 2π
-                   len *= 0.85 inside a Louvain group, 1.6 between groups
-    labeled link: len := max(len, (w_u + w_v)/2 + label width + 24)
-D := all-pairs shortest-path lengths over len (Dijkstra)
-place:  pivot-MDS start (+ random restarts while time allows) → stress majorization on D → push overlapping boxes apart
-tidy:   fewer crossings → off links → shorten and shrink → off links   (each step time-boxed)
-leaves: fan out round their neighbor → tidy once more → place again any that are crossed or touched
-clean:  rounds of single moves → leaf units → region spreading → group moves, then a last leaf pass
-        (within what is left of the time limit, at most a third of it)</pre>
-
-<h2 id="prior">Prior work these layouts use</h2>
-<div class="prose">
-<p>Each layout combines established techniques with steps of its own. These are the established parts and where they come from. Our own parts are the tidy-up passes, the hub rings, the pod length factors, leaf fanning with room for labels, the readability score, the clean-up (see <a href="#novel">What is new here</a>) and the settings, each chosen by benchmark.</p>
-</div>
-<p class="takeaway">The established techniques each layout builds on, and where they come from.</p>
-<div class="tbl"><table>
-<thead><tr><th>Technique</th><th class="l">Source</th><th class="l">Used for</th></tr></thead>
-<tbody>
-<tr><td>Stress majorization</td><td class="l">Gansner, Koren and North, <em>Graph Drawing by Stress Majorization</em>, 2004; building on Kamada and Kawai, 1989</td><td class="l">Placement in both layouts</td></tr>
-<tr><td>Pivot MDS</td><td class="l">Brandes and Pich, <em>Eigensolver Methods for Progressive Multidimensional Scaling of Large Data</em>, 2006</td><td class="l">The starting placement</td></tr>
-<tr><td>Louvain communities</td><td class="l">Blondel, Guillaume, Lambiotte and Lefebvre, <em>Fast Unfolding of Communities in Large Networks</em>, 2008</td><td class="l">Mycelium's pods</td></tr>
-<tr><td>Link lengths set by graph structure</td><td class="l">For example Dwyer and others, WebCola, 2009 onwards; Noack, LinLog energy model, 2007</td><td class="l">The idea behind the pod lengths</td></tr>
-<tr><td>Readability measures</td><td class="l">Purchase, <em>Which Aesthetic Has the Greatest Effect on Human Understanding?</em>, 1997, and later work</td><td class="l">The measures in the score</td></tr>
-<tr><td>Moving one vertex to remove crossings</td><td class="l">Radermacher, Reichard, Rutter and Wagner, <em>A Geometric Heuristic for Rectilinear Crossing Minimization</em>, ALENEX 2018</td><td class="l">The idea behind the single moves</td></tr>
-<tr><td>Cut vertices</td><td class="l">Hopcroft and Tarjan, <em>Efficient Algorithms for Graph Manipulation</em>, 1973</td><td class="l">Finding leaf units</td></tr>
-<tr><td>Fisheye views</td><td class="l">Sarkar and Brown, <em>Graphical Fisheye Views of Graphs</em>, CHI 1992</td><td class="l">Close to the region spreading</td></tr>
-<tr><td>Density-equalizing maps</td><td class="l">Gastner and Newman, <em>Diffusion-Based Method for Producing Density-Equalizing Maps</em>, PNAS 2004</td><td class="l">Close to the region spreading</td></tr>
-<tr><td>User hints</td><td class="l">do Nascimento and Eades, <em>User Hints: a Framework for Interactive Optimization</em>, 2005</td><td class="l">Prior work on people guiding a layout</td></tr>
-<tr><td>Stress with a hierarchy term</td><td class="l">Dwyer and Koren, <em>DIG-CoLa: Directed Graph Layout through Constrained Energy Minimization</em>, InfoVis 2005; Dwyer, Koren and Marriott, IPSep-CoLa, 2006</td><td class="l">The top-down experiments</td></tr>
-<tr><td>Tidy trees</td><td class="l">Reingold and Tilford, <em>Tidier Drawings of Trees</em>, 1981</td><td class="l">The idea behind the Tree layout, which adds row depths chosen so that no link clips a sibling</td></tr>
-<tr><td>Ontology notation</td><td class="l">Lohmann, Negru, Haag and Ertl, <em>Visualizing Ontologies with VOWL</em>, Semantic Web journal, 2016</td><td class="l">Context: a widely used ontology visualization, force-directed, with subclass links undirected in placement as here</td></tr>
-<tr><td>Choosing a layout per graph</td><td class="l">For example Kwon, Crnovrsanin and Ma, <em>What Would a Graph Look Like in This Layout?</em>, 2018</td><td class="l">The idea behind Best Read</td></tr>
-</tbody></table></div>
-
 <h2 id="method">Benchmark method</h2>
 <div class="prose">
 <p><strong>Development graphs.</strong> The layouts and the clean-up were developed and tuned on 15 graphs of 13 to 179 classes; four larger ones (120 to 537 classes) were used for timing and scale. Earlier versions of this write-up used 19 graphs, including an HR and a supply-chain ontology.</p>
@@ -871,30 +716,10 @@ clean:  rounds of single moves → leaf units → region spreading → group mov
 <li><strong>Test graphs.</strong> The 15 development graphs are reconstructions and inventions of typical shapes. The graphs never seen during development add eight published ontologies and 18 Rome graphs, but not a large corpus such as the OBO Foundry or the Manchester OWL corpus, and the ontologies were drawn as classes with subclass and domain-to-range links only.</li>
 <li><strong>Commercial engines were not tested.</strong> yFiles, Tom Sawyer Perspectives, GoJS, KeyLines and the like are closed source, and we found no published drawing of theirs of a graph we could rebuild exactly, so not even an informal comparison is possible yet. The nearest route is yEd, a free editor built on yFiles. Its licence allows it to be used by hand but not as part of an automated process, so a comparison would mean laying out each test graph by hand and scoring the saved files.</li>
 <li><strong>Very large graphs.</strong> Best Read leads up to the 1,204-class graph tested; at 3,335 classes d3-force draws far fewer problems (see <a href="#verylarge">Very large graphs</a>). Models of thousands of classes need a multilevel placement, which these layouts do not have. At 537 classes, tuned WebCola matches Mycelium's crossings (2,005 against 2,012), with more links through classes, after three minutes against Mycelium's one second.</li>
-<li><strong>Greedy local search and hand-set weights.</strong> The tidy-up and the clean-up keep only moves that improve the drawing, so they stop at local optima, and their weights (a crossed link costs 6, a link through a class 10) were set by benchmark on the development graphs, not derived. The unseen graphs show the settings carry over; they are not shown to be optimal. Two tests since: with every class name three times as long (15 development graphs) and on dense random graphs (40 to 150 classes, 6 to 10 links per class), every run finished within its time limit, gave the same drawing twice, and the clean-up still improved the drawing by its own weights. With long names it trades crossings for links through classes: 439 → 499 crossed links, 107 → 35 links through classes. On the dense graphs it reduced both in total (crossed links 27,920 → 25,600, links through classes 2,874 → 2,250). Turning or mirroring a whole branch round the one class that joins it to the rest (the move a greedy search cannot make one class at a time) was tried; see <a href="#tried">What did not work</a>.</li>
+<li><strong>Greedy local search and hand-set weights.</strong> The tidy-up and the clean-up keep only moves that improve the drawing, so they stop at local optima, and their weights (a crossed link costs 6, a link through a class 10) were set by benchmark on the development graphs, not derived. The unseen graphs show the settings carry over; they are not shown to be optimal. Two tests since: with every class name three times as long (15 development graphs) and on dense random graphs (40 to 150 classes, 6 to 10 links per class), every run finished within its time limit, gave the same drawing twice, and the clean-up still improved the drawing by its own weights. With long names it trades crossings for links through classes: 439 → 499 crossed links, 107 → 35 links through classes. On the dense graphs it reduced both in total (crossed links 27,920 → 25,600, links through classes 2,874 → 2,250). Turning or mirroring a whole branch round the one class that joins it to the rest (the move a greedy search cannot make one class at a time) was tried; see <a href="../index.html#story:tried" target="_top">What did not work</a>.</li>
 <li><strong>The clean-up was taught by one person.</strong> Its principles come from one expert, shown on eight ontologies. Another reader may tidy differently, and the ideas not yet built in (curving links around hubs, tightening loops) may matter more elsewhere.</li>
 <li><strong>Seed-to-seed variation.</strong> The time limits count work rather than seconds, so a model gets the same drawing on any computer up to 2.5 times slower than the one the layouts were tuned on. The layouts do use a random seed, and different seeds give different drawings: over five seeds, totals over the 15 graphs differ by a few percent. Every result on this page uses seed 1.</li>
 <li><strong>Hub-heavy graphs stay hard.</strong> On the clinical-record graph, a 20-second exhaustive search reaches only about 150 crossings, against Mycelium's 164 with the clean-up. Large further gains need a different kind of drawing, such as bundled links or showing a hub more than once.</li>
-</ul></div>
-
-<h2 id="tried">What did not work</h2>
-<div class="prose"><ul>
-<li><strong>Stretching the drawing</strong> around a class until every single-link neighbor has a clean spot. Without a limit it produced drawings millions of pixels wide on hub-heavy graphs; with a limit of 2.5× it doubled the area for little gain.</li>
-<li><strong>Pulling hubs toward the center.</strong> No gain.</li>
-<li><strong>Other placement weights.</strong> 1/d in place of 1/d². No gain.</li>
-<li><strong>Other link lengths.</strong> Lengths scaled by the number of links or by shared neighbors. No gain.</li>
-<li><strong>Other ways of finding pods:</strong>
-  <ul>
-    <li>overlapping groups, where a class also joins any group that holds 30% of its links;</li>
-    <li>coarser and finer group sizes.</li>
-  </ul>
-  Each did better on some graphs and worse on others, with no gain on average. The pods only change link lengths, so having groups at all matters more than exactly how they are drawn. Removing them costs most on large graphs: on the bank, crossings rise from 73 to 128 and links through classes from 53 to 103.</li>
-<li><strong>Sharing a fixed time budget</strong> among several settings on large graphs. Each setting gets too little time to tidy up; one setting with all the time does better.</li>
-<li><strong>Clean-up: spreading every dense region.</strong> Spreading regions by density alone, problems or not, was never kept: it disturbed parts of the drawing that already read well.</li>
-<li><strong>Clean-up: judging a spread on its own.</strong> Without repair moves after it, no spread was ever kept, because pushing classes apart first adds crossings at the edge of the region.</li>
-<li><strong>Clean-up: regions that grow without limit.</strong> When every cell with a problem joined a region, the region covered the whole drawing and the spread became a zoom of everything. Regions are now only the hottest cells, at most one and a half link lengths across.</li>
-<li><strong>Turning or mirroring whole branches.</strong> A branch joined to the rest through one class only (by any number of links), turned round that class or mirrored, kept when its problems drop. It found a better place on 4 of 64 graphs and changed nothing in total over 51 graphs and three seeds (5,199 against 5,202 crossed links): the stress placement and the leaf-unit moves already leave no branch on the wrong side of its hub.</li>
-<li><strong>Clean-up: turning larger groups.</strong> Turning the parts hanging off a class as one piece, up to 12 classes, made no measurable difference over the limit of 4.</li>
 </ul></div>
 
 <h2 id="code">Appendix: using the code</h2>
@@ -2937,6 +2762,7 @@ const OntologyLayouts = {
 };
 </code></pre>
 </details>
+<!--/BODY-->
 
 </div>
 
@@ -3201,13 +3027,12 @@ function buildWalk() {
   render();
 }
 buildWalk();
-document.getElementById("copyCode").addEventListener("click", async (ev) => {
+if (document.getElementById("copyCode")) document.getElementById("copyCode").addEventListener("click", async (ev) => { // the appendix is on the benchmarks page only
   const text = document.getElementById("srcCode").textContent, btn = ev.currentTarget;
   try { await navigator.clipboard.writeText(text); btn.textContent = "Copied"; }
   catch (err) { const r = document.createRange(); r.selectNodeContents(document.getElementById("srcCode")); const s = getSelection(); s.removeAllRanges(); s.addRange(r); btn.textContent = "Selected; press Ctrl+C"; }
   setTimeout(() => (btn.textContent = "Copy"), 2500);
 });
 </script>
-
 </body>
 </html>

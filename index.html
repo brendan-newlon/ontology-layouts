@@ -18,24 +18,25 @@ iframe.on { display: block; }
 <script src="site-nav.js" data-page="intro"></script>
 <script>
 // One link for the whole site: each page lives in its own frame, loaded the first time it is shown and kept, so switching
-// back to the playback or the lab finds it as it was. The address is index.html#page (and an optional ?query for that page).
+// back to the playback or the lab finds it as it was. The address is index.html#page, optionally :anchor (a section of that
+// page) and ?query (handed to that page).
 const PAGES = Object.fromEntries(SiteNav.pages.map((p) => [p[0], { name: p[1], src: p[3] }]));
 const frames = {};
-function show(page, query) {
+function show(page, query, anchor) {
   if (!PAGES[page]) page = 'intro';
   let f = frames[page];
   if (!f || (query && f.dataset.q !== query)) {
     if (!f) { f = document.createElement('iframe'); f.title = PAGES[page].name; frames[page] = f; document.body.appendChild(f); }
-    f.dataset.q = query || ''; f.src = PAGES[page].src + (query || '');
-  }
+    f.dataset.q = query || ''; f.src = PAGES[page].src + (query || '') + (anchor ? '#' + anchor : '');
+  } else if (anchor) { try { const el = f.contentDocument.getElementById(anchor); if (el) el.scrollIntoView(); else f.src = PAGES[page].src + (query || '') + '#' + anchor; } catch (e) {} }
   Object.values(frames).forEach((x) => x.classList.toggle('on', x === f));
   document.title = (page === 'intro' ? '' : PAGES[page].name + ' · ') + 'Ontology Layouts';
-  const want = '#' + page + (query || '');
+  const want = '#' + page + (anchor ? ':' + anchor : '') + (query || '');
   if (location.hash !== want) history.replaceState(null, '', want);
   try { f.contentWindow && f.contentWindow.focus(); } catch (e) {}
 }
 window.SiteShell = { show };
-const fromHash = () => { const h = decodeURIComponent(location.hash.slice(1)), i = h.indexOf('?'); return i < 0 ? [h, ''] : [h.slice(0, i), h.slice(i)]; };
+const fromHash = () => SiteNav.parse(location.hash.slice(1)); // index.html#page:anchor?query
 window.addEventListener('hashchange', () => show(...fromHash()));
 show(...fromHash());
 </script>
