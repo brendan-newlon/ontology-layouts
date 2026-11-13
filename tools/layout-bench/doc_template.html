@@ -19,6 +19,9 @@
   --ours: #7cc39e; --pub: #a7acd9; --box: #233041; --box-line: #6f8db8; --sub: #8fbf6f; --rel: #6f7b8c; --bad: #ff6f61; --bad-soft: rgba(255,111,97,.18);
   --code-bg: #232830; --auto: #e0b56a; --auto-soft: #2c261b; --open: #5fc47c; --hot: #f0a35a; --move: #d08cff; color-scheme: dark; }
 * { box-sizing: border-box; }
+.sitebar { position: sticky; top: 0; z-index: 20; display: flex; align-items: center; gap: 12px; padding: 6px 14px; background: color-mix(in srgb, var(--paper) 92%, transparent); backdrop-filter: blur(6px); border-bottom: 1px solid var(--rule); font-size: 14px; }
+.sitebar h1 { font-size: 15px; margin: 0; letter-spacing: 0; }
+.sitebar .sp { flex: 1; } .sitebar a { color: var(--muted); }
 body { margin: 0; background: var(--bg); color: var(--ink); font: 16px/1.6 "Segoe UI", system-ui, -apple-system, "Helvetica Neue", Arial, sans-serif; }
 .wrap { max-width: 1120px; margin: 0 auto; padding-block: 40px 80px; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
 .prose { max-width: 70ch; }
@@ -185,8 +188,10 @@ tr.mine td:first-child { box-shadow: inset 4px 0 0 var(--accent); }
 .wx-part { font-size: .78rem; text-transform: uppercase; letter-spacing: .08em; color: var(--muted); font-weight: 700; align-self: center; margin: 0 4px 0 2px; }
 .wx-break { flex-basis: 100%; height: 0; }
 </style>
+<script src="../site-nav.js" data-page="benchmarks" defer></script>
 </head>
 <body>
+<header class="sitebar"><h1>Benchmarks</h1><span class="sp"></span><a href="https://github.com/brendan-newlon/ontology-layouts">Source on GitHub</a></header>
 <div class="wrap">
 
 <div class="kicker">Graph layout for ontologies</div>
@@ -376,6 +381,7 @@ tr.mine td:first-child { box-shadow: inset 4px 0 0 var(--accent); }
 <p class="takeaway">The clean-up takes Best Read's links through classes from 125 to 51, removes 7% of its crossed links and makes the drawing about a fifth smaller, for about 0.14 s more at the median.</p>
 <!--__TABLE_CLEANUP__-->
 <div class="prose">
+<p><strong>After another layout.</strong> The clean-up and the routing also run on positions from any other layout (<code>draw(boxes, links, { start })</code>). Measured after d3-force over the 51 test graphs and two seeds, against our routing alone, they cut crossed links plus links through classes by 38 to 45% and never made a drawing worse in 306 runs. They do not reach Best Read: from d3-force about twice its problems remain, in a larger drawing (<code>tools/layout-bench/cleanafter.mjs</code>; Graphviz and ELK starts not measured).</p>
 <p>Links through classes fall by three fifths (Best Read 125 → 51). Crossings fall a little (Best Read draws 7% fewer), crossing angles get slightly squarer, and the drawing gets smaller (Best Read's area 8.0 → 6.3 times its boxes, from pulling sprawling parts and groups in from the edge). The cost is time: Best Read's median rises from 0.24 to 0.38 s. The clean-up takes whatever is left of the time limit after the layout, at most a third of it, and is skipped when less than a fifteenth is left (a third of a second at the default limit of 1 s; the limit was 1.5 s until 12 November 2026, when the clean-up had half a second). Above 100 classes the layout is given 40% of the limit so that the clean-up keeps its third: on large graphs that gives fewer problems than a longer layout. To fit in that time, the clean-up looks only at the links and classes near each move, through a grid of cells one link long, with the same results as checking every pair.</p>
 </div>
 

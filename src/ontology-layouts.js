@@ -1910,7 +1910,11 @@
       // -> [{ points: [{x, y}], tip: {x, y}, angle }], one per edge.
       function _ogRoutePaths(pos, items, edges, routes, opts) {
         const o = { arrow: 0, samples: 8, ...(opts || {}) };
-        const inside = (p, c, it) => Math.abs(p.x - c.x) <= it.w / 2 + 1e-6 && Math.abs(p.y - c.y) <= it.h / 2 + 1e-6;
+        // where a path ends: on the box, or on the circle or ellipse drawn for the class (boxes[i].shape, r)
+        const inside = (p, c, it) => { const dx = p.x - c.x, dy = p.y - c.y;
+          if (it.shape === "circle") { const r = it.r || Math.min(it.w, it.h) / 2; return dx * dx + dy * dy <= r * r + 1e-6; }
+          if (it.shape === "ellipse") { const a = it.w / 2, b = it.h / 2; return (dx * dx) / (a * a) + (dy * dy) / (b * b) <= 1 + 1e-9; }
+          return Math.abs(dx) <= it.w / 2 + 1e-6 && Math.abs(dy) <= it.h / 2 + 1e-6; };
         const leave = (a, b, c, it) => { // a inside the box, b outside: where a-b crosses the border
           let lo = 0, hi = 1; for (let i = 0; i < 40; i++) { const m = (lo + hi) / 2; if (inside({ x: a.x + (b.x - a.x) * m, y: a.y + (b.y - a.y) * m }, c, it)) lo = m; else hi = m; }
           return { x: a.x + (b.x - a.x) * hi, y: a.y + (b.y - a.y) * hi }; };
@@ -1932,11 +1936,20 @@
       }
       // The whole pipeline in one call: Best Read, the clean-up, the link routing, the groups and the paths to draw.
       // boxes [{w, h}] as drawn; links [[s, t, kind, nameWidth?]] (kind 2 for a subclass link, 1 otherwise);
-      // opts: { seed, roomy, arrow (px, 0 = no arrowheads), route: options for _ogRouteLinks }.
+      // opts (all optional; docs/DEVELOPER-GUIDE.md lists them with measured trade-offs):
+      //   layout: "auto" (Best Read, default) | "compact" (Tidy Stress) | "grouped" (Mycelium; "compact" under 8 classes) |
+      //           "tree" (every subclass below its superclass; the clean-up keeps it so) | "given" (positions from opts.start)
+      //   start: [{x, y}] positions from your own layout, used with layout "given" (or alone: start implies "given")
+      //   cleanUp: false skips the clean-up (default true)
+      //   timeLimit: ms of work for this call (default: the library's limit, 1000; see setTimeLimit)
+      //   seed, roomy, arrow (px, 0 = no arrowheads), route: options for _ogRouteLinks, keep / exact (keeping a drawing).
+      // boxes may carry shape: "circle" | "ellipse" (and r for a circle): the paths then end on that shape, not the box.
       // -> { pos, routes, paths, groups, algo }. pos is the final position of every class: the link routing may push a class
       // off a link (settle), so draw the classes at pos, never at the layout's positions, or the paths will miss them.
       function _ogDraw(boxes, links, opts) {
-        const o = opts || {}, t0 = _ogNow();
+        const o = opts || {};
+        if (o.timeLimit) { const prev = _ogSetTimeLimit(o.timeLimit); try { return _ogDraw(boxes, links, { ...o, timeLimit: 0 }); } finally { _ogSetTimeLimit(prev); } }
+        const t0 = _ogNow();
         // The placement sees each pair of linked classes once (the widest name and a subclass link win); the routing draws every
         // link. A model browsed as data can repeat a link between two classes a dozen times, which costs the placement time
         // and tells it nothing more.
@@ -1948,10 +1961,17 @@
         // keep: an earlier drawing's positions (null for new classes). The new classes are placed round the old ones, then the
         // clean-up and the routing make local moves (old classes move a few percent of the drawing, a redraw about a third).
         // exact: true keeps every old class exactly where it was (no clean-up, the routing moves no class).
+        const kind = o.layout || (o.start ? "given" : "auto"), lo = { seed: o.seed, roomy: o.roomy };
+        if (kind === "given" && !(o.start && o.start.length === boxes.length)) throw new Error('layout "given" needs start: one {x, y} per box');
         const ex = o.keep && o.exact, lay = o.keep ? { pos: _ogClocked(() => _ogPlaceNew(o.keep, boxes, layLinks)), algo: "keep" }
+          : kind === "given" ? { pos: o.start.map((p) => ({ x: +p.x || 0, y: +p.y || 0 })), algo: "given" }
           : boxes.length < 2 ? { pos: boxes.map(() => ({ x: 0, y: 0 })), algo: "single" } // the layouts need two classes; an exploration starts from one
-          : _ogAutoLayout(boxes, layLinks, { seed: o.seed, roomy: o.roomy });
-        const clean = ex ? lay.pos : _ogLayoutCleanUp(lay.pos, boxes, layLinks, t0, lay.algo === "tree");
+          : kind === "tree" ? { ..._ogClocked(() => _ogTreeLayout(boxes, layLinks, lo)), algo: "tree" }
+          : kind === "compact" ? _ogCompactLayout(boxes, layLinks, lo)
+          : kind === "grouped" ? (_ogGroupedLayout(boxes, layLinks, lo) || _ogCompactLayout(boxes, layLinks, lo))
+          : _ogAutoLayout(boxes, layLinks, lo);
+        if (kind === "given") { const N = boxes.map((b) => ({ w: b.w + 16, h: b.h + 12 })); _ogClSeparate(lay.pos, N, 6, 200); } // your layout may let boxes touch
+        const clean = ex || o.cleanUp === false ? lay.pos : _ogLayoutCleanUp(lay.pos, boxes, layLinks, t0, lay.algo === "tree");
         const rr = _ogRouteLinks(clean, boxes, links, ex ? { settle: false, ...(o.route || {}) } : o.route);
         return { pos: rr.pos, routes: rr.routes, paths: _ogRoutePaths(rr.pos, boxes, links, rr.routes, { arrow: o.arrow || 0 }), groups: _ogGroups(boxes.length, links), algo: lay.algo };
       }

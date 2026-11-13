@@ -19,6 +19,9 @@
   --ours: #7cc39e; --pub: #a7acd9; --box: #233041; --box-line: #6f8db8; --sub: #8fbf6f; --rel: #6f7b8c; --bad: #ff6f61; --bad-soft: rgba(255,111,97,.18);
   --code-bg: #232830; --auto: #e0b56a; --auto-soft: #2c261b; --open: #5fc47c; --hot: #f0a35a; --move: #d08cff; color-scheme: dark; }
 * { box-sizing: border-box; }
+.sitebar { position: sticky; top: 0; z-index: 20; display: flex; align-items: center; gap: 12px; padding: 6px 14px; background: color-mix(in srgb, var(--paper) 92%, transparent); backdrop-filter: blur(6px); border-bottom: 1px solid var(--rule); font-size: 14px; }
+.sitebar h1 { font-size: 15px; margin: 0; letter-spacing: 0; }
+.sitebar .sp { flex: 1; } .sitebar a { color: var(--muted); }
 body { margin: 0; background: var(--bg); color: var(--ink); font: 16px/1.6 "Segoe UI", system-ui, -apple-system, "Helvetica Neue", Arial, sans-serif; }
 .wrap { max-width: 1120px; margin: 0 auto; padding-block: 40px 80px; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
 .prose { max-width: 70ch; }
@@ -185,8 +188,10 @@ tr.mine td:first-child { box-shadow: inset 4px 0 0 var(--accent); }
 .wx-part { font-size: .78rem; text-transform: uppercase; letter-spacing: .08em; color: var(--muted); font-weight: 700; align-self: center; margin: 0 4px 0 2px; }
 .wx-break { flex-basis: 100%; height: 0; }
 </style>
+<script src="../site-nav.js" data-page="benchmarks" defer></script>
 </head>
 <body>
+<header class="sitebar"><h1>Benchmarks</h1><span class="sp"></span><a href="https://github.com/brendan-newlon/ontology-layouts">Source on GitHub</a></header>
 <div class="wrap">
 
 <div class="kicker">Graph layout for ontologies</div>
@@ -376,6 +381,7 @@ tr.mine td:first-child { box-shadow: inset 4px 0 0 var(--accent); }
 <p class="takeaway">The clean-up takes Best Read's links through classes from 125 to 51, removes 7% of its crossed links and makes the drawing about a fifth smaller, for about 0.14 s more at the median.</p>
 <div class="tbl"><table><thead><tr><th>Layout</th><th>Crossed links, total</th><th>Links through classes, total</th><th>Mean crossing angle</th><th>Mean angular resolution</th><th>Median area</th><th>Median time</th></tr></thead><tbody><tr class="ours"><td>Tidy Stress</td><td>617 → <b>627</b></td><td>286 → <b>149</b></td><td>72° → <b>74°</b></td><td>0.43 → <b>0.44</b></td><td>6.6 → <b>6.3</b></td><td>191 ms → <b>341 ms</b></td></tr><tr class="ours"><td>Mycelium</td><td>486 → <b>442</b></td><td>148 → <b>54</b></td><td>62° → <b>67°</b></td><td>0.43 → <b>0.44</b></td><td>11.5 → <b>8.7</b></td><td>86 ms → <b>230 ms</b></td></tr><tr class="ours"><td>Best Read</td><td>518 → <b>480</b></td><td>125 → <b>51</b></td><td>70° → <b>71°</b></td><td>0.44 → <b>0.45</b></td><td>8.0 → <b>6.3</b></td><td>240 ms → <b>378 ms</b></td></tr></tbody></table></div>
 <div class="prose">
+<p><strong>After another layout.</strong> The clean-up and the routing also run on positions from any other layout (<code>draw(boxes, links, { start })</code>). Measured after d3-force over the 51 test graphs and two seeds, against our routing alone, they cut crossed links plus links through classes by 38 to 45% and never made a drawing worse in 306 runs. They do not reach Best Read: from d3-force about twice its problems remain, in a larger drawing (<code>tools/layout-bench/cleanafter.mjs</code>; Graphviz and ELK starts not measured).</p>
 <p>Links through classes fall by three fifths (Best Read 125 → 51). Crossings fall a little (Best Read draws 7% fewer), crossing angles get slightly squarer, and the drawing gets smaller (Best Read's area 8.0 → 6.3 times its boxes, from pulling sprawling parts and groups in from the edge). The cost is time: Best Read's median rises from 0.24 to 0.38 s. The clean-up takes whatever is left of the time limit after the layout, at most a third of it, and is skipped when less than a fifteenth is left (a third of a second at the default limit of 1 s; the limit was 1.5 s until 12 November 2026, when the clean-up had half a second). Above 100 classes the layout is given 40% of the limit so that the clean-up keeps its third: on large graphs that gives fewer problems than a longer layout. To fit in that time, the clean-up looks only at the links and classes near each move, through a grid of cells one link long, with the same results as checking every pair.</p>
 </div>
 
@@ -1390,7 +1396,10 @@ function _ogStressLayout(items, edges, cfg, opts) {
   const N = items.map((it) =&gt; ({ w: it.w + 16 * sc, h: it.h + 12 * sc }));
   const EE = edges.filter(([a, b]) =&gt; a !== b).map(([a, b, w, lab]) =&gt; ({ s: a, t: b, sub: w === 2, lab: lab || 0 }));
   if (!EE.length) return null;
-  const t0 = _ogNow(), budget = cfg.budget || 1500, left = () =&gt; Math.max(20, budget - (_ogNow() - t0));
+  // experiments: cfg.stressShare (from _OG_TUNE) is the share of the budget the starts and stress get (default 0.4);
+  // cfg.stressSave also takes the time saved off the budget, so later steps do not get it
+  const share = cfg.stressShare != null ? cfg.stressShare : 0.4, sBud = (cfg.budget || 1500) * share;
+  const t0 = _ogNow(), budget = (cfg.budget || 1500) * (cfg.stressSave ? 1 - 0.4 + share : 1), left = () =&gt; Math.max(20, budget - (_ogNow() - t0));
   const leafAll = _ogClLeaves(n, EE), leafOf = cfg.leaves ? leafAll : new Array(n).fill(-1);
   // room beside a one-link class: at least 40 px, more when its link carries text
   const gapOf = new Array(n).fill(40 * sc); EE.forEach((e) =&gt; { [e.s, e.t].forEach((v) =&gt; { if (leafAll[v] &gt;= 0) gapOf[v] = Math.max(gapOf[v], e.lab + 16); }); });
@@ -1422,10 +1431,10 @@ function _ogStressLayout(items, edges, cfg, opts) {
   const restarts = cfg.restarts != null ? cfg.restarts : (m &lt;= 30 ? 8 : m &lt;= 80 ? 4 : 2), countX = EC.length &lt;= 2500;
   let best = null;
   if (_ogTr) { _ogTr.begin(cfg.name, n, core, leafOf); _ogTr.map = core; }
-  for (let r = 0; r &lt; Math.max(1, restarts) &amp;&amp; (r === 0 || _ogNow() - t0 &lt; budget * 0.4); r++) {
+  for (let r = 0; r &lt; Math.max(1, restarts) &amp;&amp; (r === 0 || _ogNow() - t0 &lt; sBud); r++) {
     const PC = cfg.init === "pmds" &amp;&amp; r === 0 &amp;&amp; m &gt; 2 ? _ogClPivotMDS(D, m, rnd) : NC.map(() =&gt; ({ x: (rnd() - 0.5) * 400, y: (rnd() - 0.5) * 400 }));
     if (_ogTr) { _ogTr.restart(r); _ogTr.snap(cfg.init === "pmds" &amp;&amp; r === 0 &amp;&amp; m &gt; 2 ? "start" : "restart", PC); }
-    _ogClStress(PC, D, cfg.sweeps || 120, rnd, t0 + budget * 0.4); _ogClSeparate(PC, NC, 12, 120);
+    _ogClStress(PC, D, cfg.sweeps != null ? cfg.sweeps : 120, rnd, t0 + sBud); _ogClSeparate(PC, NC, 12, 120);
     if (_ogTr) _ogTr.snap("separate", PC);
     const x = countX ? _ogClCrossings(PC, EC) : 0; if (!best || x &lt; best.x) best = { x, P: PC, r };
   }
@@ -2877,7 +2886,11 @@ function _ogGroups(n, edges) {
 // -&gt; [{ points: [{x, y}], tip: {x, y}, angle }], one per edge.
 function _ogRoutePaths(pos, items, edges, routes, opts) {
   const o = { arrow: 0, samples: 8, ...(opts || {}) };
-  const inside = (p, c, it) =&gt; Math.abs(p.x - c.x) &lt;= it.w / 2 + 1e-6 &amp;&amp; Math.abs(p.y - c.y) &lt;= it.h / 2 + 1e-6;
+  // where a path ends: on the box, or on the circle or ellipse drawn for the class (boxes[i].shape, r)
+  const inside = (p, c, it) =&gt; { const dx = p.x - c.x, dy = p.y - c.y;
+    if (it.shape === "circle") { const r = it.r || Math.min(it.w, it.h) / 2; return dx * dx + dy * dy &lt;= r * r + 1e-6; }
+    if (it.shape === "ellipse") { const a = it.w / 2, b = it.h / 2; return (dx * dx) / (a * a) + (dy * dy) / (b * b) &lt;= 1 + 1e-9; }
+    return Math.abs(dx) &lt;= it.w / 2 + 1e-6 &amp;&amp; Math.abs(dy) &lt;= it.h / 2 + 1e-6; };
   const leave = (a, b, c, it) =&gt; { // a inside the box, b outside: where a-b crosses the border
     let lo = 0, hi = 1; for (let i = 0; i &lt; 40; i++) { const m = (lo + hi) / 2; if (inside({ x: a.x + (b.x - a.x) * m, y: a.y + (b.y - a.y) * m }, c, it)) lo = m; else hi = m; }
     return { x: a.x + (b.x - a.x) * hi, y: a.y + (b.y - a.y) * hi }; };
@@ -2899,11 +2912,20 @@ function _ogRoutePaths(pos, items, edges, routes, opts) {
 }
 // The whole pipeline in one call: Best Read, the clean-up, the link routing, the groups and the paths to draw.
 // boxes [{w, h}] as drawn; links [[s, t, kind, nameWidth?]] (kind 2 for a subclass link, 1 otherwise);
-// opts: { seed, roomy, arrow (px, 0 = no arrowheads), route: options for _ogRouteLinks }.
+// opts (all optional; docs/DEVELOPER-GUIDE.md lists them with measured trade-offs):
+//   layout: "auto" (Best Read, default) | "compact" (Tidy Stress) | "grouped" (Mycelium; "compact" under 8 classes) |
+//           "tree" (every subclass below its superclass; the clean-up keeps it so) | "given" (positions from opts.start)
+//   start: [{x, y}] positions from your own layout, used with layout "given" (or alone: start implies "given")
+//   cleanUp: false skips the clean-up (default true)
+//   timeLimit: ms of work for this call (default: the library's limit, 1000; see setTimeLimit)
+//   seed, roomy, arrow (px, 0 = no arrowheads), route: options for _ogRouteLinks, keep / exact (keeping a drawing).
+// boxes may carry shape: "circle" | "ellipse" (and r for a circle): the paths then end on that shape, not the box.
 // -&gt; { pos, routes, paths, groups, algo }. pos is the final position of every class: the link routing may push a class
 // off a link (settle), so draw the classes at pos, never at the layout's positions, or the paths will miss them.
 function _ogDraw(boxes, links, opts) {
-  const o = opts || {}, t0 = _ogNow();
+  const o = opts || {};
+  if (o.timeLimit) { const prev = _ogSetTimeLimit(o.timeLimit); try { return _ogDraw(boxes, links, { ...o, timeLimit: 0 }); } finally { _ogSetTimeLimit(prev); } }
+  const t0 = _ogNow();
   // The placement sees each pair of linked classes once (the widest name and a subclass link win); the routing draws every
   // link. A model browsed as data can repeat a link between two classes a dozen times, which costs the placement time
   // and tells it nothing more.
@@ -2915,10 +2937,17 @@ function _ogDraw(boxes, links, opts) {
   // keep: an earlier drawing's positions (null for new classes). The new classes are placed round the old ones, then the
   // clean-up and the routing make local moves (old classes move a few percent of the drawing, a redraw about a third).
   // exact: true keeps every old class exactly where it was (no clean-up, the routing moves no class).
+  const kind = o.layout || (o.start ? "given" : "auto"), lo = { seed: o.seed, roomy: o.roomy };
+  if (kind === "given" &amp;&amp; !(o.start &amp;&amp; o.start.length === boxes.length)) throw new Error('layout "given" needs start: one {x, y} per box');
   const ex = o.keep &amp;&amp; o.exact, lay = o.keep ? { pos: _ogClocked(() =&gt; _ogPlaceNew(o.keep, boxes, layLinks)), algo: "keep" }
+    : kind === "given" ? { pos: o.start.map((p) =&gt; ({ x: +p.x || 0, y: +p.y || 0 })), algo: "given" }
     : boxes.length &lt; 2 ? { pos: boxes.map(() =&gt; ({ x: 0, y: 0 })), algo: "single" } // the layouts need two classes; an exploration starts from one
-    : _ogAutoLayout(boxes, layLinks, { seed: o.seed, roomy: o.roomy });
-  const clean = ex ? lay.pos : _ogLayoutCleanUp(lay.pos, boxes, layLinks, t0, lay.algo === "tree");
+    : kind === "tree" ? { ..._ogClocked(() =&gt; _ogTreeLayout(boxes, layLinks, lo)), algo: "tree" }
+    : kind === "compact" ? _ogCompactLayout(boxes, layLinks, lo)
+    : kind === "grouped" ? (_ogGroupedLayout(boxes, layLinks, lo) || _ogCompactLayout(boxes, layLinks, lo))
+    : _ogAutoLayout(boxes, layLinks, lo);
+  if (kind === "given") { const N = boxes.map((b) =&gt; ({ w: b.w + 16, h: b.h + 12 })); _ogClSeparate(lay.pos, N, 6, 200); } // your layout may let boxes touch
+  const clean = ex || o.cleanUp === false ? lay.pos : _ogLayoutCleanUp(lay.pos, boxes, layLinks, t0, lay.algo === "tree");
   const rr = _ogRouteLinks(clean, boxes, links, ex ? { settle: false, ...(o.route || {}) } : o.route);
   return { pos: rr.pos, routes: rr.routes, paths: _ogRoutePaths(rr.pos, boxes, links, rr.routes, { arrow: o.arrow || 0 }), groups: _ogGroups(boxes.length, links), algo: lay.algo };
 }
@@ -3639,7 +3668,10 @@ function _ogStressLayout(items, edges, cfg, opts) {
   const N = items.map((it) => ({ w: it.w + 16 * sc, h: it.h + 12 * sc }));
   const EE = edges.filter(([a, b]) => a !== b).map(([a, b, w, lab]) => ({ s: a, t: b, sub: w === 2, lab: lab || 0 }));
   if (!EE.length) return null;
-  const t0 = _ogNow(), budget = cfg.budget || 1500, left = () => Math.max(20, budget - (_ogNow() - t0));
+  // experiments: cfg.stressShare (from _OG_TUNE) is the share of the budget the starts and stress get (default 0.4);
+  // cfg.stressSave also takes the time saved off the budget, so later steps do not get it
+  const share = cfg.stressShare != null ? cfg.stressShare : 0.4, sBud = (cfg.budget || 1500) * share;
+  const t0 = _ogNow(), budget = (cfg.budget || 1500) * (cfg.stressSave ? 1 - 0.4 + share : 1), left = () => Math.max(20, budget - (_ogNow() - t0));
   const leafAll = _ogClLeaves(n, EE), leafOf = cfg.leaves ? leafAll : new Array(n).fill(-1);
   // room beside a one-link class: at least 40 px, more when its link carries text
   const gapOf = new Array(n).fill(40 * sc); EE.forEach((e) => { [e.s, e.t].forEach((v) => { if (leafAll[v] >= 0) gapOf[v] = Math.max(gapOf[v], e.lab + 16); }); });
@@ -3671,10 +3703,10 @@ function _ogStressLayout(items, edges, cfg, opts) {
   const restarts = cfg.restarts != null ? cfg.restarts : (m <= 30 ? 8 : m <= 80 ? 4 : 2), countX = EC.length <= 2500;
   let best = null;
   if (_ogTr) { _ogTr.begin(cfg.name, n, core, leafOf); _ogTr.map = core; }
-  for (let r = 0; r < Math.max(1, restarts) && (r === 0 || _ogNow() - t0 < budget * 0.4); r++) {
+  for (let r = 0; r < Math.max(1, restarts) && (r === 0 || _ogNow() - t0 < sBud); r++) {
     const PC = cfg.init === "pmds" && r === 0 && m > 2 ? _ogClPivotMDS(D, m, rnd) : NC.map(() => ({ x: (rnd() - 0.5) * 400, y: (rnd() - 0.5) * 400 }));
     if (_ogTr) { _ogTr.restart(r); _ogTr.snap(cfg.init === "pmds" && r === 0 && m > 2 ? "start" : "restart", PC); }
-    _ogClStress(PC, D, cfg.sweeps || 120, rnd, t0 + budget * 0.4); _ogClSeparate(PC, NC, 12, 120);
+    _ogClStress(PC, D, cfg.sweeps != null ? cfg.sweeps : 120, rnd, t0 + sBud); _ogClSeparate(PC, NC, 12, 120);
     if (_ogTr) _ogTr.snap("separate", PC);
     const x = countX ? _ogClCrossings(PC, EC) : 0; if (!best || x < best.x) best = { x, P: PC, r };
   }
@@ -5126,7 +5158,11 @@ function _ogGroups(n, edges) {
 // -> [{ points: [{x, y}], tip: {x, y}, angle }], one per edge.
 function _ogRoutePaths(pos, items, edges, routes, opts) {
   const o = { arrow: 0, samples: 8, ...(opts || {}) };
-  const inside = (p, c, it) => Math.abs(p.x - c.x) <= it.w / 2 + 1e-6 && Math.abs(p.y - c.y) <= it.h / 2 + 1e-6;
+  // where a path ends: on the box, or on the circle or ellipse drawn for the class (boxes[i].shape, r)
+  const inside = (p, c, it) => { const dx = p.x - c.x, dy = p.y - c.y;
+    if (it.shape === "circle") { const r = it.r || Math.min(it.w, it.h) / 2; return dx * dx + dy * dy <= r * r + 1e-6; }
+    if (it.shape === "ellipse") { const a = it.w / 2, b = it.h / 2; return (dx * dx) / (a * a) + (dy * dy) / (b * b) <= 1 + 1e-9; }
+    return Math.abs(dx) <= it.w / 2 + 1e-6 && Math.abs(dy) <= it.h / 2 + 1e-6; };
   const leave = (a, b, c, it) => { // a inside the box, b outside: where a-b crosses the border
     let lo = 0, hi = 1; for (let i = 0; i < 40; i++) { const m = (lo + hi) / 2; if (inside({ x: a.x + (b.x - a.x) * m, y: a.y + (b.y - a.y) * m }, c, it)) lo = m; else hi = m; }
     return { x: a.x + (b.x - a.x) * hi, y: a.y + (b.y - a.y) * hi }; };
@@ -5148,11 +5184,20 @@ function _ogRoutePaths(pos, items, edges, routes, opts) {
 }
 // The whole pipeline in one call: Best Read, the clean-up, the link routing, the groups and the paths to draw.
 // boxes [{w, h}] as drawn; links [[s, t, kind, nameWidth?]] (kind 2 for a subclass link, 1 otherwise);
-// opts: { seed, roomy, arrow (px, 0 = no arrowheads), route: options for _ogRouteLinks }.
+// opts (all optional; docs/DEVELOPER-GUIDE.md lists them with measured trade-offs):
+//   layout: "auto" (Best Read, default) | "compact" (Tidy Stress) | "grouped" (Mycelium; "compact" under 8 classes) |
+//           "tree" (every subclass below its superclass; the clean-up keeps it so) | "given" (positions from opts.start)
+//   start: [{x, y}] positions from your own layout, used with layout "given" (or alone: start implies "given")
+//   cleanUp: false skips the clean-up (default true)
+//   timeLimit: ms of work for this call (default: the library's limit, 1000; see setTimeLimit)
+//   seed, roomy, arrow (px, 0 = no arrowheads), route: options for _ogRouteLinks, keep / exact (keeping a drawing).
+// boxes may carry shape: "circle" | "ellipse" (and r for a circle): the paths then end on that shape, not the box.
 // -> { pos, routes, paths, groups, algo }. pos is the final position of every class: the link routing may push a class
 // off a link (settle), so draw the classes at pos, never at the layout's positions, or the paths will miss them.
 function _ogDraw(boxes, links, opts) {
-  const o = opts || {}, t0 = _ogNow();
+  const o = opts || {};
+  if (o.timeLimit) { const prev = _ogSetTimeLimit(o.timeLimit); try { return _ogDraw(boxes, links, { ...o, timeLimit: 0 }); } finally { _ogSetTimeLimit(prev); } }
+  const t0 = _ogNow();
   // The placement sees each pair of linked classes once (the widest name and a subclass link win); the routing draws every
   // link. A model browsed as data can repeat a link between two classes a dozen times, which costs the placement time
   // and tells it nothing more.
@@ -5164,10 +5209,17 @@ function _ogDraw(boxes, links, opts) {
   // keep: an earlier drawing's positions (null for new classes). The new classes are placed round the old ones, then the
   // clean-up and the routing make local moves (old classes move a few percent of the drawing, a redraw about a third).
   // exact: true keeps every old class exactly where it was (no clean-up, the routing moves no class).
+  const kind = o.layout || (o.start ? "given" : "auto"), lo = { seed: o.seed, roomy: o.roomy };
+  if (kind === "given" && !(o.start && o.start.length === boxes.length)) throw new Error('layout "given" needs start: one {x, y} per box');
   const ex = o.keep && o.exact, lay = o.keep ? { pos: _ogClocked(() => _ogPlaceNew(o.keep, boxes, layLinks)), algo: "keep" }
+    : kind === "given" ? { pos: o.start.map((p) => ({ x: +p.x || 0, y: +p.y || 0 })), algo: "given" }
     : boxes.length < 2 ? { pos: boxes.map(() => ({ x: 0, y: 0 })), algo: "single" } // the layouts need two classes; an exploration starts from one
-    : _ogAutoLayout(boxes, layLinks, { seed: o.seed, roomy: o.roomy });
-  const clean = ex ? lay.pos : _ogLayoutCleanUp(lay.pos, boxes, layLinks, t0, lay.algo === "tree");
+    : kind === "tree" ? { ..._ogClocked(() => _ogTreeLayout(boxes, layLinks, lo)), algo: "tree" }
+    : kind === "compact" ? _ogCompactLayout(boxes, layLinks, lo)
+    : kind === "grouped" ? (_ogGroupedLayout(boxes, layLinks, lo) || _ogCompactLayout(boxes, layLinks, lo))
+    : _ogAutoLayout(boxes, layLinks, lo);
+  if (kind === "given") { const N = boxes.map((b) => ({ w: b.w + 16, h: b.h + 12 })); _ogClSeparate(lay.pos, N, 6, 200); } // your layout may let boxes touch
+  const clean = ex || o.cleanUp === false ? lay.pos : _ogLayoutCleanUp(lay.pos, boxes, layLinks, t0, lay.algo === "tree");
   const rr = _ogRouteLinks(clean, boxes, links, ex ? { settle: false, ...(o.route || {}) } : o.route);
   return { pos: rr.pos, routes: rr.routes, paths: _ogRoutePaths(rr.pos, boxes, links, rr.routes, { arrow: o.arrow || 0 }), groups: _ogGroups(boxes.length, links), algo: lay.algo };
 }

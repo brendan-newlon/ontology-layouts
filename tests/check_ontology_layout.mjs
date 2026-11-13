@@ -187,6 +187,16 @@ function checkApi(L) {
     if (off) bad.push(`model ${i}: ${off} paths do not start and end on the borders of the classes at the returned positions`);
     if (gap) bad.push(`model ${i}: ${gap} paths do not stop an arrowhead's length short of their end class`);
   });
+  // draw() options: your own positions (start), no clean-up, a time limit for one call, circles, the tree
+  { const m = MODELS[1], D = m.D.map((d) => ({ w: d.w + 16, h: d.h + 12 })), E = m.edges.map((e) => [e[0], e[1], e[2]]), n = D.length;
+    const start = D.map((_, v) => ({ x: (v % 6) * 400, y: Math.floor(v / 6) * 300 })); // far apart: no overlap to remove
+    const g = A.draw(D, E, { start, cleanUp: false, route: { settle: false } }); if (g.algo !== 'given' || g.pos.some((p, v) => Math.hypot(p.x - start[v].x, p.y - start[v].y) > 0.5)) bad.push('draw({ start, cleanUp: false }) did not keep the positions given');
+    const before = A.setTimeLimit(1234); A.setTimeLimit(before); A.draw(D, E, { timeLimit: 300 }); const after = A.setTimeLimit(before);
+    if (Math.abs(after - before) > 1e-6) bad.push(`draw({ timeLimit }) left the library's time limit at ${after} instead of ${before}`);
+    const C = D.map((d) => ({ w: Math.max(40, d.w), h: 72, shape: 'circle', r: 20 })), c = A.draw(C, E, {}); let offC = 0;
+    E.forEach(([s, t], k) => { if (s === t) return; const p0 = c.paths[k].points[0], A0 = c.pos[s]; if (Math.hypot(A0.x - c.pos[t].x, A0.y - c.pos[t].y) > 60 && Math.abs(Math.hypot(p0.x - A0.x, p0.y - A0.y) - 20) > 0.5) offC++; });
+    if (offC) bad.push(`${offC} paths of circle classes do not start on the circle`);
+    const tr = A.draw(D, E, { layout: 'tree' }); if (tr.algo !== 'tree') bad.push('draw({ layout: "tree" }) did not draw the tree'); }
   return bad;
 }
 // 8. keeping a drawing and relation classes: draw(..., { keep, exact: true }) leaves every old class exactly where it was and puts
@@ -316,7 +326,10 @@ if (process.argv.includes('--self-test')) {
     ['api', 'paths not clipped at the start class', code.replace('if (i < pl.length - 1 && inside(pl[i], A, items[s])) pl =', 'if (false) pl =')],
     ['api', 'draw() returns the positions before the routing moved classes', code.replace('return { pos: rr.pos, routes: rr.routes,', 'return { pos: clean, routes: rr.routes,')],
     ['api', 'no room left for the arrowhead', code.replace('let rem = Math.min(o.arrow,', 'let rem = Math.min(0,')],
-    ['keep', 'exact keeping still runs the clean-up', code.replace('const clean = ex ? lay.pos :', 'const clean = false ? lay.pos :')],
+    ['keep', 'exact keeping still runs the clean-up', code.replace('const clean = ex || o.cleanUp === false ? lay.pos :', 'const clean = o.cleanUp === false ? lay.pos :')],
+    ['api', 'draw({ timeLimit }) does not restore the limit', code.replace('finally { _ogSetTimeLimit(prev); }', 'finally { }')],
+    ['api', 'the paths ignore circle classes', code.replace('if (it.shape === "circle") {', 'if (false) {')],
+    ['api', 'draw() ignores the positions given', code.replace(': kind === "given" ? { pos: o.start.map(', ': false ? { pos: o.start.map(')],
     ['keep', 'new classes placed without looking for a free spot', code.replace('const free = (v, p) => { _ogWorkN[2] += n;', 'const free = (v, p) => { return true;')],
     ['keep', 'the earlier positions ignored', code.replace('(keep && keep[v] && isFinite(keep[v].x)', '(false && keep[v] && isFinite(keep[v].x)')],
     ['keep', 'relation classes left off their line', code.replace('if (!R.length || n > 1500) return P;', 'return P;')],
@@ -341,5 +354,8 @@ if (process.argv.includes('--self-test')) {
   console.log(ok ? 'self-test ok' : 'self-test FAILED'); process.exit(ok ? 0 : 1);
 }
 const res = runAll(code), fails = Object.entries(res).flatMap(([k, v]) => v.map((x) => k + ': ' + x));
+// dist/ is what apps load: it must be built from the current source
+const { build } = await import('../tools/build_dist.mjs');
+for (const [f, text] of Object.entries(build())) { const p = new URL('../' + f, import.meta.url); if (!fs.existsSync(p) || fs.readFileSync(p, 'utf8').replace(/\r\n/g, '\n') !== text) fails.push(`dist: ${f} is out of date: run node tools/build_dist.mjs`); }
 if (fails.length) { fails.forEach((f) => console.log(f)); process.exit(1); }
 console.log('ontology layout clean');
