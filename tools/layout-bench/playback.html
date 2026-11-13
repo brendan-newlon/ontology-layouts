@@ -193,6 +193,15 @@ footer .grp { display: flex; gap: 4px; align-items: center; }
       </div>
       <p class="hint">Drag the border between two steps. A locked step (🔒) is never shrunk: the whole grows instead.</p>
     </div>
+    <div id="xBox">
+      <h2>Time experiments <small>not the shipped settings</small></h2>
+      <p class="hint">The layout fills its time limit: the time a left-out step frees goes to the next variant, to more restarts and to the clean-up, so leaving a step out barely changes the total. These switches stop that refilling, so a change shows what it really saves. The result line compares against every step with the shipped settings.</p>
+      <div class="row"><label class="tog" title="Each variant gets the layout time divided by the number of variants; time one leaves is not handed to the next"><input type="checkbox" id="xFixed"> Fixed share per variant</label>
+        <label class="tog" title="Random restarts per variant, the best kept (auto: 8 up to 30 classes, 4 up to 80, else 2; each stops at 40% of the variant's time)">Restarts <select id="xRestarts"><option value="">auto</option><option>1</option><option>2</option><option>3</option><option>4</option><option>6</option><option>8</option></select></label></div>
+      <div class="row"><label class="tog" title="The share of the layout's own time (before the clean-up) that the variants may use">Layout time <input type="range" id="xScale" min="0.2" max="1" step="0.05" value="1" style="width:110px"> <span id="xScaleV">100%</span></label></div>
+      <div class="row" id="xVars" title="Which of Best Read's variants run (a graph's size decides which are tried at all; Best Read keeps the best-scoring one)">Variants: </div>
+      <div class="row"><button id="xReset">Shipped settings</button></div>
+    </div>
     <div id="variants"></div>
    </div>
    <div id="notes">
@@ -432,11 +441,25 @@ function tailFrames(G, P, { cleanup, budgetMs, links, run }) {
     else frames.push({ key: 'r-settle', P: FP, routes: r4, ms: ws, run, hold: true, note: 'No class needed moving, or moving one did not help.' }); }
   return { frames, info, P: Pf };
 }
+const XV = ['mds', 'stress', 'hubs', 'leaves', 'groups'];
+const XT = store.get('xtune', {}); // { fixedShare, restarts, layoutScale, variants }
+const xOn = () => Object.keys(XT).length > 0;
+function showX() { $('xFixed').checked = !!XT.fixedShare; $('xRestarts').value = XT.restarts || ''; $('xScale').value = XT.layoutScale || 1; $('xScaleV').textContent = Math.round(100 * (XT.layoutScale || 1)) + '%';
+  $('xVars').innerHTML = 'Variants: ' + XV.map((v) => `<label class="tog"><input type="checkbox" data-xv="${v}" ${!XT.variants || XT.variants.includes(v) ? 'checked' : ''}>${v}</label>`).join(' '); }
+function setX(k, v) { if (v === undefined || v === null || v === '' || v === false || (k === 'layoutScale' && v >= 1)) delete XT[k]; else XT[k] = v; store.set('xtune', XT); showX(); note('experiment', { tune: { ...XT } }); run(true); }
+$('xFixed').onchange = () => setX('fixedShare', $('xFixed').checked);
+$('xRestarts').onchange = () => setX('restarts', $('xRestarts').value ? +$('xRestarts').value : null);
+$('xScale').oninput = () => ($('xScaleV').textContent = Math.round(100 * +$('xScale').value) + '%');
+$('xScale').onchange = () => setX('layoutScale', +$('xScale').value);
+$('xVars').addEventListener('change', () => { const on = XV.filter((v) => $('xVars').querySelector(`[data-xv="${v}"]`).checked); setX('variants', on.length === XV.length ? null : on); });
+$('xReset').onclick = () => { Object.keys(XT).forEach((k) => delete XT[k]); store.set('xtune', XT); showX(); note('experiment', { tune: {} }); run(true); };
+showX();
 async function recordRun(key, algo, seed) {
   const Md = await MODELS[key].load(), G = graphOf(key, Md), engine = !!ENGINES[algo], limit = +$('limit').value;
   const prev = O.setTimeLimit(limit);
   try {
-    const t0 = O.now(), head = engine ? await recordEngine(G, algo, seed) : recordOurs(G, algo, seed);
+    const xk = engine ? [] : Object.keys(XT); xk.forEach((k) => (O.tune[k] = XT[k]));
+    let head; const t0 = O.now(); try { head = engine ? await recordEngine(G, algo, seed) : recordOurs(G, algo, seed); } finally { xk.forEach((k) => delete O.tune[k]); }
     // the clean-up gets what is left of the time limit, at most a third of it, as in the layouts
     const budgetMs = Math.min(500, 1500 - (O.now() - t0));
     const tail = tailFrames(G, head.P, { cleanup: !engine, budgetMs, links: !engine || $('ourLinks').checked, run: head.run });
@@ -771,8 +794,8 @@ document.addEventListener('contextmenu', (ev) => { const el = ev.target.closest(
   const items = [[has ? 'Jump to this step' : null, () => jumpTo(k)], [c.show ? 'Happen at once (do not animate)' : 'Animate this step', () => { c.show = !c.show; saveCtl(); retime(); }],
     [m[5] ? (c.run ? 'Run the layout without this step' : 'Run the layout with this step again') : null, () => { c.run = !c.run; saveCtl(); run(true); }],
     [c.lock ? 'Unlock its playing time' : 'Lock its playing time', () => { c.lock = !c.lock; saveCtl(); retime(); }],
-    [has ? 'Twice the time' : null, () => { c.w *= 2; saveCtl(); retime(); }], [has && !c.lock ? 'Half the time' : null, () => { c.w /= 2; saveCtl(); retime(); }],
-    [Math.abs(c.w - 1) > 0.01 ? 'Back to its measured time' : null, () => { c.w = 1; saveCtl(); retime(); }]].filter((x) => x[0]);
+    [has ? 'Play it twice as slowly (playback only)' : null, () => { c.w *= 2; saveCtl(); retime(); }], [has && !c.lock ? 'Play it twice as fast (playback only)' : null, () => { c.w /= 2; saveCtl(); retime(); }],
+    [Math.abs(c.w - 1) > 0.01 ? 'Play it at its measured time' : null, () => { c.w = 1; saveCtl(); retime(); }]].filter((x) => x[0]);
   menu.innerHTML = `<div class="h">${esc(m[2])}</div>` + items.map((x, i) => `<button data-i="${i}">${esc(x[0])}</button>`).join('');
   menu.onclick = (e) => { const b = e.target.closest('button'); if (!b) return; menu.style.display = 'none'; items[+b.dataset.i][1](); };
   menu.style.display = 'block'; const w = menu.offsetWidth, h = menu.offsetHeight; menu.style.left = Math.min(ev.clientX, innerWidth - w - 8) + 'px'; menu.style.top = Math.min(ev.clientY, innerHeight - h - 8) + 'px'; });
@@ -851,7 +874,7 @@ $('inkClear').onclick = () => { if (!INK.length) return; note('ink-clear', { cle
 let SESS = { id: null, events: [] }, saveT = null;
 const brief = (m) => m && { cross: m.cross, sharp: m.sharp, thru: m.thru, hidden: m.hidden, bends: m.bends, placed: m.placed };
 const setupNow = () => ({ graph: R.key, algo: R.algo, seed: R.seed, limit: R.limit, leftOut: STEPS.filter((x) => x[5] && !ctl(x[0]).run).map((x) => x[2]), atOnce: STEPS.filter((x) => !ctl(x[0]).show).map((x) => x[2]),
-  order: { placement: ORD.place.map((k) => meta(k)[2]), cleanup: ORD.clean.map((k) => meta(k)[2]) }, edited: !!R.base });
+  order: { placement: ORD.place.map((k) => meta(k)[2]), cleanup: ORD.clean.map((k) => meta(k)[2]) }, edited: !!R.base, experiment: xOn() ? { ...XT } : undefined });
 function ctxNow() { const m = meta(C.key); return { frame: C.fj + 1, of: R.frames.length, step: m[2], stage: m[1], t: +T.toFixed(2), total: +TL.total.toFixed(2), counts: brief(metricsAt(C.fj)),
   view: [view.x, view.y, view.w, view.h].map((v) => Math.round(v)), shown: C.P.map((p) => (p ? [Math.round(p.x * 10) / 10, Math.round(p.y * 10) / 10] : null)), setup: setupNow() }; }
 function newSession() { const d = new Date(), p = (x) => String(x).padStart(2, '0');
@@ -871,7 +894,8 @@ function showNote(ev) {
   if (ev.kind === 'note') h = at + (ev.ink ? `<span class="mk">About mark${ev.ink.length > 1 ? 's' : ''} ${ev.ink.map((i) => '✎' + i).join(', ')}${ev.inkAround.length ? ': ' + esc(ev.inkAround.slice(0, 8).join(', ')) + (ev.inkAround.length > 8 ? ' …' : '') : ''}</span>` : '') + esc(ev.text);
   else if (ev.kind === 'ink') h = at + `✎${ev.ink} ${ev.shape === 'loop' ? 'Circled' : 'Marked'} ${ev.around.length ? esc(ev.around.slice(0, 8).join(', ')) + (ev.around.length > 8 ? ` and ${ev.around.length - 8} more` : '') : 'empty space'}`;
   else if (ev.kind === 'edit') h = at + `Moved ${esc(ev.classes.join(', '))} by ${ev.dx}, ${ev.dy}; the steps after it ran again`;
-  else if (ev.kind === 'run') h = `Ran ${esc(graphName(ev.setup.graph))}${ev.setup.leftOut.length ? ' without ' + esc(ev.setup.leftOut.join(', ')) : ''}: work ${fmtMs(ev.result.work)}, crossings ${ev.result.cross}, through classes ${ev.result.thru}`;
+  else if (ev.kind === 'run') h = `Ran ${esc(graphName(ev.setup.graph))}${ev.setup.leftOut.length ? ' without ' + esc(ev.setup.leftOut.join(', ')) : ''}${ev.setup.experiment ? ' (time experiments on)' : ''}: work ${fmtMs(ev.result.work)}, crossings ${ev.result.cross}, through classes ${ev.result.thru}`;
+  else if (ev.kind === 'experiment') h = 'Time experiments: ' + (Object.keys(ev.tune).length ? esc(JSON.stringify(ev.tune)) : 'back to the shipped settings');
   else if (ev.kind === 'ink-clear') h = `Cleared ${ev.cleared.length} mark${ev.cleared.length > 1 ? 's' : ''}`;
   else return; // step toggles, order changes and discarded edits are recorded, not listed (the next run line shows the setup)
   const d = document.createElement('div'); d.className = 'ev ' + ev.kind; d.innerHTML = h; $('nlog').appendChild(d); $('nlog').scrollTop = 1e9;
@@ -904,12 +928,12 @@ $('chips').addEventListener('drop', (ev) => { const ch = ev.target.closest('.chi
 const REF = {};
 function showResult() {
   const F = R.frames, m = metricsAt(F.length - 1), work = F.reduce((a, f) => a + (f.ms || 0), 0), cfg = setupNow(), key = [R.key, R.algo, R.seed, R.limit].join('|');
-  const usual = !cfg.leftOut.length && ORD.place.join() === 'cross,thru,tight' && ORD.clean.join() === 'c-single,c-unit,c-spread,c-group' && !R.base;
+  const usual = !cfg.leftOut.length && ORD.place.join() === 'cross,thru,tight' && ORD.clean.join() === 'c-single,c-unit,c-spread,c-group' && !R.base && !xOn();
   const res = { work, cross: m.cross, thru: m.thru, sharp: m.sharp, hidden: m.hidden };
   if (usual) REF[key] = res; const ref = REF[key];
   const d = (a, b, f = (x) => x) => { const x = a - b; return Math.abs(x) < 1e-9 ? '' : ` <span class="${x > 0 ? 'up' : 'down'}">(${x > 0 ? '+' : '−'}${f(Math.abs(x))})</span>`; };
   $('result').innerHTML = `Result: work <b>${fmtMs(work)}</b>${ref && !usual ? d(work, ref.work, fmtMs) : ''} · crossings <b>${m.cross}</b>${ref && !usual ? d(m.cross, ref.cross) : ''} · through classes <b>${m.thru}</b>${ref && !usual ? d(m.thru, ref.thru) : ''} · sharp <b>${m.sharp}</b>${ref && !usual ? d(m.sharp, ref.sharp) : ''}`
-    + (usual ? ' <small>(every step, usual order)</small>' : ref ? ' <small>(in brackets: against every step in the usual order)</small>' : ' <small>(run once with every step to compare)</small>');
+    + (usual ? ' <small>(every step, shipped settings)</small>' : ref ? ' <small>(in brackets: against every step with the shipped settings)</small>' : ' <small>(run once with every step and the shipped settings to compare)</small>');
   $('result').title = 'Work is measured in this browser and varies by a few percent from run to run; the counts are those of the last frame.';
   return res;
 }

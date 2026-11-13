@@ -19,7 +19,7 @@
       // gives the same drawing on any computer. Returns the previous limit.
       function _ogSetTimeLimit(ms) { const prev = 1500 * _ogClk.scale; _ogClk.scale = Math.max(0.05, (+ms || 1500) / 1500); return prev; }
       function _ogNow() {
-        const v = _ogWorkMs(); if (!_ogClk.depth) return v;
+        const v = _ogWorkMs(); if (!_ogClk.depth || _OG_TUNE.noWall) return v; // noWall: experiments only, drawings independent of this computer's load
         const w = _ogClk.v0 + (performance.now() - _ogClk.w0) / (_OG_WALL_CAP * _ogClk.scale); return w > v ? w : v;
       }
       // Runs fn as one timed run (nested calls join the outer run); afterwards the clock never runs backwards.
@@ -510,10 +510,14 @@
         const n = items.length, o = opts || {}, sc = o.roomy ? 1.3 : 1, N = items.map((it) => ({ w: it.w + 16 * sc, h: it.h + 12 * sc }));
         const EE = edges.filter(([a, b]) => a !== b).map(([a, b]) => ({ s: a, t: b }));
         const t0 = _ogNow(), scores = {}; let best = null;
+        // experiments: _OG_TUNE.layoutScale shrinks the shared budget; fixedShare gives each variant total / count (time a variant
+        // leaves is not handed on); variants keeps only the named variants (the first one when none of them is in the list)
+        if (_OG_TUNE.layoutScale) total *= _OG_TUNE.layoutScale;
+        if (_OG_TUNE.variants) { const keep = list.filter((c) => _OG_TUNE.variants.includes(c.name)); list = keep.length ? keep : list.slice(0, 1); }
         list.forEach((cfg, k) => {
           const spent = _ogNow() - t0; if (k && spent > total) return;
           let r = null;
-          try { r = _ogStressLayout(items, edges, { ...cfg, budget: Math.max(150, (total - spent) / (list.length - k)) }, o); }
+          try { r = _ogStressLayout(items, edges, { ...cfg, budget: Math.max(150, _OG_TUNE.fixedShare ? total / list.length : (total - spent) / (list.length - k)) }, o); }
           catch (err) { if (typeof log === "function") log("debug", "Layout variant " + cfg.name + " failed: " + (err && err.message)); }
           if (!r) return;
           // the drawing that is scored is the one returned: separated so that no boxes touch

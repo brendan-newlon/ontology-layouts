@@ -17,7 +17,7 @@ function _ogWorkMs() { let s = 0; for (let i = 0; i < 7; i++) s += _ogWorkN[i] *
 // gives the same drawing on any computer. Returns the previous limit.
 function _ogSetTimeLimit(ms) { const prev = 1500 * _ogClk.scale; _ogClk.scale = Math.max(0.05, (+ms || 1500) / 1500); return prev; }
 function _ogNow() {
-  const v = _ogWorkMs(); if (!_ogClk.depth) return v;
+  const v = _ogWorkMs(); if (!_ogClk.depth || _OG_TUNE.noWall) return v; // noWall: experiments only, drawings independent of this computer's load
   const w = _ogClk.v0 + (performance.now() - _ogClk.w0) / (_OG_WALL_CAP * _ogClk.scale); return w > v ? w : v;
 }
 // Runs fn as one timed run (nested calls join the outer run); afterwards the clock never runs backwards.
