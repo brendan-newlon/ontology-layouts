@@ -410,7 +410,9 @@ svg.addEventListener('pointerdown', (ev) => {
   svg.setPointerCapture(ev.pointerId);
   if (PEN && ev.button === 0) { drag = { kind: 'ink', pts: [[+p.x.toFixed(1), +p.y.toFixed(1)]], c: [ev.clientX, ev.clientY] };
     if (SYNC.on && SYNC.follow) { SYNC.follow = false; showSync(); } return; } // the drawing holds still while you mark it
-  if (W) { drag = { kind: 'pan', c0: { x: ev.clientX, y: ev.clientY }, v0: { ...view }, moved: false }; return; } // the walk-through only pans and zooms
+  // during the walk-through, grabbing a class or a link keeps the drawing as this step shows it (as "Keep this" does, undoable)
+  // and goes on to move it; anywhere else a drag pans
+  if (W) { if (node || tgt.classList.contains('hit')) walkEnd(true); else { drag = { kind: 'pan', c0: { x: ev.clientX, y: ev.clientY }, v0: { ...view }, moved: false }; return; } }
   if (tgt.classList.contains('handle')) { drag = { kind: 'handle', k: +tgt.dataset.k, j: +tgt.dataset.j, before: measure(), snap: snapshot(), moved: false }; return; }
   if (node) {
     const v = +node.dataset.v, selBefore = [...G.sel].sort().join();

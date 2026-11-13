@@ -20,6 +20,8 @@
 //      share the same many neighbours.
 //  10. apart: classes with no link sitting inside the main graph move outside its area, with no new problem or overlap,
 //      and the main graph stays where it was.
+//  11. lab: in the Layout Lab, pressing on a class while the walk-through is open moves that class (it keeps the step shown
+//      and leaves the walk-through); pressing on empty space pans.
 // node tests/check_ontology_layout.mjs            -> "ontology layout clean" or the failures
 // node tests/check_ontology_layout.mjs --self-test -> runs each check on a deliberately broken copy and confirms it fails
 import fs from 'node:fs';
@@ -296,9 +298,27 @@ function checkExplore(L) {
     if (ov) bad.push(`the clean-up put ${ov} pairs of classes with the same neighbours on top of each other`); }
   return bad;
 }
-function runAll(code) {
+// the Lab's press handler, run with stand-ins for the page: what a press starts with the walk-through open
+const labPath = new URL('../tools/layout-bench/lab.html', import.meta.url), labSrc = fs.readFileSync(labPath, 'utf8').replace(/\r\n/g, '\n');
+function checkLab(lab) {
+  const a = lab.indexOf("svg.addEventListener('pointerdown', (ev) => {"), b = lab.indexOf('\n});', a);
+  if (a < 0 || b < 0) return ['the Lab press handler was not found'];
+  const body = lab.slice(a + "svg.addEventListener('pointerdown', ".length, b + 2), bad = [];
+  for (const where of ['class', 'empty']) {
+    let W = { i: 0 }, ended = false;
+    const el = (cls, v) => ({ dataset: { v, k: 0 }, classList: { contains: (c) => c === cls }, closest: (q) => (q === '.node' && cls === 'node' ? el('node', v) : null) });
+    const env = { svg: { setPointerCapture() {} }, PEN: false, SYNC: { on: false }, G: { sel: new Set(), P: [{ x: 0, y: 0 }] }, view: {}, pt: () => ({ x: 0, y: 0 }),
+      walkEnd: () => { ended = true; W = null; }, measure: () => ({}), snapshot: () => ({}), draw() {}, showSync() {} };
+    const run = new Function(...Object.keys(env), 'getW', `let drag = null; const h = ${body.replace(/\bW\b/g, 'getW()')}; return (ev) => { h(ev); return drag; };`)(...Object.values(env), () => W);
+    const drag = run({ target: where === 'class' ? el('node', '0') : el('', ''), clientX: 0, clientY: 0, pointerId: 1, button: 0, ctrlKey: false, metaKey: false, shiftKey: false });
+    if (where === 'class' && (!drag || drag.kind !== 'nodes' || !ended)) bad.push(`a press on a class during the walk-through starts ${drag ? drag.kind : 'nothing'}, not a class move`);
+    if (where === 'empty' && (!drag || drag.kind !== 'pan' || ended)) bad.push(`a press on empty space during the walk-through starts ${drag ? drag.kind : 'nothing'}${ended ? ' and ends the walk-through' : ''}, not a pan`);
+  }
+  return bad;
+}
+function runAll(code, lab = labSrc) {
   const out = { clock: checkClock(code) }, L = load(code);
-  out.grid = checkGrid(L); out.repeatable = checkRepeatable(L); out.tree = checkTree(L); out.routes = checkRoutes(L); out.moves = checkMoves(L); out.pull = checkPull(L); out.api = checkApi(L); out.keep = checkKeep(L); out.explore = checkExplore(L); out.apart = checkApart(L);
+  out.grid = checkGrid(L); out.repeatable = checkRepeatable(L); out.tree = checkTree(L); out.routes = checkRoutes(L); out.moves = checkMoves(L); out.pull = checkPull(L); out.api = checkApi(L); out.keep = checkKeep(L); out.explore = checkExplore(L); out.apart = checkApart(L); out.lab = checkLab(lab);
   return out;
 }
 
@@ -342,12 +362,13 @@ if (process.argv.includes('--self-test')) {
     ['explore', 'repeated straight links on one line', code.replace('const d = (i - (b.ks.length - 1) / 2) * sp, q =', 'const d = 0, q =')],
     ['explore', 'a burst placed on the arc without a free-spot test', code.replace('const ok = spots.every((p, i) => { const v = B[i]; if (!free(v, p)) return false; P[v] = p; return true; });', 'const ok = spots.every((p, i) => { P[B[i]] = p; return true; });').replace('const blocked = (R) => { const iv = [];', 'const blocked = (R) => { return []; const iv = [];').replace('if (one <= best.c) {', 'if (false) {')],
     ['explore', 'an overlap only costs 1000 in the clean-up', code.replace('tight: 1, ov: 1e6, area: 6', 'tight: 1, ov: 1000, area: 6')],
+    ['lab', 'the walk-through only pans, so classes cannot be moved', labSrc.replace(/  if \(W\) \{ if \(node[^\n]*/, "  if (W) { drag = { kind: 'pan', c0: { x: ev.clientX, y: ev.clientY }, v0: { ...view }, moved: false }; return; }")],
     ['keep', 'relation classes moved whatever it costs', code.replace('if (c1 <= c0 + 6) {', 'if (true) {')],
   ];
   let ok = true;
   for (const [check, what, broken] of fixtures) {
-    if (broken === code) { console.log('FIXTURE NOT APPLIED:', what); ok = false; continue; }
-    let res; try { res = runAll(broken)[check]; } catch (err) { res = ['threw: ' + err.message]; }
+    if (broken === code || broken === labSrc) { console.log('FIXTURE NOT APPLIED:', what); ok = false; continue; }
+    let res; try { res = check === 'lab' ? checkLab(broken) : runAll(broken)[check]; } catch (err) { res = ['threw: ' + err.message]; }
     console.log(res.length ? 'fires' : 'MISSED', '-', check, '-', what);
     if (!res.length) ok = false;
   }
