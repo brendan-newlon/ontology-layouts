@@ -1,7 +1,7 @@
 // Best Read with the clean-up, then the link routing, under experimental settings; straight and routed measures.
 // node ekgbench.mjs <set: dev|held|public|comma list> '<tuneJSON>' [names: 0|1] [seed]
 //   tune: merged into OURS.tune (_OG_TUNE): e.g. {"noTree":true}, {"cleanup":{"W":{"area":3}}}, {"cleanup":{"groupDepth":8}}
-//   {"timeLimit": 3000}: runs with that time limit (OURS.setTimeLimit) instead of 1500
+//   {"timeLimit": 3000}: runs with that time limit (OURS.setTimeLimit) instead of the default 750
 //   names 1: the layout gets each link's name width (edges[3]) and reserves room for it
 import { execSync } from 'node:child_process';
 const here = new URL('.', import.meta.url).pathname.replace(/^\/([A-Za-z]:)/, '$1');
@@ -10,8 +10,8 @@ const { MODELS, OURS: O } = await import('./_bundle.mjs');
 const { names } = await import('./routenames.mjs');
 const DEV = ['uni', 'hotel', 'org', 'brewery', 'trial', 'prov', 'telecom', 'sosa', 'crm', 'schema', 'health', 'fibo', 'pizza', 'bio', 'big'];
 const set = process.argv[2] || 'dev', tune = JSON.parse(process.argv[3] || '{}'), useNames = process.argv[4] === '1', seed = +(process.argv[5] || 1);
-const LIMIT = tune.timeLimit || 1500; if (tune.timeLimit) { O.setTimeLimit(tune.timeLimit); delete tune.timeLimit; }
-const routeLimit = +(process.env.EB_ROUTELIMIT || 0); // EB_ROUTELIMIT=<ms>: the link routing runs with this time limit instead // the time limit for the layouts, clean-up and routing together (ms of work)
+if (tune.timeLimit) { O.setTimeLimit(tune.timeLimit); delete tune.timeLimit; } // the time limit for the layouts and the clean-up (ms of work; the routing keeps at least its time at 1500)
+const routeLimit = +(process.env.EB_ROUTELIMIT || 0); // EB_ROUTELIMIT=<ms>: the link routing runs with this time limit instead
 Object.assign(O.tune, tune);
 const keys = set === 'dev' ? DEV : set === 'held' ? Object.keys(MODELS).filter((k) => k.startsWith('hx_') && !['hx_md1200'].includes(k)) : set === 'public' ? Object.keys(MODELS).filter((k) => k.startsWith('pb_') && k !== 'pb_cl') : set.split(',');
 const T = { s: {}, r: {}, ms: 0, msMax: 0, g: 0 }; const add = (a, m) => { for (const f in m) a[f] = (a[f] || 0) + m[f]; };
@@ -22,9 +22,9 @@ for (const key of keys) {
   const layEdges = useNames ? edges : edges.map((e) => e.slice(0, 3));
   const t0 = performance.now(), w0 = O.now(), r = O.auto(D, layEdges, { seed }); let P = r.pos.map((p) => ({ x: p.x, y: p.y })); O.sep(P, N, 6, 200);
   if (!process.env.EB_NOCLEAN) { P = O.cleanUp(P, D, layEdges, w0, r.algo === "tree").map((p) => ({ x: p.x, y: p.y })); O.sep(P, N, 6, 200); } // EB_NOCLEAN=1: no clean-up (bend instead of move, with {"skip":{"thru":true}})
-  if (routeLimit) O.setTimeLimit(routeLimit);
+  const prevLimit = routeLimit ? O.setTimeLimit(routeLimit) : 0;
   const rr = O.route(P, D, edges), routes = rr.routes, ms = performance.now() - t0;
-  if (routeLimit) O.setTimeLimit(LIMIT);
+  if (routeLimit) O.setTimeLimit(prevLimit);
   const s = O.routeMetrics(P, D, edges, edges.map(() => null)), ro = O.routeMetrics(rr.pos, D, edges, routes); // the routes belong to rr.pos (classes may move off links)
   add(T.s, s); add(T.r, ro); T.ms += ms; T.msMax = Math.max(T.msMax, ms); T.g++;
   if (process.env.EB_VERBOSE) console.log(key.padEnd(12), r.algo, 'straight', s.cross, s.thru, 'routed', ro.cross, ro.thru, ro.labelOver, Math.round(ms) + 'ms');

@@ -152,7 +152,7 @@ footer .grp { display: flex; gap: 4px; align-items: center; }
     <optgroup label="Open-source layouts"><option value="x:d3">d3-force</option><option value="x:cola">WebCola</option><option value="x:cose">Cytoscape cose</option><option value="x:fcose">Cytoscape fcose</option><option value="x:elk-stress">ELK stress</option><option value="x:elk-force">ELK force</option><option value="x:elk-layered">ELK layered</option><option value="x:neato">Graphviz neato</option><option value="x:fdp">Graphviz fdp</option><option value="x:sfdp">Graphviz sfdp</option><option value="x:dagre">dagre (layered)</option></optgroup>
   </select>
   <label class="tog" title="The layouts' random seed">Seed <input type="number" id="seed" value="1" min="1" max="999"></label>
-  <label class="tog" title="How long our layout, its clean-up and the link drawing may work in all (default 1.5 s). It is a limit on work done, measured against a reference laptop, so the same limit gives the same drawing on any computer. Stopping sooner or allowing longer shows what each step does with less or more time.">Time limit <input type="range" id="limit" min="200" max="6000" step="100" value="1500" style="width:110px"> <span id="limitV">1.5 s</span></label>
+  <label class="tog" title="How long our layout and its clean-up may work (default 0.75 s; the link drawing keeps at least its time at 1.5 s). It is a limit on work done, measured against a reference laptop, so the same limit gives the same drawing on any computer. Stopping sooner or allowing longer shows what each step does with less or more time.">Time limit <input type="range" id="limit" min="200" max="6000" step="50" value="750" style="width:110px"> <span id="limitV">0.75 s</span></label>
   <label class="tog" id="oursTog" title="Draw this layout's links with our link drawing (arcs, bends, ports, names), so both are compared on the same footing" hidden><input type="checkbox" id="ourLinks" checked> Our link drawing</label>
   <span id="status"></span>
   <span id="editBar"><span id="editTxt"></span><button id="editDrop" title="Go back to the layout's own run">Discard the edit</button></span>
@@ -974,12 +974,12 @@ function run(keepPlace) {
   }).catch((err) => { if (my === runSeq) $('status').textContent = 'Could not lay out: ' + err.message; console.error(err); }), 20);
 }
 $('graph').onchange = () => run(); $('algo').onchange = () => run(); $('seed').onchange = () => run(); $('ourLinks').onchange = () => run();
-const showLimit = () => ($('limitV').textContent = (+$('limit').value / 1000).toFixed(1) + ' s');
-$('limit').oninput = showLimit; $('limit').onchange = () => { store.set('limit', +$('limit').value); run(true); };
+const showLimit = () => ($('limitV').textContent = (+$('limit').value / 1000).toFixed(2).replace(/0$/, '') + ' s');
+$('limit').oninput = showLimit; $('limit').onchange = () => { store.set('limit2', +$('limit').value); run(true); };
 const q = new URLSearchParams(location.search), last = store.get('last', {});
 $('graph').value = q.get('graph') || last.key || 'crm'; if (!$('graph').value) $('graph').value = 'crm';
 $('algo').value = q.get('algo') || last.algo || 'auto'; if (!$('algo').value) $('algo').value = 'auto'; $('seed').value = q.get('seed') || last.seed || 1;
-$('speed').value = store.get('speed2', 0); showSpeed(); $('limit').value = store.get('limit', 1500); showLimit();
+$('speed').value = store.get('speed2', 0); showSpeed(); $('limit').value = store.get('limit2', 750); showLimit();
 ['follow', 'names', 'marks'].forEach((id) => ($(id).checked = store.get(id, true)));
 run();
 </script>

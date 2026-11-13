@@ -376,7 +376,7 @@ tr.mine td:first-child { box-shadow: inset 4px 0 0 var(--accent); }
 <p class="takeaway">The clean-up takes Best Read's links through classes from 124 to 39, removes 7% of its crossed links and makes the drawing about a fifth smaller, for about 0.25 s more at the median.</p>
 <div class="tbl"><table><thead><tr><th>Layout</th><th>Crossed links, total</th><th>Links through classes, total</th><th>Mean crossing angle</th><th>Mean angular resolution</th><th>Median area</th><th>Median time</th></tr></thead><tbody><tr class="ours"><td>Tidy Stress</td><td>599 → <b>604</b></td><td>299 → <b>130</b></td><td>72° → <b>74°</b></td><td>0.43 → <b>0.43</b></td><td>6.5 → <b>6.3</b></td><td>159 ms → <b>435 ms</b></td></tr><tr class="ours"><td>Mycelium</td><td>455 → <b>450</b></td><td>149 → <b>49</b></td><td>62° → <b>66°</b></td><td>0.43 → <b>0.44</b></td><td>11.5 → <b>8.7</b></td><td>78 ms → <b>372 ms</b></td></tr><tr class="ours"><td>Best Read</td><td>484 → <b>452</b></td><td>124 → <b>39</b></td><td>70° → <b>72°</b></td><td>0.45 → <b>0.44</b></td><td>8.0 → <b>6.3</b></td><td>233 ms → <b>481 ms</b></td></tr></tbody></table></div>
 <div class="prose">
-<p>Links through classes fall by two thirds (Best Read 124 → 39). Crossings fall a little (Best Read draws 7% fewer), crossing angles get slightly squarer, and the drawing gets smaller (Best Read's area 8.0 → 6.3 times its boxes, from pulling sprawling parts and groups in from the edge). The cost is time: Best Read's median rises from 0.2 to 0.5 s. The clean-up takes whatever is left of 1.5 s after the layout, at most half a second, and is skipped when less than 0.1 s is left. Above 100 classes the layout is given 0.6 s so that the clean-up keeps its half second: on large graphs that gives fewer problems than a longer layout. To fit in that time, the clean-up looks only at the links and classes near each move, through a grid of cells one link long, with the same results as checking every pair.</p>
+<p>Links through classes fall by two thirds (Best Read 124 → 39). Crossings fall a little (Best Read draws 7% fewer), crossing angles get slightly squarer, and the drawing gets smaller (Best Read's area 8.0 → 6.3 times its boxes, from pulling sprawling parts and groups in from the edge). The cost is time: Best Read's median rises from 0.2 to 0.5 s. The clean-up takes whatever is left of the time limit after the layout, at most a third of it, and is skipped when less than a fifteenth is left (these figures were measured at a 1.5 s limit, where that third is half a second; the default is 0.75 s since 12 November 2026). Above 100 classes the layout is given 40% of the limit so that the clean-up keeps its third: on large graphs that gives fewer problems than a longer layout. To fit in that time, the clean-up looks only at the links and classes near each move, through a grid of cells one link long, with the same results as checking every pair.</p>
 </div>
 
 <h3>Worked example: every step of the clean-up on two graphs</h3>
@@ -594,7 +594,7 @@ tr.mine td:first-child { box-shadow: inset 4px 0 0 var(--accent); }
 <li><strong>Names beside the line.</strong> A name can also sit just beside its link, on either side, where that covers less. Names on a class or another name 331 &rarr; 147, names with a link across them 1,330 &rarr; 882.</li>
 <li><strong>Bends stay inside the drawing.</strong> A bend that takes a link outside the box round the classes costs 1 per 20 px. Over 52 graphs, link length outside that box 2,817 &rarr; 1,056 px, for 15 more crossings (+0.8%), 3 fewer links through classes and 1.5% less area.</li>
 <li><strong>Classes moved off links.</strong> After the clean-up, three short passes (at most 120 ms of the work clock): two one-link classes of the same class trade places when that leaves fewer problems; a one-link class whose link still crosses or runs through something moves to the most open spot round its neighbor (fewest problems, then the most room, then the shorter link); a class that a link runs through, or passes within 9 px of, is pushed sideways off the line just far enough. After the routing, a class that a drawn curve still runs through is pushed off it the same way, the links are routed again, and the result is kept only if it has fewer problems. On straight links, links through classes 216 &rarr; 178.</li>
-<li><strong>Time limit.</strong> <code>_ogSetTimeLimit(ms)</code> sets the time the layouts, the clean-up and the routing may take, as a multiple of the default 1.5 s on the work clock (so still the same drawing on any computer).</li>
+<li><strong>Time limit.</strong> <code>_ogSetTimeLimit(ms)</code> sets the time the layouts, the clean-up and the routing may take, on the work clock (so still the same drawing on any computer). The default is 0.75 s since 12 November 2026; it was 1.5 s, and the tables in this write-up were measured at 1.5 s. The link routing keeps at least its time at 1.5 s, because it costs only about 25 ms and cutting it lost the most quality. Over the 51 test graphs, with two seeds each, 0.75 s made the drawings about 28% faster (mean 470 to 340 ms), and after routing they have 7% more crossed links and 14% fewer links through classes. 68 of the 102 drawings scored the same, 12 better and 22 worse, 6 of them by more than 15%, by a few crossings each.</li>
 </ul>
 <p class="takeaway">The four fixes cut names on a class or name by more than half and links through classes by a fifth, for about 25 ms more per graph.</p>
 <div class="tbl"><table>
@@ -665,11 +665,12 @@ tr.mine td:first-child { box-shadow: inset 4px 0 0 var(--accent); }
 <div class="tbl"><table>
 <thead><tr><th>Graph</th><th>Time limit</th><th>Time taken</th><th>Crossed links plus links through classes</th><th>Crossed links</th><th>Links through classes</th></tr></thead>
 <tbody>
-<tr class="mine"><td>Multi-domain, 1,204 classes</td><td>1.5 s (default)</td><td>1.6 s</td><td>6,176</td><td>3,935</td><td>2,241</td></tr>
+<tr class="mine"><td>Multi-domain, 1,204 classes</td><td>0.75 s (default)</td><td>1.4 s</td><td>6,324</td><td>4,072</td><td>2,252</td></tr>
+<tr><td></td><td>1.5 s (default until 12 Nov 2026)</td><td>1.6 s</td><td>6,176</td><td>3,935</td><td>2,241</td></tr>
 <tr><td></td><td>6 s</td><td>4.3 s</td><td>4,881</td><td>3,543</td><td>1,338</td></tr>
 <tr><td></td><td>24 s</td><td>18 s</td><td>4,509</td><td>3,400</td><td>1,109</td></tr>
 <tr><td></td><td>60 s</td><td>38 s</td><td class="best">4,314</td><td class="best">3,305</td><td class="best">1,009</td></tr>
-<tr class="split mine"><td>Cell Ontology, 3,335 classes</td><td>1.5 s (default)</td><td>9.8 s</td><td>102,600</td><td>75,124</td><td>27,476</td></tr>
+<tr class="split mine"><td>Cell Ontology, 3,335 classes</td><td>0.75 s or 1.5 s (same drawing)</td><td>9.8 s</td><td>102,600</td><td>75,124</td><td>27,476</td></tr>
 <tr><td></td><td>6 s</td><td>16 s</td><td>113,230</td><td>84,562</td><td>28,668</td></tr>
 <tr><td></td><td>24 s</td><td>22 s</td><td>106,199</td><td>79,259</td><td>26,940</td></tr>
 <tr><td></td><td>60 s</td><td>44 s</td><td class="best">92,316</td><td class="best">68,202</td><td class="best">24,114</td></tr>
@@ -706,7 +707,7 @@ tr.mine td:first-child { box-shadow: inset 4px 0 0 var(--accent); }
 </div>
 <h3>Tidy Stress</h3>
 <div class="prose">
-<p>Tidy Stress tries four settings of the shared steps within 1.5 seconds, scores each drawing, and keeps the most readable. The settings differ only in their options, not in the order of the steps:</p>
+<p>Tidy Stress tries four settings of the shared steps within the time limit (0.75 s by default), scores each drawing, and keeps the most readable. The settings differ only in their options, not in the order of the steps:</p>
 <ul>
 <li>random starts instead of the pivot-MDS start, keeping the start with the fewest crossings;</li>
 <li>the pivot-MDS start, then moving any single-link class to a better free spot if there is one;</li>
@@ -745,7 +746,7 @@ tr.mine td:first-child { box-shadow: inset 4px 0 0 var(--accent); }
 <li><strong>31 to 100 classes:</strong> runs Tidy Stress's settings for that size and Mycelium. For dense ontologies (more than two links per class) it runs only one Tidy Stress setting, so Mycelium has enough time.</li>
 <li><strong>Above 100 classes:</strong> runs Mycelium alone.</li>
 </ul>
-<p>Its budget is 1.5 s up to 30 classes, 2.2 s up to 100, and 1 s above.</p></div>
+<p>Its budget is the whole time limit up to 30 classes (0.75 s by default), 60% of it up to 100 classes and 40% above; the clean-up gets what is left.</p></div>
 
 <pre>for each link (u, v):
     len := L   (170 px; subclass links 0.9 L; Mycelium: L = 260 px from 100 classes)
@@ -757,7 +758,7 @@ place:  pivot-MDS start (+ random restarts while time allows) → stress majoriz
 tidy:   fewer crossings → off links → shorten and shrink → off links   (each step time-boxed)
 leaves: fan out round their neighbor → tidy once more → place again any that are crossed or touched
 clean:  rounds of single moves → leaf units → region spreading → group moves, then a last leaf pass
-        (within what is left of 1.5 s, at most 0.5 s)</pre>
+        (within what is left of the time limit, at most a third of it)</pre>
 
 <h2 id="prior">Prior work these layouts use</h2>
 <div class="prose">
@@ -912,12 +913,12 @@ console.log(d.groups);                                      // a group number pe
 // so the same model gets the same drawing on any computer:
 const t0 = OntologyLayouts.now();
 const { pos } = OntologyLayouts.bestRead(boxes, links, {});    // or .tidyStress(…) / .mycelium(…)
-const cleanPos = OntologyLayouts.cleanUp(pos, boxes, links, t0); // within what is left of 1.5 s since t0
+const cleanPos = OntologyLayouts.cleanUp(pos, boxes, links, t0); // within what is left of the time limit since t0
 const { routes, pos: finalPos } = OntologyLayouts.routeLinks(cleanPos, boxes, links);
 // finalPos, not cleanPos: the routing may push a class off a link it still runs through, and the routes belong to finalPos.
 const paths = OntologyLayouts.routePaths(finalPos, boxes, links, routes, { arrow: 8 });
 // options: bestRead(…, { roomy: true }) leaves 30% more space; routeLinks(…, { settle: false }) never moves a class;
-// OntologyLayouts.setTimeLimit(ms) sets the time for all three steps together (default 1500).
+// OntologyLayouts.setTimeLimit(ms) sets the time for the layout and the clean-up (default 750; the routing keeps at least its time at 1500).
 // After an edit: pass the earlier drawing's positions (null for each new class) to keep the reader's picture.
 const d2 = OntologyLayouts.draw(boxes2, links2, { keep: oldPos });               // old classes move a few percent
 const d3 = OntologyLayouts.draw(boxes2, links2, { keep: oldPos, exact: true });  // old classes do not move at all
@@ -945,16 +946,19 @@ function _ogClRng(seed) { let a = seed | 0; return function () { a = a + 0x6D2B7
 // slower the wait stays bounded and the drawing gets less work instead.
 const _ogWorkN = new Float64Array(7); // 0 link pairs tested, 1 link-box tests, 2 pair loops, 3 placement sums, 4 clean-up checks, 5 steps, 6 crossing-count visits
 const _OG_WORK_NS = [10, 30, 5, 5, 50, 600, 20], _OG_WALL_CAP = 2.5;
-// scale: the time limit as a multiple of the default (1.5 s for a layout and its clean-up). Every limit in the layouts is
-// on this clock, so a scale of 2 lets each step do twice the work before it stops (_ogSetTimeLimit).
-const _ogClk = { depth: 0, v0: 0, w0: 0, lag: 0, scale: 1 };
+// scale: the time limit as a multiple of 1.5 s, the limit the layouts' own time budgets are written for (their numbers, such
+// as the clean-up's 500 ms, are ms at 1.5 s). Every limit in the layouts is on this clock, so a scale of 2 lets each step do
+// twice the work before it stops (_ogSetTimeLimit). The default limit is 0.75 s (scale 0.5) since 2026-11-12.
+const _ogClk = { depth: 0, v0: 0, w0: 0, lag: 0, scale: 0.5 };
 function _ogWorkMs() { let s = 0; for (let i = 0; i &lt; 7; i++) s += _ogWorkN[i] * _OG_WORK_NS[i] / 1e6; return _ogClk.lag + s / _ogClk.scale; }
-// Time limit for the layouts, the clean-up and the link routing together, in ms of the reference laptop (default 1500).
-// Longer limits let the steps that stop on time (restarts, crossing swaps, the clean-up, bends) do more; the same limit
-// gives the same drawing on any computer. Returns the previous limit.
-function _ogSetTimeLimit(ms) { const prev = 1500 * _ogClk.scale; _ogClk.scale = Math.max(0.05, (+ms || 1500) / 1500); return prev; }
+// Time limit for the layouts and the clean-up, in ms of the reference laptop (default 750). The link routing never gets less
+// than its time at 1.5 s (_ogRouteLinks): it costs about 25 ms, and cutting it is what lost most quality at lower limits.
+// At 750 instead of 1500 (2026-11-12, 15 development, 10 held-out and the public graphs, two seeds): about 28% faster, after
+// routing about as many crossed links and links through classes. Longer limits let the steps that stop on time (restarts,
+// crossing swaps, the clean-up, bends) do more; the same limit gives the same drawing on any computer. Returns the previous limit.
+function _ogSetTimeLimit(ms) { const prev = 1500 * _ogClk.scale; _ogClk.scale = Math.max(0.05, (+ms || 750) / 1500); return prev; }
 function _ogNow() {
-  const v = _ogWorkMs(); if (!_ogClk.depth) return v;
+  const v = _ogWorkMs(); if (!_ogClk.depth || _OG_TUNE.noWall) return v; // noWall: experiments only, drawings independent of this computer's load
   const w = _ogClk.v0 + (performance.now() - _ogClk.w0) / (_OG_WALL_CAP * _ogClk.scale); return w &gt; v ? w : v;
 }
 // Runs fn as one timed run (nested calls join the outer run); afterwards the clock never runs backwards.
@@ -1445,10 +1449,14 @@ function _ogBestOf(items, edges, opts, list, total) {
   const n = items.length, o = opts || {}, sc = o.roomy ? 1.3 : 1, N = items.map((it) =&gt; ({ w: it.w + 16 * sc, h: it.h + 12 * sc }));
   const EE = edges.filter(([a, b]) =&gt; a !== b).map(([a, b]) =&gt; ({ s: a, t: b }));
   const t0 = _ogNow(), scores = {}; let best = null;
+  // experiments: _OG_TUNE.layoutScale shrinks the shared budget; fixedShare gives each variant total / count (time a variant
+  // leaves is not handed on); variants keeps only the named variants (the first one when none of them is in the list)
+  if (_OG_TUNE.layoutScale) total *= _OG_TUNE.layoutScale;
+  if (_OG_TUNE.variants) { const keep = list.filter((c) =&gt; _OG_TUNE.variants.includes(c.name)); list = keep.length ? keep : list.slice(0, 1); }
   list.forEach((cfg, k) =&gt; {
     const spent = _ogNow() - t0; if (k &amp;&amp; spent &gt; total) return;
     let r = null;
-    try { r = _ogStressLayout(items, edges, { ...cfg, budget: Math.max(150, (total - spent) / (list.length - k)) }, o); }
+    try { r = _ogStressLayout(items, edges, { ...cfg, budget: Math.max(150, _OG_TUNE.fixedShare ? total / list.length : (total - spent) / (list.length - k)) }, o); }
     catch (err) { if (typeof log === "function") log("debug", "Layout variant " + cfg.name + " failed: " + (err &amp;&amp; err.message)); }
     if (!r) return;
     // the drawing that is scored is the one returned: separated so that no boxes touch
@@ -2578,6 +2586,8 @@ function _ogPolyThru(pl, bb, P, N, v, pad) {
 // name over a class or name 8, link across a name 1.5). Only when the first routing used under half its time.
 // Returns { routes, stats, pos }: pos is the positions the routes belong to (the input itself when nothing moved).
 function _ogRouteLinks(pos, items, edges, opts) { const w0 = _ogWorkMs(); return _ogClocked(() =&gt; {
+  // the routing gets at least its time at a 1.5 s limit, whatever the layouts' limit (budgetMs is on the scaled clock)
+  const k = Math.max(1, _ogClk.scale) / _ogClk.scale; if (k !== 1) opts = { ...(opts || {}), budgetMs: ((opts &amp;&amp; opts.budgetMs) || _OG_ROUTE.budgetMs) * k };
   const o = { ..._OG_ROUTE, ...(opts || {}) }; let r = _ogRouteRun(pos, items, edges, opts); r.pos = pos;
   if (o.settle &amp;&amp; r.stats.ms &lt; o.budgetMs / 2) {
     const n = pos.length, m = edges.length, score = (q) =&gt; q.cross * 6 + q.thru * 10 + q.labelOver * 8 + q.labelCrossed * 1.5;
@@ -2893,7 +2903,7 @@ const OntologyLayouts = {
   routeMetrics: _ogRouteMetrics, // (pos, boxes, links, routes, pad = 9) -&gt; { cross, thru, sharp, labelOver, labelCrossed, bends, area, ... }
   metrics: _ogPlacementMetrics,  // (pos, boxes, links as [{s, t}]) -&gt; straight-line measures with a 3 px margin, as ranked
   score: _ogPlacementScore,      // (metrics) -&gt; number, lower is more readable
-  setTimeLimit: _ogSetTimeLimit, // (ms) -&gt; previous limit; default 1500, on the work clock
+  setTimeLimit: _ogSetTimeLimit, // (ms) -&gt; previous limit; default 750 (the routing keeps at least its time at 1500), on the work clock
   now: _ogNow                    // () -&gt; ms on the work clock
 };
 </code></pre>
