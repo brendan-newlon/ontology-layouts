@@ -885,7 +885,8 @@ function note(kind, detail) {
   SESS.events.push(ev); showNote(ev);
   const body = JSON.stringify({ id: SESS.id, graph: R.key, algo: R.algo, seed: R.seed, labels: R.labels, links: R.E.map((e) => [e.s, e.t, e.sub ? 1 : 0]), boxes: R.D.map((d) => d.w), events: SESS.events });
   try { localStorage.setItem('playback-notes:' + SESS.id, body); } catch (e) {}
-  clearTimeout(saveT); saveT = setTimeout(() => fetch('http://127.0.0.1:8613/' + SESS.id + '.json', { method: 'POST', body })
+  clearTimeout(saveT); if (!/^(localhost|127\.0\.0\.1|\[::1\])$/.test(location.hostname)) { $('saveInfo').textContent = 'kept in this browser only'; return; } // the receiver runs only on your own computer
+  saveT = setTimeout(() => fetch('http://127.0.0.1:8613/' + SESS.id + '.json', { method: 'POST', body })
     .then(() => ($('saveInfo').textContent = 'saved ' + new Date().toLocaleTimeString())).catch(() => ($('saveInfo').textContent = 'kept in this browser only')), 400);
 }
 function showNote(ev) {

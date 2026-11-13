@@ -1,0 +1,45 @@
+# Publishes the write-up, the Layout Playback and the Layout Lab to GitHub Pages on every push to main.
+# The pages need tools/layout-bench/base_layout.js, which is generated from src/ontology-layouts.js and not committed.
+name: Pages
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+concurrency:
+  group: pages
+  cancel-in-progress: true
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Generate the library copy the pages load
+        run: node tools/layout-bench/build_base.mjs
+      - name: Assemble the site
+        run: |
+          mkdir -p _site/docs _site/tools/layout-bench
+          cp pages/index.html _site/index.html
+          cp docs/*.html _site/docs/
+          cp tools/layout-bench/playback.html tools/layout-bench/lab.html _site/tools/layout-bench/
+          cp tools/layout-bench/base_layout.js tools/layout-bench/handtidy.js tools/layout-bench/engines3.js tools/layout-bench/models*.js _site/tools/layout-bench/
+          touch _site/.nojekyll
+      - uses: actions/configure-pages@v5
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: _site
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4
