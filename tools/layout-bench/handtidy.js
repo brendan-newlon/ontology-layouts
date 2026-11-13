@@ -8,16 +8,19 @@
 // slower the wait stays bounded and the drawing gets less work instead.
 const _ogWorkN = new Float64Array(7); // 0 link pairs tested, 1 link-box tests, 2 pair loops, 3 placement sums, 4 clean-up checks, 5 steps, 6 crossing-count visits
 const _OG_WORK_NS = [10, 30, 5, 5, 50, 600, 20], _OG_WALL_CAP = 2.5;
-// scale: the time limit as a multiple of the default (1.5 s for a layout and its clean-up). Every limit in the layouts is
-// on this clock, so a scale of 2 lets each step do twice the work before it stops (_ogSetTimeLimit).
-const _ogClk = { depth: 0, v0: 0, w0: 0, lag: 0, scale: 1 };
+// scale: the time limit as a multiple of 1.5 s, the limit the layouts' own time budgets are written for (their numbers, such
+// as the clean-up's 500 ms, are ms at 1.5 s). Every limit in the layouts is on this clock, so a scale of 2 lets each step do
+// twice the work before it stops (_ogSetTimeLimit). The default limit is 0.75 s (scale 0.5) since 2026-11-12.
+const _ogClk = { depth: 0, v0: 0, w0: 0, lag: 0, scale: 0.5 };
 function _ogWorkMs() { let s = 0; for (let i = 0; i < 7; i++) s += _ogWorkN[i] * _OG_WORK_NS[i] / 1e6; return _ogClk.lag + s / _ogClk.scale; }
-// Time limit for the layouts, the clean-up and the link routing together, in ms of the reference laptop (default 1500).
-// Longer limits let the steps that stop on time (restarts, crossing swaps, the clean-up, bends) do more; the same limit
-// gives the same drawing on any computer. Returns the previous limit.
-function _ogSetTimeLimit(ms) { const prev = 1500 * _ogClk.scale; _ogClk.scale = Math.max(0.05, (+ms || 1500) / 1500); return prev; }
+// Time limit for the layouts and the clean-up, in ms of the reference laptop (default 750). The link routing never gets less
+// than its time at 1.5 s (_ogRouteLinks): it costs about 25 ms, and cutting it is what lost most quality at lower limits.
+// At 750 instead of 1500 (2026-11-12, 15 development, 10 held-out and the public graphs, two seeds): about 28% faster, after
+// routing about as many crossed links and links through classes. Longer limits let the steps that stop on time (restarts,
+// crossing swaps, the clean-up, bends) do more; the same limit gives the same drawing on any computer. Returns the previous limit.
+function _ogSetTimeLimit(ms) { const prev = 1500 * _ogClk.scale; _ogClk.scale = Math.max(0.05, (+ms || 750) / 1500); return prev; }
 function _ogNow() {
-  const v = _ogWorkMs(); if (!_ogClk.depth) return v;
+  const v = _ogWorkMs(); if (!_ogClk.depth || _OG_TUNE.noWall) return v; // noWall: experiments only, drawings independent of this computer's load
   const w = _ogClk.v0 + (performance.now() - _ogClk.w0) / (_OG_WALL_CAP * _ogClk.scale); return w > v ? w : v;
 }
 // Runs fn as one timed run (nested calls join the outer run); afterwards the clock never runs backwards.

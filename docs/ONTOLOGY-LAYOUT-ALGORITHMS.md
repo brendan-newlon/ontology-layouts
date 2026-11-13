@@ -66,7 +66,7 @@ The tidy tree in the library (`_ogTreeLayout`, after Reingold–Tilford, levels 
   - region spreading: the regions where problems pile up are pushed outward in 8 slices, more toward open space, then repaired;
   - group moves with look-ahead, and a last leaf pass.
 
-  It uses what is left of 1.5 s, at most 0.5 s. Above 100 classes the layout gets 0.6 s, so the clean-up keeps its share. Effect on Best Read over the 15 graphs, with the finishing passes: links through classes 124 → 39, crossings 484 → 452, area 8.0 → 6.3 times the boxes, median time 0.2 → 0.5 s.
+  It uses what is left of the time limit, at most a third of it. Above 100 classes the layout gets 40% of the limit, so the clean-up keeps its share. (Measured at the former 1.5 s limit; the default is 0.75 s since 2026-11-12.) Effect on Best Read over the 15 graphs, with the finishing passes: links through classes 124 → 39, crossings 484 → 452, area 8.0 → 6.3 times the boxes, median time 0.2 → 0.5 s.
 - **Clean-up, finishing passes** (`_ogLeafSwap`, `_ogPullIn`). These came from a second round of teaching, in which he watched the first part in the Layout Playback and named what was still wrong:
   - one-link classes of the same class trade places;
   - "don't fence me in": a one-link class whose link still crosses or runs through something moves to the most open spot round its neighbor;
@@ -85,7 +85,7 @@ The tidy tree in the library (`_ogTreeLayout`, after Reingold–Tilford, levels 
   - link names go on or beside their link where they cover nothing.
 
   Over the 51 graphs: 15% fewer crossed links, two thirds fewer links through classes, no parallel link hidden, and 93% fewer names on top of classes or other names, for about 10 bends per graph. `straight: true` bends no link round a class; repeated and reciprocal links stay arcs and self-links loops, unless `arcs: false` also draws repeated links as parallel straight lines. Bending links instead of moving classes was retested with this routing and is no longer better: two to eleven times the links through classes left, about twice the bends, for about as many crossings.
-- **Time limits count work, not seconds.** `_ogSetTimeLimit(ms)` sets the limit for the layouts, the clean-up and the routing together (default 1500). A computer up to 2.5 times slower takes longer and draws the same picture.
+- **Time limits count work, not seconds.** `_ogSetTimeLimit(ms)` sets the limit for the layouts and the clean-up (default 750 since 2026-11-12, was 1500: about 28% faster, after routing 7% more crossed links and 14% fewer links through classes over the 51 test graphs; the routing keeps at least its time at 1500). A computer up to 2.5 times slower takes longer and draws the same picture.
 
 ## Limits
 - As graph-drawing theory nothing here is new: no new model and no bounds. The new parts are applied: the clean-up taught by demonstration, routing joined to placement, the work clock, and the evaluation on unseen graphs.

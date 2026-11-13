@@ -37,7 +37,7 @@ const cyPos = (c) => c.nodes().map((n) => ({ x: n.position().x, y: n.position().
 const runCy = (c, opt) => new Promise((res) => { const l = c.layout(opt); l.one('layoutstop', () => res()); l.run(); });
 const withCleanUp = (f) => async (it, ed, s, N) => { const t0 = O.now(), r = await f(it, ed, s), P = (r.pos || r).map((p) => ({ x: p.x, y: p.y })); O.sep(P, N, 6, 200); return O.cleanUp(P, it, ed, t0, r.algo === 'tree'); };
 const ALGOS = {
-  // ours as the library runs them: the layout, the same overlap removal, then the clean-up within the rest of a 1.5 s budget
+  // ours as the library runs them: the layout, the same overlap removal, then the clean-up within the rest of the time limit
   'Tidy Stress (ours)': withCleanUp(async (it, ed, s) => O.compact(it, ed, { seed: s }).pos),
   'Mycelium (ours)': withCleanUp(async (it, ed, s) => (O.grouped2(it, ed, { seed: s }) || O.compact(it, ed, { seed: s })).pos),
   'Best Read (ours)': withCleanUp(async (it, ed, s) => O.auto(it, ed, { seed: s })),

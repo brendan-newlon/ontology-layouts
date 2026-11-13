@@ -7,10 +7,10 @@
 <style>
 :root { --bg: #f4f3ee; --paper: #fff; --ink: #1d232b; --muted: #5d6673; --rule: #d9d6cc; --accent: #2f6b4f; --box: #eef3fb; --box-line: #6d86b0;
   --sub: #6f9a54; --rel: #8b97a8; --bad: #c43d32; --warn: #c98a12; --sel: #e0a100; --handle: #2b6cb0; --note: #fdf6e3;
-  --open: #3f9d5a; --crowd: #bcd3ff; --crowd-line: #2f5fb3; --unit: #b5e3dc; --unit-line: #1f8577; --mover: #ffe08a; --ghost: #7a8494; }
+  --open: #3f9d5a; --crowd: #bcd3ff; --crowd-line: #2f5fb3; --unit: #b5e3dc; --unit-line: #1f8577; --mover: #ffe08a; --ghost: #7a8494; --pen: #d1197a; }
 @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) { --bg: #15181c; --paper: #1c2026; --ink: #e6e8eb; --muted: #9aa4b1; --rule: #30353d; --accent: #7cc39e;
   --box: #233041; --box-line: #6f8db8; --sub: #8fbf6f; --rel: #6f7b8c; --bad: #ff6f61; --warn: #f0b44a; --sel: #ffcc33; --handle: #6fb1ff; --note: #2a261c;
-  --open: #5fc47c; --crowd: #2b4a80; --crowd-line: #8fb4ff; --unit: #1f5550; --unit-line: #6fd3c4; --mover: #6b5a1c; --ghost: #8a94a4; color-scheme: dark; } }
+  --open: #5fc47c; --crowd: #2b4a80; --crowd-line: #8fb4ff; --unit: #1f5550; --unit-line: #6fd3c4; --mover: #6b5a1c; --ghost: #8a94a4; --pen: #ff5cae; color-scheme: dark; } }
 * { box-sizing: border-box; }
 html, body { height: 100%; }
 body { margin: 0; background: var(--bg); color: var(--ink); font: 14px/1.45 "Segoe UI", system-ui, sans-serif; display: grid; grid-template-rows: auto 1fr; }
@@ -85,6 +85,12 @@ aside h2 { font-size: 13px; margin: 0; padding: 8px 12px; border-bottom: 1px sol
 .node { cursor: grab; }
 .xdot { stroke: none; }
 .handle { fill: var(--paper); stroke: var(--handle); stroke-width: 2; cursor: move; }
+.ink { fill: none; stroke: var(--pen); stroke-width: 3; stroke-linecap: round; stroke-linejoin: round; vector-effect: non-scaling-stroke; opacity: .85; pointer-events: none; }
+.ink.old { opacity: .45; }
+#svg.pen, #svg.pen * { cursor: crosshair !important; }
+#penBtn.on { background: var(--pen); border-color: var(--pen); color: #fff; }
+.ev.ink { border-left-color: var(--pen); }
+.ev.note .ink { display: block; font-size: 11px; color: var(--pen); margin-bottom: 2px; }
 .marquee { fill: color-mix(in srgb, var(--sel) 15%, transparent); stroke: var(--sel); stroke-dasharray: 4 3; }
 @media (max-width: 860px) { main { grid-template-columns: 1fr; grid-template-rows: 60vh auto; } aside { border-left: 0; border-top: 1px solid var(--rule); } }
 </style>
@@ -104,6 +110,8 @@ aside h2 { font-size: 13px; margin: 0; padding: 8px 12px; border-bottom: 1px sol
   <button id="routeBtn" title="Bend the links the way the link routing does after a layout: parallel links as arcs, links bent round classes in their way (the bends become handles you can edit)">Bend links</button>
   <a id="pbLink" href="playback.html" title="Watch the layout of this graph step by step">Playback ↗</a>
   <span id="syncBar" hidden><label class="tog" title="Show the playback's current frame as it plays. Moving anything here stops following and sends your drawing to the playback, which continues from it."><input type="checkbox" id="syncFollow" checked> Follow the playback</label><span id="syncTxt"></span></span>
+  <button id="penBtn" title="Draw over the drawing with the mouse (P). Circle a part and type a note: the note keeps your marks, what they enclose and the drawing as it was">✎ Pen</button>
+  <button id="inkClear" title="Remove your marks from the drawing (they stay in the session log)">Clear marks</button>
   <label class="tog"><input type="checkbox" id="marks" checked> Mark problems</label>
   <label class="tog"><input type="checkbox" id="handles" checked> Show bends</label>
   <div class="metrics" id="metrics"></div>
@@ -111,7 +119,7 @@ aside h2 { font-size: 13px; margin: 0; padding: 8px 12px; border-bottom: 1px sol
 <main>
   <div id="stage">
     <svg id="svg"></svg>
-    <div id="help">Drag a class to move it. Ctrl+click classes to select several, then drag one to move them together; Shift+drag on empty space selects an area. Drag on a link to pull a bend into it; drag a bend to reshape; double-click a bend to remove it, or a link to straighten it. Drag empty space to pan, wheel to zoom. Ctrl+Z undoes the last step and grays it out as a trial; "ignore" on any step leaves it out of the analysis. Coming back to a graph continues where you left it; "Lay out again" starts that graph over.</div>
+    <div id="help">Drag a class to move it. Ctrl+click classes to select several, then drag one to move them together; Shift+drag on empty space selects an area. Drag on a link to pull a bend into it; drag a bend to reshape; double-click a bend to remove it, or a link to straighten it. Drag empty space to pan, wheel to zoom. ✎ Pen (or P) draws on the drawing: circle something, then type a note about it. Ctrl+Z undoes the last step and grays it out as a trial; "ignore" on any step leaves it out of the analysis. Coming back to a graph continues where you left it; "Lay out again" starts that graph over.</div>
   </div>
   <aside>
     <h2>Steps and reasoning <span id="save">not saved yet</span></h2>
@@ -146,7 +154,8 @@ aside h2 { font-size: 13px; margin: 0; padding: 8px 12px; border-bottom: 1px sol
 // can be replayed and studied. Sessions are posted to the local receiver (tools/recv.py, port 8613) and kept in localStorage.
 const O = window.OURS; // $ (getElementById) comes from models.js
 const svg = $('svg');
-const G = { key: null, labels: [], D: [], E: [], P: [], H: [], sel: new Set(), pick: -1 };
+const G = { key: null, labels: [], D: [], E: [], P: [], H: [], sel: new Set(), pick: -1, ink: [] }; // ink: [{ id, pts: [[x, y]], around, noted }]
+let PEN = false;
 const S = { id: null, started: 0, events: [], undo: [] };
 let view = { x: 0, y: 0, w: 1000, h: 700 };
 
@@ -237,6 +246,8 @@ function draw() {
   if (showH) G.E.forEach((e, k) => handlePts(k).forEach((h, j) => (s += `<circle class="handle" data-k="${k}" data-j="${j}" cx="${h.x}" cy="${h.y}" r="5"/>`)));
   s += '</g>';
   if (WL) s += WL.over;
+  G.ink.forEach((k) => (s += `<path class="ink${k.noted ? ' old' : ''}" d="${inkD(k.pts)}"/>`));
+  if (drag && drag.kind === 'ink') s += `<path class="ink" d="${inkD(drag.pts)}"/>`;
   if (drag && drag.kind === 'marquee') { const r = drag.r; s += `<rect class="marquee" x="${Math.min(r.x0, r.x1)}" y="${Math.min(r.y0, r.y1)}" width="${Math.abs(r.x1 - r.x0)}" height="${Math.abs(r.y1 - r.y0)}"/>`; }
   svg.innerHTML = '<defs><marker id="ah" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0L10,5L0,10z" fill="var(--ink)"/></marker><marker id="ahr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0L10,5L0,10z" fill="var(--bad)"/></marker></defs>' + s;
   const base = S.base || M, cmp = (v, b, lowGood = true) => { const better = lowGood ? v < b : v > b, worse = lowGood ? v > b : v < b; return better ? 'down' : worse ? 'up' : ''; };
@@ -275,6 +286,8 @@ function describe(ev) {
     case 'walk-closed': return `<span class="d">Closed the walk-through at step ${ev.atStep}; your drawing is back as it was</span>`;
     case 'route': return `<span class="d">Bent the links as the link routing does: ${ev.bent} links bent, ${ev.parallel} parallel links spread</span>` + m;
     case 'playback': return `<span class="d">Opened from the playback at ${esc(ev.playback ? ev.playback.step : '')}, frame ${ev.playback ? ev.playback.frame + ' of ' + ev.playback.of : ''}</span>`;
+    case 'ink': return `<span class="d">✎${ev.ink} ${ev.shape === 'loop' ? 'Circled' : 'Marked'} ${ev.around.length ? esc(ev.around.slice(0, 8).join(', ')) + (ev.around.length > 8 ? ` and ${ev.around.length - 8} more` : '') : 'empty space'}${ev.crossings ? `, ${ev.crossings} crossing${ev.crossings === 1 ? '' : 's'} inside` : ''}</span>`;
+    case 'ink-clear': return `<span class="d">Cleared ${ev.cleared.length} mark${ev.cleared.length === 1 ? '' : 's'}</span>`;
     case 'resume': return `<span class="d">Came back to ${esc(ev.graph)}, continuing from where you left it</span>`;
     default: return esc(ev.kind);
   }
@@ -282,11 +295,12 @@ function describe(ev) {
 const QUIET = new Set(['view', 'toggle', 'walk-step']); // recorded, but not listed
 function showEvent(ev) {
   if (QUIET.has(ev.kind)) return;
-  const d = document.createElement('div'); d.className = 'ev' + (ev.kind === 'note' ? ' note' : '') + (ev.undone ? ' undone' : '') + (ev.ignored ? ' ignored' : ''); d.dataset.seq = ev.seq;
-  const ign = ev.kind === 'note' || ev.kind === 'resume' ? '' : `<button class="ign" data-seq="${ev.seq}" title="Mark this step as a test to leave out of the analysis">${ev.ignored ? 'keep' : 'ignore'}</button>`;
+  const d = document.createElement('div'); d.className = 'ev' + (ev.kind === 'note' ? ' note' : '') + (ev.kind === 'ink' ? ' ink' : '') + (ev.undone ? ' undone' : '') + (ev.ignored ? ' ignored' : ''); d.dataset.seq = ev.seq;
+  const ign = ev.kind === 'note' || ev.kind === 'resume' || ev.kind === 'ink' || ev.kind === 'ink-clear' ? '' : `<button class="ign" data-seq="${ev.seq}" title="Mark this step as a test to leave out of the analysis">${ev.ignored ? 'keep' : 'ignore'}</button>`;
+  const inkOn = ev.kind === 'note' && ev.ink ? `<span class="ink">About ${ev.ink.length === 1 ? 'mark' : 'marks'} ${ev.ink.map((i) => '✎' + i).join(', ')}${ev.inkAround && ev.inkAround.length ? ': ' + esc(ev.inkAround.slice(0, 8).join(', ')) + (ev.inkAround.length > 8 ? ' …' : '') : ''}</span>` : '';
   const on = ev.kind === 'note' && ev.walk ? `<span class="on">On walk-through step ${ev.walk.step} (${esc(ev.walk.where)})</span>` : '';
   const pb = ev.playback && ev.kind !== 'playback' ? `<span class="pb">During the playback's ${esc(ev.playback.step)}, frame ${ev.playback.frame} of ${ev.playback.of}</span>` : '';
-  d.innerHTML = ign + `<span class="t">${ev.seq} · ${(ev.ms / 1000).toFixed(0)} s</span>` + pb + (ev.kind === 'note' ? on + esc(ev.text) : describe(ev));
+  d.innerHTML = ign + `<span class="t">${ev.seq} · ${(ev.ms / 1000).toFixed(0)} s</span>` + pb + (ev.kind === 'note' ? inkOn + on + esc(ev.text) : describe(ev));
   $('log').appendChild(d); $('log').scrollTop = 1e9;
 }
 $('log').addEventListener('click', (e) => {
@@ -315,6 +329,9 @@ function resume(sess) {
   restore(last.state);
   const first = sess.events.find((e) => e.kind === 'layout' && e.after); S.base = first ? first.after : measure();
   $('log').innerHTML = ''; S.events.forEach(showEvent);
+  const cleared = new Set(S.events.filter((e) => e.kind === 'ink-clear').flatMap((e) => e.cleared)), notedBy = {};
+  S.events.forEach((e) => e.kind === 'note' && e.ink && e.ink.forEach((i) => (notedBy[i] = e.seq)));
+  G.ink = S.events.filter((e) => e.kind === 'ink' && !cleared.has(e.ink)).map((e) => ({ id: e.ink, pts: e.pts, around: e.around, noted: notedBy[e.ink] }));
   fit(); record('resume', { graph: G.key }, measure()); draw(); return true;
 }
 // One journal across all graphs: which graph was open when, and in which session file
@@ -327,7 +344,7 @@ function journal(action) {
 async function load(key, algo, logIt = true) {
   if (W) walkEnd(false);
   const Md = await MODELS[key].load();
-  G.key = key; G.labels = Md.labels; $('pbLink').href = 'playback.html?graph=' + key + '&algo=' + algo; G.D = Md.labels.map((l) => ({ w: String(l).length * 6.6 + 10, h: 20 }));
+  G.key = key; G.labels = Md.labels; G.ink = []; $('pbLink').href = 'playback.html?graph=' + key + '&algo=' + algo; G.D = Md.labels.map((l) => ({ w: String(l).length * 6.6 + 10, h: 20 }));
   const edges = Md.edges.filter((e) => e.s !== e.t).map((e) => [e.s, e.t, e.kind === 'sub' ? 2 : 1]);
   G.E = edges.map(([s, t, w]) => ({ s, t, sub: w === 2 }));
   G.P = freshLayout(algo);
@@ -361,6 +378,8 @@ function td(k, p) { const e = G.E[k], A = G.P[e.s], B = G.P[e.t], dx = B.x - A.x
 svg.addEventListener('pointerdown', (ev) => {
   const p = pt(ev), tgt = ev.target, node = tgt.closest('.node'), ctrl = ev.ctrlKey || ev.metaKey;
   svg.setPointerCapture(ev.pointerId);
+  if (PEN && ev.button === 0) { drag = { kind: 'ink', pts: [[+p.x.toFixed(1), +p.y.toFixed(1)]], c: [ev.clientX, ev.clientY] };
+    if (SYNC.on && SYNC.follow) { SYNC.follow = false; showSync(); } return; } // the drawing holds still while you mark it
   if (W) { drag = { kind: 'pan', c0: { x: ev.clientX, y: ev.clientY }, v0: { ...view }, moved: false }; return; } // the walk-through only pans and zooms
   if (tgt.classList.contains('handle')) { drag = { kind: 'handle', k: +tgt.dataset.k, j: +tgt.dataset.j, before: measure(), snap: snapshot(), moved: false }; return; }
   if (node) {
@@ -378,6 +397,7 @@ svg.addEventListener('pointerdown', (ev) => {
 });
 svg.addEventListener('pointermove', (ev) => {
   if (!drag) return; const p = pt(ev);
+  if (drag.kind === 'ink') { if (Math.hypot(ev.clientX - drag.c[0], ev.clientY - drag.c[1]) < 3) return; drag.c = [ev.clientX, ev.clientY]; drag.pts.push([+p.x.toFixed(1), +p.y.toFixed(1)]); draw(); return; }
   if (drag.kind === 'pan') { const r = svg.getBoundingClientRect(), s = view.w / r.width; view.x = drag.v0.x - (ev.clientX - drag.c0.x) * s; view.y = drag.v0.y - (ev.clientY - drag.c0.y) * s; drag.moved = true; svg.setAttribute('viewBox', `${view.x} ${view.y} ${view.w} ${view.h}`); return; }
   if (drag.kind === 'marquee') { drag.r.x1 = p.x; drag.r.y1 = p.y; draw(); return; }
   if (drag.kind === 'nodes') { const dx = p.x - drag.p0.x, dy = p.y - drag.p0.y; if (!drag.moved && Math.hypot(dx, dy) < 2) return; drag.moved = true; drag.group.forEach((i, j) => { G.P[i] = { x: drag.start[j].x + dx, y: drag.start[j].y + dy }; }); draw(); return; }
@@ -388,6 +408,7 @@ svg.addEventListener('pointermove', (ev) => {
 });
 svg.addEventListener('pointerup', () => {
   const d = drag; drag = null; if (!d) return;
+  if (d.kind === 'ink') { if (d.pts.length > 1) inkDone(d.pts); else draw(); return; }
   if (d.kind === 'pan') { lastPan = d.moved; if (!d.moved && G.sel.size) { G.sel.clear(); G.pick = -1; draw(); record('select', { classes: [] }); } else if (!d.moved) { G.pick = -1; draw(); } return; }
   if (d.kind === 'marquee') { const r = d.r, x1 = Math.min(r.x0, r.x1), x2 = Math.max(r.x0, r.x1), y1 = Math.min(r.y0, r.y1), y2 = Math.max(r.y0, r.y1);
     if (!d.add) G.sel.clear(); G.P.forEach((q, i) => { if (q.x >= x1 && q.x <= x2 && q.y >= y1 && q.y <= y2) G.sel.add(i); }); draw(); record('select', { classes: [...G.sel].map((i) => G.labels[i]), how: 'area' }); return; }
@@ -419,6 +440,8 @@ function undo() { if (W) return; const s = S.undo.pop(); if (!s) return; const b
 $('undo').onclick = undo;
 document.addEventListener('keydown', (ev) => {
   if (ev.target === $('note')) return;
+  if ((ev.key === 'p' || ev.key === 'P') && !ev.ctrlKey && !ev.metaKey && !ev.altKey && !(ev.target.closest && ev.target.closest('input, select, textarea'))) { setPen(!PEN); return; }
+  if (ev.key === 'Escape' && PEN) { setPen(false); return; }
   if (W) { if (ev.key === 'ArrowRight') { ev.preventDefault(); walkMove(W.i + 1, 'next'); } if (ev.key === 'ArrowLeft') { ev.preventDefault(); walkMove(W.i - 1, 'back'); } return; }
   if ((ev.ctrlKey || ev.metaKey) && ev.key.toLowerCase() === 'z') { ev.preventDefault(); undo(); }
   if (ev.key === 'Escape' && G.sel.size) { G.sel.clear(); G.pick = -1; draw(); record('select', { classes: [], how: 'escape' }); }
@@ -432,10 +455,34 @@ svg.addEventListener('wheel', noteView); svg.addEventListener('pointerup', () =>
 let lastPan = false;
 function sendNote() { const text = $('note').value.trim(); if (!text) return; $('note').value = '';
   const ev = { seq: S.events.length + 1, ms: Math.round(performance.now() - S.started), at: new Date().toISOString(), kind: 'note', text, selected: [...G.sel].map((i) => G.labels[i]), afterStep: S.events.length ? S.events[S.events.length - 1].seq : 0 };
+  const fresh = G.ink.filter((k) => !k.noted);
+  if (fresh.length) { ev.ink = fresh.map((k) => k.id); ev.inkAround = [...new Set(fresh.flatMap((k) => k.around))]; fresh.forEach((k) => (k.noted = ev.seq)); draw(); }
   if (W) { const f = W.frames[W.i]; ev.walk = { walk: W.seq, step: W.i + 1, where: frameWhere(f), about: $('wWhat').textContent }; }
   if (SYNC.on && SYNC.at) ev.playback = { ...SYNC.at };
   S.events.push(ev); showEvent(ev); persist(); }
 $('send').onclick = sendNote;
+// ---------- pen: marks drawn over the drawing, kept with what they enclose and the drawing as it was ----------
+const inkD = (pts) => pts.map((q, i) => (i ? 'L' : 'M') + q[0] + ',' + q[1]).join('');
+function inPoly(x, y, pts) { let c = false; for (let i = 0, j = pts.length - 1; i < pts.length; j = i++) { const [xi, yi] = pts[i], [xj, yj] = pts[j]; if ((yi > y) !== (yj > y) && x < ((xj - xi) * (y - yi)) / (yj - yi) + xi) c = !c; } return c; }
+function segDist(px, py, [ax, ay], [bx, by]) { const dx = bx - ax, dy = by - ay, L2 = dx * dx + dy * dy || 1, t = Math.max(0, Math.min(1, ((px - ax) * dx + (py - ay) * dy) / L2)); return Math.hypot(px - ax - t * dx, py - ay - t * dy); }
+function inkDone(pts) {
+  // a loop if it ends near where it started (within a quarter of its size): then what is inside counts, else what it passes close to
+  const xs = pts.map((q) => q[0]), ys = pts.map((q) => q[1]), size = Math.hypot(Math.max(...xs) - Math.min(...xs), Math.max(...ys) - Math.min(...ys));
+  const loop = pts.length > 4 && Math.hypot(pts[0][0] - pts[pts.length - 1][0], pts[0][1] - pts[pts.length - 1][1]) < Math.max(30, size * 0.25);
+  const near = (x, y) => pts.some((q, i) => i && segDist(x, y, pts[i - 1], q) < 30);
+  const hit = (x, y) => (loop ? inPoly(x, y, pts) : near(x, y));
+  const inside = G.P.map((p, i) => i).filter((i) => hit(G.P[i].x, G.P[i].y));
+  const links = G.E.map((e, k) => k).filter((k) => { const a = G.P[G.E[k].s], b = G.P[G.E[k].t]; return hit((a.x + b.x) / 2, (a.y + b.y) / 2); });
+  const xing = M.X.filter((c) => hit(c.x, c.y)), id = S.events.filter((e) => e.kind === 'ink').length + 1;
+  G.ink.push({ id, pts, around: inside.map((i) => G.labels[i]) });
+  record('ink', { ink: id, shape: loop ? 'loop' : 'line', pts, around: inside.map((i) => G.labels[i]), links: links.map(linkName), crossings: xing.length, sharp: xing.filter((c) => c.ang < 30).length,
+    through: links.filter((k) => M.thruL.has(k)).length, view: [view.x, view.y, view.w, view.h].map((v) => Math.round(v)), shown: snapshot(), measures: brief(M),
+    walk: W ? { walk: W.seq, step: W.i + 1, where: frameWhere(W.frames[W.i]) } : undefined });
+  draw();
+}
+function setPen(on) { PEN = on; svg.classList.toggle('pen', on); $('penBtn').classList.toggle('on', on); $('penBtn').textContent = on ? '✎ Pen on' : '✎ Pen'; record('toggle', { pen: on }); }
+$('penBtn').onclick = () => setPen(!PEN);
+$('inkClear').onclick = () => { if (!G.ink.length) return; const ids = G.ink.map((k) => k.id); G.ink = []; record('ink-clear', { cleared: ids }); draw(); };
 // Clean up: the hand-style post-layout steps (handtidy.js), as one undoable step
 $('tidyT').oninput = () => ($('tidyTv').textContent = $('tidyT').value + ' s');
 $('tidyLA').oninput = () => ($('tidyLAv').textContent = $('tidyLA').value);
@@ -507,7 +554,7 @@ function frameText(f) {
   if (!s) {
     const sk = st.skipped ? `, skipped ${st.skipped} (nothing near them had moved since they last failed)` : '';
     const what = { single: 'classes', unit: 'leaf units', spread: 'crowds', group: 'group moves', finish: 'leaf units and classes' }[st.phase];
-    return `<b>${STAGE[st.phase][0]}</b>. ${STAGE[st.phase][1]}<small>This stage took ${st.ms} ms (from ${(st.t / 1000).toFixed(2)} s): tried ${st.tried} ${what}, kept ${st.kept}${sk}.</small>`;
+    return `<b>${STAGE[st.phase][0]}</b>. ${STAGE[st.phase][1]}<small>This stage took ${Math.round(st.ms)} ms (from ${(st.t / 1000).toFixed(2)} s): tried ${st.tried} ${what}, kept ${st.kept}${sk}.</small>`;
   }
   const at = `<small>at ${(s.t / 1000).toFixed(2)} s</small>`;
   if (s.kind === 'move') return `<b>Moved ${esc(G.labels[s.nodes[0]])}</b> ${Math.hypot(s.to[0][0] - s.from[0][0], s.to[0][1] - s.from[0][1]) < 0.3 * medLen() ? 'a little (a nudge)' : 'into open space'}. ${f.delta || ''}${at}`;

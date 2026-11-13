@@ -10,16 +10,19 @@
       // slower the wait stays bounded and the drawing gets less work instead.
       const _ogWorkN = new Float64Array(7); // 0 link pairs tested, 1 link-box tests, 2 pair loops, 3 placement sums, 4 clean-up checks, 5 steps, 6 crossing-count visits
       const _OG_WORK_NS = [10, 30, 5, 5, 50, 600, 20], _OG_WALL_CAP = 2.5;
-      // scale: the time limit as a multiple of the default (1.5 s for a layout and its clean-up). Every limit in the layouts is
-      // on this clock, so a scale of 2 lets each step do twice the work before it stops (_ogSetTimeLimit).
-      const _ogClk = { depth: 0, v0: 0, w0: 0, lag: 0, scale: 1 };
+      // scale: the time limit as a multiple of 1.5 s, the limit the layouts' own time budgets are written for (their numbers, such
+      // as the clean-up's 500 ms, are ms at 1.5 s). Every limit in the layouts is on this clock, so a scale of 2 lets each step do
+      // twice the work before it stops (_ogSetTimeLimit). The default limit is 0.75 s (scale 0.5) since 2026-11-12.
+      const _ogClk = { depth: 0, v0: 0, w0: 0, lag: 0, scale: 0.5 };
       function _ogWorkMs() { let s = 0; for (let i = 0; i < 7; i++) s += _ogWorkN[i] * _OG_WORK_NS[i] / 1e6; return _ogClk.lag + s / _ogClk.scale; }
-      // Time limit for the layouts, the clean-up and the link routing together, in ms of the reference laptop (default 1500).
-      // Longer limits let the steps that stop on time (restarts, crossing swaps, the clean-up, bends) do more; the same limit
-      // gives the same drawing on any computer. Returns the previous limit.
-      function _ogSetTimeLimit(ms) { const prev = 1500 * _ogClk.scale; _ogClk.scale = Math.max(0.05, (+ms || 1500) / 1500); return prev; }
+      // Time limit for the layouts and the clean-up, in ms of the reference laptop (default 750). The link routing never gets less
+      // than its time at 1.5 s (_ogRouteLinks): it costs about 25 ms, and cutting it is what lost most quality at lower limits.
+      // At 750 instead of 1500 (2026-11-12, 15 development, 10 held-out and the public graphs, two seeds): about 28% faster, after
+      // routing about as many crossed links and links through classes. Longer limits let the steps that stop on time (restarts,
+      // crossing swaps, the clean-up, bends) do more; the same limit gives the same drawing on any computer. Returns the previous limit.
+      function _ogSetTimeLimit(ms) { const prev = 1500 * _ogClk.scale; _ogClk.scale = Math.max(0.05, (+ms || 750) / 1500); return prev; }
       function _ogNow() {
-        const v = _ogWorkMs(); if (!_ogClk.depth) return v;
+        const v = _ogWorkMs(); if (!_ogClk.depth || _OG_TUNE.noWall) return v; // noWall: experiments only, drawings independent of this computer's load
         const w = _ogClk.v0 + (performance.now() - _ogClk.w0) / (_OG_WALL_CAP * _ogClk.scale); return w > v ? w : v;
       }
       // Runs fn as one timed run (nested calls join the outer run); afterwards the clock never runs backwards.
@@ -510,10 +513,14 @@
         const n = items.length, o = opts || {}, sc = o.roomy ? 1.3 : 1, N = items.map((it) => ({ w: it.w + 16 * sc, h: it.h + 12 * sc }));
         const EE = edges.filter(([a, b]) => a !== b).map(([a, b]) => ({ s: a, t: b }));
         const t0 = _ogNow(), scores = {}; let best = null;
+        // experiments: _OG_TUNE.layoutScale shrinks the shared budget; fixedShare gives each variant total / count (time a variant
+        // leaves is not handed on); variants keeps only the named variants (the first one when none of them is in the list)
+        if (_OG_TUNE.layoutScale) total *= _OG_TUNE.layoutScale;
+        if (_OG_TUNE.variants) { const keep = list.filter((c) => _OG_TUNE.variants.includes(c.name)); list = keep.length ? keep : list.slice(0, 1); }
         list.forEach((cfg, k) => {
           const spent = _ogNow() - t0; if (k && spent > total) return;
           let r = null;
-          try { r = _ogStressLayout(items, edges, { ...cfg, budget: Math.max(150, (total - spent) / (list.length - k)) }, o); }
+          try { r = _ogStressLayout(items, edges, { ...cfg, budget: Math.max(150, _OG_TUNE.fixedShare ? total / list.length : (total - spent) / (list.length - k)) }, o); }
           catch (err) { if (typeof log === "function") log("debug", "Layout variant " + cfg.name + " failed: " + (err && err.message)); }
           if (!r) return;
           // the drawing that is scored is the one returned: separated so that no boxes touch
@@ -1643,6 +1650,8 @@
       // name over a class or name 8, link across a name 1.5). Only when the first routing used under half its time.
       // Returns { routes, stats, pos }: pos is the positions the routes belong to (the input itself when nothing moved).
       function _ogRouteLinks(pos, items, edges, opts) { const w0 = _ogWorkMs(); return _ogClocked(() => {
+        // the routing gets at least its time at a 1.5 s limit, whatever the layouts' limit (budgetMs is on the scaled clock)
+        const k = Math.max(1, _ogClk.scale) / _ogClk.scale; if (k !== 1) opts = { ...(opts || {}), budgetMs: ((opts && opts.budgetMs) || _OG_ROUTE.budgetMs) * k };
         const o = { ..._OG_ROUTE, ...(opts || {}) }; let r = _ogRouteRun(pos, items, edges, opts); r.pos = pos;
         if (o.settle && r.stats.ms < o.budgetMs / 2) {
           const n = pos.length, m = edges.length, score = (q) => q.cross * 6 + q.thru * 10 + q.labelOver * 8 + q.labelCrossed * 1.5;
@@ -1958,7 +1967,7 @@
         routeMetrics: _ogRouteMetrics, // (pos, boxes, links, routes, pad = 9) -> { cross, thru, sharp, labelOver, labelCrossed, bends, area, ... }
         metrics: _ogPlacementMetrics,  // (pos, boxes, links as [{s, t}]) -> straight-line measures with a 3 px margin, as ranked
         score: _ogPlacementScore,      // (metrics) -> number, lower is more readable
-        setTimeLimit: _ogSetTimeLimit, // (ms) -> previous limit; default 1500, on the work clock
+        setTimeLimit: _ogSetTimeLimit, // (ms) -> previous limit; default 750 (the routing keeps at least its time at 1500), on the work clock
         now: _ogNow                    // () -> ms on the work clock
       };
       // ── end of the layouts ──
