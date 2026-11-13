@@ -420,7 +420,10 @@
         const N = items.map((it) => ({ w: it.w + 16 * sc, h: it.h + 12 * sc }));
         const EE = edges.filter(([a, b]) => a !== b).map(([a, b, w, lab]) => ({ s: a, t: b, sub: w === 2, lab: lab || 0 }));
         if (!EE.length) return null;
-        const t0 = _ogNow(), budget = cfg.budget || 1500, left = () => Math.max(20, budget - (_ogNow() - t0));
+        // experiments: cfg.stressShare (from _OG_TUNE) is the share of the budget the starts and stress get (default 0.4);
+        // cfg.stressSave also takes the time saved off the budget, so later steps do not get it
+        const share = cfg.stressShare != null ? cfg.stressShare : 0.4, sBud = (cfg.budget || 1500) * share;
+        const t0 = _ogNow(), budget = (cfg.budget || 1500) * (cfg.stressSave ? 1 - 0.4 + share : 1), left = () => Math.max(20, budget - (_ogNow() - t0));
         const leafAll = _ogClLeaves(n, EE), leafOf = cfg.leaves ? leafAll : new Array(n).fill(-1);
         // room beside a one-link class: at least 40 px, more when its link carries text
         const gapOf = new Array(n).fill(40 * sc); EE.forEach((e) => { [e.s, e.t].forEach((v) => { if (leafAll[v] >= 0) gapOf[v] = Math.max(gapOf[v], e.lab + 16); }); });
@@ -452,10 +455,10 @@
         const restarts = cfg.restarts != null ? cfg.restarts : (m <= 30 ? 8 : m <= 80 ? 4 : 2), countX = EC.length <= 2500;
         let best = null;
         if (_ogTr) { _ogTr.begin(cfg.name, n, core, leafOf); _ogTr.map = core; }
-        for (let r = 0; r < Math.max(1, restarts) && (r === 0 || _ogNow() - t0 < budget * 0.4); r++) {
+        for (let r = 0; r < Math.max(1, restarts) && (r === 0 || _ogNow() - t0 < sBud); r++) {
           const PC = cfg.init === "pmds" && r === 0 && m > 2 ? _ogClPivotMDS(D, m, rnd) : NC.map(() => ({ x: (rnd() - 0.5) * 400, y: (rnd() - 0.5) * 400 }));
           if (_ogTr) { _ogTr.restart(r); _ogTr.snap(cfg.init === "pmds" && r === 0 && m > 2 ? "start" : "restart", PC); }
-          _ogClStress(PC, D, cfg.sweeps || 120, rnd, t0 + budget * 0.4); _ogClSeparate(PC, NC, 12, 120);
+          _ogClStress(PC, D, cfg.sweeps != null ? cfg.sweeps : 120, rnd, t0 + sBud); _ogClSeparate(PC, NC, 12, 120);
           if (_ogTr) _ogTr.snap("separate", PC);
           const x = countX ? _ogClCrossings(PC, EC) : 0; if (!best || x < best.x) best = { x, P: PC, r };
         }

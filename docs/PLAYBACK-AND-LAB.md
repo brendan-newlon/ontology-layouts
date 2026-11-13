@@ -12,10 +12,10 @@ This file is the technical contract. For the method (how a person's demonstratio
 
 ## What the pair does
 **Playback** runs the algorithm with a recorder attached and plays the recording back:
-- **Real time.** Each frame plays for the time its step took on this computer, times a speed (0.1× to 100×), so a fast step flashes and a slow one lingers.
-- **One step bar.** Each step's share of the playing time is shown on one bar. Drag a border to give a step more or less time; lock a step so it keeps its time.
+- **Proportional to the work.** Each frame plays for exactly the work that led to it, measured on this computer, so the progress bar is the run itself: half way along it is half the work done. The speed is a share of the real speed (0.1% to 100%; 100% plays the run as fast as it ran). There is no minimum time per frame: a step of 500 tiny frames that took 3 ms flashes past, as it should. The first run after the page loads is recorded once and thrown away first, so code the browser has not optimized yet does not inflate the times. A page in a hidden or background window runs several times slower, evenly across the steps, so the proportions hold but the times do not.
+- **One step bar.** Each step's share of the measured work, on one bar.
 - **Per-step controls.**
-  - **Show**: animate the step, or apply it at once.
+  - **Show**: animate the step, or hold the drawing during it (its time still passes on the bar, so the proportions stay true).
   - **Run**: rerun the whole algorithm without the step, to see what it is worth.
   - **Order**: drag steps that can run in another order into a new order, and the algorithm reruns.
 - **Hover a step** for what it does, its measured time, its frames, the elements it moved and the change in the measures.
