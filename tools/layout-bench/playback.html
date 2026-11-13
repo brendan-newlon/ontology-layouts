@@ -217,7 +217,7 @@ footer .grp { display: flex; gap: 4px; align-items: center; }
   </div>
   <span id="time"></span>
   <label class="tog" title="Playing speed as a share of the real speed. 100%: the layout plays as fast as it ran in this browser; 10%: ten times as long. Every frame plays for its share of the measured work, so the progress bar's proportions are the work's proportions.">Speed <input type="range" id="speed" min="-1" max="2" step="0.01" value="0.7" style="width:120px"> <span id="speedV">5%</span> <small>of real speed</small></label>
-  <label class="tog" title="Keep the whole drawing in view. The view holds still while classes move; when the drawing outgrows it or shrinks to under half of it, the view glides to fit it again."><input type="checkbox" id="follow" checked> Follow the drawing</label>
+  <label class="tog" title="Keep the whole drawing in view. The drawing stays centered; the view only zooms, gradually, when the drawing outgrows the space or shrinks to under half of it."><input type="checkbox" id="follow" checked> Follow the drawing</label>
   <label class="tog"><input type="checkbox" id="names" checked> Link names</label>
   <label class="tog"><input type="checkbox" id="marks" checked> Mark links through classes</label>
   <span id="result"></span>
@@ -547,47 +547,32 @@ function current() {
   return { j, u0, P, alpha, routes, moved, key: F[at].key, f: F[at], fj: at, dj: drawn, hid: at !== drawn };
 }
 function bounds(P) { let x1 = 1e18, y1 = 1e18, x2 = -1e18, y2 = -1e18; P.forEach((p, v) => { if (!p) return; const d = R.D[v]; x1 = Math.min(x1, p.x - d.w / 2); x2 = Math.max(x2, p.x + d.w / 2); y1 = Math.min(y1, p.y - d.h / 2); y2 = Math.max(y2, p.y + d.h / 2); }); return { x1, y1, x2, y2 }; }
-// The panels over the drawing (step, counts, legend) are obstacles: the camera fits the drawing into the clear rectangle
-// between them where it can be drawn largest (edges taken from the stage and the panels' sides, every combination tried).
-function clearRect() {
-  const st = $('stage').getBoundingClientRect(), W = st.width, H = st.height, m = 8;
-  const obs = [...document.querySelectorAll('#stage .pnl')].filter((el) => el.offsetParent && getComputedStyle(el).display !== 'none').map((el) => { const r = el.getBoundingClientRect(); return { x1: r.left - st.left - m, y1: r.top - st.top - m, x2: r.right - st.left + m, y2: r.bottom - st.top + m }; });
-  const xs1 = [0, ...obs.map((o) => o.x2)], xs2 = [W, ...obs.map((o) => o.x1)], ys1 = [0, ...obs.map((o) => o.y2)], ys2 = [H, ...obs.map((o) => o.y1)];
-  return { W, H, list: xs1.flatMap((x1) => xs2.flatMap((x2) => ys1.flatMap((y1) => ys2.map((y2) => ({ x1, y1, x2, y2 })))))
-    .filter((r) => r.x2 - r.x1 > 80 && r.y2 - r.y1 > 80 && r.x1 >= 0 && r.y1 >= 0 && r.x2 <= W && r.y2 <= H && !obs.some((o) => o.x1 < r.x2 && r.x1 < o.x2 && o.y1 < r.y2 && r.y1 < o.y2)) };
+// The camera keeps the drawing centered in the stage: the middle of the drawing's extent is always the middle of the stage,
+// so the extent never moves across the screen. The margins are the same on both sides and clear the panels (the counts
+// column at the right, the step line at the top, the legend line at the bottom). Only the zoom changes: out when the drawing
+// no longer fits, in when it fills less than half of the space, and then gradually (at most 4% per frame), with 8% to spare.
+let CR = null; // the stage and its margins, measured once until the window or the panels change
+function area() {
+  const st = $('stage').getBoundingClientRect(), W = Math.max(1, st.width), H = Math.max(1, st.height), m = 10; let ix = m, iy = m;
+  document.querySelectorAll('#stage .pnl').forEach((el) => { if (!el.offsetParent || getComputedStyle(el).display === 'none') return; const r = el.getBoundingClientRect();
+    if (el.id === 'counts') ix = Math.max(ix, st.right - r.left + m); else if (r.top - st.top < H / 2) iy = Math.max(iy, r.bottom - st.top + m); else iy = Math.max(iy, st.bottom - r.top + m); });
+  ix = Math.min(ix, W / 4); iy = Math.min(iy, H / 4); return { W, H, ix, iy };
 }
-let CR = null; // the clear rectangles between the panels, measured once until the window or the panels change
-// the view that shows the drawing (bounds b) as large as it fits in the clear area; best: that area, in screen pixels
-function viewFor(b) {
-  const { x1, y1, x2, y2 } = b; if (!(x1 <= x2)) return null; const pad = 30, dw = x2 - x1 + 2 * pad, dh = y2 - y1 + 2 * pad, cr = CR || (CR = clearRect());
-  const W = Math.max(1, cr.W), H = Math.max(1, cr.H); let best = { x1: 0, y1: 0, x2: W, y2: H }, bs = 0;
-  for (const r of cr.list) { const sc = Math.min((r.x2 - r.x1) / dw, (r.y2 - r.y1) / dh); if (sc > bs) { bs = sc; best = r; } }
-  // when the clear space is small (a narrow window), drawing under the panels beats drawing tiny
-  const full = Math.min(W / dw, H / dh); if (bs < 0.55 * full) { bs = full; best = { x1: 0, y1: 0, x2: W, y2: H }; }
-  const k = bs || Math.min(W / dw, H / dh), ox = best.x1 + ((best.x2 - best.x1) - dw * k) / 2, oy = best.y1 + ((best.y2 - best.y1) - dh * k) / 2;
-  return { x: x1 - pad - ox / k, y: y1 - pad - oy / k, w: W / k, h: H / k, best, W, H };
-}
-function fitView(P) { const t = viewFor(bounds(P)); if (t) { view = t; camTo = null; } }
-// The camera holds still while the classes move. It moves only when the drawing would leave the clear area between the
-// panels, or fills less than half of the view, and then glides to the new view (out as far as needed, re-centered) over
-// about half a second: it never jumps, also when you jump to another step.
-let camTo = null, camRaf = 0;
+let camK = null, camKto = null, camC = null, camRaf = 0; // zoom (screen px per drawing unit), its target, the drawing's middle
+function fitK(b) { const a = CR || (CR = area()), pad = 20; return Math.min((a.W - 2 * a.ix) / (b.x2 - b.x1 + 2 * pad), (a.H - 2 * a.iy) / (b.y2 - b.y1 + 2 * pad)); }
+function placeView() { const a = CR || (CR = area()), w = a.W / camK, h = a.H / camK; view = { x: camC.x - w / 2, y: camC.y - h / 2, w, h }; svg.setAttribute('viewBox', `${view.x} ${view.y} ${view.w} ${view.h}`); }
+function fitView(P) { const b = bounds(P); if (!(b.x1 <= b.x2)) return; camC = { x: (b.x1 + b.x2) / 2, y: (b.y1 + b.y2) / 2 }; camK = 0.92 * fitK(b); camKto = null; placeView(); }
 function steadyView(P) {
-  const b = bounds(P), t = viewFor(b); if (!t) return;
-  const sx = (x) => (x - view.x) * t.W / view.w, sy = (y) => (y - view.y) * t.H / view.h, e = 2;
-  const out = sx(b.x1) < t.best.x1 - e || sy(b.y1) < t.best.y1 - e || sx(b.x2) > t.best.x2 + e || sy(b.y2) > t.best.y2 + e;
-  if (out || t.w < 0.5 * view.w || camTo) { // refit with room to spare (15%), so that a little growth does not move it again
-    const g = 1.15, cx = t.x + t.w / 2, cy = t.y + t.h / 2; camTo = { x: cx - t.w * g / 2, y: cy - t.h * g / 2, w: t.w * g, h: t.h * g };
-    if (!camRaf) camRaf = requestAnimationFrame(camStep); }
+  const b = bounds(P); if (!(b.x1 <= b.x2)) return; camC = { x: (b.x1 + b.x2) / 2, y: (b.y1 + b.y2) / 2 };
+  const k = fitK(b); if (!camK) camK = 0.92 * k;
+  if (k < camK || k > 2 * camK) camKto = 0.92 * k; // too big for the space, or under half of it
+  if (camKto && !camRaf) camRaf = requestAnimationFrame(camStep);
+  placeView();
 }
-function camStep() { // eases toward the target, zooming at most 5% and panning at most 3% of the view per frame
-  camRaf = 0; if (!camTo || userView) { camTo = null; return; }
-  const t = camTo, f = t.w / view.w, cx = view.x + view.w / 2, cy = view.y + view.h / 2, tx = t.x + t.w / 2, ty = t.y + t.h / 2;
-  if (Math.abs(Math.log(f)) < 0.005 && Math.hypot(tx - cx, ty - cy) < 0.003 * view.w) { view = { x: t.x, y: t.y, w: t.w, h: t.h }; camTo = null; }
-  else { const k = Math.min(1.05, Math.max(1 / 1.05, Math.pow(f, 0.14))), w = view.w * k, h = view.h * k, lim = 0.03 * w;
-    const nx = cx + Math.max(-lim, Math.min(lim, (tx - cx) * 0.14)), ny = cy + Math.max(-lim, Math.min(lim, (ty - cy) * 0.14));
-    view = { x: nx - w / 2, y: ny - h / 2, w, h }; }
-  svg.setAttribute('viewBox', `${view.x} ${view.y} ${view.w} ${view.h}`); if (camTo) camRaf = requestAnimationFrame(camStep);
+function camStep() {
+  camRaf = 0; if (!camKto || userView) { camKto = null; return; }
+  const f = camKto / camK; if (Math.abs(Math.log(f)) < 0.004) { camK = camKto; camKto = null; } else camK *= Math.min(1.04, Math.max(1 / 1.04, Math.pow(f, 0.15)));
+  placeView(); if (camKto) camRaf = requestAnimationFrame(camStep);
 }
 // each panel: shrink to its title (–), or close into the drawer at the left edge (×); remembered per browser
 const PNL = store.get('panels', {});
