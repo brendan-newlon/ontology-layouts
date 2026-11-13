@@ -12,10 +12,10 @@ This file is the technical contract. For the method (how a person's demonstratio
 
 ## What the pair does
 **Playback** runs the algorithm with a recorder attached and plays the recording back:
-- **Real time.** Each frame plays for the time its step took on this computer, times a speed (0.1× to 100×), so a fast step flashes and a slow one lingers.
-- **One step bar.** Each step's share of the playing time is shown on one bar. Drag a border to give a step more or less time; lock a step so it keeps its time.
+- **Proportional to the work.** Each frame plays for exactly the work that led to it, measured on this computer, so the progress bar is the run itself: half way along it is half the work done. The speed is a share of the real speed (0.1% to 100%; 100% plays the run as fast as it ran). There is no minimum time per frame: a step of 500 tiny frames that took 3 ms flashes past, as it should. The first run after the page loads is recorded once and thrown away first, so code the browser has not optimized yet does not inflate the times. A page in a hidden or background window runs several times slower, evenly across the steps, so the proportions hold but the times do not.
+- **One step bar.** Each step's share of the measured work, on one bar.
 - **Per-step controls.**
-  - **Show**: animate the step, or apply it at once.
+  - **Show**: animate the step, or hold the drawing during it (its time still passes on the bar, so the proportions stay true).
   - **Run**: rerun the whole algorithm without the step, to see what it is worth.
   - **Order**: drag steps that can run in another order into a new order, and the algorithm reruns.
 - **Hover a step** for what it does, its measured time, its frames, the elements it moved and the change in the measures.
@@ -25,7 +25,9 @@ This file is the technical contract. For the method (how a person's demonstratio
 **Lab** is where the person works:
 - **Opens on the playback's current frame** and follows the playback until the person moves something.
 - **Edits flow back.** A manual edit comes back to the playback as its own step, and the steps after it rerun from there, so a person can fix one thing and watch the algorithm continue.
-- **Sessions are saved.** Moves, comments and the steps they belong to are recorded per session in localStorage and posted to a local receiver (`tools/recv.py`, which writes `_temp/<session>.json`).
+- **Sessions are saved.** Moves, comments and the steps they belong to are recorded per session in localStorage and posted to a local receiver (`tools/recv.py`, which writes `_temp/<session>.json`). On the public site, where there is no receiver, File, then Download this session saves the session as one JSON file.
+- **Your own graph.** File, then Open a Turtle file reads an ontology (`tools/layout-bench/ttl.js`: classes, subclass links, object properties from their domain to their range, someValuesFrom and allValuesFrom restrictions). The graph is kept in the browser, and the Playback lists it too. File also exports the drawing as SVG, PNG, JSON (positions, sizes, link paths) or GraphML.
+- **Node style.** Both pages draw classes as label boxes or as circles with the name underneath (`tools/layout-bench/graphs.js`). The layout gets the box that covers the circle and its name, centered on the circle.
 
 ## How it was used here: from demonstration to rules
 The clean-up after the layouts (`_ogHandTidy`) was taught this way:

@@ -75,8 +75,8 @@ aside { border-left: 1px solid var(--rule); background: var(--paper); display: g
 #svg.pen, #svg.pen * { cursor: crosshair !important; }
 #penBtn.on { background: var(--pen); border-color: var(--pen); color: #fff; }
 .node { cursor: grab; }
-.node.sel rect { stroke: var(--sel); stroke-width: 2.6; }
-.node.dragged rect { stroke: var(--pen); stroke-width: 2.4; }
+.node.sel .shape { stroke: var(--sel); stroke-width: 2.6; }
+.node.dragged .shape { stroke: var(--pen); stroke-width: 2.4; }
 #result { font-size: 12px; color: var(--muted); font-variant-numeric: tabular-nums; }
 #result b { color: var(--ink); } #result .up { color: var(--bad); } #result .down { color: var(--accent); }
 #chips { flex: 1 1 100%; display: flex; flex-wrap: wrap; gap: 4px 6px; font-size: 12px; }
@@ -104,18 +104,12 @@ tr.drop td { box-shadow: inset 0 2px 0 var(--accent); }
 td.name { cursor: pointer; }
 .grip { cursor: grab; color: var(--muted); margin-right: 3px; font-size: 11px; }
 .sw { width: 10px; height: 10px; border-radius: 3px; display: inline-block; margin-right: 5px; vertical-align: -1px; }
-button.lock { border: 0; padding: 0 3px; background: none; font-size: 12px; opacity: .3; }
-button.lock.on { opacity: 1; }
 #variants { font-size: 12.5px; }
 #variants div { padding: 2px 0; }
 #tbarWrap { display: grid; gap: 5px; }
 #tbar { position: relative; height: 30px; border: 1px solid var(--rule); border-radius: 6px; background: var(--bg); display: flex; user-select: none; touch-action: none; }
 #tbar .tseg { position: relative; height: 100%; min-width: 2px; overflow: hidden; font-size: 10.5px; color: #fff; display: flex; align-items: center; justify-content: center; white-space: nowrap; text-shadow: 0 0 2px rgba(0,0,0,.7); }
-#tbar .tseg.locked { background-image: repeating-linear-gradient(45deg, rgba(255,255,255,.25) 0 3px, transparent 3px 7px); }
 #tbar .tseg.cur { box-shadow: inset 0 0 0 2px var(--ink); }
-#tbar .hdl { position: absolute; top: -4px; bottom: -4px; width: 11px; margin-left: -5px; cursor: ew-resize; z-index: 2; }
-#tbar .hdl::after { content: ""; position: absolute; left: 5px; top: 0; bottom: 0; width: 1px; background: var(--ink); opacity: .5; }
-#tbar .hdl:hover::after { opacity: 1; width: 3px; left: 4px; }
 .row { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; font-size: 12.5px; color: var(--muted); }
 footer .grp { display: flex; gap: 4px; align-items: center; }
 #scrub { position: relative; flex: 1 1 100%; min-width: 200px; height: 34px; border-radius: 6px; overflow: hidden; background: var(--bg); border: 1px solid var(--rule); cursor: pointer; }
@@ -128,8 +122,9 @@ footer .grp { display: flex; gap: 4px; align-items: center; }
 .link { fill: none; stroke: var(--rel); stroke-width: 1.4; }
 .link.sub { stroke: var(--sub); stroke-width: 1.8; }
 .link.thru { stroke: var(--bad); stroke-width: 2.2; }
-.node rect { fill: var(--box); stroke: var(--box-line); stroke-width: 1; }
-.node.moved rect { stroke: var(--new); stroke-width: 2.2; }
+.node .shape { fill: var(--box); stroke: var(--box-line); stroke-width: 1; }
+.node.moved .shape { stroke: var(--new); stroke-width: 2.2; }
+.node rect.lbg { fill: var(--paper); opacity: .85; stroke: none; }
 .node text { font-size: 11px; fill: var(--ink); pointer-events: none; }
 .lname rect { fill: var(--name-bg); stroke: none; opacity: .9; }
 .lname text { font-size: 10px; fill: var(--name); }
@@ -142,6 +137,7 @@ footer .grp { display: flex; gap: 4px; align-items: center; }
 #tip .d { color: var(--muted); margin: 3px 0; } #tip .m { font-variant-numeric: tabular-nums; }
 @media (max-width: 900px) { main { grid-template-columns: 1fr; grid-template-rows: 60vh auto; } aside { border-left: 0; border-top: 1px solid var(--rule); } }
 </style>
+<script src="../../site-nav.js" data-page="playback" defer></script>
 </head>
 <body>
 <header>
@@ -151,6 +147,7 @@ footer .grp { display: flex; gap: 4px; align-items: center; }
     <optgroup label="Our layouts"><option value="auto">Best Read</option><option value="compact">Tidy Stress</option><option value="grouped">Mycelium</option></optgroup>
     <optgroup label="Open-source layouts"><option value="x:d3">d3-force</option><option value="x:cola">WebCola</option><option value="x:cose">Cytoscape cose</option><option value="x:fcose">Cytoscape fcose</option><option value="x:elk-stress">ELK stress</option><option value="x:elk-force">ELK force</option><option value="x:elk-layered">ELK layered</option><option value="x:neato">Graphviz neato</option><option value="x:fdp">Graphviz fdp</option><option value="x:sfdp">Graphviz sfdp</option><option value="x:dagre">dagre (layered)</option></optgroup>
   </select>
+  <label class="tog" title="How each class is drawn. The layout is given each class's own size: boxes sized by their names, or circles with the name underneath (as many graph browsers draw them). Open your own graph (Turtle) in the Lab: it then appears here too, under Your graphs.">Nodes <select id="nstyle"><option value="box">Boxes</option><option value="circle">Circles</option></select></label>
   <label class="tog" title="The layouts' random seed">Seed <input type="number" id="seed" value="1" min="1" max="999"></label>
   <label class="tog" title="How long our layout and its clean-up may work (default 1 s; the link drawing keeps at least its time at 1.5 s). It is a limit on work done, measured against a reference laptop, so the same limit gives the same drawing on any computer. Stopping sooner or allowing longer shows what each step does with less or more time.">Time limit <input type="range" id="limit" min="200" max="6000" step="50" value="1000" style="width:110px"> <span id="limitV">1 s</span></label>
   <label class="tog" id="oursTog" title="Draw this layout's links with our link drawing (arcs, bends, ports, names), so both are compared on the same footing" hidden><input type="checkbox" id="ourLinks" checked> Our link drawing</label>
@@ -180,18 +177,13 @@ footer .grp { display: flex; gap: 4px; align-items: center; }
   <aside>
    <div id="sideTop">
     <h2>Steps <small id="totalInfo"></small></h2>
-    <p class="hint">Times are measured in this browser. Hover a step for details, right-click it for more. <b>Show</b> unticked: the step happens at once. <b>Run</b> unticked: the layout is redone without it. Drag <span class="grip">⋮⋮</span> to run steps in another order.</p>
+    <p class="hint">Times are measured in this browser. Hover a step for details, right-click it for more. <b>Show</b> unticked: the drawing is not animated during the step (its time still passes). <b>Run</b> unticked: the layout is redone without it. Drag <span class="grip">⋮⋮</span> to run steps in another order.</p>
     <table id="steps"></table>
     <div class="row" id="ordRow" hidden>Steps run in another order than usual. <button id="oReset">Usual order</button></div>
     <div id="tbarWrap">
-      <h2>Playing time per step <small id="tbarInfo"></small></h2>
+      <h2>Share of the work per step <small id="tbarInfo"></small></h2>
       <div id="tbar"></div>
-      <div class="row">
-        <label class="tog" title="Dragging a border makes one step longer and its neighbor shorter; the whole stays as long"><input type="radio" name="tmode" value="shrink" checked> Shrink the neighbor</label>
-        <label class="tog" title="Dragging a border makes only the step on its left longer or shorter; the whole grows or shrinks"><input type="radio" name="tmode" value="stretch"> Stretch only</label>
-        <button id="tReset" title="Every step back to its measured time, no locks">Reset</button>
-      </div>
-      <p class="hint">Drag the border between two steps. A locked step (🔒) is never shrunk: the whole grows instead.</p>
+      <p class="hint">Each step as its share of the measured work. The bar under the drawing has the same proportions, in the order the steps ran: half way along it is half the work done.</p>
     </div>
     <div id="xBox">
       <h2>Time experiments <small>not the shipped settings</small></h2>
@@ -223,7 +215,7 @@ footer .grp { display: flex; gap: 4px; align-items: center; }
     <button id="bEnd" title="To the end (End)">⏭</button>
   </div>
   <span id="time"></span>
-  <label class="tog" title="Playing speed. At 1×, each millisecond the layout worked plays for 8 ms (each frame for at least 15 ms, so a quick move is still seen), so a quick graph plays quickly and a slow one slowly.">Speed <input type="range" id="speed" min="-1" max="2" step="0.01" value="0" style="width:120px"> <span id="speedV">1×</span></label>
+  <label class="tog" title="Playing speed as a share of the real speed. 100%: the layout plays as fast as it ran in this browser; 10%: ten times as long. Every frame plays for its share of the measured work, so the progress bar's proportions are the work's proportions.">Speed <input type="range" id="speed" min="-1" max="2" step="0.01" value="0.7" style="width:120px"> <span id="speedV">5%</span> <small>of real speed</small></label>
   <label class="tog"><input type="checkbox" id="follow" checked> Follow the drawing</label>
   <label class="tog"><input type="checkbox" id="names" checked> Link names</label>
   <label class="tog"><input type="checkbox" id="marks" checked> Mark links through classes</label>
@@ -240,12 +232,13 @@ footer .grp { display: flex; gap: 4px; align-items: center; }
 <script src="models4.js"></script>
 <script src="models5.js"></script>
 <script src="models6.js"></script>
+<script src="graphs.js"></script>
 <script>
 // Plays back a layout step by step: the library reports the positions after every step that moves classes (_ogTraced),
-// the clean-up records each step it keeps, and the link routing is replayed one step at a time. Each frame plays for as
-// long as its step took (measured in this browser) times the speed, so quick graphs play quickly and slow ones slowly.
+// the clean-up records each step it keeps, and the link routing is replayed one step at a time. Each frame plays for exactly
+// the work that led to it (measured in this browser) divided by the speed, so the timeline is proportional to the work:
+// half way along the bar is half the work done, at any speed.
 const O = window.OURS, svg = $('svg');
-const RATE = 8, MINF = 0.015; // s of playback per s of work at 1×; shortest transition, so a quick move is still seen
 const STEPS = [ // key, group, name, what it does, color, can it be left out (Run)
   ['start', 'Placement', 'Start (Pivot-MDS)', 'Classes start where a quick projection of the graph distances puts them (classes with one link wait aside). The projection starts larger than needed, so the next step unfolds the drawing rather than pressing it together: that is why classes then move inward.', '#5b8def', false],
   ['restart', 'Placement', 'Other starts', 'Small graphs also try random starts and keep the one that ends with the fewest crossings; the starts not kept are not shown, only the time they took.', '#7aa2f7', false],
@@ -277,8 +270,11 @@ const STEPS = [ // key, group, name, what it does, color, can it be left out (Ru
 ];
 const SI = Object.fromEntries(STEPS.map((s, i) => [s[0], i]));
 const store = { get(k, d) { try { const v = localStorage.getItem('playback:' + k); return v == null ? d : JSON.parse(v); } catch (e) { return d; } }, set(k, v) { try { localStorage.setItem('playback:' + k, JSON.stringify(v)); } catch (e) {} } };
-const CTL = store.get('ctl2', {}); // per step: { show, run, w (multiplier of its measured time), lock }
-const ctl = (k) => (CTL[k] = CTL[k] || { show: !k.startsWith('variant:'), run: true, w: 1, lock: false });
+const CTL = store.get('ctl2', {}); // per step: { show (animate it), run (the layout runs it) }
+const ctl = (k) => (CTL[k] = CTL[k] || { show: true, run: true });
+// The variants not kept used to be hidden by default, which left the drawing empty for their share of the time: show them
+// once for readers whose browser kept the old setting
+if (!store.get('variantsShown', false)) { Object.keys(CTL).forEach((k) => { if (k.startsWith('variant:')) CTL[k].show = true; }); store.set('variantsShown', true); store.set('ctl2', CTL); }
 const saveCtl = () => store.set('ctl2', CTL);
 // steps that can run in another order
 const ORD = { place: store.get('order:place', ['cross', 'thru', 'tight']), clean: store.get('order:clean', ['c-single', 'c-unit', 'c-spread', 'c-group']) };
@@ -294,6 +290,7 @@ const TOO_BIG = new Set(['huge', 'hx_md1200', 'pb_cl', 'sf400']);
 const groups = [['Development graphs', DEV.filter((k) => MODELS[k])], ['Other training graphs', Object.keys(MODELS).filter((k) => !DEV.includes(k) && !/^(hx_|pb_)/.test(k) && !TOO_BIG.has(k))],
   ['Unseen: held-out graphs', Object.keys(MODELS).filter((k) => k.startsWith('hx_') && !TOO_BIG.has(k))], ['Unseen: public ontologies and Rome graphs', Object.keys(MODELS).filter((k) => k.startsWith('pb_') && !TOO_BIG.has(k))]];
 const graphName = (k) => DEVN[k] || (MODELS[k].name || k).replace(/^Public: /, '');
+if (LayoutGraphs.imported().length) groups.unshift(['Your graphs (opened in the Lab)', LayoutGraphs.imported()]);
 groups.forEach(([label, keys]) => { const g = document.createElement('optgroup'); g.label = label; keys.forEach((k) => { const o = document.createElement('option'); o.value = k; o.textContent = graphName(k); g.appendChild(o); }); $('graph').appendChild(g); });
 
 // ---------- open-source layouts, loaded when first chosen (default settings, as in the benchmark) ----------
@@ -344,8 +341,9 @@ let R = null;
 const flat = (Q) => { const A = new Float64Array(2 * Q.length); Q.forEach((p, v) => { A[2 * v] = p.x; A[2 * v + 1] = p.y; }); return A; };
 const unflat = (A) => { const out = []; for (let v = 0; v < A.length / 2; v++) out.push(isNaN(A[2 * v]) ? null : { x: A[2 * v], y: A[2 * v + 1] }); return out; };
 function graphOf(key, Md) {
-  const labels = Md.labels, D = labels.map((l) => ({ w: String(l).length * 6.6 + 10, h: 20 })), n = D.length;
-  const seen = new Map(), E = Md.edges.map((e) => { const sub = e.kind === 'sub'; let name = ''; if (!sub) { const k = e.s + '>' + e.t, i = seen.get(k) || 0; seen.set(k, i + 1); name = VERBS[i % VERBS.length] + labels[e.t]; } return { s: e.s, t: e.t, sub, name }; });
+  const labels = Md.labels, D = LayoutGraphs.boxes(labels, LayoutGraphs.style()), n = D.length;
+  // link names: the graph's own (an imported ontology's property labels), else made up ("has" plus the target class)
+  const seen = new Map(), E = Md.edges.map((e) => { const sub = e.kind === 'sub'; let name = ''; if (!sub) { const k = e.s + '>' + e.t, i = seen.get(k) || 0; seen.set(k, i + 1); name = e.name || VERBS[i % VERBS.length] + labels[e.t]; } return { s: e.s, t: e.t, sub, name }; });
   const edges = E.filter((e) => e.s !== e.t).map((e) => [e.s, e.t, e.sub ? 2 : 1]);
   return { key, labels, D, n, E, edges, E2: edges.map(([s, t]) => ({ s, t })), items: D.map((d) => ({ w: d.w, h: d.h })), N: D.map((d) => ({ w: d.w + 16, h: d.h + 12 })) };
 }
@@ -454,6 +452,9 @@ $('xScale').onchange = () => setX('layoutScale', +$('xScale').value);
 $('xVars').addEventListener('change', () => { const on = XV.filter((v) => $('xVars').querySelector(`[data-xv="${v}"]`).checked); setX('variants', on.length === XV.length ? null : on); });
 $('xReset').onclick = () => { Object.keys(XT).forEach((k) => delete XT[k]); store.set('xtune', XT); showX(); note('experiment', { tune: {} }); run(true); };
 showX();
+// The first runs after the page loads run on code the browser has not optimized yet and take several times as long, which
+// would misstate what each step costs: before the first recording, the same run is recorded once and thrown away.
+let warmed = false;
 async function recordRun(key, algo, seed) {
   const Md = await MODELS[key].load(), G = graphOf(key, Md), engine = !!ENGINES[algo], limit = +$('limit').value;
   const prev = O.setTimeLimit(limit);
@@ -489,21 +490,22 @@ function editFrom(F, j, Pin, src) {
 $('editDrop').onclick = () => { if (!R || !R.base) return; note('edit-discarded', {}); R.frames = R.base.frames; R.info = R.base.info; const j = R.base.j; R.base = null; R.mcache = new Map(); $('editBar').classList.remove('on'); timeline(); buildPanel(); T = TL.at[j]; countsFor = -1; render(); };
 
 // ---------- the timeline ----------
-// each frame j > 0 is reached by a transition that plays for its measured time × RATE (at least MINF) × its step's time
-// multiplier; a step not shown takes no time
-let TL = null; // { at: [time of each frame], total }
-const baseDur = (f) => Math.max(MINF, (f.ms || 0) * RATE / 1000);
-const frameDur = (f) => { const c = ctl(f.key); return c.show ? baseDur(f) * c.w : 0; };
-function timeline() { const F = R.frames, at = [0]; for (let j = 1; j < F.length; j++) at.push(at[j - 1] + frameDur(F[j])); TL = { at, total: at[at.length - 1] || 0.001 }; }
+// The timeline is in seconds of measured work: frame j > 0 is reached by a transition as long as the work that led to it.
+// A step not shown keeps its time; the drawing holds the last frame shown until the step is over (disp: the frame drawn).
+let TL = null; // { at: [time of each frame, s of work], total, disp: [frame drawn at each frame] }
+const frameDur = (f) => Math.max(0, f.ms || 0) / 1000;
+function timeline() { const F = R.frames, at = [0], disp = [0];
+  for (let j = 1; j < F.length; j++) { at.push(at[j - 1] + frameDur(F[j])); disp.push(ctl(F[j].key).show ? j : disp[j - 1]); }
+  TL = { at, disp, total: at[at.length - 1] || 0.001 }; }
 const meta = (k) => k.startsWith('variant:') ? ['variant', 'Variants not kept', `Variant "${k.slice(8)}"`, 'Best Read (and Tidy Stress on small graphs) runs several variants and keeps the best-scoring drawing; this one was not kept.', '#b0b7c3', false] : STEPS[SI[k]] || [k, '', k, '', '#888', false];
 function frameAt(t) { const at = TL.at; let lo = 0, hi = at.length - 1; if (t >= at[hi]) return [hi, 0]; while (lo < hi - 1) { const m = (lo + hi) >> 1; if (at[m] <= t) lo = m; else hi = m; }
   while (lo < at.length - 1 && at[lo + 1] <= t) lo++; // several frames at the same time (a step shown at once): the last of them
   const span = at[lo + 1] - at[lo]; return [lo, span > 0 ? (t - at[lo]) / span : 1]; }
-// per step: frames, measured ms, playing time at 1× (base: before its multiplier), the runs of consecutive frames
+// per step: frames, measured ms, the runs of consecutive frames
 function stepStats() {
   const S = {}, F = R.frames;
-  for (let j = 1; j < F.length; j++) { const k = F[j].key, s = (S[k] = S[k] || { frames: 0, ms: 0, base: 0, dur: 0, runs: [] });
-    s.frames++; s.ms += F[j].ms || 0; s.base += baseDur(F[j]); s.dur += frameDur(F[j]);
+  for (let j = 1; j < F.length; j++) { const k = F[j].key, s = (S[k] = S[k] || { frames: 0, ms: 0, runs: [] });
+    s.frames++; s.ms += F[j].ms || 0;
     const r = s.runs[s.runs.length - 1]; if (r && r[1] === j - 1) r[1] = j; else s.runs.push([j, j]); }
   return S;
 }
@@ -524,8 +526,9 @@ function lerpRoute(a, b, u) {
   return { bends, ports, loop, label: rb.label, labelU: ra.label ? 1 : u };
 }
 function current() {
-  const [j, u0] = frameAt(T), F = R.frames, a = F[j], b = F[Math.min(F.length - 1, j + 1)], u = ease(u0), n = R.n, P = new Array(n), alpha = new Float64Array(n).fill(1);
-  const still = u0 === 0 || j === F.length - 1, aP = a.run !== b.run ? null : a.P; // from another run (a variant not kept): fade in where it is
+  const [j, u0] = frameAt(T), F = R.frames, jb = Math.min(F.length - 1, j + 1), dj = TL.disp[j], a = F[dj], b = F[jb], n = R.n, P = new Array(n), alpha = new Float64Array(n).fill(1);
+  const hid = !ctl(b.key).show, u = hid ? 0 : ease(u0); // a step not shown: the last frame shown stays until the step is over
+  const still = u0 === 0 || j === F.length - 1 || hid, aP = a.run !== b.run ? null : a.P; // from another run (a variant not kept): fade in where it is
   for (let v = 0; v < n; v++) {
     if (still) { const x = a.P[2 * v], y = a.P[2 * v + 1]; P[v] = isNaN(x) ? null : { x, y }; continue; }
     const ax = aP ? aP[2 * v] : NaN, ay = aP ? aP[2 * v + 1] : NaN, bx = b.P[2 * v], by = b.P[2 * v + 1];
@@ -539,8 +542,8 @@ function current() {
   const routes = still ? R.E.map((e, k) => (a.routes && a.routes[k] ? lerpRoute(a.routes[k], a.routes[k], 1) : null)) : R.E.map((e, k) => lerpRoute(a.routes && a.routes[k], b.routes && b.routes[k], u));
   const moved = new Set(!still && b.moved ? b.moved : []);
   if (!still && !b.moved && aP) for (let v = 0; v < n; v++) if (P[v] && !isNaN(aP[2 * v]) && !isNaN(b.P[2 * v]) && Math.hypot(aP[2 * v] - b.P[2 * v], aP[2 * v + 1] - b.P[2 * v + 1]) > 0.5) moved.add(v);
-  const shown = still ? a : b;
-  return { j, u0, P, alpha, routes, moved, key: shown.key, f: shown, fj: shown === a ? j : j + 1 };
+  const at = u0 === 0 || j === F.length - 1 ? j : jb, drawn = still ? dj : jb; // at: the frame the work is at; drawn: the frame on screen
+  return { j, u0, P, alpha, routes, moved, key: F[at].key, f: F[at], fj: at, dj: drawn, hid: at !== drawn };
 }
 function bounds(P) { let x1 = 1e18, y1 = 1e18, x2 = -1e18, y2 = -1e18; P.forEach((p, v) => { if (!p) return; const d = R.D[v]; x1 = Math.min(x1, p.x - d.w / 2); x2 = Math.max(x2, p.x + d.w / 2); y1 = Math.min(y1, p.y - d.h / 2); y2 = Math.max(y2, p.y + d.h / 2); }); return { x1, y1, x2, y2 }; }
 // The panels over the drawing (step, counts, legend) are obstacles: the camera fits the drawing into the clear rectangle
@@ -638,8 +641,8 @@ function render() {
   const thru = new Set(); const paused = !playing;
   if ($('marks').checked && (paused || R.n < 120)) {
     R.E.forEach((e, k) => { const A = C.P[e.s], B = C.P[e.t]; if (!A || !B || e.s === e.t) return; const pl = O.routePoly(A, B, C.routes[k], 6);
-      for (let v = 0; v < R.n && !thru.has(k); v++) { if (v === e.s || v === e.t || !C.P[v]) continue; const p = C.P[v], hw = R.D[v].w / 2 + 3, hh = R.D[v].h / 2 + 3;
-        for (let i = 0; i < pl.length - 1; i++) if (O.segBox(pl[i].x - p.x, pl[i].y - p.y, pl[i + 1].x - p.x, pl[i + 1].y - p.y, hw, hh)) { thru.add(k); break; } } });
+      for (let v = 0; v < R.n && !thru.has(k); v++) { if (v === e.s || v === e.t || !C.P[v]) continue; const p = C.P[v]; // the box, or the circle and its name
+        for (let i = 0; i < pl.length - 1; i++) if (LayoutGraphs.hits(R.D[v], pl[i].x - p.x, pl[i].y - p.y, pl[i + 1].x - p.x, pl[i + 1].y - p.y, 3, O.segBox)) { thru.add(k); break; } } });
   }
   let s = '<defs><marker id="ovArrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0,0L10,5L0,10z" fill="var(--ov-group)"/></marker></defs><g>' + overlays(C.P) + '</g><g>';
   R.E.forEach((e, k) => { const A = C.P[e.s], B = C.P[e.t]; if (!A || !B) return; const r = C.routes[k]; if (e.s === e.t && !(r && r.loop)) return;
@@ -649,14 +652,14 @@ function render() {
     s += `<g class="lname" opacity="${op.toFixed(2)}"><rect x="${L.x - L.w / 2}" y="${L.y - L.h / 2}" width="${L.w}" height="${L.h}" rx="3"/><text x="${L.x}" y="${L.y + 3.5}" text-anchor="middle">${esc(e.name)}</text></g>`; });
   s += '</g><g>';
   C.P.forEach((p, v) => { if (!p) return; const d = R.D[v];
-    s += `<g class="node${C.moved.has(v) ? ' moved' : ''}${SEL.has(v) ? ' sel' : ''}${ndrag && ndrag.moved && ndrag.group.includes(v) ? ' dragged' : ''}" data-v="${v}" transform="translate(${p.x.toFixed(1)},${p.y.toFixed(1)})"${C.alpha[v] < 1 ? ` opacity="${C.alpha[v].toFixed(2)}"` : ''}><rect x="${-d.w / 2}" y="${-d.h / 2}" width="${d.w}" height="${d.h}" rx="4"/><text text-anchor="middle" y="4">${esc(R.labels[v])}</text></g>`; });
+    s += `<g class="node${C.moved.has(v) ? ' moved' : ''}${SEL.has(v) ? ' sel' : ''}${ndrag && ndrag.moved && ndrag.group.includes(v) ? ' dragged' : ''}" data-v="${v}" transform="translate(${p.x.toFixed(1)},${p.y.toFixed(1)})"${C.alpha[v] < 1 ? ` opacity="${C.alpha[v].toFixed(2)}"` : ''}>${LayoutGraphs.nodeSvg(R.labels[v], d, esc)}</g>`; });
   s += '</g>';
   INK.forEach((k) => (s += `<path class="ink${k.noted ? ' old' : ''}" d="${inkD(k.pts)}"/>`));
   if (idrag) s += `<path class="ink" d="${inkD(idrag.pts)}"/>`;
   svg.innerHTML = s;
   const m = meta(C.key); $('cK').textContent = `${m[1]} · frame ${C.fj + 1} of ${R.frames.length}`; $('cT').textContent = m[2]; $('cD').textContent = m[3];
-  $('cX').textContent = C.fj > 0 ? `${C.f.note ? C.f.note + ' ' : ''}${C.key === 'edit' ? '' : `This frame: ${fmtMs(C.f.ms || 0)} of work.`}` : '';
-  $('time').textContent = `${T.toFixed(1)} / ${TL.total.toFixed(1)} s`;
+  $('cX').textContent = C.fj > 0 ? `${C.hid ? '(Not animated: the drawing shows where the last animated step left it.) ' : ''}${C.f.note ? C.f.note + ' ' : ''}${C.key === 'edit' ? '' : `This frame: ${fmtMs(C.f.ms || 0)} of work.`}` : '';
+  $('time').textContent = `${fmtMs(T * 1000)} of ${fmtMs(TL.total * 1000)} (${Math.round(100 * T / TL.total)}%)`;
   const hd = $('scrub').querySelector('.head'); if (hd) hd.style.left = (100 * T / TL.total) + '%';
   const fl = $('scrub').querySelector('.fill'); if (fl) fl.style.width = (100 * T / TL.total) + '%';
   $('scrub').querySelectorAll('.seg').forEach((el) => el.classList.toggle('cur', +el.dataset.j0 <= C.fj && C.fj <= +el.dataset.j1));
@@ -680,7 +683,7 @@ function metricsAt(j) {
 }
 let countsFor = -1, countsT = null;
 function showCounts() {
-  const j = C.fj; if (j === countsFor) return;
+  const j = C.dj; if (j === countsFor) return; // the counts of the drawing on screen
   clearTimeout(countsT); countsT = setTimeout(() => {
     countsFor = j; const f = R.frames[j], m = metricsAt(j);
     $('countsB').innerHTML = [['Crossings', m.cross], ['Sharp crossings', m.sharp], ['Through classes', m.thru], ['Hidden parallel links', m.hidden], ['Names on names or classes', f.routes ? m.labelOver : '–'], ['Bends', m.bends], ['Classes placed', m.placed + ' of ' + R.n]].map(([l, v]) => `<span>${l}</span><b>${v}</b>`).join('');
@@ -702,13 +705,12 @@ function buildPanel() {
   let h = '', g = null; const canOrder = (k) => ordOf(k) && !R.engine;
   orderedKeys(keys).forEach((k) => {
     const m = meta(k), c = ctl(k), st = SS[k];
-    if (m[1] !== g) { g = m[1]; h += `<tr class="group"><td colspan="6">${g}</td></tr>`; }
+    if (m[1] !== g) { g = m[1]; h += `<tr class="group"><td colspan="5">${g}</td></tr>`; }
     h += `<tr data-k="${k}" class="${c.show && st ? '' : 'off'}"${canOrder(k) ? ' draggable="true"' : ''}><td class="name">${canOrder(k) ? '<span class="grip">⋮⋮</span>' : ''}<span class="sw" style="background:${m[4]}"></span>${esc(m[2])}</td>`
       + `<td class="n">${st ? fmtMs(st.ms) : !c.run ? 'left out' : 'no move'}</td>`
       + `<td class="n">${st ? st.frames + ' fr' : ''}</td>`
       + `<td><label class="tog"><input type="checkbox" data-c="show" ${c.show ? 'checked' : ''}>Show</label></td>`
-      + `<td>${m[5] ? `<label class="tog"><input type="checkbox" data-c="run" ${c.run ? 'checked' : ''}>Run</label>` : ''}</td>`
-      + `<td><button class="lock${c.lock ? ' on' : ''}" data-c="lock">🔒</button></td></tr>`;
+      + `<td>${m[5] ? `<label class="tog"><input type="checkbox" data-c="run" ${c.run ? 'checked' : ''}>Run</label>` : ''}</td></tr>`;
   });
   $('steps').innerHTML = h;
   $('ordRow').hidden = R.engine || (ORD.place.join() === 'cross,thru,tight' && ORD.clean.join() === 'c-single,c-unit,c-spread,c-group');
@@ -724,36 +726,17 @@ function buildPanel() {
   buildChips(keys);
   buildBar();
 }
-// one bar: a segment per step shown, as long as its playing time; drag the border between two steps
-let barKeys = [];
+// one bar: a segment per step, as long as its share of the measured work
 function buildBar() {
-  barKeys = orderedKeys(Object.keys(SS).filter((k) => SS[k].dur > 0)); const tot = barKeys.reduce((s, k) => s + SS[k].dur, 0) || 1;
-  let h = '', x = 0; barKeys.forEach((k, i) => { const w = 100 * SS[k].dur / tot, m = meta(k);
-    h += `<div class="tseg${ctl(k).lock ? ' locked' : ''}" data-k="${k}" style="width:${w}%;background:${m[4]}">${w > 10 ? esc(m[2].split(' ')[0]) : ''}</div>`; x += w;
-    if (i < barKeys.length - 1) h += `<div class="hdl" data-i="${i}" style="left:${x}%"></div>`; });
-  $('tbar').innerHTML = h; $('tbarInfo').textContent = `${TL.total.toFixed(1)} s at 1×`;
+  const keys = orderedKeys(Object.keys(SS).filter((k) => SS[k].ms > 0)), tot = keys.reduce((s, k) => s + SS[k].ms, 0) || 1;
+  $('tbar').innerHTML = keys.map((k) => { const w = 100 * SS[k].ms / tot, m = meta(k); return `<div class="tseg" data-k="${k}" style="width:${w}%;background:${m[4]}">${w > 10 ? esc(m[2].split(' ')[0]) : ''}</div>`; }).join('');
+  $('tbarInfo').textContent = `${fmtMs(tot)} of work in all`;
 }
 const retime = () => { const u = TL.total ? T / TL.total : 0; timeline(); T = u * TL.total; buildPanel(); render(); };
-let bdrag = null;
-$('tbar').addEventListener('pointerdown', (ev) => { const hd = ev.target.closest('.hdl'); if (!hd || !R) return; ev.preventDefault(); pause();
-  const i = +hd.dataset.i, A = barKeys[i], B = barKeys[i + 1], r = $('tbar').getBoundingClientRect(), tot = barKeys.reduce((s, k) => s + SS[k].dur, 0);
-  bdrag = { A, B, x0: ev.clientX, sPerPx: tot / r.width, dA: SS[A].dur, dB: SS[B].dur, bA: SS[A].base, bB: SS[B].base, mode: document.querySelector('input[name=tmode]:checked').value }; $('tbar').setPointerCapture(ev.pointerId); });
-$('tbar').addEventListener('pointermove', (ev) => { if (!bdrag) return; const d = bdrag, min = 0.05; let dt = (ev.clientX - d.x0) * d.sPerPx;
-  const lockA = ctl(d.A).lock, lockB = ctl(d.B).lock, shrink = d.mode === 'shrink';
-  if (dt < 0 && lockA) dt = 0; // a locked step is never shrunk
-  dt = Math.max(dt, min - d.dA); if (shrink && !lockB && dt > 0) dt = Math.min(dt, d.dB - min);
-  ctl(d.A).w = (d.dA + dt) / d.bA; // the left step takes the change; in "shrink" mode its neighbor gives or takes it, unless locked (then the whole grows)
-  if (shrink && !(dt > 0 && lockB)) ctl(d.B).w = Math.max(min, d.dB - dt) / d.bB;
-  retime(); });
-$('tbar').addEventListener('pointerup', () => { if (bdrag) { bdrag = null; saveCtl(); } });
-$('tReset').onclick = () => { Object.keys(CTL).forEach((k) => { CTL[k].w = 1; CTL[k].lock = false; }); saveCtl(); if (R) retime(); };
-if (store.get('tmode', 'shrink') === 'stretch') document.querySelector('input[name=tmode][value=stretch]').checked = true;
-document.querySelectorAll('input[name=tmode]').forEach((el) => (el.onchange = () => store.set('tmode', el.value)));
 
 function setCtl(k, c, on) { ctl(k)[c] = on; saveCtl(); note('step', { step: meta(k)[2], key: k, [c]: on }); if (c === 'run') run(true); else retime(); }
 $('steps').addEventListener('change', (ev) => { const tr = ev.target.closest('tr'), c = ev.target.dataset.c; if (!tr || !c) return; setCtl(tr.dataset.k, c, ev.target.checked); });
-$('steps').addEventListener('click', (ev) => { const lb = ev.target.closest('button.lock'); if (lb) { const k = lb.closest('tr').dataset.k; ctl(k).lock = !ctl(k).lock; saveCtl(); buildPanel(); render(); return; }
-  const td = ev.target.closest('td.name'); if (!td || ev.target.classList.contains('grip')) return; jumpTo(td.parentElement.dataset.k); });
+$('steps').addEventListener('click', (ev) => { const td = ev.target.closest('td.name'); if (!td || ev.target.classList.contains('grip')) return; jumpTo(td.parentElement.dataset.k); });
 function jumpTo(k) { const j = R.frames.findIndex((f, i) => i && f.key === k); if (j > 0) { pause(); T = TL.at[j - 1]; userView = false; render(); } }
 // drag and drop: the order of the crossing / off-link / shortening steps, and of the clean-up stages
 let dragK = null;
@@ -777,25 +760,22 @@ function tipHtml(k) {
     h += `<div class="m">Work: <b>${fmtMs(st.ms)}</b> (measured in this browser) · ${st.frames} frame${st.frames > 1 ? 's' : ''} · ${moved.size} class${moved.size === 1 ? '' : 'es'} moved</div>`;
     if (!k.startsWith('variant:')) h += `<div class="m">Over this step: crossings ${sg(dc)}, links through classes ${sg(dt)}</div>`;
     const I = R.info && R.info[k]; if (I) h += `<div class="m">Tried ${I.tried}, kept ${I.kept}${I.skipped ? `, skipped ${I.skipped}` : ''}, over ${I.rounds} round${I.rounds > 1 ? 's' : ''}</div>`;
-    h += `<div class="m">Plays for ${st.dur.toFixed(2)} s at 1×${Math.abs(c.w - 1) > 0.01 ? ` (${c.w.toFixed(2)}× its measured time)` : ''}${c.show ? '' : ' (not shown: happens at once)'}${c.lock ? ' · locked' : ''}</div>`;
+    h += `<div class="m">${(100 * st.ms / (TL.total * 1000)).toFixed(1)}% of the whole run's work, so of the progress bar${c.show ? '' : ' (not animated: the drawing holds during it)'}</div>`;
   } else if (!c.run) h += '<div class="m">Left out of this run.</div>';
   if (o === 'place' && !R.engine) h += '<div class="d">Crossing swaps, off-link moves and shortening can run in another order: drag the rows. A last off-link pass always follows them.</div>';
   if (o === 'clean' && !R.engine) h += '<div class="d">The clean-up stages can run in another order: drag the rows. The final leaf pass always comes last.</div>';
   return h;
 }
 const tip = $('tip'); let tipK = null;
-document.addEventListener('mouseover', (ev) => { const el = ev.target.closest('#steps tr[data-k], #tbar .tseg, #scrub .seg'); if (!el || !R || bdrag || dragK) { tip.style.display = 'none'; tipK = null; return; }
+document.addEventListener('mouseover', (ev) => { const el = ev.target.closest('#steps tr[data-k], #tbar .tseg, #scrub .seg'); if (!el || !R || dragK) { tip.style.display = 'none'; tipK = null; return; }
   if (el.dataset.k !== tipK) { tipK = el.dataset.k; tip.innerHTML = tipHtml(tipK); } tip.style.display = 'block'; });
 document.addEventListener('mousemove', (ev) => { if (tip.style.display !== 'block') return; const w = tip.offsetWidth, h = tip.offsetHeight; let x = ev.clientX + 14, y = ev.clientY + 14;
   if (x + w > innerWidth - 8) x = ev.clientX - w - 14; if (y + h > innerHeight - 8) y = ev.clientY - h - 14; tip.style.left = Math.max(8, x) + 'px'; tip.style.top = Math.max(8, y) + 'px'; });
 const menu = $('menu');
 document.addEventListener('contextmenu', (ev) => { const el = ev.target.closest('#steps tr[data-k], #tbar .tseg, #scrub .seg'); if (!el || !R) return; ev.preventDefault(); tip.style.display = 'none';
   const k = el.dataset.k, m = meta(k), c = ctl(k), has = SS && SS[k];
-  const items = [[has ? 'Jump to this step' : null, () => jumpTo(k)], [c.show ? 'Happen at once (do not animate)' : 'Animate this step', () => { c.show = !c.show; saveCtl(); retime(); }],
-    [m[5] ? (c.run ? 'Run the layout without this step' : 'Run the layout with this step again') : null, () => { c.run = !c.run; saveCtl(); run(true); }],
-    [c.lock ? 'Unlock its playing time' : 'Lock its playing time', () => { c.lock = !c.lock; saveCtl(); retime(); }],
-    [has ? 'Play it twice as slowly (playback only)' : null, () => { c.w *= 2; saveCtl(); retime(); }], [has && !c.lock ? 'Play it twice as fast (playback only)' : null, () => { c.w /= 2; saveCtl(); retime(); }],
-    [Math.abs(c.w - 1) > 0.01 ? 'Play it at its measured time' : null, () => { c.w = 1; saveCtl(); retime(); }]].filter((x) => x[0]);
+  const items = [[has ? 'Jump to this step' : null, () => jumpTo(k)], [c.show ? 'Do not animate it (its time still passes)' : 'Animate this step', () => { c.show = !c.show; saveCtl(); retime(); }],
+    [m[5] ? (c.run ? 'Run the layout without this step' : 'Run the layout with this step again') : null, () => { c.run = !c.run; saveCtl(); run(true); }]].filter((x) => x[0]);
   menu.innerHTML = `<div class="h">${esc(m[2])}</div>` + items.map((x, i) => `<button data-i="${i}">${esc(x[0])}</button>`).join('');
   menu.onclick = (e) => { const b = e.target.closest('button'); if (!b) return; menu.style.display = 'none'; items[+b.dataset.i][1](); };
   menu.style.display = 'block'; const w = menu.offsetWidth, h = menu.offsetHeight; menu.style.left = Math.min(ev.clientX, innerWidth - w - 8) + 'px'; menu.style.top = Math.min(ev.clientY, innerHeight - h - 8) + 'px'; });
@@ -803,8 +783,9 @@ document.addEventListener('pointerdown', (ev) => { if (!ev.target.closest('#menu
 document.addEventListener('keydown', (ev) => { if (ev.key === 'Escape') menu.style.display = 'none'; });
 
 // ---------- transport ----------
-const speed = () => Math.pow(10, +$('speed').value);
-const showSpeed = () => { const s = speed(); $('speedV').textContent = (s >= 10 ? Math.round(s) : s >= 1 ? s.toFixed(1).replace(/\.0$/, '') : s.toFixed(2)) + '×'; };
+// the slider is log10 of the percentage: -1 = 0.1%, 2 = 100% (as fast as the layout ran)
+const pct = () => Math.pow(10, +$('speed').value), speed = () => pct() / 100;
+const showSpeed = () => { const p = pct(); $('speedV').textContent = (p >= 10 ? Math.round(p) : p >= 1 ? p.toFixed(1).replace(/\.0$/, '') : p.toFixed(2).replace(/0$/, '')) + '%'; };
 function tick(ts) { if (!playing) return; const dt = lastTs ? (ts - lastTs) / 1000 : 0; lastTs = ts; T = Math.min(TL.total, T + dt * speed()); if (T >= TL.total) playing = false; render(); if (playing) requestAnimationFrame(tick); }
 function play() { if (!R) return; if (T >= TL.total) T = 0; playing = true; lastTs = 0; userView = false; requestAnimationFrame(tick); render(); }
 function pause() { playing = false; if (R) render(); }
@@ -825,7 +806,7 @@ $('scrub').addEventListener('pointerup', () => (scrubbing = false));
 document.addEventListener('keydown', (ev) => { if (ev.target.tagName === 'INPUT' || ev.target.tagName === 'SELECT' || ev.target.tagName === 'TEXTAREA' || !R) return;
   const k = ev.key; if ((k === 'p' || k === 'P') && !ev.ctrlKey && !ev.metaKey && !ev.altKey) { setPen(!PEN); return; } if (k === 'Escape' && PEN) { setPen(false); return; } if (k === ' ') { ev.preventDefault(); playing ? pause() : play(); } else if (k === 'ArrowRight') frameStep(1); else if (k === 'ArrowLeft') frameStep(-1);
   else if (k === 'PageDown') { ev.preventDefault(); stepStep(1); } else if (k === 'PageUp') { ev.preventDefault(); stepStep(-1); } else if (k === 'Home') $('bStart').onclick(); else if (k === 'End') $('bEnd').onclick(); });
-$('speed').oninput = () => { showSpeed(); store.set('speed2', +$('speed').value); };
+$('speed').oninput = () => { showSpeed(); store.set('speed3', +$('speed').value); };
 ['follow', 'names', 'marks'].forEach((id) => ($(id).onchange = () => { store.set(id, $(id).checked); if (id === 'follow') userView = false; countsFor = -1; if (R) R.mcache = new Map(); render(); }));
 // pan and zoom by hand stop the camera from following until Play or Home
 let pan = null, ndrag = null, idrag = null, EDITP = null, SEL = new Set(), PEN = false, INK = [];
@@ -873,9 +854,9 @@ $('inkClear').onclick = () => { if (!INK.length) return; note('ink-clear', { cle
 // ---------- notes: one session per graph, layout and seed, saved by the local receiver (tools/recv.py) as _temp/pb_<graph>_<time>.json ----------
 let SESS = { id: null, events: [] }, saveT = null;
 const brief = (m) => m && { cross: m.cross, sharp: m.sharp, thru: m.thru, hidden: m.hidden, bends: m.bends, placed: m.placed };
-const setupNow = () => ({ graph: R.key, algo: R.algo, seed: R.seed, limit: R.limit, leftOut: STEPS.filter((x) => x[5] && !ctl(x[0]).run).map((x) => x[2]), atOnce: STEPS.filter((x) => !ctl(x[0]).show).map((x) => x[2]),
+const setupNow = () => ({ graph: R.key, algo: R.algo, seed: R.seed, limit: R.limit, nodes: LayoutGraphs.style(), leftOut: STEPS.filter((x) => x[5] && !ctl(x[0]).run).map((x) => x[2]), notAnimated: STEPS.filter((x) => !ctl(x[0]).show).map((x) => x[2]),
   order: { placement: ORD.place.map((k) => meta(k)[2]), cleanup: ORD.clean.map((k) => meta(k)[2]) }, edited: !!R.base, experiment: xOn() ? { ...XT } : undefined });
-function ctxNow() { const m = meta(C.key); return { frame: C.fj + 1, of: R.frames.length, step: m[2], stage: m[1], t: +T.toFixed(2), total: +TL.total.toFixed(2), counts: brief(metricsAt(C.fj)),
+function ctxNow() { const m = meta(C.key); return { frame: C.fj + 1, of: R.frames.length, step: m[2], stage: m[1], workMs: Math.round(T * 1000), totalMs: Math.round(TL.total * 1000), animated: !C.hid, counts: brief(metricsAt(C.dj)),
   view: [view.x, view.y, view.w, view.h].map((v) => Math.round(v)), shown: C.P.map((p) => (p ? [Math.round(p.x * 10) / 10, Math.round(p.y * 10) / 10] : null)), setup: setupNow() }; }
 function newSession() { const d = new Date(), p = (x) => String(x).padStart(2, '0');
   SESS = { id: `pb_${R.key}_${d.getFullYear()}${p(d.getMonth() + 1)}${p(d.getDate())}-${p(d.getHours())}${p(d.getMinutes())}${p(d.getSeconds())}`, key: R.key + '|' + R.algo + '|' + R.seed, events: [], t0: performance.now() };
@@ -890,7 +871,7 @@ function note(kind, detail) {
     .then(() => ($('saveInfo').textContent = 'saved ' + new Date().toLocaleTimeString())).catch(() => ($('saveInfo').textContent = 'kept in this browser only')), 400);
 }
 function showNote(ev) {
-  const at = ev.frame ? `<span class="at">${esc(ev.step)} · frame ${ev.frame} of ${ev.of} · ${ev.t} s of ${ev.total} s</span>` : '';
+  const at = ev.frame ? `<span class="at">${esc(ev.step)} · frame ${ev.frame} of ${ev.of} · ${ev.workMs != null ? `${fmtMs(ev.workMs)} of ${fmtMs(ev.totalMs)} of work` : `${ev.t} s of ${ev.total} s`}</span>` : '';
   let h = '';
   if (ev.kind === 'note') h = at + (ev.ink ? `<span class="mk">About mark${ev.ink.length > 1 ? 's' : ''} ${ev.ink.map((i) => '✎' + i).join(', ')}${ev.inkAround.length ? ': ' + esc(ev.inkAround.slice(0, 8).join(', ')) + (ev.inkAround.length > 8 ? ' …' : '') : ''}</span>` : '') + esc(ev.text);
   else if (ev.kind === 'ink') h = at + `✎${ev.ink} ${ev.shape === 'loop' ? 'Circled' : 'Marked'} ${ev.around.length ? esc(ev.around.slice(0, 8).join(', ')) + (ev.around.length > 8 ? ` and ${ev.around.length - 8} more` : '') : 'empty space'}`;
@@ -915,7 +896,7 @@ function buildChips(keys) {
     h += `<span class="chip${c.run ? '' : ' off'}${c.show ? '' : ' hid'}" data-k="${k}"${ordOf(k) && !R.engine ? ' draggable="true"' : ''}>`
       + (m[5] ? `<input type="checkbox" data-c="run" ${c.run ? 'checked' : ''} title="Run this step (untick: the layout is redone without it)">` : '')
       + `<span class="sw" style="background:${m[4]};margin:0"></span><span class="nm" title="Jump to this step">${esc(m[2])}</span> <small>${st ? fmtMs(st.ms) : c.run ? '–' : 'off'}</small>`
-      + `<button data-c="show" title="${c.show ? 'Animated: click to make it happen at once (the playback skips it)' : 'Happens at once: click to animate it'}">${c.show ? '👁' : '⤼'}</button></span>`; });
+      + `<button data-c="show" title="${c.show ? 'Animated: click to hold the drawing during it (its time still passes)' : 'Not animated (the drawing holds during it): click to animate it'}">${c.show ? '👁' : '⤼'}</button></span>`; });
   $('chips').innerHTML = h;
 }
 $('chips').addEventListener('change', (ev) => { const ch = ev.target.closest('.chip'); if (ch && ev.target.dataset.c === 'run') setCtl(ch.dataset.k, 'run', ev.target.checked); });
@@ -954,8 +935,9 @@ function framePayload() {
 let postT = 0, postLast = '';
 function postFrame() { if (!bc || !C) return; const now = performance.now(), sig = C.j + ':' + C.u0.toFixed(2); if (sig === postLast || (playing && now - postT < 90)) return; postT = now; postLast = sig; bc.postMessage(framePayload()); }
 if (bc) bc.onmessage = (ev) => { const m = ev.data || {}; if (m.type === 'edit') applyEdit(m); else if (m.type === 'hello' && R && C) { postLast = ''; postFrame(); } };
-$('labLink').addEventListener('click', () => { if (!R || !C) return; try { localStorage.setItem('layout-sync:frame', JSON.stringify(framePayload())); } catch (e) {}
-  $('labLink').href = `lab.html?graph=${R.key}&algo=${R.engine ? 'auto' : R.algo}&sync=1`; });
+$('labLink').addEventListener('click', (ev) => { if (!R || !C) return; try { localStorage.setItem('layout-sync:frame', JSON.stringify(framePayload())); } catch (e) {}
+  const q = `?graph=${R.key}&algo=${R.engine ? 'auto' : R.algo}&sync=1`; $('labLink').href = 'lab.html' + q;
+  if (window.SiteNav && SiteNav.inSite) { ev.preventDefault(); SiteNav.go('lab', q); } }); // in the one-page site: switch to its Lab
 
 // ---------- run ----------
 let runSeq = 0;
@@ -965,7 +947,8 @@ function run(keepPlace) {
   pause(); $('status').textContent = engine ? `Running ${ENGINES[algo].name}…` : 'Laying out…'; $('oursTog').hidden = !engine;
   history.replaceState(null, '', `?graph=${key}&algo=${algo}&seed=${seed}`); $('labLink').href = `lab.html?graph=${key}&sync=1`;
   store.set('last', { key, algo, seed }); $('editBar').classList.remove('on');
-  setTimeout(() => recordRun(key, algo, seed).then((r) => {
+  const warm = async () => { if (warmed || engine) return; warmed = true; $('status').textContent = 'Warming up…'; await recordRun(key, algo, seed); };
+  setTimeout(() => warm().then(() => recordRun(key, algo, seed)).then((r) => {
     if (my !== runSeq) return; R = r; R.base = null; timeline(); buildPanel(); T = 0; countsFor = -1; userView = false;
     if (SESS.key !== R.key + '|' + R.algo + '|' + R.seed) newSession();
     fitView(unflat(R.frames[R.frames.length - 1].P), true);
@@ -974,13 +957,14 @@ function run(keepPlace) {
     if (keepU != null) { T = keepU * TL.total; render(); } else play(); // a toggle keeps the place and stays paused, so the change is seen at the same moment
   }).catch((err) => { if (my === runSeq) $('status').textContent = 'Could not lay out: ' + err.message; console.error(err); }), 20);
 }
+$('nstyle').value = LayoutGraphs.style(); $('nstyle').onchange = () => { LayoutGraphs.setStyle($('nstyle').value); note('step', { nodes: $('nstyle').value }); run(); };
 $('graph').onchange = () => run(); $('algo').onchange = () => run(); $('seed').onchange = () => run(); $('ourLinks').onchange = () => run();
 const showLimit = () => ($('limitV').textContent = (+$('limit').value / 1000).toFixed(2).replace(/0$/, '') + ' s');
 $('limit').oninput = showLimit; $('limit').onchange = () => { store.set('limit2', +$('limit').value); run(true); };
 const q = new URLSearchParams(location.search), last = store.get('last', {});
 $('graph').value = q.get('graph') || last.key || 'crm'; if (!$('graph').value) $('graph').value = 'crm';
 $('algo').value = q.get('algo') || last.algo || 'auto'; if (!$('algo').value) $('algo').value = 'auto'; $('seed').value = q.get('seed') || last.seed || 1;
-$('speed').value = store.get('speed2', 0); showSpeed(); $('limit').value = store.get('limit2', 1000); showLimit();
+$('speed').value = store.get('speed3', 0.7); showSpeed(); // 5% of real speed $('limit').value = store.get('limit2', 1000); showLimit();
 ['follow', 'names', 'marks'].forEach((id) => ($(id).checked = store.get(id, true)));
 run();
 </script>

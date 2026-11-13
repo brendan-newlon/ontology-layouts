@@ -77,6 +77,30 @@ const plain = out.replace(/<!--LAB-->[\s\S]*?<!--\/LAB-->\n?/g, '').replace(/<!-
 const lib = code.replace(/<\/script/gi, '<\\/script'), teach = fs.existsSync(path.join(here, 'teaching_sessions.json')) ? fs.readFileSync(path.join(here, 'teaching_sessions.json'), 'utf8') : 'null';
 const labEd = out.replace(/<!--NOLAB-->[\s\S]*?<!--\/NOLAB-->\n?/g, '').replace(/<!--\/?LAB-->\n?/g, '').replace('/*__LIBRARY__*/', () => lib).replace('/*__TEACH__*/null', () => teach)
   .replace('<title>', '<title>Lab edition: ');
-fs.writeFileSync(dest, plain); fs.writeFileSync(destLab, labEd);
+// The development story is its own page (docs/STORY.html): how the layouts work, how the clean-up was taught (with the lab
+// and the teaching sessions of the lab edition), the work it builds on, and what did not work. The benchmarks page keeps the rest.
+// Links between the two pages go through the one-page site (index.html#page:anchor), which shows the other page there.
+const STORY = ['how', 'learned', 'prior', 'tried'];
+const cut = (html) => { const parts = {}; let rest = html;
+  for (const id of STORY) { const a = rest.indexOf(`<h2 id="${id}"`), b = rest.indexOf('\n<h2 ', a + 5); if (a < 0 || b < 0) throw new Error('story section not found: ' + id); parts[id] = rest.slice(a, b + 1); rest = rest.slice(0, a) + rest.slice(b + 1); }
+  return { rest, parts }; };
+const idsIn = (html) => new Set([...html.matchAll(/\sid="([\w-]+)"/g)].map((m) => m[1]));
+const relink = (html, here, there) => html.replace(/href="#([\w-]+)"/g, (m, id) => (here.has(id) ? m : `href="../index.html#${there}:${id}" target="_top"`));
+const cutPlain = cut(plain), storyIds = idsIn(Object.values(cutPlain.parts).join(''));
+const bench = relink(cutPlain.rest, idsIn(cutPlain.rest), 'story')
+  .replace(/<a href="[^"]*#story:learned"[^>]*>How it was learned<\/a>/, '').replace(/<a href="[^"]*#story:how"[^>]*>How the layouts work<\/a>/, '')
+  .replace('<nav class="toc" aria-label="Contents"><b>On this page</b>', '<nav class="toc" aria-label="Contents"><b>On this page</b><a href="../index.html#story" target="_top">How it was built (its own page) →</a>');
+const lc = cut(labEd), parts = Object.fromEntries(Object.entries(lc.parts).map(([k, v]) => [k, relink(v, storyIds, 'benchmarks')]));
+const b0 = labEd.indexOf('<!--BODY-->'), b1 = labEd.indexOf('<!--/BODY-->'); if (b0 < 0 || b1 < 0) throw new Error('BODY markers not found');
+const storyHead = `<div class="kicker">The development story</div>
+<h1>How it was built</h1>
+<p class="sub">How the layouts work, how a person taught the clean-up to an AI assistant, the published work it builds on, and what was tried and dropped on the way. The results are on the <a href="../index.html#benchmarks" target="_top">Benchmarks</a> page.</p>
+<nav class="toc" aria-label="Contents"><b>On this page</b><a href="#how">How the layouts work</a><a href="#learned">How the clean-up was taught</a><a href="#lab">Try the lab here</a><a href="#prior">What it builds on</a><a href="#tried">What did not work</a></nav>
+`;
+const story = labEd.slice(0, b0) + storyHead + STORY.map((k) => parts[k]).join('\n') + labEd.slice(b1);
+const storyPage = story.replace(/<title>[^<]*<\/title>/, '<title>How it was built · Ontology Layouts</title>').replace('data-page="benchmarks"', 'data-page="story"')
+  .replace('<header class="sitebar"><h1>Benchmarks</h1>', '<header class="sitebar"><h1>How it was built</h1>');
+fs.writeFileSync(dest, bench); fs.writeFileSync(destLab, labEd); fs.writeFileSync(path.join(path.dirname(dest), 'STORY.html'), storyPage);
+console.log('wrote', path.join(path.dirname(dest), 'STORY.html'), (storyPage.length / 1024).toFixed(0), 'KB');
 console.log('wrote', destLab, (labEd.length / 1024).toFixed(0), 'KB');
 console.log('wrote', dest, (out.length / 1024).toFixed(0), 'KB,', dev.length, 'development graphs,', unseen.length, 'unseen graphs in the explorer');

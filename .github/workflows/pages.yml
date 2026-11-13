@@ -1,4 +1,4 @@
-# Publishes the write-up, the Layout Playback and the Layout Lab to GitHub Pages on every push to main.
+# Publishes the one-page site (index.html: introduction, Layout Playback, Layout Lab, benchmarks, developer guide) and dist/ to GitHub Pages on every push to main.
 # The pages need tools/layout-bench/base_layout.js, which is generated from src/ontology-layouts.js and not committed.
 name: Pages
 on:
@@ -24,11 +24,12 @@ jobs:
         run: node tools/layout-bench/build_base.mjs
       - name: Assemble the site
         run: |
-          mkdir -p _site/docs _site/tools/layout-bench
-          cp pages/index.html _site/index.html
+          mkdir -p _site/docs _site/tools/layout-bench _site/dist
+          cp index.html site-nav.js _site/
           cp docs/*.html _site/docs/
+          cp dist/* _site/dist/
           cp tools/layout-bench/playback.html tools/layout-bench/lab.html _site/tools/layout-bench/
-          cp tools/layout-bench/base_layout.js tools/layout-bench/handtidy.js tools/layout-bench/engines3.js tools/layout-bench/models*.js _site/tools/layout-bench/
+          cp tools/layout-bench/base_layout.js tools/layout-bench/handtidy.js tools/layout-bench/engines3.js tools/layout-bench/models*.js tools/layout-bench/graphs.js tools/layout-bench/ttl.js _site/tools/layout-bench/
           touch _site/.nojekyll
       - uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v3
