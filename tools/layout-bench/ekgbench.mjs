@@ -1,7 +1,7 @@
 // Best Read with the clean-up, then the link routing, under experimental settings; straight and routed measures.
 // node ekgbench.mjs <set: dev|held|public|comma list> '<tuneJSON>' [names: 0|1] [seed]
 //   tune: merged into OURS.tune (_OG_TUNE): e.g. {"noTree":true}, {"cleanup":{"W":{"area":3}}}, {"cleanup":{"groupDepth":8}}
-//   {"timeLimit": 3000}: runs with that time limit (OURS.setTimeLimit) instead of the default 750
+//   {"timeLimit": 3000}: runs with that time limit (OURS.setTimeLimit) instead of the default 1000
 //   names 1: the layout gets each link's name width (edges[3]) and reserves room for it
 import { execSync } from 'node:child_process';
 const here = new URL('.', import.meta.url).pathname.replace(/^\/([A-Za-z]:)/, '$1');

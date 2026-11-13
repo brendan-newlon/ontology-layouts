@@ -18,4 +18,4 @@ for (const key of keys) {
     console.log(`${key} limit ${lim} ms: ${r.algo} | layout ${(tl / 1000).toFixed(1)} s cross ${ml.cross} thru ${ml.thru} | +clean-up ${(ms / 1000).toFixed(1)} s cross ${m.cross} thru ${m.thru} sum ${m.cross + m.thru} area ${m.area}`);
   }
 }
-O.setTimeLimit(750);
+O.setTimeLimit(1000);
