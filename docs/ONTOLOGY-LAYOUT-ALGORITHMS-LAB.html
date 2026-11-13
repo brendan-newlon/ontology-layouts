@@ -541,6 +541,7 @@ tr.mine td:first-child { box-shadow: inset 4px 0 0 var(--accent); }
 <div class="prose">
 <p><strong>Try it yourself.</strong> The Layout Lab and the Layout Playback are in this repository (<code>Start Layout Lab.cmd</code>, or <code>tools/layout-bench/lab.html</code> and <code>playback.html</code>). Readers can tidy drawings by hand, say why, and teach the layouts a principle we missed. The method is not specific to diagrams: any problem a person can look at and fix better than they can describe is a candidate. <code>docs/SHOW-AND-TELL-LABS.md</code> is a guide to the method and to building a lab of your own with an AI assistant, and <code>docs/PLAYBACK-AND-LAB.md</code> has the technical contract for adapting the two pages.</p>
 </div>
+
 <details class="code lab" id="lab">
   <summary>Open the Layout Lab: tidy a drawing yourself, say why, and take the session to an AI assistant</summary>
   <div class="lab-wrap">
@@ -574,6 +575,8 @@ tr.mine td:first-child { box-shadow: inset 4px 0 0 var(--accent); }
     </details>
   </div>
 </details>
+
+
 <div class="prose">
 <p>Two ideas from the sessions are not in the clean-up yet: curving links around hubs at the edge of the drawing (on the clinical record with three super-hubs), and pulling the classes of a loop closer together or untwisting a pair of classes.</p>
 <p>Profiling the first version showed that the group moves took about 95% of its time and kept about one try in twenty. Two changes made the clean-up fast enough for the layouts: candidate spots come from the open-space grid (a few dozen instead of 96 fixed positions), and a class or problem that could not be improved is not tried again until something near it has moved.</p>
@@ -3119,10 +3122,12 @@ function buildWalk() {
       let x1 = Infinity, y1 = Infinity, x2 = -Infinity, y2 = -Infinity;
       P.forEach((p, i) => { x1 = Math.min(x1, p[0] - W[i] / 2); x2 = Math.max(x2, p[0] + W[i] / 2); y1 = Math.min(y1, p[1] - BOXH / 2); y2 = Math.max(y2, p[1] + BOXH / 2); });
       vb = [x1 - 30, y1 - 30, x2 - x1 + 60, y2 - y1 + 60];
+    } else if (step === 3 && moving) { // the spread: close round the region and the ring just outside it, where most of the push happens
+      const r = 1.6 * R.r0; vb = [c.x - r * 1.15, c.y - r, 2.3 * r, 2 * r];
     } else { const r = 2 * R.r0; vb = [c.x - r * 1.25, c.y - r, 2.5 * r, 2 * r]; }
     const svg = el("svg", { viewBox: vb.join(" "), preserveAspectRatio: "xMidYMid meet" }, box);
-    const defs = el("defs", {}, svg), mk = el("marker", { id: "wxah", viewBox: "0 0 10 10", refX: 9, refY: 5, markerWidth: 6, markerHeight: 6, orient: "auto-start-reverse" }, defs);
-    el("path", { d: "M0,0L10,5L0,10z", fill: "var(--move)" }, mk);
+    const defs = el("defs", {}, svg), mk = el("marker", { id: "wxah", viewBox: "0 0 10 10", refX: 9, refY: 5, markerWidth: 4, markerHeight: 4, orient: "auto-start-reverse" }, defs);
+    el("path", { d: "M0,1L10,5L0,9z", fill: "var(--move)" }, mk);
     const g = el("g", {}, svg), ns = { "vector-effect": "non-scaling-stroke" };
     if (step === 1) { const s = w.open.s; w.open.cells.forEach(([x, y]) => el("rect", { x: x - s / 2 + 1, y: y - s / 2 + 1, width: s - 2, height: s - 2, rx: 3, fill: "var(--open)", opacity: 0.16 }, g)); }
     if (region && (step === 2 || step === 3)) {
@@ -3134,35 +3139,42 @@ function buildWalk() {
     if (region) { el("circle", { cx: c.x, cy: c.y, r: R.r0, fill: "none", stroke: "var(--hot)", "stroke-width": 2, "stroke-dasharray": "6 4", opacity: step === 4 ? 0.5 : 1, ...ns }, g); el("circle", { cx: c.x, cy: c.y, r: 6, fill: "var(--hot)" }, g); }
     // problems: red for a crossing or a link through a class (6 px margin); in the finishing passes, dashed amber for a link that
     // passes within 9 px of a class, the clearance the drawn links keep
-    const thru = new Set(), hit = new Set(), near = fin ? NEAR(G, P) : new Set();
-    E.forEach(([a, b], k) => { for (let i = 0; i < n; i++) { if (i === a || i === b) continue; if (segBox(P[a], P[b], P[i][0], P[i][1], W[i] / 2 + 6, BOXH / 2 + 6)) { thru.add(k); hit.add(i); } } });
-    E.forEach(([a, b, sub], k) => el("line", { x1: P[a][0], y1: P[a][1], x2: P[b][0], y2: P[b][1], stroke: thru.has(k) ? "var(--bad)" : near.has(k) ? "var(--hot)" : sub ? "var(--sub)" : "var(--rel)", "stroke-width": thru.has(k) || near.has(k) ? 2.4 : 1.3, ...(near.has(k) && !thru.has(k) ? { "stroke-dasharray": "7 4" } : {}), ...ns }, g));
-    for (let i = 0; i < E.length; i++) for (let j = i + 1; j < E.length; j++) { const [a, b] = E[i], [p, q] = E[j]; if (a === p || a === q || b === p || b === q) continue; const x = segX(P[a], P[b], P[p], P[q]); if (x) el("circle", { cx: x[0], cy: x[1], r: 4.5, fill: "var(--bad)", opacity: 0.85 }, g); }
     // where classes were, and where they went
     const moved = new Set();
     if (prev) P.forEach((p, i) => { const o = prev[i]; if (Math.hypot(p[0] - o[0], p[1] - o[1]) >= 3) moved.add(i); });
     // before the step: the classes it is about to move, outlined
     if (showBefore) w.POS[step].forEach((p, i) => { const o = P[i]; if (Math.hypot(p[0] - o[0], p[1] - o[1]) >= 3) moved.add(i); });
-    P.forEach((p, i) => {
-      el("rect", { x: p[0] - W[i] / 2, y: p[1] - BOXH / 2, width: W[i], height: BOXH, rx: 6, fill: hit.has(i) ? "var(--bad-soft)" : moved.has(i) ? "var(--accent-soft)" : "var(--box)", stroke: hit.has(i) ? "var(--bad)" : moved.has(i) ? "var(--accent)" : "var(--box-line)", "stroke-width": moved.has(i) ? 1.6 : 1, ...(showBefore && moved.has(i) ? { "stroke-dasharray": "5 3" } : {}), ...ns }, g);
-      const t = el("text", { x: p[0], y: p[1] + 4, "text-anchor": "middle", "font-size": 11, fill: "var(--ink)", "font-family": "Segoe UI, system-ui, sans-serif" }, g); t.textContent = G.labels[i];
+    // when a step moves classes, what it left alone is drawn faint, so the moves stand out
+    const dim = prev && moved.size ? 0.35 : 1;
+    const thru = new Set(), hit = new Set(), near = fin ? NEAR(G, P) : new Set();
+    E.forEach(([a, b], k) => { for (let i = 0; i < n; i++) { if (i === a || i === b) continue; if (segBox(P[a], P[b], P[i][0], P[i][1], W[i] / 2 + 6, BOXH / 2 + 6)) { thru.add(k); hit.add(i); } } });
+    E.forEach(([a, b, sub], k) => el("line", { x1: P[a][0], y1: P[a][1], x2: P[b][0], y2: P[b][1], stroke: thru.has(k) ? "var(--bad)" : near.has(k) ? "var(--hot)" : sub ? "var(--sub)" : "var(--rel)", "stroke-width": thru.has(k) || near.has(k) ? 2.4 : 1.3, ...(near.has(k) && !thru.has(k) ? { "stroke-dasharray": "7 4" } : {}), opacity: thru.has(k) || near.has(k) || moved.has(E[k][0]) || moved.has(E[k][1]) ? 1 : dim, ...ns }, g));
+    for (let i = 0; i < E.length; i++) for (let j = i + 1; j < E.length; j++) { const [a, b] = E[i], [p, q] = E[j]; if (a === p || a === q || b === p || b === q) continue; const x = segX(P[a], P[b], P[p], P[q]); if (x) el("circle", { cx: x[0], cy: x[1], r: 4.5, fill: "var(--bad)", opacity: 0.85 }, g); }
+    P.forEach((p, i) => { const gi = el("g", { opacity: moved.has(i) || hit.has(i) ? 1 : dim }, g);
+      el("rect", { x: p[0] - W[i] / 2, y: p[1] - BOXH / 2, width: W[i], height: BOXH, rx: 6, fill: hit.has(i) ? "var(--bad-soft)" : moved.has(i) ? "var(--accent-soft)" : "var(--box)", stroke: hit.has(i) ? "var(--bad)" : moved.has(i) ? "var(--accent)" : "var(--box-line)", "stroke-width": moved.has(i) ? 1.6 : 1, ...(showBefore && moved.has(i) ? { "stroke-dasharray": "5 3" } : {}), ...ns }, gi);
+      const t = el("text", { x: p[0], y: p[1] + 4, "text-anchor": "middle", "font-size": 11, fill: "var(--ink)", "font-family": "Segoe UI, system-ui, sans-serif" }, gi); t.textContent = G.labels[i];
     });
-    // the moves, drawn over the classes in their own colour: the old place as a dashed box, and a dotted curve that bows out
-    // to one side (wide enough to clear the box), from the old place to the new, so a move never reads as a link
+    // the moves, drawn over the classes in their own colour: a short straight arrow from the old place to the edge of the new box.
+    // The old place is a dashed box when few classes move, a dot when many do (boxes would crowd the view). Two classes that
+    // trade places get arrows that bow apart, so the pair does not read as one line.
+    const few = moved.size <= 8;
     if (prev) moved.forEach((i) => { const o = prev[i], p = P[i], dx = p[0] - o[0], dy = p[1] - o[1], d = Math.hypot(dx, dy);
-      el("rect", { x: o[0] - W[i] / 2, y: o[1] - BOXH / 2, width: W[i], height: BOXH, rx: 6, fill: "none", stroke: "var(--move)", "stroke-width": 1.8, "stroke-dasharray": "5 3", ...ns }, g);
-      const bow = Math.max(0.35 * d, W[i] + 50) / d, mx = (o[0] + p[0]) / 2 - dy * bow, my = (o[1] + p[1]) / 2 + dx * bow;
-      // the curve from the edge of the old box to the edge of the new one, so the arrow does not cover a name
+      if (few) el("rect", { x: o[0] - W[i] / 2, y: o[1] - BOXH / 2, width: W[i], height: BOXH, rx: 6, fill: "none", stroke: "var(--move)", "stroke-width": 1.6, "stroke-dasharray": "5 3", ...ns }, g);
+      else el("circle", { cx: o[0], cy: o[1], r: 3.5, fill: "var(--move)" }, g);
+      const swap = [...moved].some((j) => j !== i && Math.hypot(P[j][0] - o[0], P[j][1] - o[1]) < 30 && Math.hypot(prev[j][0] - p[0], prev[j][1] - p[1]) < 30);
+      const bow = swap ? 0.3 : 0, mx = (o[0] + p[0]) / 2 - dy * bow, my = (o[1] + p[1]) / 2 + dx * bow;
       const at = (t) => [(1 - t) * (1 - t) * o[0] + 2 * t * (1 - t) * mx + t * t * p[0], (1 - t) * (1 - t) * o[1] + 2 * t * (1 - t) * my + t * t * p[1]];
-      const inside = (q, c) => Math.abs(q[0] - c[0]) < W[i] / 2 + 4 && Math.abs(q[1] - c[1]) < BOXH / 2 + 4;
-      let t0 = 0, t1 = 1; while (t0 < 0.45 && inside(at(t0), o)) t0 += 0.01; while (t1 > 0.55 && inside(at(t1), p)) t1 -= 0.01;
-      const pts = []; for (let k = 0; k <= 24; k++) pts.push(at(t0 + (t1 - t0) * k / 24).map((v) => v.toFixed(1)).join(","));
-      el("path", { d: "M" + pts.join("L"), fill: "none", stroke: "var(--move)", "stroke-width": 2.6, "stroke-linecap": "round", "stroke-dasharray": "0.1 6", "marker-end": "url(#wxah)", ...ns }, g); });
+      const inside = (q, c) => Math.abs(q[0] - c[0]) < W[i] / 2 + 3 && Math.abs(q[1] - c[1]) < BOXH / 2 + 3;
+      // from the edge of the old box (a dashed box) or the dot, to the edge of the new box; a move shorter than its box keeps its full length
+      let t0 = 0, t1 = 1; if (few) while (t0 < 0.45 && inside(at(t0), o)) t0 += 0.01; while (t1 > 0.55 && inside(at(t1), p)) t1 -= 0.01;
+      if (Math.hypot(...at(t1).map((v, k) => v - at(t0)[k])) < 12) { t0 = 0; t1 = 1; }
+      const pts = []; for (let k = 0; k <= (swap ? 16 : 1); k++) pts.push(at(t0 + (t1 - t0) * k / (swap ? 16 : 1)).map((v) => v.toFixed(1)).join(","));
+      el("path", { d: "M" + pts.join("L"), fill: "none", stroke: "var(--move)", "stroke-width": 2, "stroke-linecap": "round", "marker-end": "url(#wxah)", ...ns }, g); });
     const m = showBefore ? w.PCNT[step] : w.CNT[step], pm = showBefore ? null : w.PCNT[step];
     const cell = (label, k) => { const v = m[k], d = pm ? v - pm[k] : 0; return `<div class="${d < 0 ? "down" : d > 0 ? "up" : ""}"><b>${v}${d ? ` <small>(${d > 0 ? "+" : ""}${d})</small>` : ""}</b>${label}</div>`; };
     const size = () => { const d = pm && pm.size ? Math.round((m.size[0] * m.size[1] / (pm.size[0] * pm.size[1]) - 1) * 100) : 0; return `<div class="${d < 0 ? "down" : d > 0 ? "up" : ""}"><b>${m.size[0].toLocaleString("en-US")} × ${m.size[1].toLocaleString("en-US")}${d ? ` <small>(${d > 0 ? "+" : ""}${d}%)</small>` : ""}</b>drawing size, px</div>`; };
     host.querySelector(".wx-counts").innerHTML = cell("crossed links", "cross") + cell("links through classes", "thru") + (m.size ? size() : cell("sharp crossings", "sharp")) + cell("cramped classes", "tight") +
-      `<p class="wx-key">All four are lower-is-better. ${showBefore ? "This is the drawing before the step; the classes it moves are outlined. " : fin && step < 7 ? "Steps 5 and 6 zoom to the classes the pass moved (tick Whole drawing for all of it). " : ""}${!showBefore && moved.size ? "Dashed purple boxes show where classes were; dotted purple arrows show where they went. " : ""}${fin ? "Dashed amber: a link that passes within 9 px of a class, the clearance drawn links keep. " : ""}${showBefore ? "" : "The number in brackets is the change since the step before: green when it went down (the step helped), red when it went up. "}<abbr class="qm" tabindex="0" title="Sharp crossings cross at under 30°. Cramped classes have two links leaving them less than 15° apart." aria-label="Sharp crossings cross at under 30 degrees. Cramped classes have two links leaving them less than 15 degrees apart.">?</abbr></p>`;
+      `<p class="wx-key">All four are lower-is-better. ${showBefore ? "This is the drawing before the step; the classes it moves are outlined. " : fin && step < 7 ? "Steps 5 and 6 zoom to the classes the pass moved (tick Whole drawing for all of it). " : ""}${!showBefore && moved.size ? (moved.size <= 8 ? "Dashed purple boxes show where the moved classes were" : "Purple dots show where the moved classes were") + "; purple arrows show where they went, and what did not move is faded. " : ""}${fin ? "Dashed amber: a link that passes within 9 px of a class, the clearance drawn links keep. " : ""}${showBefore ? "" : "The number in brackets is the change since the step before: green when it went down (the step helped), red when it went up. "}<abbr class="qm" tabindex="0" title="Sharp crossings cross at under 30°. Cramped classes have two links leaving them less than 15° apart." aria-label="Sharp crossings cross at under 30 degrees. Cramped classes have two links leaving them less than 15 degrees apart.">?</abbr></p>`;
     host.querySelectorAll(".wx-walks button").forEach((b) => b.classList.toggle("on", +b.dataset.w === walk));
     host.querySelectorAll(".wx-steps button").forEach((b) => { b.classList.toggle("on", +b.dataset.s === step); const why = w.skip[+b.dataset.s]; b.setAttribute("aria-disabled", why ? "true" : "false"); b.title = why || ""; });
     host.querySelectorAll(".wx-tabs button").forEach((b) => b.classList.toggle("on", b.dataset.t === tab));
@@ -3188,6 +3200,7 @@ document.getElementById("copyCode").addEventListener("click", async (ev) => {
   setTimeout(() => (btn.textContent = "Copy"), 2500);
 });
 </script>
+
 <script>
 // The library itself, so the lab can run the clean-up on a drawing made by hand
 window.OntologyLayouts = (() => {
@@ -5303,5 +5316,6 @@ const TEACH = [{"graph":"big","labels":["Party","Person","Customer","Employee","
   if (location.hash === "#lab") { host.open = true; open(key); }
 })();
 </script>
+
 </body>
 </html>
