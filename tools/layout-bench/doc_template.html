@@ -193,6 +193,7 @@ tr.mine td:first-child { box-shadow: inset 4px 0 0 var(--accent); }
 <body>
 <header class="sitebar"><h1>Benchmarks</h1><span class="sp"></span><a href="https://github.com/brendan-newlon/ontology-layouts">Source on GitHub</a></header>
 <div class="wrap">
+<!--BODY-->
 
 <div class="kicker">Graph layout for ontologies</div>
 <h1>Tidy Stress and Mycelium</h1>
@@ -976,6 +977,7 @@ boxes2[7].between = [2, 5];                                                     
   <div class="bar"><button type="button" id="copyCode">Copy</button></div>
   <pre><code id="srcCode"><!--__CODE__--></code></pre>
 </details>
+<!--/BODY-->
 
 </div>
 
@@ -1240,7 +1242,7 @@ function buildWalk() {
   render();
 }
 buildWalk();
-document.getElementById("copyCode").addEventListener("click", async (ev) => {
+if (document.getElementById("copyCode")) document.getElementById("copyCode").addEventListener("click", async (ev) => { // the appendix is on the benchmarks page only
   const text = document.getElementById("srcCode").textContent, btn = ev.currentTarget;
   try { await navigator.clipboard.writeText(text); btn.textContent = "Copied"; }
   catch (err) { const r = document.createRange(); r.selectNodeContents(document.getElementById("srcCode")); const s = getSelection(); s.removeAllRanges(); s.addRange(r); btn.textContent = "Selected; press Ctrl+C"; }

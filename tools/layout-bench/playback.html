@@ -271,7 +271,10 @@ const STEPS = [ // key, group, name, what it does, color, can it be left out (Ru
 const SI = Object.fromEntries(STEPS.map((s, i) => [s[0], i]));
 const store = { get(k, d) { try { const v = localStorage.getItem('playback:' + k); return v == null ? d : JSON.parse(v); } catch (e) { return d; } }, set(k, v) { try { localStorage.setItem('playback:' + k, JSON.stringify(v)); } catch (e) {} } };
 const CTL = store.get('ctl2', {}); // per step: { show (animate it), run (the layout runs it) }
-const ctl = (k) => (CTL[k] = CTL[k] || { show: !k.startsWith('variant:'), run: true });
+const ctl = (k) => (CTL[k] = CTL[k] || { show: true, run: true });
+// The variants not kept used to be hidden by default, which left the drawing empty for their share of the time: show them
+// once for readers whose browser kept the old setting
+if (!store.get('variantsShown', false)) { Object.keys(CTL).forEach((k) => { if (k.startsWith('variant:')) CTL[k].show = true; }); store.set('variantsShown', true); store.set('ctl2', CTL); }
 const saveCtl = () => store.set('ctl2', CTL);
 // steps that can run in another order
 const ORD = { place: store.get('order:place', ['cross', 'thru', 'tight']), clean: store.get('order:clean', ['c-single', 'c-unit', 'c-spread', 'c-group']) };

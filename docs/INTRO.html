@@ -67,9 +67,12 @@ a.path i { display: block; font-style: normal; font-size: .75rem; text-transform
 <div class="paths">
   <a class="path" href="../index.html#playback" target="_top"><i>2 minutes</i><b>Watch it work</b><span>Play a layout step by step on a progress bar as long as the work itself. Switch steps off, move classes, mark what you see.</span></a>
   <a class="path" href="../index.html#lab" target="_top"><i>Hands on</i><b>Lay out your own ontology</b><span>Open a Turtle (.ttl) file in the Lab, choose boxes or circles, tidy by hand, export SVG, PNG, JSON or GraphML.</span></a>
+  <a class="path" href="../index.html#story" target="_top"><i>The story</i><b>How it was built</b><span>The methods, how a person taught the clean-up to an AI assistant, the published work it builds on, what did not work.</span></a>
   <a class="path" href="../index.html#benchmarks" target="_top"><i>The evidence</i><b>Benchmarks</b><span>Against 11 open-source layouts, tuned for their best chance, on 51 graphs, 36 of them never seen during development.</span></a>
   <a class="path" href="../index.html#developers" target="_top"><i>For developers</i><b>Use it in your app</b><span>One call, your own node shapes and rendering, every option and its measured cost.</span></a>
 </div>
+
+<p class="note"><strong>Getting around:</strong> the menu at the top left of every page (<em>Ontology Layouts · Introduction ▾</em>) lists the pages: this introduction, the Playback, the Lab, how it was built, the benchmarks and the developer guide. Switching keeps each page as you left it, so you can read a section and go back to a paused playback or a half-tidied drawing.</p>
 
 <h2 id="see">The difference on one ontology</h2>
 <p class="prose">A customer-data ontology of 31 classes around one large hub, drawn by Graphviz <code>neato</code>, a widely used layout, and by ours (Best Read with its clean-up). Dots mark crossed links; red links run through a class they do not belong to, so two unrelated classes look connected. Links are drawn straight here; in use, ours also bends the few links that remain.</p>
@@ -92,8 +95,9 @@ a.path i { display: block; font-style: normal; font-size: .75rem; text-transform
 </ol>
 <p class="prose">Each step can be watched in the <a href="../index.html#playback" target="_top">Playback</a>, switched off to see what it is worth, or replaced by your own layout: the clean-up and the routing also tidy a drawing made by another layout. The same methods keep a drawing stable as a graph grows: expand a class, and nothing already drawn moves.</p>
 
-<h2 id="taught">Taught, not only designed</h2>
-<p class="prose">The clean-up did not come from the literature. Brendan Newlon tidied drawings by hand in the Lab while saying why; an AI assistant, Claude, turned the reasons into rules and tested them on graphs nobody had looked at. The Lab and the Playback are offered as tools in their own right, for any problem a person can see and fix better than they can describe: <a href="https://github.com/brendan-newlon/ontology-layouts/blob/main/docs/SHOW-AND-TELL-LABS.md">how the method works</a>.</p>
+<h2 id="taught">How it was built</h2>
+<p class="prose">The placement stands on published methods: stress majorization started from pivot MDS, Louvain community detection to find groups of closely linked classes, and readability measures from graph-drawing research. The clean-up did not come from the literature. Brendan Newlon tidied drawings by hand in the Lab while saying why. An AI assistant, Claude, distilled his reasons into rules, and every rule was kept only if it held on graphs nobody had looked at. Then he watched the result in the Playback and named what was still wrong in a few words ("don't fence me in", "pull it in from the edge"); each phrase became a short pass of its own. Ideas that did not hold up, such as bending links instead of moving classes, were measured and dropped. The full account, with the teaching sessions and the lab to try, is on <a href="../index.html#story" target="_top">How it was built</a>.</p>
+<p class="prose">The Lab and the Playback are offered as tools in their own right, for any problem a person can see and fix better than they can describe: <a href="https://github.com/brendan-newlon/ontology-layouts/blob/main/docs/SHOW-AND-TELL-LABS.md">how the method works</a>.</p>
 <p class="foot">Ontology Layouts · Apache License 2.0 · <a href="https://github.com/brendan-newlon/ontology-layouts">github.com/brendan-newlon/ontology-layouts</a></p>
 </div>
 </body>

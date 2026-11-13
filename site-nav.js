@@ -8,21 +8,26 @@
     ['intro', 'Introduction', 'What the layouts do, in two minutes', 'docs/INTRO.html'],
     ['playback', 'Playback', 'Watch a layout work, step by step', 'tools/layout-bench/playback.html'],
     ['lab', 'Lab', 'Lay out your own graph, tidy it by hand, export it', 'tools/layout-bench/lab.html'],
-    ['benchmarks', 'Benchmarks', 'The full write-up: how each step works, the comparisons, the method', 'docs/ONTOLOGY-LAYOUT-ALGORITHMS.html'],
+    ['story', 'How it was built', 'How the layouts work, how a person taught the clean-up, the work it builds on', 'docs/STORY.html'],
+    ['benchmarks', 'Benchmarks', 'The results against 11 open-source layouts on 51 graphs, and the method', 'docs/ONTOLOGY-LAYOUT-ALGORITHMS.html'],
     ['developers', 'Developer guide', 'Use the layout in your own app: one call, every option', 'docs/DEVELOPER-GUIDE.html']
   ];
   let shell = null; try { shell = window.parent !== window && window.parent.SiteShell ? window.parent.SiteShell : null; } catch (e) { shell = null; }
-  // go(page, query): switch to another page (query: a search string such as "?graph=crm" handed to that page)
-  function go(page, query) {
-    if (shell) { shell.show(page, query || ''); return; }
-    window.location.href = root + 'index.html#' + page + (query || '');
+  // go(page, query, anchor): switch to another page (query: a search string such as "?graph=crm" handed to that page;
+  // anchor: a section of that page to scroll to)
+  function go(page, query, anchor) {
+    if (shell) { shell.show(page, query || '', anchor || ''); return; }
+    window.location.href = root + 'index.html#' + page + (anchor ? ':' + anchor : '') + (query || '');
   }
-  window.SiteNav = { go, inSite: !!shell, pages: PAGES, root };
+  // index.html#page:anchor?query, split
+  const parse = (h) => { h = decodeURIComponent(h); const q = h.indexOf('?'), qs = q < 0 ? '' : h.slice(q), p = q < 0 ? h : h.slice(0, q), c = p.indexOf(':');
+    return c < 0 ? [p, qs, ''] : [p.slice(0, c), qs, p.slice(c + 1)]; };
+  window.SiteNav = { go, parse, inSite: !!shell, pages: PAGES, root };
   // links in a page to another page of the site (index.html#page) switch frames instead of reloading the site
   document.addEventListener('click', (ev) => {
     const a = ev.target.closest && ev.target.closest('a[href]'); if (!a || !shell || ev.ctrlKey || ev.metaKey || ev.shiftKey) return;
     const u = new URL(a.href, location.href); if (u.href.split('#')[0] !== root + 'index.html' || !u.hash) return;
-    const h = decodeURIComponent(u.hash.slice(1)), i = h.indexOf('?'); ev.preventDefault(); go(i < 0 ? h : h.slice(0, i), i < 0 ? '' : h.slice(i));
+    ev.preventDefault(); go(...parse(u.hash.slice(1)));
   });
   const css = `.sn{position:relative;display:inline-flex;align-items:center;margin:0 8px 0 0;font:inherit}
 .sn-btn{display:inline-flex;align-items:center;gap:6px;font:600 15px/1.2 inherit;font-family:inherit;color:var(--ink,#1d232b);background:none;border:1px solid transparent;border-radius:7px;padding:3px 7px 3px 5px;cursor:pointer;white-space:nowrap}

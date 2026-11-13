@@ -2,7 +2,7 @@
 
 Layouts for drawing ontologies (classes as boxes, subclass and relationship links between them) so that a reader can follow every link: far fewer crossed links and far fewer links running through classes than the widely used open-source layouts.
 
-**See it live:** [brendan-newlon.github.io/ontology-layouts](https://brendan-newlon.github.io/ontology-layouts/), one page with an introduction, the Layout Playback, the Layout Lab (open your own Turtle file, export the drawing), the benchmarks and the developer guide. **Use it in an app:** [docs/DEVELOPER-GUIDE.md](docs/DEVELOPER-GUIDE.md) and the files in `dist/`.
+**See it live:** [brendan-newlon.github.io/ontology-layouts](https://brendan-newlon.github.io/ontology-layouts/), one page with an introduction, the Layout Playback, the Layout Lab (open your own Turtle file, export the drawing), how it was built, the benchmarks and the developer guide. **Use it in an app:** [docs/DEVELOPER-GUIDE.md](docs/DEVELOPER-GUIDE.md) and the files in `dist/`.
 
 - **Tidy Stress**: stress placement, then a search that removes crossings and links through classes.
 - **Mycelium**: the same, with closely linked groups of classes kept together and room around hubs.
@@ -25,7 +25,7 @@ Same input, same drawing on any computer: time limits count units of work, not w
 | `src/ontology-layouts.js` | The layouts and the clean-up: plain JavaScript, no dependencies. |
 | `dist/` | What an app loads, built from the source by `tools/build_dist.mjs`: `ontology-layouts.mjs` (ES module), `ontology-layouts.js` (script tag, CommonJS, AMD) and `ontology-layouts.d.ts` (types, written by hand). |
 | `docs/DEVELOPER-GUIDE.md` | Using the layouts in an app: one call, your own node shapes, where it goes, every option with its measured cost, graph size, your own layout with our clean-up. |
-| `index.html`, `site-nav.js` | The one-page site: each page in a frame kept alive (introduction, playback, lab, benchmarks, developer guide), switched from the page name at the top left. `tools/build_site.mjs` builds `docs/INTRO.html` and `docs/DEVELOPER-GUIDE.html`. |
+| `index.html`, `site-nav.js` | The one-page site: each page in a frame kept alive (introduction, playback, lab, how it was built, benchmarks, developer guide), switched from the menu at the top left; `index.html#page:section` opens a section. `tools/build_site.mjs` builds `docs/INTRO.html` and `docs/DEVELOPER-GUIDE.html`; `tools/layout-bench/build_doc_html.mjs` builds the benchmarks page and `docs/STORY.html` (how the layouts work, how the clean-up was taught, with the lab and the teaching sessions, prior work, what did not work) from one template. |
 | `docs/ONTOLOGY-LAYOUT-ALGORITHMS.md` | Summary of the algorithms and results. |
 | `docs/ONTOLOGY-LAYOUT-ALGORITHMS.html` | The full write-up: interactive, self-contained, with drawings side by side against eleven open-source layouts. |
 | `docs/ONTOLOGY-LAYOUT-ALGORITHMS-LAB.html` | The same write-up with the Layout Lab built in: tidy a drawing by hand, run the clean-up on it, download the session for an AI assistant; also the sessions in which the clean-up was taught. |

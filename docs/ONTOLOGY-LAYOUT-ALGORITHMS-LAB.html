@@ -193,6 +193,7 @@ tr.mine td:first-child { box-shadow: inset 4px 0 0 var(--accent); }
 <body>
 <header class="sitebar"><h1>Benchmarks</h1><span class="sp"></span><a href="https://github.com/brendan-newlon/ontology-layouts">Source on GitHub</a></header>
 <div class="wrap">
+<!--BODY-->
 
 <div class="kicker">Graph layout for ontologies</div>
 <h1>Tidy Stress and Mycelium</h1>
@@ -547,7 +548,6 @@ tr.mine td:first-child { box-shadow: inset 4px 0 0 var(--accent); }
 <div class="prose">
 <p><strong>Try it yourself.</strong> The Layout Lab and the Layout Playback are in this repository (<code>Start Layout Lab.cmd</code>, or <code>tools/layout-bench/lab.html</code> and <code>playback.html</code>). Readers can tidy drawings by hand, say why, and teach the layouts a principle we missed. The method is not specific to diagrams: any problem a person can look at and fix better than they can describe is a candidate. <code>docs/SHOW-AND-TELL-LABS.md</code> is a guide to the method and to building a lab of your own with an AI assistant, and <code>docs/PLAYBACK-AND-LAB.md</code> has the technical contract for adapting the two pages.</p>
 </div>
-
 <details class="code lab" id="lab">
   <summary>Open the Layout Lab: tidy a drawing yourself, say why, and take the session to an AI assistant</summary>
   <div class="lab-wrap">
@@ -581,8 +581,6 @@ tr.mine td:first-child { box-shadow: inset 4px 0 0 var(--accent); }
     </details>
   </div>
 </details>
-
-
 <div class="prose">
 <p>Two ideas from the sessions are not in the clean-up yet: curving links around hubs at the edge of the drawing (on the clinical record with three super-hubs), and pulling the classes of a loop closer together or untwisting a pair of classes.</p>
 <p>Profiling the first version showed that the group moves took about 95% of its time and kept about one try in twenty. Two changes made the clean-up fast enough for the layouts: candidate spots come from the open-space grid (a few dozen instead of 96 fixed positions), and a class or problem that could not be improved is not tried again until something near it has moved.</p>
@@ -2971,6 +2969,7 @@ const OntologyLayouts = {
 };
 </code></pre>
 </details>
+<!--/BODY-->
 
 </div>
 
@@ -3235,14 +3234,13 @@ function buildWalk() {
   render();
 }
 buildWalk();
-document.getElementById("copyCode").addEventListener("click", async (ev) => {
+if (document.getElementById("copyCode")) document.getElementById("copyCode").addEventListener("click", async (ev) => { // the appendix is on the benchmarks page only
   const text = document.getElementById("srcCode").textContent, btn = ev.currentTarget;
   try { await navigator.clipboard.writeText(text); btn.textContent = "Copied"; }
   catch (err) { const r = document.createRange(); r.selectNodeContents(document.getElementById("srcCode")); const s = getSelection(); s.removeAllRanges(); s.addRange(r); btn.textContent = "Selected; press Ctrl+C"; }
   setTimeout(() => (btn.textContent = "Copy"), 2500);
 });
 </script>
-
 <script>
 // The library itself, so the lab can run the clean-up on a drawing made by hand
 window.OntologyLayouts = (() => {
@@ -5393,6 +5391,5 @@ const TEACH = [{"graph":"big","labels":["Party","Person","Customer","Employee","
   if (location.hash === "#lab") { host.open = true; open(key); }
 })();
 </script>
-
 </body>
 </html>
