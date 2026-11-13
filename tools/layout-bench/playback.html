@@ -7,10 +7,10 @@
 <style>
 :root { --bg: #f4f3ee; --paper: #fff; --ink: #1d232b; --muted: #5d6673; --rule: #d9d6cc; --accent: #2f6b4f; --box: #eef3fb; --box-line: #6d86b0;
   --sub: #6f9a54; --rel: #8b97a8; --bad: #c43d32; --warn: #c98a12; --new: #e0a100; --name: #4b5563; --name-bg: #fffdf5;
-  --ov-grid: #2f9d6a; --ov-slice: #c98a12; --ov-group: #c2417a; --ov-stress: #7c5cd6; --ov-extent: #5d6673; --ov-clear: #1793ad; }
+  --ov-grid: #2f9d6a; --ov-slice: #c98a12; --ov-group: #c2417a; --ov-stress: #7c5cd6; --ov-extent: #5d6673; --ov-clear: #1793ad; --pen: #d1197a; --sel: #e0a100; --note: #fdf6e3; }
 @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) { --bg: #15181c; --paper: #1c2026; --ink: #e6e8eb; --muted: #9aa4b1; --rule: #30353d; --accent: #7cc39e;
   --box: #233041; --box-line: #6f8db8; --sub: #8fbf6f; --rel: #6f7b8c; --bad: #ff6f61; --warn: #f0b44a; --new: #ffcc33; --name: #b8c0cc; --name-bg: #22262d;
-  --ov-grid: #5fd39a; --ov-slice: #f0b44a; --ov-group: #f07aae; --ov-stress: #a98bff; --ov-extent: #9aa4b1; --ov-clear: #3fc8e4; color-scheme: dark; } }
+  --ov-grid: #5fd39a; --ov-slice: #f0b44a; --ov-group: #f07aae; --ov-stress: #a98bff; --ov-extent: #9aa4b1; --ov-clear: #3fc8e4; --pen: #ff5cae; --sel: #ffcc33; --note: #2a261c; color-scheme: dark; } }
 * { box-sizing: border-box; }
 html, body { height: 100%; }
 body { margin: 0; background: var(--bg); color: var(--ink); font: 14px/1.45 "Segoe UI", system-ui, sans-serif; display: grid; grid-template-rows: auto auto minmax(0, 1fr) auto; }
@@ -59,7 +59,38 @@ main { display: grid; grid-template-columns: 1fr 420px; min-height: 0; }
 #drawer { position: absolute; left: 0; top: 50%; transform: translateY(-50%); display: flex; flex-direction: column; gap: 4px; z-index: 3; }
 #drawer button { writing-mode: vertical-rl; transform: rotate(180deg); border: 1px solid var(--rule); border-left: 0; border-radius: 0 6px 6px 0; background: var(--paper); color: var(--muted); font-size: 11.5px; padding: 8px 3px; cursor: pointer; }
 #drawer button:hover { color: var(--ink); }
-aside { border-left: 1px solid var(--rule); background: var(--paper); overflow-y: auto; padding: 10px 12px; display: grid; gap: 10px; align-content: start; }
+aside { border-left: 1px solid var(--rule); background: var(--paper); display: grid; grid-template-rows: minmax(0, 1fr) auto; min-height: 0; }
+#sideTop { overflow-y: auto; padding: 10px 12px; display: grid; gap: 10px; align-content: start; min-height: 0; }
+#notes { border-top: 1px solid var(--rule); padding: 8px 10px; display: grid; gap: 6px; background: color-mix(in srgb, var(--pen) 4%, var(--paper)); }
+#nlog { max-height: 26vh; overflow-y: auto; display: flex; flex-direction: column; gap: 5px; }
+#nlog .ev { font-size: 12px; color: var(--muted); padding: 2px 6px; border-left: 2px solid var(--rule); }
+#nlog .ev.note { background: var(--note); color: var(--ink); border-left-color: var(--warn); border-radius: 6px; padding: 5px 8px; font-size: 13px; white-space: pre-wrap; }
+#nlog .ev.ink, #nlog .ev.edit { border-left-color: var(--pen); }
+#nlog .ev .at { display: block; font-size: 11px; color: var(--muted); }
+#nlog .ev .mk { display: block; font-size: 11px; color: var(--pen); }
+#ntext { width: 100%; min-height: 52px; resize: vertical; font: inherit; font-size: 13px; padding: 5px 8px; border: 1px solid var(--rule); border-radius: 6px; background: var(--bg); color: var(--ink); }
+#notes .row { justify-content: space-between; }
+.ink { fill: none; stroke: var(--pen); stroke-width: 3; stroke-linecap: round; stroke-linejoin: round; vector-effect: non-scaling-stroke; opacity: .85; pointer-events: none; }
+.ink.old { opacity: .45; }
+#svg.pen, #svg.pen * { cursor: crosshair !important; }
+#penBtn.on { background: var(--pen); border-color: var(--pen); color: #fff; }
+.node { cursor: grab; }
+.node.sel rect { stroke: var(--sel); stroke-width: 2.6; }
+.node.dragged rect { stroke: var(--pen); stroke-width: 2.4; }
+#result { font-size: 12px; color: var(--muted); font-variant-numeric: tabular-nums; }
+#result b { color: var(--ink); } #result .up { color: var(--bad); } #result .down { color: var(--accent); }
+#chips { flex: 1 1 100%; display: flex; flex-wrap: wrap; gap: 4px 6px; font-size: 12px; }
+#chips .grpl { font-size: 10.5px; text-transform: uppercase; letter-spacing: .05em; color: var(--muted); align-self: center; margin-left: 6px; }
+#chips .chip { display: inline-flex; gap: 4px; align-items: center; border: 1px solid var(--rule); border-radius: 12px; padding: 1px 8px 1px 5px; background: var(--bg); white-space: nowrap; }
+#chips .chip.cur { border-color: var(--ink); box-shadow: inset 0 0 0 1px var(--ink); }
+#chips .chip.off .nm { text-decoration: line-through; opacity: .55; }
+#chips .chip.hid .nm { font-style: italic; opacity: .7; }
+#chips .chip .nm { cursor: pointer; }
+#chips .chip small { color: var(--muted); font-variant-numeric: tabular-nums; }
+#chips .chip input { margin: 0; }
+#chips .chip button { border: 0; background: none; padding: 0 2px; font-size: 11px; cursor: pointer; color: var(--muted); }
+#chips .chip[draggable] { cursor: grab; }
+#chips .chip.drop { box-shadow: inset 3px 0 0 var(--accent); }
 aside h2 { font-size: 13px; margin: 0; display: flex; justify-content: space-between; align-items: baseline; gap: 8px; }
 aside h2 small { font-weight: 400; color: var(--muted); font-size: 12px; }
 .hint { font-size: 12px; color: var(--muted); margin: 0; }
@@ -87,9 +118,11 @@ button.lock.on { opacity: 1; }
 #tbar .hdl:hover::after { opacity: 1; width: 3px; left: 4px; }
 .row { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; font-size: 12.5px; color: var(--muted); }
 footer .grp { display: flex; gap: 4px; align-items: center; }
-#scrub { position: relative; flex: 1 1 320px; min-width: 200px; height: 28px; border-radius: 6px; overflow: hidden; background: var(--bg); border: 1px solid var(--rule); cursor: pointer; }
-#scrub .seg { position: absolute; top: 0; bottom: 0; opacity: .55; }
-#scrub .head { position: absolute; top: -2px; bottom: -2px; width: 2px; background: var(--ink); pointer-events: none; }
+#scrub { position: relative; flex: 1 1 100%; min-width: 200px; height: 34px; border-radius: 6px; overflow: hidden; background: var(--bg); border: 1px solid var(--rule); cursor: pointer; }
+#scrub .seg { position: absolute; top: 0; bottom: 0; opacity: .5; border-right: 1px solid var(--paper); font-size: 10.5px; color: #fff; text-shadow: 0 0 2px rgba(0,0,0,.8); overflow: hidden; white-space: nowrap; display: flex; align-items: center; justify-content: center; }
+#scrub .seg.cur { opacity: 1; box-shadow: inset 0 0 0 2px var(--ink); }
+#scrub .fill { position: absolute; top: 0; bottom: 0; left: 0; background: color-mix(in srgb, var(--ink) 18%, transparent); pointer-events: none; }
+#scrub .head { position: absolute; top: -2px; bottom: -2px; width: 3px; margin-left: -1px; background: var(--ink); pointer-events: none; box-shadow: 0 0 0 1px var(--paper); }
 #time { font-variant-numeric: tabular-nums; color: var(--muted); font-size: 12px; min-width: 104px; }
 #speedV, #limitV { font-variant-numeric: tabular-nums; min-width: 38px; display: inline-block; }
 .link { fill: none; stroke: var(--rel); stroke-width: 1.4; }
@@ -123,6 +156,8 @@ footer .grp { display: flex; gap: 4px; align-items: center; }
   <label class="tog" id="oursTog" title="Draw this layout's links with our link drawing (arcs, bends, ports, names), so both are compared on the same footing" hidden><input type="checkbox" id="ourLinks" checked> Our link drawing</label>
   <span id="status"></span>
   <span id="editBar"><span id="editTxt"></span><button id="editDrop" title="Go back to the layout's own run">Discard the edit</button></span>
+  <button id="penBtn" title="Draw on the drawing with the mouse (P). Circle a part, then type a note: the note keeps your marks, what they enclose, the frame and the positions shown">✎ Pen</button>
+  <button id="inkClear" title="Remove your marks from the drawing (they stay in the notes)">Clear marks</button>
   <a id="labLink" href="lab.html" target="layout-lab" title="Open the drawing as shown now in the Layout Lab. The lab follows the playback until you move something there; your moves come back here and the playback continues from them.">Open in Layout Lab ↗</a>
 </header>
 <nav>
@@ -143,6 +178,7 @@ footer .grp { display: flex; gap: 4px; align-items: center; }
     <div id="drawer"></div>
   </div>
   <aside>
+   <div id="sideTop">
     <h2>Steps <small id="totalInfo"></small></h2>
     <p class="hint">Times are measured in this browser. Hover a step for details, right-click it for more. <b>Show</b> unticked: the step happens at once. <b>Run</b> unticked: the layout is redone without it. Drag <span class="grip">⋮⋮</span> to run steps in another order.</p>
     <table id="steps"></table>
@@ -158,6 +194,13 @@ footer .grp { display: flex; gap: 4px; align-items: center; }
       <p class="hint">Drag the border between two steps. A locked step (🔒) is never shrunk: the whole grows instead.</p>
     </div>
     <div id="variants"></div>
+   </div>
+   <div id="notes">
+    <h2>Notes <small id="saveInfo">not saved yet</small></h2>
+    <div id="nlog"></div>
+    <textarea id="ntext" placeholder="A note about what you see now (Enter sends, Shift+Enter: new line). It keeps the frame, the step, the positions and any marks drawn since the last note."></textarea>
+    <div class="row"><span id="selInfo">Drag a class to move it; Ctrl+click to select several</span><button id="nsend">Add note</button></div>
+   </div>
   </aside>
 </main>
 <footer>
@@ -170,12 +213,14 @@ footer .grp { display: flex; gap: 4px; align-items: center; }
     <button id="bNextStep" title="Next step (Page Down)">⏩</button>
     <button id="bEnd" title="To the end (End)">⏭</button>
   </div>
-  <div id="scrub" title="Click or drag to move through the layout"></div>
   <span id="time"></span>
   <label class="tog" title="Playing speed. At 1×, each millisecond the layout worked plays for 8 ms (each frame for at least 15 ms, so a quick move is still seen), so a quick graph plays quickly and a slow one slowly.">Speed <input type="range" id="speed" min="-1" max="2" step="0.01" value="0" style="width:120px"> <span id="speedV">1×</span></label>
   <label class="tog"><input type="checkbox" id="follow" checked> Follow the drawing</label>
   <label class="tog"><input type="checkbox" id="names" checked> Link names</label>
   <label class="tog"><input type="checkbox" id="marks" checked> Mark links through classes</label>
+  <span id="result"></span>
+  <div id="scrub" title="Click or drag to move through the layout; right-click a step for more"></div>
+  <div id="chips"></div>
 </footer>
 <div id="menu"></div>
 <div id="tip"></div>
@@ -213,7 +258,7 @@ const STEPS = [ // key, group, name, what it does, color, can it be left out (Ru
   ['c-fence', 'Clean-up', 'Leaves to open space', 'A one-link class whose link still crosses another link or runs through a class moves to the most open spot round its neighbor: fewest problems first, then the most room around it, then the shorter link.', '#4d9a8a', true],
   ['c-nudge', 'Clean-up', 'Pushed off a link', 'A class that a link runs through (or passes within 9 px of) is pushed sideways off the line just far enough, or a one-link class turns round its neighbor; kept only if it leaves fewer problems.', '#a0703c', true],
   ['c-pull', 'Clean-up', 'Pulled in from the edge', 'A part hanging off the rest by one link (a one-link class, a chain, a small tree) turns round the class it hangs from or draws in toward it, and whole groups slide toward the middle, into open space; kept only if the drawing gets smaller (or the links of the part much shorter) with no more problems.', '#5b7fa8', true],
-  ['edit', 'Your edit', 'Edited in the Layout Lab', 'The positions as you left them in the Layout Lab; the steps after this one were run again from there.', '#e0a100', false],
+  ['edit', 'Your edit', 'Moved by hand', 'The positions as you left them (here, or in the Layout Lab); the steps after this one were run again from there.', '#e0a100', false],
   ['r-arcs', 'Links', 'Parallel links as arcs', 'Two or more links between the same two classes (a link and its reverse, or two relationships) spread into arcs, so none hides another.', '#0e7490', true],
   ['r-loops', 'Links', 'Self-link loops', 'A link from a class to itself becomes a loop on its emptiest side.', '#0891b2', false],
   ['r-bends', 'Links', 'Bends round obstacles', 'A link that still runs through a class (or crosses others when that pays off) bends round it; one link per frame.', '#be185d', true],
@@ -402,17 +447,23 @@ async function recordRun(key, algo, seed) {
 function applyEdit(msg) {
   if (!R || msg.graph !== R.key || msg.n !== R.n) return;
   if (!R.base) R.base = { frames: R.frames, j: C ? C.fj : R.frames.length - 1, info: R.info };
-  const j = R.base.j, F = R.base.frames.slice(0, j + 1), last = F[j].P;
-  const P = msg.P.map((p, v) => (p ? { x: p[0], y: p[1] } : { x: last[2 * v], y: last[2 * v + 1] })).map((p) => (isNaN(p.x) ? { x: 0, y: 0 } : p));
+  const j = R.base.j; editFrom(R.base.frames.slice(0, j + 1), j, msg.P.map((p) => (p ? { x: p[0], y: p[1] } : null)), 'lab');
+}
+// The frames up to frame j are kept; from the positions P (null: as in frame j; not placed yet: where the layout's own run ended) the
+// clean-up and the link steps run again. An edit made during the link steps reruns only the link steps.
+function editFrom(F, j, Pin, src) {
+  const last = F[j].P, fin = R.base.frames[R.base.frames.length - 1].P;
+  const P = Pin.map((p, v) => p || (isNaN(last[2 * v]) ? { x: fin[2 * v], y: fin[2 * v + 1] } : { x: last[2 * v], y: last[2 * v + 1] })).map((p) => (isNaN(p.x) ? { x: 0, y: 0 } : p));
   const inLinks = F[j].key.startsWith('r-'), prev = O.setTimeLimit(R.limit);
   let tail; try { tail = tailFrames(R, P, { cleanup: !R.engine && !inLinks, budgetMs: Math.max(100, Math.min(500, R.budgetMs || 500)), links: !R.engine || $('ourLinks').checked, run: F[j].run }); } finally { O.setTimeLimit(prev); }
   const moved = []; for (let v = 0; v < R.n; v++) if (!isNaN(last[2 * v]) && Math.hypot(P[v].x - last[2 * v], P[v].y - last[2 * v + 1]) > 0.5) moved.push(v);
-  R.frames = F.concat([{ key: 'edit', P: flat(P), ms: 0, run: F[j].run, moved, routes: F[j].routes, note: `${moved.length} class${moved.length === 1 ? '' : 'es'} moved by hand. ${inLinks ? 'The link steps' : 'The clean-up and the link steps'} were run again from here.` }], tail.frames);
+  R.frames = F.concat([{ key: 'edit', P: flat(P), ms: 0, run: F[j].run, moved, routes: F[j].routes, note: `${moved.length} class${moved.length === 1 ? '' : 'es'} moved by hand${src === 'lab' ? ' in the Layout Lab' : ''}. ${inLinks ? 'The link steps' : 'The clean-up and the link steps'} were run again from here: press Play.` }], tail.frames);
   R.info = { ...R.base.info, ...tail.info }; R.mcache = new Map();
   pause(); timeline(); buildPanel(); T = TL.at[j + 1]; countsFor = -1; render();
-  $('editTxt').textContent = 'Continuing from your edit in the Layout Lab'; $('editBar').classList.add('on');
+  $('editTxt').textContent = src === 'lab' ? 'Continuing from your edit in the Layout Lab' : 'Continuing from your edit'; $('editBar').classList.add('on');
+  return moved;
 }
-$('editDrop').onclick = () => { if (!R || !R.base) return; R.frames = R.base.frames; R.info = R.base.info; const j = R.base.j; R.base = null; R.mcache = new Map(); $('editBar').classList.remove('on'); timeline(); buildPanel(); T = TL.at[j]; countsFor = -1; render(); };
+$('editDrop').onclick = () => { if (!R || !R.base) return; note('edit-discarded', {}); R.frames = R.base.frames; R.info = R.base.info; const j = R.base.j; R.base = null; R.mcache = new Map(); $('editBar').classList.remove('on'); timeline(); buildPanel(); T = TL.at[j]; countsFor = -1; render(); };
 
 // ---------- the timeline ----------
 // each frame j > 0 is reached by a transition that plays for its measured time × RATE (at least MINF) × its step's time
@@ -558,7 +609,7 @@ function overlays(P) {
 // ---------- render ----------
 let C = null;
 function render() {
-  if (!R) return; C = current();
+  if (!R) return; C = current(); if (EDITP) C.P = EDITP;
   if ($('follow').checked && !userView) fitView(C.P, !playing); // smooth while playing, exact when paused or jumping
   svg.setAttribute('viewBox', `${view.x} ${view.y} ${view.w} ${view.h}`);
   const thru = new Set(); const paused = !playing;
@@ -575,13 +626,18 @@ function render() {
     s += `<g class="lname" opacity="${op.toFixed(2)}"><rect x="${L.x - L.w / 2}" y="${L.y - L.h / 2}" width="${L.w}" height="${L.h}" rx="3"/><text x="${L.x}" y="${L.y + 3.5}" text-anchor="middle">${esc(e.name)}</text></g>`; });
   s += '</g><g>';
   C.P.forEach((p, v) => { if (!p) return; const d = R.D[v];
-    s += `<g class="node${C.moved.has(v) ? ' moved' : ''}" transform="translate(${p.x.toFixed(1)},${p.y.toFixed(1)})"${C.alpha[v] < 1 ? ` opacity="${C.alpha[v].toFixed(2)}"` : ''}><rect x="${-d.w / 2}" y="${-d.h / 2}" width="${d.w}" height="${d.h}" rx="4"/><text text-anchor="middle" y="4">${esc(R.labels[v])}</text></g>`; });
+    s += `<g class="node${C.moved.has(v) ? ' moved' : ''}${SEL.has(v) ? ' sel' : ''}${ndrag && ndrag.moved && ndrag.group.includes(v) ? ' dragged' : ''}" data-v="${v}" transform="translate(${p.x.toFixed(1)},${p.y.toFixed(1)})"${C.alpha[v] < 1 ? ` opacity="${C.alpha[v].toFixed(2)}"` : ''}><rect x="${-d.w / 2}" y="${-d.h / 2}" width="${d.w}" height="${d.h}" rx="4"/><text text-anchor="middle" y="4">${esc(R.labels[v])}</text></g>`; });
   s += '</g>';
+  INK.forEach((k) => (s += `<path class="ink${k.noted ? ' old' : ''}" d="${inkD(k.pts)}"/>`));
+  if (idrag) s += `<path class="ink" d="${inkD(idrag.pts)}"/>`;
   svg.innerHTML = s;
   const m = meta(C.key); $('cK').textContent = `${m[1]} · frame ${C.fj + 1} of ${R.frames.length}`; $('cT').textContent = m[2]; $('cD').textContent = m[3];
   $('cX').textContent = C.fj > 0 ? `${C.f.note ? C.f.note + ' ' : ''}${C.key === 'edit' ? '' : `This frame: ${fmtMs(C.f.ms || 0)} of work.`}` : '';
   $('time').textContent = `${T.toFixed(1)} / ${TL.total.toFixed(1)} s`;
   const hd = $('scrub').querySelector('.head'); if (hd) hd.style.left = (100 * T / TL.total) + '%';
+  const fl = $('scrub').querySelector('.fill'); if (fl) fl.style.width = (100 * T / TL.total) + '%';
+  $('scrub').querySelectorAll('.seg').forEach((el) => el.classList.toggle('cur', +el.dataset.j0 <= C.fj && C.fj <= +el.dataset.j1));
+  $('chips').querySelectorAll('.chip').forEach((el) => el.classList.toggle('cur', el.dataset.k === C.key));
   $('steps').querySelectorAll('tr[data-k]').forEach((tr) => tr.classList.toggle('cur', tr.dataset.k === C.key));
   $('tbar').querySelectorAll('.tseg').forEach((el) => el.classList.toggle('cur', el.dataset.k === C.key));
   $('bPlay').textContent = playing ? '⏸ Pause' : '▶ Play';
@@ -639,8 +695,10 @@ function buildPanel() {
   const vs = R.variants; $('variants').innerHTML = vs.length > 1 ? '<b>Variants tried</b> (lower score is better):' + vs.map((v) => `<div>${v.kept ? '✓' : '·'} ${esc(v.name)}: score ${v.score == null ? '–' : Math.round(v.score)}${v.kept ? ' (kept)' : ''}</div>`).join('') : '';
   // scrubber segments, one per run of frames of the same step
   let sc = ''; for (let j = 1; j < R.frames.length;) { const k = R.frames[j].key; let e = j; while (e + 1 < R.frames.length && R.frames[e + 1].key === k) e++;
-    const x0 = TL.at[j - 1], x1 = TL.at[e]; if (x1 > x0) sc += `<div class="seg" data-k="${k}" style="left:${100 * x0 / TL.total}%;width:${100 * (x1 - x0) / TL.total}%;background:${meta(k)[4]}"></div>`; j = e + 1; }
-  $('scrub').innerHTML = sc + '<div class="head"></div>';
+    const x0 = TL.at[j - 1], x1 = TL.at[e], w = 100 * (x1 - x0) / TL.total, nm = meta(k)[2];
+    if (x1 > x0) sc += `<div class="seg" data-k="${k}" data-j0="${j}" data-j1="${e}" style="left:${100 * x0 / TL.total}%;width:${w}%;background:${meta(k)[4]}">${w > 4 ? esc(w > 9 ? nm : nm.split(' ')[0]) : ''}</div>`; j = e + 1; }
+  $('scrub').innerHTML = sc + '<div class="fill"></div><div class="head"></div>';
+  buildChips(keys);
   buildBar();
 }
 // one bar: a segment per step shown, as long as its playing time; drag the border between two steps
@@ -669,8 +727,8 @@ $('tReset').onclick = () => { Object.keys(CTL).forEach((k) => { CTL[k].w = 1; CT
 if (store.get('tmode', 'shrink') === 'stretch') document.querySelector('input[name=tmode][value=stretch]').checked = true;
 document.querySelectorAll('input[name=tmode]').forEach((el) => (el.onchange = () => store.set('tmode', el.value)));
 
-$('steps').addEventListener('change', (ev) => { const tr = ev.target.closest('tr'), c = ev.target.dataset.c; if (!tr || !c) return; const k = tr.dataset.k; ctl(k)[c] = ev.target.checked; saveCtl();
-  if (c === 'run') run(); else retime(); });
+function setCtl(k, c, on) { ctl(k)[c] = on; saveCtl(); note('step', { step: meta(k)[2], key: k, [c]: on }); if (c === 'run') run(true); else retime(); }
+$('steps').addEventListener('change', (ev) => { const tr = ev.target.closest('tr'), c = ev.target.dataset.c; if (!tr || !c) return; setCtl(tr.dataset.k, c, ev.target.checked); });
 $('steps').addEventListener('click', (ev) => { const lb = ev.target.closest('button.lock'); if (lb) { const k = lb.closest('tr').dataset.k; ctl(k).lock = !ctl(k).lock; saveCtl(); buildPanel(); render(); return; }
   const td = ev.target.closest('td.name'); if (!td || ev.target.classList.contains('grip')) return; jumpTo(td.parentElement.dataset.k); });
 function jumpTo(k) { const j = R.frames.findIndex((f, i) => i && f.key === k); if (j > 0) { pause(); T = TL.at[j - 1]; userView = false; render(); } }
@@ -680,9 +738,11 @@ $('steps').addEventListener('dragstart', (ev) => { const tr = ev.target.closest(
 $('steps').addEventListener('dragover', (ev) => { const tr = ev.target.closest('tr[data-k]'); if (!dragK || !tr || ordOf(tr.dataset.k) !== ordOf(dragK)) return; ev.preventDefault(); $('steps').querySelectorAll('tr.drop').forEach((x) => x.classList.remove('drop')); tr.classList.add('drop'); });
 $('steps').addEventListener('dragend', () => { dragK = null; $('steps').querySelectorAll('tr.drop').forEach((x) => x.classList.remove('drop')); });
 $('steps').addEventListener('drop', (ev) => { const tr = ev.target.closest('tr[data-k]'); if (!dragK || !tr) return; ev.preventDefault(); const to = tr.dataset.k, o = ordOf(dragK); if (o !== ordOf(to) || to === dragK) return;
-  const L = ORD[o].filter((k) => k !== dragK); L.splice(L.indexOf(to), 0, dragK); ORD[o] = L; store.set('order:' + o, L); dragK = null; run(); });
+  moveStep(dragK, to); });
+function moveStep(k, to) { const o = ordOf(k); if (o !== ordOf(to) || to === k) return; const L = ORD[o].filter((x) => x !== k); L.splice(L.indexOf(to), 0, k); ORD[o] = L; store.set('order:' + o, L); dragK = null;
+  note('order', { order: L.map((x) => meta(x)[2]) }); run(true); }
 
-$('oReset').onclick = () => { ORD.place = ['cross', 'thru', 'tight']; ORD.clean = ['c-single', 'c-unit', 'c-spread', 'c-group']; store.set('order:place', ORD.place); store.set('order:clean', ORD.clean); run(); };
+$('oReset').onclick = () => { ORD.place = ['cross', 'thru', 'tight']; ORD.clean = ['c-single', 'c-unit', 'c-spread', 'c-group']; store.set('order:place', ORD.place); store.set('order:clean', ORD.clean); run(true); };
 // ---------- tooltips and the step menu ----------
 function tipHtml(k) {
   const m = meta(k), st = SS && SS[k], c = ctl(k), o = ordOf(k); let h = `<div class="g">${esc(m[1])}</div><div class="t">${esc(m[2])}</div><div class="d">${esc(m[3])}</div>`;
@@ -709,7 +769,7 @@ const menu = $('menu');
 document.addEventListener('contextmenu', (ev) => { const el = ev.target.closest('#steps tr[data-k], #tbar .tseg, #scrub .seg'); if (!el || !R) return; ev.preventDefault(); tip.style.display = 'none';
   const k = el.dataset.k, m = meta(k), c = ctl(k), has = SS && SS[k];
   const items = [[has ? 'Jump to this step' : null, () => jumpTo(k)], [c.show ? 'Happen at once (do not animate)' : 'Animate this step', () => { c.show = !c.show; saveCtl(); retime(); }],
-    [m[5] ? (c.run ? 'Run the layout without this step' : 'Run the layout with this step again') : null, () => { c.run = !c.run; saveCtl(); run(); }],
+    [m[5] ? (c.run ? 'Run the layout without this step' : 'Run the layout with this step again') : null, () => { c.run = !c.run; saveCtl(); run(true); }],
     [c.lock ? 'Unlock its playing time' : 'Lock its playing time', () => { c.lock = !c.lock; saveCtl(); retime(); }],
     [has ? 'Twice the time' : null, () => { c.w *= 2; saveCtl(); retime(); }], [has && !c.lock ? 'Half the time' : null, () => { c.w /= 2; saveCtl(); retime(); }],
     [Math.abs(c.w - 1) > 0.01 ? 'Back to its measured time' : null, () => { c.w = 1; saveCtl(); retime(); }]].filter((x) => x[0]);
@@ -739,16 +799,120 @@ let scrubbing = false; const scrubTo = (ev) => { const r = $('scrub').getBoundin
 $('scrub').addEventListener('pointerdown', (ev) => { if (!R || ev.button !== 0) return; pause(); scrubbing = true; $('scrub').setPointerCapture(ev.pointerId); scrubTo(ev); });
 $('scrub').addEventListener('pointermove', (ev) => { if (scrubbing) scrubTo(ev); });
 $('scrub').addEventListener('pointerup', () => (scrubbing = false));
-document.addEventListener('keydown', (ev) => { if (ev.target.tagName === 'INPUT' || ev.target.tagName === 'SELECT' || !R) return;
-  const k = ev.key; if (k === ' ') { ev.preventDefault(); playing ? pause() : play(); } else if (k === 'ArrowRight') frameStep(1); else if (k === 'ArrowLeft') frameStep(-1);
+document.addEventListener('keydown', (ev) => { if (ev.target.tagName === 'INPUT' || ev.target.tagName === 'SELECT' || ev.target.tagName === 'TEXTAREA' || !R) return;
+  const k = ev.key; if ((k === 'p' || k === 'P') && !ev.ctrlKey && !ev.metaKey && !ev.altKey) { setPen(!PEN); return; } if (k === 'Escape' && PEN) { setPen(false); return; } if (k === ' ') { ev.preventDefault(); playing ? pause() : play(); } else if (k === 'ArrowRight') frameStep(1); else if (k === 'ArrowLeft') frameStep(-1);
   else if (k === 'PageDown') { ev.preventDefault(); stepStep(1); } else if (k === 'PageUp') { ev.preventDefault(); stepStep(-1); } else if (k === 'Home') $('bStart').onclick(); else if (k === 'End') $('bEnd').onclick(); });
 $('speed').oninput = () => { showSpeed(); store.set('speed2', +$('speed').value); };
 ['follow', 'names', 'marks'].forEach((id) => ($(id).onchange = () => { store.set(id, $(id).checked); if (id === 'follow') userView = false; countsFor = -1; if (R) R.mcache = new Map(); render(); }));
 // pan and zoom by hand stop the camera from following until Play or Home
-let pan = null;
-svg.addEventListener('pointerdown', (ev) => { pan = { x: ev.clientX, y: ev.clientY, v: { ...view } }; svg.setPointerCapture(ev.pointerId); });
-svg.addEventListener('pointermove', (ev) => { if (!pan) return; const r = svg.getBoundingClientRect(), s = view.w / r.width; view.x = pan.v.x - (ev.clientX - pan.x) * s; view.y = pan.v.y - (ev.clientY - pan.y) * s; userView = true; svg.setAttribute('viewBox', `${view.x} ${view.y} ${view.w} ${view.h}`); });
-svg.addEventListener('pointerup', () => (pan = null));
+let pan = null, ndrag = null, idrag = null, EDITP = null, SEL = new Set(), PEN = false, INK = [];
+const svgPt = (ev) => { const p = svg.createSVGPoint(); p.x = ev.clientX; p.y = ev.clientY; return p.matrixTransform(svg.getScreenCTM().inverse()); };
+const showSel = () => ($('selInfo').textContent = SEL.size ? 'Selected: ' + [...SEL].map((v) => R.labels[v]).join(', ') : 'Drag a class to move it; Ctrl+click to select several');
+svg.addEventListener('pointerdown', (ev) => {
+  if (!R || !C) return; svg.setPointerCapture(ev.pointerId); const p = svgPt(ev);
+  if (PEN && ev.button === 0) { if (playing) pause(); idrag = { pts: [[+p.x.toFixed(1), +p.y.toFixed(1)]], c: [ev.clientX, ev.clientY] }; return; }
+  const node = ev.target.closest('.node');
+  if (node && ev.button === 0) { // moving a class pauses the playback; on release the steps after this frame run again from the new positions
+    const v = +node.dataset.v; if (ev.ctrlKey || ev.metaKey) { SEL.has(v) ? SEL.delete(v) : SEL.add(v); } else if (!SEL.has(v)) SEL = new Set();
+    if (playing) pause(); const group = SEL.has(v) ? [...SEL] : [v];
+    ndrag = { group, p0: p, P: C.P.map((q) => q && { ...q }), start: group.map((i) => ({ ...C.P[i] })), moved: false, ctx: ctxNow() }; userView = true; showSel(); render(); return; }
+  pan = { x: ev.clientX, y: ev.clientY, v: { ...view }, moved: false }; });
+svg.addEventListener('pointermove', (ev) => {
+  if (idrag) { if (Math.hypot(ev.clientX - idrag.c[0], ev.clientY - idrag.c[1]) < 3) return; const p = svgPt(ev); idrag.c = [ev.clientX, ev.clientY]; idrag.pts.push([+p.x.toFixed(1), +p.y.toFixed(1)]); render(); return; }
+  if (ndrag) { const p = svgPt(ev), dx = p.x - ndrag.p0.x, dy = p.y - ndrag.p0.y; if (!ndrag.moved && Math.hypot(dx, dy) < 2) return; ndrag.moved = true;
+    ndrag.group.forEach((i, j) => (ndrag.P[i] = { x: ndrag.start[j].x + dx, y: ndrag.start[j].y + dy })); EDITP = ndrag.P; render(); return; }
+  if (!pan) return; pan.moved = true; const r = svg.getBoundingClientRect(), s = view.w / r.width; view.x = pan.v.x - (ev.clientX - pan.x) * s; view.y = pan.v.y - (ev.clientY - pan.y) * s; userView = true; svg.setAttribute('viewBox', `${view.x} ${view.y} ${view.w} ${view.h}`); });
+svg.addEventListener('pointerup', () => {
+  if (idrag) { const d = idrag; idrag = null; if (d.pts.length > 1) inkDone(d.pts); else render(); return; }
+  if (ndrag) { const d = ndrag; ndrag = null; EDITP = null;
+    if (d.moved) { const j = C.fj; if (!R.base) R.base = { frames: R.frames, j, info: R.info };
+      const moved = editFrom(R.frames.slice(0, j + 1), j, d.P, 'here'), g0 = d.group[0];
+      note('edit', { classes: moved.map((v) => R.labels[v]), dx: Math.round(d.P[g0].x - d.start[0].x), dy: Math.round(d.P[g0].y - d.start[0].y), ...d.ctx, after: brief(metricsAt(j + 1)) }); }
+    else render(); return; }
+  if (pan && !pan.moved && SEL.size) { SEL.clear(); showSel(); render(); } pan = null; });
+// ---------- pen ----------
+const inkD = (pts) => pts.map((q, i) => (i ? 'L' : 'M') + q[0] + ',' + q[1]).join('');
+function inPoly(x, y, pts) { let c = false; for (let i = 0, j = pts.length - 1; i < pts.length; j = i++) { const [xi, yi] = pts[i], [xj, yj] = pts[j]; if ((yi > y) !== (yj > y) && x < ((xj - xi) * (y - yi)) / (yj - yi) + xi) c = !c; } return c; }
+function segDist(px, py, [ax, ay], [bx, by]) { const dx = bx - ax, dy = by - ay, L2 = dx * dx + dy * dy || 1, t = Math.max(0, Math.min(1, ((px - ax) * dx + (py - ay) * dy) / L2)); return Math.hypot(px - ax - t * dx, py - ay - t * dy); }
+function inkDone(pts) {
+  // a loop if it ends near where it started (within a quarter of its size): then what is inside counts, else what it passes close to
+  const xs = pts.map((q) => q[0]), ys = pts.map((q) => q[1]), size = Math.hypot(Math.max(...xs) - Math.min(...xs), Math.max(...ys) - Math.min(...ys));
+  const loop = pts.length > 4 && Math.hypot(pts[0][0] - pts[pts.length - 1][0], pts[0][1] - pts[pts.length - 1][1]) < Math.max(30, size * 0.25);
+  const hit = (x, y) => (loop ? inPoly(x, y, pts) : pts.some((q, i) => i && segDist(x, y, pts[i - 1], q) < 30));
+  const inside = []; C.P.forEach((p, v) => { if (p && hit(p.x, p.y)) inside.push(v); });
+  const links = []; R.E.forEach((e, k) => { const a = C.P[e.s], b = C.P[e.t]; if (a && b && e.s !== e.t && hit((a.x + b.x) / 2, (a.y + b.y) / 2)) links.push(R.labels[e.s] + ' — ' + R.labels[e.t]); });
+  const id = SESS.events.filter((e) => e.kind === 'ink').length + 1, around = inside.map((v) => R.labels[v]);
+  INK.push({ id, pts, around }); note('ink', { ink: id, shape: loop ? 'loop' : 'line', pts, around, links, ...ctxNow() }); render();
+}
+function setPen(on) { PEN = on; svg.classList.toggle('pen', on); $('penBtn').classList.toggle('on', on); $('penBtn').textContent = on ? '✎ Pen on' : '✎ Pen'; }
+$('penBtn').onclick = () => setPen(!PEN);
+$('inkClear').onclick = () => { if (!INK.length) return; note('ink-clear', { cleared: INK.map((k) => k.id) }); INK = []; render(); };
+// ---------- notes: one session per graph, layout and seed, saved by the local receiver (tools/recv.py) as _temp/pb_<graph>_<time>.json ----------
+let SESS = { id: null, events: [] }, saveT = null;
+const brief = (m) => m && { cross: m.cross, sharp: m.sharp, thru: m.thru, hidden: m.hidden, bends: m.bends, placed: m.placed };
+const setupNow = () => ({ graph: R.key, algo: R.algo, seed: R.seed, limit: R.limit, leftOut: STEPS.filter((x) => x[5] && !ctl(x[0]).run).map((x) => x[2]), atOnce: STEPS.filter((x) => !ctl(x[0]).show).map((x) => x[2]),
+  order: { placement: ORD.place.map((k) => meta(k)[2]), cleanup: ORD.clean.map((k) => meta(k)[2]) }, edited: !!R.base });
+function ctxNow() { const m = meta(C.key); return { frame: C.fj + 1, of: R.frames.length, step: m[2], stage: m[1], t: +T.toFixed(2), total: +TL.total.toFixed(2), counts: brief(metricsAt(C.fj)),
+  view: [view.x, view.y, view.w, view.h].map((v) => Math.round(v)), shown: C.P.map((p) => (p ? [Math.round(p.x * 10) / 10, Math.round(p.y * 10) / 10] : null)), setup: setupNow() }; }
+function newSession() { const d = new Date(), p = (x) => String(x).padStart(2, '0');
+  SESS = { id: `pb_${R.key}_${d.getFullYear()}${p(d.getMonth() + 1)}${p(d.getDate())}-${p(d.getHours())}${p(d.getMinutes())}${p(d.getSeconds())}`, key: R.key + '|' + R.algo + '|' + R.seed, events: [], t0: performance.now() };
+  INK = []; SEL = new Set(); $('nlog').innerHTML = ''; $('saveInfo').textContent = 'not saved yet'; }
+function note(kind, detail) {
+  if (!R || !SESS.id) return; const ev = { seq: SESS.events.length + 1, at: new Date().toISOString(), s: Math.round((performance.now() - SESS.t0) / 1000), kind, ...detail };
+  SESS.events.push(ev); showNote(ev);
+  const body = JSON.stringify({ id: SESS.id, graph: R.key, algo: R.algo, seed: R.seed, labels: R.labels, links: R.E.map((e) => [e.s, e.t, e.sub ? 1 : 0]), boxes: R.D.map((d) => d.w), events: SESS.events });
+  try { localStorage.setItem('playback-notes:' + SESS.id, body); } catch (e) {}
+  clearTimeout(saveT); saveT = setTimeout(() => fetch('http://127.0.0.1:8613/' + SESS.id + '.json', { method: 'POST', body })
+    .then(() => ($('saveInfo').textContent = 'saved ' + new Date().toLocaleTimeString())).catch(() => ($('saveInfo').textContent = 'kept in this browser only')), 400);
+}
+function showNote(ev) {
+  const at = ev.frame ? `<span class="at">${esc(ev.step)} · frame ${ev.frame} of ${ev.of} · ${ev.t} s of ${ev.total} s</span>` : '';
+  let h = '';
+  if (ev.kind === 'note') h = at + (ev.ink ? `<span class="mk">About mark${ev.ink.length > 1 ? 's' : ''} ${ev.ink.map((i) => '✎' + i).join(', ')}${ev.inkAround.length ? ': ' + esc(ev.inkAround.slice(0, 8).join(', ')) + (ev.inkAround.length > 8 ? ' …' : '') : ''}</span>` : '') + esc(ev.text);
+  else if (ev.kind === 'ink') h = at + `✎${ev.ink} ${ev.shape === 'loop' ? 'Circled' : 'Marked'} ${ev.around.length ? esc(ev.around.slice(0, 8).join(', ')) + (ev.around.length > 8 ? ` and ${ev.around.length - 8} more` : '') : 'empty space'}`;
+  else if (ev.kind === 'edit') h = at + `Moved ${esc(ev.classes.join(', '))} by ${ev.dx}, ${ev.dy}; the steps after it ran again`;
+  else if (ev.kind === 'run') h = `Ran ${esc(graphName(ev.setup.graph))}${ev.setup.leftOut.length ? ' without ' + esc(ev.setup.leftOut.join(', ')) : ''}: work ${fmtMs(ev.result.work)}, crossings ${ev.result.cross}, through classes ${ev.result.thru}`;
+  else if (ev.kind === 'ink-clear') h = `Cleared ${ev.cleared.length} mark${ev.cleared.length > 1 ? 's' : ''}`;
+  else return; // step toggles, order changes and discarded edits are recorded, not listed (the next run line shows the setup)
+  const d = document.createElement('div'); d.className = 'ev ' + ev.kind; d.innerHTML = h; $('nlog').appendChild(d); $('nlog').scrollTop = 1e9;
+}
+function sendNote() { const text = $('ntext').value.trim(); if (!text || !R || !C) return; $('ntext').value = '';
+  const fresh = INK.filter((k) => !k.noted), d = { text, selected: [...SEL].map((v) => R.labels[v]), ...ctxNow() };
+  if (fresh.length) { d.ink = fresh.map((k) => k.id); d.inkAround = [...new Set(fresh.flatMap((k) => k.around))]; fresh.forEach((k) => (k.noted = true)); }
+  note('note', d); render(); }
+$('nsend').onclick = sendNote;
+$('ntext').addEventListener('keydown', (ev) => { if (ev.key === 'Enter' && !ev.shiftKey) { ev.preventDefault(); sendNote(); } });
+// ---------- the steps under the progress bar: Run (redo the layout without it), 👁 (animate, or happen at once), drag to reorder ----------
+function buildChips(keys) {
+  let h = '', g = null;
+  orderedKeys(keys.filter((k) => !k.startsWith('variant:'))).forEach((k) => { const m = meta(k), c = ctl(k), st = SS[k];
+    if (m[1] !== g) { g = m[1]; h += `<span class="grpl">${esc(g)}</span>`; }
+    h += `<span class="chip${c.run ? '' : ' off'}${c.show ? '' : ' hid'}" data-k="${k}"${ordOf(k) && !R.engine ? ' draggable="true"' : ''}>`
+      + (m[5] ? `<input type="checkbox" data-c="run" ${c.run ? 'checked' : ''} title="Run this step (untick: the layout is redone without it)">` : '')
+      + `<span class="sw" style="background:${m[4]};margin:0"></span><span class="nm" title="Jump to this step">${esc(m[2])}</span> <small>${st ? fmtMs(st.ms) : c.run ? '–' : 'off'}</small>`
+      + `<button data-c="show" title="${c.show ? 'Animated: click to make it happen at once (the playback skips it)' : 'Happens at once: click to animate it'}">${c.show ? '👁' : '⤼'}</button></span>`; });
+  $('chips').innerHTML = h;
+}
+$('chips').addEventListener('change', (ev) => { const ch = ev.target.closest('.chip'); if (ch && ev.target.dataset.c === 'run') setCtl(ch.dataset.k, 'run', ev.target.checked); });
+$('chips').addEventListener('click', (ev) => { const ch = ev.target.closest('.chip'); if (!ch) return; const k = ch.dataset.k;
+  if (ev.target.closest('button[data-c=show]')) setCtl(k, 'show', !ctl(k).show); else if (ev.target.classList.contains('nm')) jumpTo(k); });
+$('chips').addEventListener('dragstart', (ev) => { const ch = ev.target.closest('.chip[draggable]'); if (!ch) return; dragK = ch.dataset.k; ev.dataTransfer.effectAllowed = 'move'; ev.dataTransfer.setData('text/plain', dragK); tip.style.display = 'none'; });
+$('chips').addEventListener('dragover', (ev) => { const ch = ev.target.closest('.chip'); if (!dragK || !ch || ordOf(ch.dataset.k) !== ordOf(dragK)) return; ev.preventDefault(); $('chips').querySelectorAll('.drop').forEach((x) => x.classList.remove('drop')); ch.classList.add('drop'); });
+$('chips').addEventListener('dragend', () => { dragK = null; $('chips').querySelectorAll('.drop').forEach((x) => x.classList.remove('drop')); });
+$('chips').addEventListener('drop', (ev) => { const ch = ev.target.closest('.chip'); if (!dragK || !ch) return; ev.preventDefault(); moveStep(dragK, ch.dataset.k); });
+// ---------- the result of a run, against the run with every step in the usual order ----------
+const REF = {};
+function showResult() {
+  const F = R.frames, m = metricsAt(F.length - 1), work = F.reduce((a, f) => a + (f.ms || 0), 0), cfg = setupNow(), key = [R.key, R.algo, R.seed, R.limit].join('|');
+  const usual = !cfg.leftOut.length && ORD.place.join() === 'cross,thru,tight' && ORD.clean.join() === 'c-single,c-unit,c-spread,c-group' && !R.base;
+  const res = { work, cross: m.cross, thru: m.thru, sharp: m.sharp, hidden: m.hidden };
+  if (usual) REF[key] = res; const ref = REF[key];
+  const d = (a, b, f = (x) => x) => { const x = a - b; return Math.abs(x) < 1e-9 ? '' : ` <span class="${x > 0 ? 'up' : 'down'}">(${x > 0 ? '+' : '−'}${f(Math.abs(x))})</span>`; };
+  $('result').innerHTML = `Result: work <b>${fmtMs(work)}</b>${ref && !usual ? d(work, ref.work, fmtMs) : ''} · crossings <b>${m.cross}</b>${ref && !usual ? d(m.cross, ref.cross) : ''} · through classes <b>${m.thru}</b>${ref && !usual ? d(m.thru, ref.thru) : ''} · sharp <b>${m.sharp}</b>${ref && !usual ? d(m.sharp, ref.sharp) : ''}`
+    + (usual ? ' <small>(every step, usual order)</small>' : ref ? ' <small>(in brackets: against every step in the usual order)</small>' : ' <small>(run once with every step to compare)</small>');
+  $('result').title = 'Work is measured in this browser and varies by a few percent from run to run; the counts are those of the last frame.';
+  return res;
+}
 svg.addEventListener('wheel', (ev) => { ev.preventDefault(); const p = svg.createSVGPoint(); p.x = ev.clientX; p.y = ev.clientY; const q = p.matrixTransform(svg.getScreenCTM().inverse()), f = Math.exp(Math.max(-60, Math.min(60, ev.deltaY)) * 0.0015);
   view = { x: q.x - (q.x - view.x) * f, y: q.y - (q.y - view.y) * f, w: view.w * f, h: view.h * f }; userView = true; svg.setAttribute('viewBox', `${view.x} ${view.y} ${view.w} ${view.h}`); }, { passive: false });
 window.addEventListener('resize', () => { if (R) render(); });
@@ -770,21 +934,24 @@ $('labLink').addEventListener('click', () => { if (!R || !C) return; try { local
 
 // ---------- run ----------
 let runSeq = 0;
-function run() {
+function run(keepPlace) {
+  const keepU = keepPlace === true && R && TL ? T / TL.total : null;
   const key = $('graph').value, algo = $('algo').value, seed = Math.max(1, +$('seed').value || 1), my = ++runSeq, engine = !!ENGINES[algo];
   pause(); $('status').textContent = engine ? `Running ${ENGINES[algo].name}…` : 'Laying out…'; $('oursTog').hidden = !engine;
   history.replaceState(null, '', `?graph=${key}&algo=${algo}&seed=${seed}`); $('labLink').href = `lab.html?graph=${key}&sync=1`;
   store.set('last', { key, algo, seed }); $('editBar').classList.remove('on');
   setTimeout(() => recordRun(key, algo, seed).then((r) => {
-    if (my !== runSeq) return; R = r; timeline(); buildPanel(); T = 0; countsFor = -1; userView = false;
-    fitView(unflat(R.frames[R.frames.length - 1].P), true); render();
+    if (my !== runSeq) return; R = r; R.base = null; timeline(); buildPanel(); T = 0; countsFor = -1; userView = false;
+    if (SESS.key !== R.key + '|' + R.algo + '|' + R.seed) newSession();
+    fitView(unflat(R.frames[R.frames.length - 1].P), true);
+    const res = showResult(); note('run', { setup: setupNow(), result: res });
     $('status').textContent = `${R.n} classes, ${R.E.length} links`;
-    play();
+    if (keepU != null) { T = keepU * TL.total; render(); } else play(); // a toggle keeps the place and stays paused, so the change is seen at the same moment
   }).catch((err) => { if (my === runSeq) $('status').textContent = 'Could not lay out: ' + err.message; console.error(err); }), 20);
 }
-$('graph').onchange = run; $('algo').onchange = run; $('seed').onchange = run; $('ourLinks').onchange = run;
+$('graph').onchange = () => run(); $('algo').onchange = () => run(); $('seed').onchange = () => run(); $('ourLinks').onchange = () => run();
 const showLimit = () => ($('limitV').textContent = (+$('limit').value / 1000).toFixed(1) + ' s');
-$('limit').oninput = showLimit; $('limit').onchange = () => { store.set('limit', +$('limit').value); run(); };
+$('limit').oninput = showLimit; $('limit').onchange = () => { store.set('limit', +$('limit').value); run(true); };
 const q = new URLSearchParams(location.search), last = store.get('last', {});
 $('graph').value = q.get('graph') || last.key || 'crm'; if (!$('graph').value) $('graph').value = 'crm';
 $('algo').value = q.get('algo') || last.algo || 'auto'; if (!$('algo').value) $('algo').value = 'auto'; $('seed').value = q.get('seed') || last.seed || 1;

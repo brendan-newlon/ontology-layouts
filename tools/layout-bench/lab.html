@@ -554,7 +554,7 @@ function frameText(f) {
   if (!s) {
     const sk = st.skipped ? `, skipped ${st.skipped} (nothing near them had moved since they last failed)` : '';
     const what = { single: 'classes', unit: 'leaf units', spread: 'crowds', group: 'group moves', finish: 'leaf units and classes' }[st.phase];
-    return `<b>${STAGE[st.phase][0]}</b>. ${STAGE[st.phase][1]}<small>This stage took ${st.ms} ms (from ${(st.t / 1000).toFixed(2)} s): tried ${st.tried} ${what}, kept ${st.kept}${sk}.</small>`;
+    return `<b>${STAGE[st.phase][0]}</b>. ${STAGE[st.phase][1]}<small>This stage took ${Math.round(st.ms)} ms (from ${(st.t / 1000).toFixed(2)} s): tried ${st.tried} ${what}, kept ${st.kept}${sk}.</small>`;
   }
   const at = `<small>at ${(s.t / 1000).toFixed(2)} s</small>`;
   if (s.kind === 'move') return `<b>Moved ${esc(G.labels[s.nodes[0]])}</b> ${Math.hypot(s.to[0][0] - s.from[0][0], s.to[0][1] - s.from[0][1]) < 0.3 * medLen() ? 'a little (a nudge)' : 'into open space'}. ${f.delta || ''}${at}`;
