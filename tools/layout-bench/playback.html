@@ -147,7 +147,8 @@ footer .grp { display: flex; gap: 4px; align-items: center; }
     <optgroup label="Our layouts"><option value="auto">Best Read</option><option value="compact">Tidy Stress</option><option value="grouped">Mycelium</option></optgroup>
     <optgroup label="Open-source layouts"><option value="x:d3">d3-force</option><option value="x:cola">WebCola</option><option value="x:cose">Cytoscape cose</option><option value="x:fcose">Cytoscape fcose</option><option value="x:elk-stress">ELK stress</option><option value="x:elk-force">ELK force</option><option value="x:elk-layered">ELK layered</option><option value="x:neato">Graphviz neato</option><option value="x:fdp">Graphviz fdp</option><option value="x:sfdp">Graphviz sfdp</option><option value="x:dagre">dagre (layered)</option></optgroup>
   </select>
-  <label class="tog" title="How each class is drawn. The layout is given each class's own size: boxes sized by their names, or circles with the name underneath (as many graph browsers draw them). Open your own graph (Turtle) in the Lab: it then appears here too, under Your graphs.">Nodes <select id="nstyle"><option value="box">Boxes</option><option value="circle">Circles</option></select></label>
+  <label class="tog" title="How each class is drawn: a box or a circle, with its name on it or under it. The layout is given each class's own size. Open your own graph (Turtle) in the Lab: it then appears here too, under Your graphs.">Nodes <select id="nstyle"><option value="box">Boxes</option><option value="circle">Circles</option></select></label>
+  <label class="tog" title="Where each class's name goes: on the box or circle (sized to fit it), or under a small box or circle">Labels <select id="nlabel"><option value="on">On the node</option><option value="under">Under the node</option></select></label>
   <label class="tog" title="The layouts' random seed">Seed <input type="number" id="seed" value="1" min="1" max="999"></label>
   <label class="tog" title="How long our layout and its clean-up may work (default 1 s; the link drawing keeps at least its time at 1.5 s). It is a limit on work done, measured against a reference laptop, so the same limit gives the same drawing on any computer. Stopping sooner or allowing longer shows what each step does with less or more time.">Time limit <input type="range" id="limit" min="200" max="6000" step="50" value="1000" style="width:110px"> <span id="limitV">1 s</span></label>
   <label class="tog" id="oursTog" title="Draw this layout's links with our link drawing (arcs, bends, ports, names), so both are compared on the same footing" hidden><input type="checkbox" id="ourLinks" checked> Our link drawing</label>
@@ -216,7 +217,7 @@ footer .grp { display: flex; gap: 4px; align-items: center; }
   </div>
   <span id="time"></span>
   <label class="tog" title="Playing speed as a share of the real speed. 100%: the layout plays as fast as it ran in this browser; 10%: ten times as long. Every frame plays for its share of the measured work, so the progress bar's proportions are the work's proportions.">Speed <input type="range" id="speed" min="-1" max="2" step="0.01" value="0.7" style="width:120px"> <span id="speedV">5%</span> <small>of real speed</small></label>
-  <label class="tog" title="Keep the whole drawing in view. The view holds still while classes move, and changes only when the drawing grows or shrinks a lot (or another variant is shown)."><input type="checkbox" id="follow" checked> Follow the drawing</label>
+  <label class="tog" title="Keep the whole drawing in view. The view holds still while classes move; when the drawing outgrows it or shrinks to under half of it, the view glides to fit it again."><input type="checkbox" id="follow" checked> Follow the drawing</label>
   <label class="tog"><input type="checkbox" id="names" checked> Link names</label>
   <label class="tog"><input type="checkbox" id="marks" checked> Mark links through classes</label>
   <span id="result"></span>
@@ -232,7 +233,7 @@ footer .grp { display: flex; gap: 4px; align-items: center; }
 <script src="models4.js"></script>
 <script src="models5.js"></script>
 <script src="models6.js"></script>
-<script src="graphs.js"></script>
+<script src="graphs.js?v=2"></script>
 <script>
 // Plays back a layout step by step: the library reports the positions after every step that moves classes (_ogTraced),
 // the clean-up records each step it keeps, and the link routing is replayed one step at a time. Each frame plays for exactly
@@ -494,7 +495,7 @@ $('editDrop').onclick = () => { if (!R || !R.base) return; note('edit-discarded'
 // A step not shown keeps its time; the drawing holds the last frame shown until the step is over (disp: the frame drawn).
 let TL = null; // { at: [time of each frame, s of work], total, disp: [frame drawn at each frame] }
 const frameDur = (f) => Math.max(0, f.ms || 0) / 1000;
-function timeline() { R.scenes = null; const F = R.frames, at = [0], disp = [0];
+function timeline() { const F = R.frames, at = [0], disp = [0];
   for (let j = 1; j < F.length; j++) { at.push(at[j - 1] + frameDur(F[j])); disp.push(ctl(F[j].key).show ? j : disp[j - 1]); }
   TL = { at, disp, total: at[at.length - 1] || 0.001 }; }
 const meta = (k) => k.startsWith('variant:') ? ['variant', 'Variants not kept', `Variant "${k.slice(8)}"`, 'Best Read (and Tidy Stress on small graphs) runs several variants and keeps the best-scoring drawing; this one was not kept.', '#b0b7c3', false] : STEPS[SI[k]] || [k, '', k, '', '#888', false];
@@ -555,30 +556,38 @@ function clearRect() {
   return { W, H, list: xs1.flatMap((x1) => xs2.flatMap((x2) => ys1.flatMap((y1) => ys2.map((y2) => ({ x1, y1, x2, y2 })))))
     .filter((r) => r.x2 - r.x1 > 80 && r.y2 - r.y1 > 80 && r.x1 >= 0 && r.y1 >= 0 && r.x2 <= W && r.y2 <= H && !obs.some((o) => o.x1 < r.x2 && r.x1 < o.x2 && o.y1 < r.y2 && r.y1 < o.y2)) };
 }
-// The camera holds still so the classes can be seen moving: frames are grouped, from the end backwards, into stretches whose
-// extent stays within 1.6 times the area of the stretch's last frame (and that belong to one run); each stretch is shown in
-// one fixed view that holds all of it, and the view changes only between stretches.
-function sceneBounds(j) {
-  if (!R.scenes) { const F = R.frames, sc = new Array(F.length); let cur = null, seed = 0, run;
-    const area = (b) => Math.max(1, (b.x2 - b.x1) * (b.y2 - b.y1)), uni = (a, b) => ({ x1: Math.min(a.x1, b.x1), y1: Math.min(a.y1, b.y1), x2: Math.max(a.x2, b.x2), y2: Math.max(a.y2, b.y2) });
-    for (let i = F.length - 1; i >= 0; i--) { const b = bounds(unflat(F[i].P));
-      if (b.x1 <= b.x2) { const u = cur && F[i].run === run ? uni(cur.b, b) : null;
-        if (u && area(u) <= 1.6 * seed) cur.b = u; else { cur = { b: { ...b } }; seed = area(b); run = F[i].run; } }
-      sc[i] = cur; }
-    for (let i = 0; i < F.length && !sc[i]; i++) sc[i] = sc.find((x) => x); // empty frames before the first class: the next view
-    R.scenes = sc; }
-  return R.scenes[j] && R.scenes[j].b;
-}
 let CR = null; // the clear rectangles between the panels, measured once until the window or the panels change
-function fitView(P, snap, b) {
-  const { x1, y1, x2, y2 } = b || bounds(P); if (!(x1 <= x2)) return; const pad = 30, dw = x2 - x1 + 2 * pad, dh = y2 - y1 + 2 * pad, cr = CR || (CR = clearRect());
+// the view that shows the drawing (bounds b) as large as it fits in the clear area; best: that area, in screen pixels
+function viewFor(b) {
+  const { x1, y1, x2, y2 } = b; if (!(x1 <= x2)) return null; const pad = 30, dw = x2 - x1 + 2 * pad, dh = y2 - y1 + 2 * pad, cr = CR || (CR = clearRect());
   const W = Math.max(1, cr.W), H = Math.max(1, cr.H); let best = { x1: 0, y1: 0, x2: W, y2: H }, bs = 0;
   for (const r of cr.list) { const sc = Math.min((r.x2 - r.x1) / dw, (r.y2 - r.y1) / dh); if (sc > bs) { bs = sc; best = r; } }
   // when the clear space is small (a narrow window), drawing under the panels beats drawing tiny
   const full = Math.min(W / dw, H / dh); if (bs < 0.55 * full) { bs = full; best = { x1: 0, y1: 0, x2: W, y2: H }; }
   const k = bs || Math.min(W / dw, H / dh), ox = best.x1 + ((best.x2 - best.x1) - dw * k) / 2, oy = best.y1 + ((best.y2 - best.y1) - dh * k) / 2;
-  const t = { x: x1 - pad - ox / k, y: y1 - pad - oy / k, w: W / k, h: H / k };
-  if (snap) view = t; else { const q = 0.12; view = { x: view.x + (t.x - view.x) * q, y: view.y + (t.y - view.y) * q, w: view.w + (t.w - view.w) * q, h: view.h + (t.h - view.h) * q }; }
+  return { x: x1 - pad - ox / k, y: y1 - pad - oy / k, w: W / k, h: H / k, best, W, H };
+}
+function fitView(P) { const t = viewFor(bounds(P)); if (t) { view = t; camTo = null; } }
+// The camera holds still while the classes move. It moves only when the drawing would leave the clear area between the
+// panels, or fills less than half of the view, and then glides to the new view (out as far as needed, re-centered) over
+// about half a second: it never jumps, also when you jump to another step.
+let camTo = null, camRaf = 0;
+function steadyView(P) {
+  const b = bounds(P), t = viewFor(b); if (!t) return;
+  const sx = (x) => (x - view.x) * t.W / view.w, sy = (y) => (y - view.y) * t.H / view.h, e = 2;
+  const out = sx(b.x1) < t.best.x1 - e || sy(b.y1) < t.best.y1 - e || sx(b.x2) > t.best.x2 + e || sy(b.y2) > t.best.y2 + e;
+  if (out || t.w < 0.5 * view.w || camTo) { // refit with room to spare (15%), so that a little growth does not move it again
+    const g = 1.15, cx = t.x + t.w / 2, cy = t.y + t.h / 2; camTo = { x: cx - t.w * g / 2, y: cy - t.h * g / 2, w: t.w * g, h: t.h * g };
+    if (!camRaf) camRaf = requestAnimationFrame(camStep); }
+}
+function camStep() { // eases toward the target, zooming at most 5% and panning at most 3% of the view per frame
+  camRaf = 0; if (!camTo || userView) { camTo = null; return; }
+  const t = camTo, f = t.w / view.w, cx = view.x + view.w / 2, cy = view.y + view.h / 2, tx = t.x + t.w / 2, ty = t.y + t.h / 2;
+  if (Math.abs(Math.log(f)) < 0.005 && Math.hypot(tx - cx, ty - cy) < 0.003 * view.w) { view = { x: t.x, y: t.y, w: t.w, h: t.h }; camTo = null; }
+  else { const k = Math.min(1.05, Math.max(1 / 1.05, Math.pow(f, 0.14))), w = view.w * k, h = view.h * k, lim = 0.03 * w;
+    const nx = cx + Math.max(-lim, Math.min(lim, (tx - cx) * 0.14)), ny = cy + Math.max(-lim, Math.min(lim, (ty - cy) * 0.14));
+    view = { x: nx - w / 2, y: ny - h / 2, w, h }; }
+  svg.setAttribute('viewBox', `${view.x} ${view.y} ${view.w} ${view.h}`); if (camTo) camRaf = requestAnimationFrame(camStep);
 }
 // each panel: shrink to its title (–), or close into the drawer at the left edge (×); remembered per browser
 const PNL = store.get('panels', {});
@@ -652,7 +661,7 @@ function overlays(P) {
 let C = null;
 function render() {
   if (!R) return; C = current(); if (EDITP) C.P = EDITP;
-  if ($('follow').checked && !userView) fitView(C.P, !playing, sceneBounds(C.dj)); // smooth while playing, exact when paused or jumping
+  if ($('follow').checked && !userView) steadyView(C.P);
   svg.setAttribute('viewBox', `${view.x} ${view.y} ${view.w} ${view.h}`);
   const thru = new Set(); const paused = !playing;
   if ($('marks').checked && (paused || R.n < 120)) {
@@ -979,7 +988,10 @@ function run(keepPlace) {
     if (keepU != null) { T = keepU * TL.total; render(); } else play(); // a toggle keeps the place and stays paused, so the change is seen at the same moment
   }).catch((err) => { if (my === runSeq) $('status').textContent = 'Could not lay out: ' + err.message; console.error(err); }), 20);
 }
-$('nstyle').value = LayoutGraphs.style(); $('nstyle').onchange = () => { LayoutGraphs.setStyle($('nstyle').value); note('step', { nodes: $('nstyle').value }); run(); };
+{ const st = LayoutGraphs.parse(LayoutGraphs.style()); $('nstyle').value = st.shape; $('nlabel').value = st.label; }
+$('nstyle').onchange = $('nlabel').onchange = (ev) => {
+  if (ev.target.id === 'nstyle') $('nlabel').value = LayoutGraphs.parse($('nstyle').value).label; // each shape's usual name position
+  LayoutGraphs.setStyle(LayoutGraphs.compose($('nstyle').value, $('nlabel').value)); note('step', { nodes: LayoutGraphs.style() }); run(); };
 $('graph').onchange = () => run(); $('algo').onchange = () => run(); $('seed').onchange = () => run(); $('ourLinks').onchange = () => run();
 const showLimit = () => ($('limitV').textContent = (+$('limit').value / 1000).toFixed(2).replace(/0$/, '') + ' s');
 $('limit').oninput = showLimit; $('limit').onchange = () => { store.set('limit2', +$('limit').value); run(true); };
