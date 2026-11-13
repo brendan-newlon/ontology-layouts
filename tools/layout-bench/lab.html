@@ -58,7 +58,9 @@ aside { border-left: 1px solid var(--rule); background: var(--paper); display: g
 .link.focusline { stroke: var(--bad); stroke-width: 3; }
 .ev.note .on { display: block; font-size: 11px; color: var(--muted); margin-bottom: 2px; }
 aside h2 { font-size: 13px; margin: 0; padding: 8px 12px; border-bottom: 1px solid var(--rule); display: flex; justify-content: space-between; align-items: center; }
-#save { font-weight: 400; color: var(--muted); font-size: 12px; }
+aside h2 { white-space: nowrap; gap: 6px; padding: 6px 8px 6px 12px; }
+aside h2 .wk { display: inline-flex; gap: 4px; font-weight: 400; }
+aside h2 .wk button, aside h2 .wk select { font-size: 12px; padding: 2px 6px; }
 #log { overflow-y: auto; padding: 8px 10px; display: flex; flex-direction: column; gap: 5px; }
 .ev { font-size: 12px; color: var(--muted); padding: 2px 6px; border-left: 2px solid var(--rule); }
 .ev .d { color: var(--ink); }
@@ -121,15 +123,14 @@ aside h2 { font-size: 13px; margin: 0; padding: 8px 12px; border-bottom: 1px sol
       <button data-f="session">Download this session (JSON)</button>
     </span></span>
   <input type="file" id="ttlFile" accept=".ttl,.nt,.turtle,text/turtle,application/n-triples" hidden>
-  <label class="tog" title="How each class is drawn. The layout is given each class's own size: boxes sized by their names, or circles with the name underneath (as many graph browsers draw them)">Nodes <select id="nstyle"><option value="box">Boxes</option><option value="circle">Circles</option></select></label>
+  <label class="tog" title="How each class is drawn: a box or a circle, with its name on it or under it. The layout is given each class's own size.">Nodes <select id="nstyle"><option value="box">Boxes</option><option value="circle">Circles</option></select></label>
+  <label class="tog" title="Where each class's name goes: on the box or circle (sized to fit it), or under a small box or circle">Labels <select id="nlabel"><option value="on">On the node</option><option value="under">Under the node</option></select></label>
+  <label class="tog" title="Straight: links stay straight unless you pull a bend into one by hand. Bend where they overlap: after each change, a link that runs through a class is bent round it and repeated links between two classes are drawn apart. Auto-bend: the same, and a link is also bent away from crossings where that pays off. In the two bending modes, the next change redraws the bends, including ones pulled by hand.">Lines <select id="lines"><option value="straight">Straight</option><option value="round">Bend where they overlap</option><option value="auto">Auto-bend</option></select></label>
   <button id="relayout">Lay out again</button>
   <button id="undo" title="Ctrl+Z">Undo</button>
   <button id="tidy" title="Clean up the drawing the way the recorded hand sessions did: single moves into open space, leaf units, crowds spread outward, group moves with look-ahead, a last leaf pass">Clean up</button>
   <label class="tog" title="Time the clean-up may take">Time <input type="range" id="tidyT" min="0.25" max="10" step="0.25" value="1.5"> <span id="tidyTv">1.5 s</span></label>
   <label class="tog" title="How many repair moves a group move may use before it has to pay off">Look-ahead <input type="range" id="tidyLA" min="0" max="8" step="1" value="4"> <span id="tidyLAv">4</span></label>
-  <button id="walkBtn" title="Run the clean-up and step through what it does, stage by stage, with notes on each step">Walk through</button>
-  <select id="walkFrom" title="Which drawing the walk-through cleans up"><option value="start">from the starting layout</option><option value="here">from this drawing</option></select>
-  <button id="routeBtn" title="Bend the links the way the link routing does after a layout: parallel links as arcs, links bent round classes in their way (the bends become handles you can edit)">Bend links</button>
   <a id="pbLink" href="playback.html" title="Watch the layout of this graph step by step">Playback ↗</a>
   <span id="syncBar" hidden><label class="tog" title="Show the playback's current frame as it plays. Moving anything here stops following and sends your drawing to the playback, which continues from it."><input type="checkbox" id="syncFollow" checked> Follow the playback</label><span id="syncTxt"></span></span>
   <button id="penBtn" title="Draw over the drawing with the mouse (P). Circle a part and type a note: the note keeps your marks, what they enclose and the drawing as it was">✎ Pen</button>
@@ -144,7 +145,7 @@ aside h2 { font-size: 13px; margin: 0; padding: 8px 12px; border-bottom: 1px sol
     <div id="help">Drag a class to move it. Ctrl+click classes to select several, then drag one to move them together; Shift+drag on empty space selects an area. Drag on a link to pull a bend into it; drag a bend to reshape; double-click a bend to remove it, or a link to straighten it. Drag empty space to pan, wheel to zoom. ✎ Pen (or P) draws on the drawing: circle something, then type a note about it. Ctrl+Z undoes the last step and grays it out as a trial; "ignore" on any step leaves it out of the analysis. Coming back to a graph continues where you left it; "Lay out again" starts that graph over.</div>
   </div>
   <aside>
-    <h2>Steps and reasoning <span id="save">not saved yet</span></h2>
+    <h2>Steps and reasoning <span class="wk"><button id="walkBtn" title="Run the clean-up and step through what it does, stage by stage, with notes on each step">Walk through</button><select id="walkFrom" title="Which drawing the walk-through cleans up"><option value="start">from the start</option><option value="here">from here</option></select></span></h2>
     <div id="walk" hidden>
       <div class="where"><span id="wWhere"></span><span id="wPos"></span></div>
       <div class="what" id="wWhat"></div>
@@ -157,7 +158,7 @@ aside h2 { font-size: 13px; margin: 0; padding: 8px 12px; border-bottom: 1px sol
     </div>
     <div id="log"></div>
     <div id="compose">
-      <textarea id="note" placeholder="Explain what you are about to do, or why you just did it. Enter sends, Shift+Enter starts a new line."></textarea>
+      <textarea id="note" placeholder="Explain what you are about to do, or why you just did it. Enter sends, Shift+Enter starts a new line. Your steps and notes are kept in this browser only."></textarea>
       <div class="row"><span id="selinfo">Nothing selected</span><button id="send">Add note</button></div>
     </div>
   </aside>
@@ -172,7 +173,7 @@ aside h2 { font-size: 13px; margin: 0; padding: 8px 12px; border-bottom: 1px sol
 <script src="engines3.js"></script>
 <script src="handtidy.js"></script>
 <script src="ttl.js"></script>
-<script src="graphs.js"></script>
+<script src="graphs.js?v=2"></script>
 <script>
 // Every action and note is kept in order, with the metrics before and after and the full positions after, so that a session
 // can be replayed and studied. Sessions are posted to the local receiver (tools/recv.py, port 8613) and kept in localStorage.
@@ -287,6 +288,8 @@ const esc = (t) => String(t).replace(/&/g, '&amp;').replace(/</g, '&lt;');
 // ---------- session log ----------
 const snapshot = () => ({ P: G.P.map((p) => [Math.round(p.x * 10) / 10, Math.round(p.y * 10) / 10]), H: G.H.map((h) => h.map((x) => [+x.t.toFixed(4), +x.d.toFixed(1)])) });
 function restore(s) { G.P = s.P.map(([x, y]) => ({ x, y })); G.H = s.H.map((h) => h.map(([t, d]) => ({ t, d }))); }
+// where the session is kept, said in the note box's placeholder
+function saved(where) { $('note').placeholder = 'Explain what you are about to do, or why you just did it. Enter sends, Shift+Enter starts a new line. Your steps and notes are ' + where + '.'; }
 function record(kind, detail, before) {
   const after = measure(), ev = { seq: S.events.length + 1, ms: Math.round(performance.now() - S.started), at: new Date().toISOString(), kind, ...detail };
   if (before) { ev.before = brief(before); ev.after = brief(after); ev.state = snapshot(); }
@@ -311,6 +314,7 @@ function describe(ev) {
       return `<span class="d">Cleaned up in ${(ev.ms / 1000).toFixed(1)} s: ${c('move')} single moves, ${c('unit')} leaf units turned, ${c('spread')} crowds spread, ${c('group')} group moves${ev.fromWalk ? ` (kept from the walk-through, up to step ${ev.upToStep})` : ''}</span>` + m; }
     case 'walkthrough': return `<span class="d">Started a walk-through of the clean-up ${ev.from === 'start' ? 'from the starting layout' : 'from this drawing'} (${(ev.ms / 1000).toFixed(2)} s, ${ev.stages.length} stages)</span>`;
     case 'walk-closed': return `<span class="d">Closed the walk-through at step ${ev.atStep}; your drawing is back as it was</span>`;
+    case 'lines': return `<span class="d">Lines: ${ev.lines === 'straight' ? 'straight' : ev.lines === 'round' ? 'bent where they overlap' : 'auto-bent'}${ev.lines === 'straight' ? '' : ` (${ev.bent} links bent, ${ev.parallel} repeated links drawn apart)`}</span>` + m;
     case 'route': return `<span class="d">Bent the links as the link routing does: ${ev.bent} links bent, ${ev.parallel} parallel links spread</span>` + m;
     case 'playback': return `<span class="d">Opened from the playback at ${esc(ev.playback ? ev.playback.step : '')}, frame ${ev.playback ? ev.playback.frame + ' of ' + ev.playback.of : ''}</span>`;
     case 'ink': return `<span class="d">✎${ev.ink} ${ev.shape === 'loop' ? 'Circled' : 'Marked'} ${ev.around.length ? esc(ev.around.slice(0, 8).join(', ')) + (ev.around.length > 8 ? ` and ${ev.around.length - 8} more` : '') : 'empty space'}${ev.crossings ? `, ${ev.crossings} crossing${ev.crossings === 1 ? '' : 's'} inside` : ''}</span>`;
@@ -339,10 +343,10 @@ const sessionBody = () => JSON.stringify({ id: S.id, graph: G.key, graphName: MO
 function persist() {
   const body = sessionBody();
   try { localStorage.setItem('layout-lab:' + S.id, body); } catch (e) {}
-  clearTimeout(saveT); if (!LOCAL) { $('save').textContent = 'kept in this browser only'; return; } // the receiver (tools/recv.py) runs only on your own computer
+  clearTimeout(saveT); if (!LOCAL) { saved('kept in this browser only'); return; } // the receiver (tools/recv.py) runs only on your own computer
   saveT = setTimeout(() => fetch('http://127.0.0.1:8613/' + S.id + '.json', { method: 'POST', body })
-    .then(() => ($('save').textContent = 'saved ' + new Date().toLocaleTimeString()))
-    .catch(() => ($('save').textContent = 'kept in this browser only')), 400);
+    .then(() => saved('also saved on this computer at ' + new Date().toLocaleTimeString()))
+    .catch(() => saved('kept in this browser only')), 400);
 }
 
 // ---------- loading ----------
@@ -381,7 +385,7 @@ async function load(key, algo, logIt = true) {
   G.H = G.E.map(() => []); G.sel.clear(); G.pick = -1; S.undo = [];
   if (logIt === 'open' && resume(latestSession(key, LayoutGraphs.style()))) { journal('resume'); return; }
   if (!S.id || logIt === 'new' || logIt === 'open') { S.id = 'lab_' + key + '_' + new Date().toISOString().replace(/[-:]/g, '').replace('T', '-').slice(0, 15); S.events = []; S.started = performance.now(); $('log').innerHTML = ''; }
-  fit(); S.base = measure();
+  bendLinks(); fit(); S.base = measure();
   record('layout', { graph: key, algo: $('algo').selectedOptions[0].textContent }, S.base);
   draw(); journal(logIt === 'open' || logIt === 'new' ? 'new' : 'relayout');
 }
@@ -445,7 +449,7 @@ svg.addEventListener('pointerup', () => {
   if (d.kind === 'marquee') { const r = d.r, x1 = Math.min(r.x0, r.x1), x2 = Math.max(r.x0, r.x1), y1 = Math.min(r.y0, r.y1), y2 = Math.max(r.y0, r.y1);
     if (!d.add) G.sel.clear(); G.P.forEach((q, i) => { if (q.x >= x1 && q.x <= x2 && q.y >= y1 && q.y <= y2) G.sel.add(i); }); draw(); record('select', { classes: [...G.sel].map((i) => G.labels[i]), how: 'area' }); return; }
   if (d.kind === 'nodes') {
-    if (d.moved) { S.undo.push(d.snap); const dx = Math.round(G.P[d.group[0]].x - d.start[0].x), dy = Math.round(G.P[d.group[0]].y - d.start[0].y);
+    if (d.moved) { S.undo.push(d.snap); bendLinks(); const dx = Math.round(G.P[d.group[0]].x - d.start[0].x), dy = Math.round(G.P[d.group[0]].y - d.start[0].y);
       record('move', { classes: d.group.map((i) => G.labels[i]), dx, dy, group: d.group.length > 1 }, d.before); }
     else if (d.selChanged) record('select', { classes: [...G.sel].map((i) => G.labels[i]), how: d.ctrl ? 'ctrl-click' : 'click' });
     draw(); return;
@@ -524,7 +528,7 @@ $('tidy').onclick = () => {
   setTimeout(() => {
     const before = measure(), snap = snapshot(), budgetMs = +$('tidyT').value * 1000, groupDepth = +$('tidyLA').value;
     const r = HandTidy.run(G.P, G.D, G.E.map((e) => ({ s: e.s, t: e.t })), { budgetMs, groupDepth });
-    G.P = r.P; S.undo.push(snap);
+    G.P = r.P; S.undo.push(snap); bendLinks();
     record('cleanup', { budgetMs, groupDepth, ms: r.stats.ms, steps: r.log.map((l) => ({ kind: l.kind, classes: l.nodes.map((i) => G.labels[i]), anchor: l.anchor != null ? G.labels[l.anchor] : undefined, gain: l.gain })) }, before);
     draw(); b.disabled = false; b.textContent = 'Clean up';
   }, 30);
@@ -673,7 +677,7 @@ function walkEnd(keep) {
   G.P = toP(w.home.P); G.H = w.home.H; const before = measure(), snap = snapshot();
   if (keep && w.from === 'start') G.H = G.E.map(() => []);
   W = null; $('walk').hidden = true; $('walkBtn').disabled = false; $('walkBtn').textContent = 'Walk through';
-  if (keep) { G.P = to; S.undo.push(snap); const kept = w.frames.slice(0, w.i + 1).filter((x) => x.s && x.s.kind !== 'group-rejected').map((x) => x.s);
+  if (keep) { G.P = to; S.undo.push(snap); bendLinks(); const kept = w.frames.slice(0, w.i + 1).filter((x) => x.s && x.s.kind !== 'group-rejected').map((x) => x.s);
     record('cleanup', { budgetMs: w.budgetMs, groupDepth: w.groupDepth, ms: w.ms, fromWalk: w.seq, upToStep: w.i + 1, steps: kept.map((l) => ({ kind: l.kind, classes: l.nodes.map((i) => G.labels[i]), anchor: l.anchor != null ? G.labels[l.anchor] : undefined, gain: l.gain })) }, before); }
   else record('walk-closed', { walk: w.seq, atStep: w.i + 1 });
   draw();
@@ -687,12 +691,22 @@ $('wDropped').onchange = () => { if (!W) return; const cur = W.frames[W.i]; W.fr
 $('note').addEventListener('keydown', (ev) => { if (ev.key === 'Enter' && !ev.shiftKey) { ev.preventDefault(); sendNote(); } });
 $('marks').onchange = () => { draw(); record('toggle', { marks: $('marks').checked }); };
 $('handles').onchange = () => { draw(); record('toggle', { bends: $('handles').checked }); };
-// Bend links: the library's link routing on this drawing; its bends become this lab's bends (ports and names are not shown here)
-$('routeBtn').onclick = () => {
-  if (W) return; const before = measure(), snap = snapshot();
-  const r = O.route(G.P, G.D, G.E.map((e) => [e.s, e.t, e.sub ? 2 : 1]), { ports: 0, labels: false, settle: false });
-  G.H = r.routes.map((x) => x.bends.map((h) => ({ t: h.t, d: h.d }))); S.undo.push(snap);
-  record('route', { bent: r.stats.bent, parallel: r.stats.parallel }, before); draw();
+// Lines: straight (bends only by hand), or the library's link routing redone after every change: bends round classes and
+// repeated links drawn apart ("round"), and also bends away from crossings ("auto"). Its bends become this lab's bends
+// (ports and names are not shown here).
+let LINES = 'straight'; try { LINES = localStorage.getItem('lab:lines') || 'straight'; } catch (e) {}
+$('lines').value = LINES;
+function bendLinks() {
+  if (LINES === 'straight' || !G.P.length) return null;
+  const r = O.route(G.P, G.D, G.E.map((e) => [e.s, e.t, e.sub ? 2 : 1]), { ports: 0, labels: false, settle: false, crossBends: LINES === 'auto' });
+  G.H = r.routes.map((x) => x.bends.map((h) => ({ t: h.t, d: h.d }))); return r;
+}
+$('lines').onchange = () => {
+  LINES = $('lines').value; try { localStorage.setItem('lab:lines', LINES); } catch (e) {}
+  if (W) { record('toggle', { lines: LINES }); return; } // applied when the walk-through closes
+  const before = measure(), snap = snapshot();
+  const r = LINES === 'straight' ? (G.H = G.E.map(() => []), null) : bendLinks(); S.undo.push(snap);
+  record('lines', { lines: LINES, bent: r ? r.stats.bent : 0, parallel: r ? r.stats.parallel : 0 }, before); draw();
 };
 $('relayout').onclick = () => load(G.key, $('algo').value, true);
 $('graph').onchange = () => load($('graph').value, $('algo').value, 'open');
@@ -721,8 +735,10 @@ function startSync() {
 if (SYNC.bc) SYNC.bc.onmessage = (ev) => { const m = ev.data || {}; if (m.type === 'frame' && SYNC.on && SYNC.follow && !drag && !W && applyFrame(m)) draw(); };
 $('syncFollow').onchange = () => { SYNC.follow = $('syncFollow').checked; showSync(); if (SYNC.follow && SYNC.bc) SYNC.bc.postMessage({ type: 'hello' }); };
 // ---------- file menu: your own graph, exports, the session ----------
-$('nstyle').value = LayoutGraphs.style();
-$('nstyle').onchange = () => { LayoutGraphs.setStyle($('nstyle').value); load(G.key, $('algo').value, 'open'); record('toggle', { nodes: $('nstyle').value }); };
+{ const st = LayoutGraphs.parse(LayoutGraphs.style()); $('nstyle').value = st.shape; $('nlabel').value = st.label; }
+$('nstyle').onchange = $('nlabel').onchange = (ev) => {
+  if (ev.target.id === 'nstyle') $('nlabel').value = LayoutGraphs.parse($('nstyle').value).label; // each shape's usual name position
+  LayoutGraphs.setStyle(LayoutGraphs.compose($('nstyle').value, $('nlabel').value)); load(G.key, $('algo').value, 'open'); record('toggle', { nodes: LayoutGraphs.style() }); };
 $('fileBtn').onclick = (ev) => { ev.stopPropagation(); $('fileMenu').classList.toggle('open'); };
 document.addEventListener('click', () => $('fileMenu').classList.remove('open'));
 const baseName = () => String((MODELS[G.key] && MODELS[G.key].name) || G.key).replace(/^Public: /, '').replace(/[^\w.-]+/g, '_').replace(/_+$/, '') || 'graph';

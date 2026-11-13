@@ -16,33 +16,44 @@
     register(key, A[key]); return key;
   }
   function remove(key) { const A = all(); delete A[key]; set(KEY, A); delete MODELS[key]; }
-  // Node styles. "box": the label in a box (the benchmarks' boxes). "circle": a circle with the name underneath, as many graph
-  // browsers draw them. The layout is given one box per class that covers everything drawn for it, centered where the
-  // links meet the class (the circle's center), so the circle's box reaches as far above the circle as the name hangs below.
+  // Node styles: a shape (box or circle) and where the name goes (on it or under it). Written as "box" (name on the box, the
+  // benchmarks' boxes), "circle" (name under the circle, as many graph browsers draw them), "box-under" or "circle-on".
+  // The layout is given one box per class that covers everything drawn for it, centered where the links meet the class
+  // (the shape's center), so with the name underneath the box reaches as far above the shape as the name hangs below.
   const R = 14, LH = 14;
   const labelW = (l) => String(l).length * 6.6 + 10;
+  const parse = (s) => { const [a, b] = String(s || 'box').split('-'), shape = a === 'circle' ? 'circle' : 'box';
+    return { shape, label: b === 'on' || b === 'under' ? b : shape === 'circle' ? 'under' : 'on' }; };
+  const compose = (shape, label) => shape + (label === (shape === 'circle' ? 'under' : 'on') ? '' : '-' + label);
   function boxes(labels, style) {
-    return labels.map((l) => style === 'circle'
-      ? { w: Math.max(2 * R + 8, String(l).length * 6.2 + 8), h: 2 * (R + 3 + LH), shape: 'circle', r: R }
-      : { w: labelW(l), h: 20 });
+    const st = parse(style);
+    return labels.map((l) => {
+      if (st.label === 'under') return { w: Math.max(2 * R + 8, String(l).length * 6.2 + 8), h: 2 * (R + 3 + LH), shape: st.shape === 'circle' ? 'circle' : 'square', r: R, under: true };
+      if (st.shape === 'circle') { const r = Math.max(R, String(l).length * 3.1 + 7); return { w: 2 * r, h: 2 * r, shape: 'circle', r }; }
+      return { w: labelW(l), h: 20 };
+    });
   }
   // the SVG of one class at the origin (the caller translates it); inner markup only
   function nodeSvg(label, d, esc) {
-    if (d.shape === 'circle') { const lw = String(label).length * 6.2 + 6;
-      return `<circle class="shape" r="${d.r}"/><rect class="lbg" x="${-lw / 2}" y="${d.r + 3}" width="${lw}" height="${LH}" rx="3"/><text text-anchor="middle" y="${d.r + 3 + 11}">${esc(label)}</text>`; }
+    if (d.under) { const lw = String(label).length * 6.2 + 6;
+      return (d.shape === 'circle' ? `<circle class="shape" r="${d.r}"/>` : `<rect class="shape" x="${-d.r}" y="${-d.r}" width="${2 * d.r}" height="${2 * d.r}" rx="4"/>`)
+        + `<rect class="lbg" x="${-lw / 2}" y="${d.r + 3}" width="${lw}" height="${LH}" rx="3"/><text text-anchor="middle" y="${d.r + 3 + 11}">${esc(label)}</text>`; }
+    if (d.shape === 'circle') return `<circle class="shape" r="${d.r}"/><text text-anchor="middle" y="4">${esc(label)}</text>`;
     return `<rect class="shape" x="${-d.w / 2}" y="${-d.h / 2}" width="${d.w}" height="${d.h}" rx="4"/><text text-anchor="middle" y="4">${esc(label)}</text>`;
   }
-  // does segment a-b (relative to the class center) touch what is drawn for the class, with a margin? (circle and name, or box)
+  // does segment a-b (relative to the class center) touch what is drawn for the class, with a margin? (shape and name)
   function hits(d, ax, ay, bx, by, pad, segBox) {
-    if (d.shape !== 'circle') return segBox(ax, ay, bx, by, d.w / 2 + pad, d.h / 2 + pad);
-    const dx = bx - ax, dy = by - ay, L2 = dx * dx + dy * dy || 1, t = Math.max(0, Math.min(1, -(ax * dx + ay * dy) / L2));
-    if (Math.hypot(ax + t * dx, ay + t * dy) < d.r + pad) return true;
-    const lw = d.w / 2, cy = d.r + 3 + LH / 2; // the name under the circle
+    if (d.shape !== 'circle' && !d.under) return segBox(ax, ay, bx, by, d.w / 2 + pad, d.h / 2 + pad);
+    if (d.shape === 'circle') { const dx = bx - ax, dy = by - ay, L2 = dx * dx + dy * dy || 1, t = Math.max(0, Math.min(1, -(ax * dx + ay * dy) / L2));
+      if (Math.hypot(ax + t * dx, ay + t * dy) < d.r + pad) return true; }
+    else if (segBox(ax, ay, bx, by, d.r + pad, d.r + pad)) return true;
+    if (!d.under) return false;
+    const lw = d.w / 2, cy = d.r + 3 + LH / 2; // the name under the shape
     return segBox(ax, ay - cy, bx, by - cy, lw + pad, LH / 2 + pad);
   }
   function download(name, data, type) {
     const blob = data instanceof Blob ? data : new Blob([data], { type: type || 'application/octet-stream' }), url = URL.createObjectURL(blob), a = document.createElement('a');
     a.href = url; a.download = name; document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(url), 2000);
   }
-  window.LayoutGraphs = { all, add, remove, boxes, nodeSvg, hits, download, style: () => get(STYLE, 'box'), setStyle: (s) => set(STYLE, s), imported: () => Object.keys(all()) };
+  window.LayoutGraphs = { all, add, remove, boxes, nodeSvg, hits, download, style: () => get(STYLE, 'box'), setStyle: (s) => set(STYLE, s), parse, compose, imported: () => Object.keys(all()) };
 })();
