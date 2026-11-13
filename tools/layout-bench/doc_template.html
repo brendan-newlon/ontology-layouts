@@ -481,7 +481,7 @@ tr.mine td:first-child { box-shadow: inset 4px 0 0 var(--accent); }
 
 <h3>Single moves into open space do most of the work; each other step adds a little</h3>
 <div class="prose">
-<p>In the layouts the clean-up runs in rounds, each round in this order, until nothing improves or the time is up:</p>
+<p>In the layouts the clean-up runs in rounds, each round in this order, until nothing improves, the time is up, or a tenth of a second of work has passed without a kept move (late moves were rare and small, so this makes drawings about 8% faster with the same measures):</p>
 <ol>
 <li><strong>Single moves:</strong> each class in a problem tries nearby open cells and small nudges.</li>
 <li><strong>Leaf units</strong> turned around their anchor.</li>
