@@ -111,6 +111,8 @@ function _tmLayout(items, edges, opts) {
   const EE = edges.filter(([a, b]) => a !== b).map(([a, b, w, lab]) => ({ s: a, t: b, sub: w === 2, lab: lab || 0 }));
   if (n < 2 || !EE.length) return { pos: items.map((_, i) => ({ x: i * 200, y: 0 })), stage };
   const L = n >= 100 ? T.Lbig : T.L, rec = o.rec || null;
+  // tr: the playback's recorder (_ogTraced), or null; it gets the positions after every sweep and move, as the library's layouts report them
+  const tr = typeof _ogTr !== 'undefined' ? _ogTr : null;
   // 1. hanging units
   const { unitOf, units, adj } = _tmUnits(n, EE, T.K, T.Kfrac);
   const mass = new Float64Array(n), cnt = new Int32Array(n); units.forEach((u) => { mass[u.anchor] += u.nodes.length; cnt[u.anchor]++; });
@@ -137,6 +139,7 @@ function _tmLayout(items, edges, opts) {
     A[a].push([b, len]); A[b].push([a, len]); });
   const roomInfo = core.map((v, k) => ({ v, r: R[k], units: cnt[v], classes: mass[v] })).filter((x) => x.r > 0);
   const NC = core.map((v) => N[v]), EC2 = EC.map((e) => ({ s: ci[e.s], t: ci[e.t] }));
+  if (tr) { tr.begin(o.tryName || 'Tidy Mycelium', n, core, unitOf); tr.tmPhase = 'core'; tr.map = core; }
   let PC;
   if (m === 1) PC = [{ x: 0, y: 0 }];
   else {
@@ -148,10 +151,11 @@ function _tmLayout(items, edges, opts) {
     for (let r = 0; r < Math.max(1, T.restarts) && (r === 0 || _ogNow() - t0 < sBud); r++) {
       const P0 = r === 0 && m > 2 ? _ogClPivotMDS(D, m, rnd) : NC.map(() => ({ x: (rnd() - 0.5) * 400, y: (rnd() - 0.5) * 400 }));
       const start = rec ? P0.map((p) => ({ x: p.x, y: p.y })) : null;
-      _ogClStress(P0, D, T.sweeps, rnd, t0 + sBud); _ogClSeparate(P0, NC, 12, 120);
+      if (tr) { tr.restart(r); tr.snap(r === 0 && m > 2 ? 'tm-start' : 'restart', P0, { room: roomInfo, groups: com ? new Set(com).size : 0 }); }
+      _ogClStress(P0, D, T.sweeps, rnd, t0 + sBud); _ogClSeparate(P0, NC, 12, 120); if (tr) tr.snap('separate', P0);
       const x = EC2.length <= 2500 ? _ogClCrossings(P0, EC2) : 0; if (!best || x < best.x) best = { x, P: P0, r, start };
     }
-    PC = best.P; mark('stress');
+    PC = best.P; mark('stress'); if (tr) tr.keepRestart(best.r);
     if (rec) { snap('start', fullOf(best.start), { room: roomInfo, restart: best.r, groups: com ? new Set(com).size : 0 }); snap('stress', fullOf(PC), { room: roomInfo, restart: best.r, crossings: best.x }); }
     const left = () => Math.max(20, T.budget - (_ogNow() - t0));
     if (EC2.length && EC2.length <= 2500) {
@@ -162,6 +166,7 @@ function _tmLayout(items, edges, opts) {
     mark('coreClean');
     snap('coreClean', fullOf(PC), { room: roomInfo });
   }
+  if (tr) tr.map = null;
   const P = new Array(n), placed = new Uint8Array(n); core.forEach((v, k) => { P[v] = PC[k]; placed[v] = 1; });
   // 4. units, largest first, each into the most open slice round its anchor
   let cx = 0, cy = 0; core.forEach((v) => { cx += P[v].x / m; cy += P[v].y / m; });
@@ -184,7 +189,7 @@ function _tmLayout(items, edges, opts) {
     const out = Math.atan2(P[a].y - cy, P[a].x - cx), far = Math.hypot(P[a].x - cx, P[a].y - cy) > 1;
     let bestTh = 0, bestS = -Infinity, bestFr = 0; const segsA = GR ? null : segs.filter((s) => s[2] !== a && s[3] !== a);
     const ray = (th) => (GR ? GR.ray(P[a], Math.cos(th), Math.sin(th), cap, a) : _tmRay(P[a], Math.cos(th), Math.sin(th), cap, P, N, placed, segsA, a, 10));
-    const tried = rec ? [] : null;
+    const tried = rec || tr ? [] : null;
     for (let d = 0; d < T.dirs; d++) {
       const th = d * 2 * Math.PI / T.dirs; let fr = Infinity;
       for (const off of [-half, -half / 2, 0, half / 2, half]) fr = Math.min(fr, ray(th + off) / (off ? Math.cos(off) * 0.5 + 0.5 : 1));
@@ -203,6 +208,7 @@ function _tmLayout(items, edges, opts) {
     EE.forEach((e) => { if ((inU.has(e.s) || inU.has(e.t)) && placed[e.s] && placed[e.t]) { segs.push([P[e.s], P[e.t], e.s, e.t]); if (GR) GR.addSeg(P[e.s], P[e.t], e.s, e.t); } });
     if (GR) U.nodes.forEach((v) => GR.addBox(v, P[v], N[v]));
     snap('unit', P, { anchor: a, nodes: U.nodes.slice(), wedge: { th: bestTh, half, r: need, free: Math.min(bestFr, cap), cap }, rays: tried, outward: far ? out : null });
+    if (tr) tr.snap('tm-unit', P, { show: U.nodes, from: a, ov: { slice: { anchor: a, at: { x: P[a].x, y: P[a].y }, th: bestTh, half, r: need, free: Math.min(bestFr, cap), cap, outward: far ? out : null, rays: tried.map(([t, f]) => [+t.toFixed(4), Math.round(f)]) } } });
   }
   mark('units');
   for (let v = 0; v < n; v++) if (!P[v]) P[v] = { x: P[leafOf[v]] ? P[leafOf[v]].x : 0, y: P[leafOf[v]] ? P[leafOf[v]].y : 0 };
@@ -211,7 +217,7 @@ function _tmLayout(items, edges, opts) {
   if (singles.length) _ogClPlaceLeaves(P, N, EE, leafOf, gapOf, L, 10, false, t0 + T.budget);
   mark('leaves');
   if (singles.length) snap('leaves', P, { singles });
-  _ogClSeparate(P, N, 12, 120);
+  _ogClSeparate(P, N, 12, 120); if (tr) { tr.snap('separate', P); tr.tmPhase = 'fin'; }
   if (EE.length <= 2500) { _ogClFinThru(P, N, EE, 6, 10, Math.max(20, T.budget - (_ogNow() - t0)) / 2); if (T.endTight) _ogClFinTight(P, N, EE, 6, 26, Math.max(20, T.budget - (_ogNow() - t0))); }
   mark('finish');
   snap('finish', P);
@@ -235,7 +241,7 @@ function _tmShrink(P, N, EE, T, t0) {
     const Q = P.map((p) => ({ x: cx + (p.x - cx) * f, y: cy + (p.y - cy) * f })); _ogClSeparate(Q, N, 12, 60);
     if (mode === 'repair') { _ogClFinCross(Q, N, E2, 15, 7); _ogClSeparate(Q, N, 12, 60); _ogClFinThru(Q, N, E2, 2, 10, 15); }
     const c = cost(Q);
-    if (mode === 'slack' ? c <= lim : c <= cur) { Q.forEach((q, i) => { P[i].x = q.x; P[i].y = q.y; }); cur = c; kept++; } else f = 1 - (1 - f) / 2;
+    if (mode === 'slack' ? c <= lim : c <= cur) { Q.forEach((q, i) => { P[i].x = q.x; P[i].y = q.y; }); cur = c; kept++; if (typeof _ogTr !== 'undefined' && _ogTr) _ogTr.snap('tm-shrink', P, { f }); } else f = 1 - (1 - f) / 2;
   }
   return kept;
 }
@@ -248,10 +254,12 @@ function _tmBest(items, edges, opts) {
   let best = null; const t0 = _ogNow();
   for (let i = 0; i < k; i++) {
     if (i && _ogNow() - t0 > (T.triesMs || 400)) break;
-    const r = _tmLayout(items, edges, { ...o, rec: o.rec ? [] : null, seed: (o.seed || 1) + 1000 * i, tm: { ...T, budget: T.budget / (T.split ? k : 1), ...(T.altPods && i % 2 ? { pods: 1, podIn: 1 } : {}) } });
+    const r = _tmLayout(items, edges, { ...o, tryName: 'Try ' + (i + 1), rec: o.rec ? [] : null, seed: (o.seed || 1) + 1000 * i, tm: { ...T, budget: T.budget / (T.split ? k : 1), ...(T.altPods && i % 2 ? { pods: 1, podIn: 1 } : {}) } });
     const s = _ogChoiceScore(_ogPlacementMetrics(r.pos, N, E2));
+    if (typeof _ogTr !== 'undefined' && _ogTr) _ogTr.score('Try ' + (i + 1), s);
     if (!best || s < best.s) best = { s, r, i };
   }
+  if (typeof _ogTr !== 'undefined' && _ogTr) _ogTr.chosen('Try ' + (best.i + 1));
   if (o.rec) { o.rec.push(...best.r.rec); best.r.recTry = best.i; best.r.recTries = k; }
   return best.r;
 }

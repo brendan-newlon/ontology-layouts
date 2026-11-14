@@ -19,7 +19,9 @@ This file is the technical contract. For the method (how a person's demonstratio
   - **Run**: rerun the whole algorithm without the step, to see what it is worth.
   - **Order**: drag steps that can run in another order into a new order, and the algorithm reruns.
 - **Hover a step** for what it does, its measured time, its frames, the elements it moved and the change in the measures.
-- **Show the math.** Each overlay draws an idea the algorithm uses but nobody sees, faintly behind the picture, and each has its own toggle. Examples here: the open-space grid, the spreading slices and stress rings. A legend names the overlays that are on; it shrinks to one line or closes into a drawer at the edge.
+- **Do a step now.** Right-click a step (in the list, on the bar under the drawing or in the row of steps) to run it once more on the drawing shown, at whatever moment the playback was paused and in any order: with its usual time, with four times it, or followed by the steps after it again. The new frames follow the frame shown and play at once. Ctrl+Z undoes one change at a time; "Back to the layout's own run" undoes them all.
+- **Work in it.** Drag classes (Ctrl+click or Shift+drag selects several): the steps after the frame run again from your positions. The pen and the notes keep what you saw and said with the frame, the step and the positions. File opens your own Turtle graph, exports the drawing shown (SVG, PNG, JSON, GraphML) and downloads the notes.
+- **Show the math.** Each overlay draws an idea the algorithm uses but nobody sees, faintly behind the picture, and each has its own toggle. Examples here: the open-space grid, the spreading slices, stress rings, the group moves tried and dropped, and for Tidy Mycelium the room each class keeps for the parts set aside and the rays of the slice search. A legend names the overlays that are on; it shrinks to one line or closes into a drawer at the edge.
 - **Live measures.** The counts the algorithm is judged by are shown on every frame, and a time-limit slider reruns the algorithm with a different budget.
 
 **Lab** is where the person works:
