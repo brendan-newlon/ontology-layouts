@@ -20,8 +20,8 @@
 //      share the same many neighbours.
 //  10. apart: classes with no link sitting inside the main graph move outside its area, with no new problem or overlap,
 //      and the main graph stays where it was.
-//  11. lab: in the Layout Lab, pressing on a class while the walk-through is open moves that class (it keeps the step shown
-//      and leaves the walk-through); pressing on empty space pans.
+//  11. lab: in the Layout Lab (tools/layout-bench/playback.html), a press on a bend handle reshapes that bend, a press on a
+//      link pulls a new bend into it, a press on a class moves the class, and a press on empty space pans.
 // node tests/check_ontology_layout.mjs            -> "ontology layout clean" or the failures
 // node tests/check_ontology_layout.mjs --self-test -> runs each check on a deliberately broken copy and confirms it fails
 import fs from 'node:fs';
@@ -226,6 +226,12 @@ function checkKeep(L) {
   { const D = [{ w: 80, h: 30 }, { w: 80, h: 30 }, { w: 90, h: 30, between: [0, 1] }, { w: 80, h: 30 }], E = [[0, 2, 1], [2, 1, 1], [3, 0, 1]];
     const P = A.inline([{ x: 0, y: 0 }, { x: 500, y: 0 }, { x: 250, y: 220 }, { x: -200, y: 0 }], D, E);
     if (Math.abs(P[2].y) > 20) bad.push(`a relation class with room on its line stayed ${Math.round(P[2].y)} px off it`); }
+  // a relation class whose line is crossed by five short links stays off it (moving there would cost several crossings);
+  // a fixed drawing, so the check does not depend on how the layouts place things
+  { const D = [{ w: 80, h: 30 }, { w: 80, h: 30 }, { w: 90, h: 30, between: [0, 1] }], E = [[0, 2, 1], [2, 1, 1]], P0 = [{ x: 0, y: 0 }, { x: 600, y: 0 }, { x: 300, y: 250 }];
+    [100, 200, 300, 400, 500].forEach((x) => { const a = D.length; D.push({ w: 40, h: 20 }, { w: 40, h: 20 }); P0.push({ x, y: -60 }, { x, y: 60 }); E.push([a, a + 1, 1]); });
+    const P = A.inline(P0, D, E);
+    if (Math.abs(P[2].y) < 100) bad.push(`a relation class was moved onto its line across five links (to y ${Math.round(P[2].y)})`); }
   // every third relationship made a class: inline adds at most one crossing (6) per relation class
   MODELS.concat([model(7, 40, 6)]).forEach((m, i) => {
     const D = m.D.map((d) => ({ ...d })), E = []; let r = 0, R = 0;
@@ -298,21 +304,22 @@ function checkExplore(L) {
     if (ov) bad.push(`the clean-up put ${ov} pairs of classes with the same neighbours on top of each other`); }
   return bad;
 }
-// the Lab's press handler, run with stand-ins for the page: what a press starts with the walk-through open
-const labPath = new URL('../tools/layout-bench/lab.html', import.meta.url), labSrc = fs.readFileSync(labPath, 'utf8').replace(/\r\n/g, '\n');
+// the Lab's press handler, run with stand-ins for the page: what a press on a bend handle, a link, a class and empty space starts
+const labPath = new URL('../tools/layout-bench/playback.html', import.meta.url), labSrc = fs.readFileSync(labPath, 'utf8').replace(/\r\n/g, '\n');
 function checkLab(lab) {
-  const a = lab.indexOf("svg.addEventListener('pointerdown', (ev) => {"), b = lab.indexOf('\n});', a);
+  const a = lab.indexOf("svg.addEventListener('pointerdown', (ev) => {"), b = lab.indexOf("\nsvg.addEventListener('pointermove'", a);
   if (a < 0 || b < 0) return ['the Lab press handler was not found'];
-  const body = lab.slice(a + "svg.addEventListener('pointerdown', ".length, b + 2), bad = [];
-  for (const where of ['class', 'empty']) {
-    let W = { i: 0 }, ended = false;
-    const el = (cls, v) => ({ dataset: { v, k: 0 }, classList: { contains: (c) => c === cls }, closest: (q) => (q === '.node' && cls === 'node' ? el('node', v) : null) });
-    const env = { svg: { setPointerCapture() {} }, PEN: false, SYNC: { on: false }, G: { sel: new Set(), P: [{ x: 0, y: 0 }] }, view: {}, pt: () => ({ x: 0, y: 0 }),
-      walkEnd: () => { ended = true; W = null; }, measure: () => ({}), snapshot: () => ({}), draw() {}, showSync() {} };
-    const run = new Function(...Object.keys(env), 'getW', `let drag = null; const h = ${body.replace(/\bW\b/g, 'getW()')}; return (ev) => { h(ev); return drag; };`)(...Object.values(env), () => W);
-    const drag = run({ target: where === 'class' ? el('node', '0') : el('', ''), clientX: 0, clientY: 0, pointerId: 1, button: 0, ctrlKey: false, metaKey: false, shiftKey: false });
-    if (where === 'class' && (!drag || drag.kind !== 'nodes' || !ended)) bad.push(`a press on a class during the walk-through starts ${drag ? drag.kind : 'nothing'}, not a class move`);
-    if (where === 'empty' && (!drag || drag.kind !== 'pan' || ended)) bad.push(`a press on empty space during the walk-through starts ${drag ? drag.kind : 'nothing'}${ended ? ' and ends the walk-through' : ''}, not a pan`);
+  const body = lab.slice(a + "svg.addEventListener('pointerdown', ".length, b).trimEnd().replace(/\);$/, ''), bad = [];
+  const want = { handle: 'bend handle', link: 'bend link', node: 'move', empty: 'pan' };
+  for (const where of Object.keys(want)) {
+    const cls = where === 'handle' ? 'handle' : where === 'link' ? 'hit' : '', node = { dataset: { v: '0' } };
+    const tgt = { dataset: { k: '0', j: '0', v: '0' }, classList: { contains: (c) => c === cls }, closest: (q) => (q === '.node' && where === 'node' ? node : null) };
+    const env = { svg: { setPointerCapture() {} }, R: { E: [{ s: 0, t: 1 }] }, C: { P: [{ x: 0, y: 0 }, { x: 100, y: 0 }], routes: [{ bends: [{ t: 0.5, d: 10 }] }] }, PEN: false, playing: false, pause() {}, svgPt: () => ({ x: 0, y: 0 }),
+      SEL: new Set(), ctxNow: () => ({}), render() {}, showSel() {}, view: {}, setPen() {} };
+    const run = new Function(...Object.keys(env), `let BEND = null, mq = null, ndrag = null, pan = null, idrag = null, userView = false; const h = ${body}; return (ev) => { h(ev); return { BEND, ndrag, pan, mq }; };`)(...Object.values(env));
+    const r = run({ target: tgt, clientX: 0, clientY: 0, pointerId: 1, button: 0, ctrlKey: false, metaKey: false, shiftKey: false });
+    const got = r.BEND ? 'bend ' + r.BEND.kind : r.ndrag ? 'move' : r.pan ? 'pan' : r.mq ? 'area selection' : 'nothing';
+    if (got !== want[where]) bad.push(`a press on ${where === 'empty' ? 'empty space' : where === 'handle' ? 'a bend handle' : 'a ' + where} starts ${got}, not ${want[where]}`);
   }
   return bad;
 }
@@ -362,7 +369,7 @@ if (process.argv.includes('--self-test')) {
     ['explore', 'repeated straight links on one line', code.replace('const d = (i - (b.ks.length - 1) / 2) * sp, q =', 'const d = 0, q =')],
     ['explore', 'a burst placed on the arc without a free-spot test', code.replace('const ok = spots.every((p, i) => { const v = B[i]; if (!free(v, p)) return false; P[v] = p; return true; });', 'const ok = spots.every((p, i) => { P[B[i]] = p; return true; });').replace('const blocked = (R) => { const iv = [];', 'const blocked = (R) => { return []; const iv = [];').replace('if (one <= best.c) {', 'if (false) {')],
     ['explore', 'an overlap only costs 1000 in the clean-up', code.replace('tight: 1, ov: 1e6, area: 6', 'tight: 1, ov: 1000, area: 6')],
-    ['lab', 'the walk-through only pans, so classes cannot be moved', labSrc.replace(/  if \(W\) \{ if \(node[^\n]*/, "  if (W) { drag = { kind: 'pan', c0: { x: ev.clientX, y: ev.clientY }, v0: { ...view }, moved: false }; return; }")],
+    ['lab', 'a press on a link pans instead of pulling a bend', labSrc.replace('if (ev.button === 0 && (isH || isL) && !ev.shiftKey) {', 'if (ev.button === 0 && isH && !ev.shiftKey) {')],
     ['keep', 'relation classes moved whatever it costs', code.replace('if (c1 <= c0 + 6) {', 'if (true) {')],
   ];
   let ok = true;

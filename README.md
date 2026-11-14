@@ -2,7 +2,7 @@
 
 Layouts for drawing ontologies (classes as boxes, subclass and relationship links between them) so that a reader can follow every link: far fewer crossed links and far fewer links running through classes than the widely used open-source layouts.
 
-**See it live:** [brendan-newlon.github.io/ontology-layouts](https://brendan-newlon.github.io/ontology-layouts/), one page with an introduction, the Layout Playback, the Layout Lab (open your own Turtle file, export the drawing), how it was built, the benchmarks and the developer guide. **Use it in an app:** [docs/DEVELOPER-GUIDE.md](docs/DEVELOPER-GUIDE.md) and the files in `dist/`.
+**See it live:** [brendan-newlon.github.io/ontology-layouts](https://brendan-newlon.github.io/ontology-layouts/), one page with an introduction, the Layout Lab (watch a layout work step by step, change it, open your own Turtle file, export the drawing), how it was built, the benchmarks and the developer guide. **Use it in an app:** [docs/DEVELOPER-GUIDE.md](docs/DEVELOPER-GUIDE.md) and the files in `dist/`.
 
 - **Tidy Stress**: stress placement, then a search that removes crossings and links through classes.
 - **Mycelium**: the same, with closely linked groups of classes kept together and room around hubs.
@@ -16,7 +16,7 @@ Layouts for drawing ontologies (classes as boxes, subclass and relationship link
 
 Same input, same drawing on any computer: time limits count units of work, not wall time.
 
-**Teach it something.** The clean-up was taught by a person, not designed from the literature: Brendan Newlon designed the Layout Lab as a place to teach it, tidied drawings there by hand while explaining how he approaches them, and had an AI assistant, Claude (Opus 5.5), distill the practice and its reasons into rules and tested them on graphs nobody had looked at. The Layout Lab and the Layout Playback are offered as tools in their own right. Try your hand in the [lab edition of the write-up](docs/ONTOLOGY-LAYOUT-ALGORITHMS-LAB.html#lab), which needs nothing installed: tidy any graph, say why, and download the session as one file for your AI assistant to turn into rules. Or copy the lab for any problem a person can see and fix better than they can describe. Start with [docs/SHOW-AND-TELL-LABS.md](docs/SHOW-AND-TELL-LABS.md).
+**Teach it something.** The clean-up was taught by a person, not designed from the literature: Brendan Newlon designed the Layout Lab as a place to teach it, tidied drawings there by hand while explaining how he approaches them, and had an AI assistant, Claude (Opus 5.5), distill the practice and its reasons into rules and tested them on graphs nobody had looked at. The Layout Lab, where a layout plays step by step and can be changed at any step, is offered as a tool in its own right. Try your hand in the [lab edition of the write-up](docs/ONTOLOGY-LAYOUT-ALGORITHMS-LAB.html#lab), which needs nothing installed: tidy any graph, say why, and download the session as one file for your AI assistant to turn into rules. Or copy the lab for any problem a person can see and fix better than they can describe. Start with [docs/SHOW-AND-TELL-LABS.md](docs/SHOW-AND-TELL-LABS.md).
 
 ## Where things are
 
@@ -44,7 +44,7 @@ node tests/check_ontology_layout.mjs
 node tests/check_ontology_layout.mjs --self-test
 ```
 
-Playback and lab: double-click `Start Layout Lab.cmd`, or by hand: serve the repository root (`python -m http.server 8011`), run `node tools/layout-bench/build_base.mjs`, open `http://localhost:8011/tools/layout-bench/playback.html`, `lab.html` or `contenders.html`; for the lab, also run `python tools/recv.py`.
+Layout Lab: double-click `Start Layout Lab.cmd`, or by hand: serve the repository root (`python -m http.server 8011`), run `node tools/layout-bench/build_base.mjs`, open `http://localhost:8011/tools/layout-bench/playback.html` (the Layout Lab; `lab.html` forwards to it) or `contenders.html`; to save notes to `_temp/`, also run `python tools/recv.py`.
 
 `_temp/` is scratch space for bench output and lab sessions; it is not committed.
 

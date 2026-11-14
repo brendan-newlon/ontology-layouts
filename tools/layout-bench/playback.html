@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Layout Playback</title>
+<title>Layout Lab</title>
 <style>
 :root { --bg: #f4f3ee; --paper: #fff; --ink: #1d232b; --muted: #5d6673; --rule: #d9d6cc; --accent: #2f6b4f; --box: #eef3fb; --box-line: #6d86b0;
   --sub: #6f9a54; --rel: #8b97a8; --bad: #c43d32; --warn: #c98a12; --new: #e0a100; --name: #4b5563; --name-bg: #fffdf5;
@@ -142,16 +142,19 @@ footer .grp { display: flex; gap: 4px; align-items: center; }
 .fmenu .fm button:hover { background: var(--bg); }
 .fmenu .fm button[hidden] { display: none; }
 .fmenu .fm .h { font-size: 11px; text-transform: uppercase; letter-spacing: .05em; color: var(--muted); padding: 6px 9px 2px; }
+.hit { fill: none; stroke: transparent; stroke-width: 12; pointer-events: stroke; cursor: copy; }
+.handle { fill: var(--paper); stroke: var(--accent); stroke-width: 2; cursor: move; vector-effect: non-scaling-stroke; }
+.link.picked { stroke: var(--accent); stroke-width: 2.6; }
 .marquee { fill: color-mix(in srgb, var(--sel) 15%, transparent); stroke: var(--sel); stroke-dasharray: 4 3; vector-effect: non-scaling-stroke; }
 #menu .sep { border-top: 1px solid var(--rule); margin: 3px 0; }
 #menu .sub { font-size: 11px; color: var(--muted); padding: 2px 10px 4px; }
 @media (max-width: 900px) { main { grid-template-columns: 1fr; grid-template-rows: 60vh auto; } aside { border-left: 0; border-top: 1px solid var(--rule); } }
 </style>
-<script src="../../site-nav.js" data-page="playback" defer></script>
+<script src="../../site-nav.js" data-page="lab" defer></script>
 </head>
 <body>
 <header>
-  <h1>Layout Playback</h1>
+  <h1>Layout Lab</h1>
   <span class="fmenu" id="fileMenu"><button id="fileBtn" title="Open your own graph (Turtle), export the drawing shown, download your notes">File ▾</button>
     <span class="fm">
       <div class="h">Your graph</div>
@@ -174,11 +177,11 @@ footer .grp { display: flex; gap: 4px; align-items: center; }
   <label class="tog" title="The layouts' random seed">Seed <input type="number" id="seed" value="1" min="1" max="999"></label>
   <label class="tog" title="How long our layout and its clean-up may work (default 1 s; the link drawing keeps at least its time at 1.5 s). It is a limit on work done, measured against a reference laptop, so the same limit gives the same drawing on any computer. Stopping sooner or allowing longer shows what each step does with less or more time.">Time limit <input type="range" id="limit" min="200" max="6000" step="50" value="1000" style="width:110px"> <span id="limitV">1 s</span></label>
   <label class="tog" id="oursTog" title="Draw this layout's links with our link drawing (arcs, bends, ports, names), so both are compared on the same footing" hidden><input type="checkbox" id="ourLinks" checked> Our link drawing</label>
+  <label class="tog" title="What the link steps do. Auto-bend: a link that runs through a class is bent round it, repeated links between two classes are drawn apart, and links are bent away from crossings where that pays off. Bend where they overlap: the same, without the bends away from crossings. Straight: no link steps; links stay straight unless you bend one by hand. By hand, at any frame: drag a link to pull a bend into it, drag a bend to reshape it, double-click a bend to remove it or a link to straighten it.">Lines <select id="lines"><option value="auto">Auto-bend</option><option value="round">Bend where they overlap</option><option value="straight">Straight</option></select></label>
   <span id="status"></span>
   <span id="editBar"><span id="editTxt"></span><button id="editDrop" title="Go back to the layout's own run, without your edits and the steps done again by hand (Ctrl+Z undoes one at a time)">Back to the layout's own run</button></span>
   <button id="penBtn" title="Draw on the drawing with the mouse (P). Circle a part, then type a note: the note keeps your marks, what they enclose, the frame and the positions shown">✎ Pen</button>
   <button id="inkClear" title="Remove your marks from the drawing (they stay in the notes)">Clear marks</button>
-  <a id="labLink" href="lab.html" target="layout-lab" title="Open the drawing as shown now in the Layout Lab. The lab follows the playback until you move something there; your moves come back here and the playback continues from them.">Open in Layout Lab ↗</a>
 </header>
 <nav>
   <span class="lbl">Show the math</span>
@@ -226,7 +229,7 @@ footer .grp { display: flex; gap: 4px; align-items: center; }
     <h2>Notes <small id="saveInfo">not saved yet</small></h2>
     <div id="nlog"></div>
     <textarea id="ntext" placeholder="A note about what you see now (Enter sends, Shift+Enter: new line). It keeps the frame, the step, the positions and any marks drawn since the last note."></textarea>
-    <div class="row"><span id="selInfo">Drag a class to move it; Ctrl+click or Shift+drag to select several</span><button id="nsend">Add note</button></div>
+    <div class="row"><span id="selInfo">Drag a class to move it, or a link to bend it; Ctrl+click or Shift+drag selects several</span><button id="nsend">Add note</button></div>
    </div>
   </aside>
 </main>
@@ -245,6 +248,7 @@ footer .grp { display: flex; gap: 4px; align-items: center; }
   <label class="tog" title="Keep the whole drawing in view. The drawing stays centered; the view only zooms, gradually, when the drawing outgrows the space or shrinks to under half of it."><input type="checkbox" id="follow" checked> Follow the drawing</label>
   <label class="tog"><input type="checkbox" id="names" checked> Link names</label>
   <label class="tog"><input type="checkbox" id="marks" checked> Mark links through classes</label>
+  <label class="tog" title="Show a handle on each bend while paused: drag it to reshape the link, double-click it to remove it"><input type="checkbox" id="handles" checked> Bend handles</label>
   <span id="result"></span>
   <div id="scrub" title="Click or drag to move through the layout; right-click a step to do it now on the drawing shown"></div>
   <div id="chips"></div>
@@ -296,7 +300,7 @@ const STEPS = [ // key, group, name, what it does, color, can it be left out (Ru
   ['c-fence', 'Clean-up', 'Leaves to open space', 'A one-link class whose link still crosses another link or runs through a class moves to the most open spot round its neighbor: fewest problems first, then the most room around it, then the shorter link.', '#4d9a8a', true],
   ['c-nudge', 'Clean-up', 'Pushed off a link', 'A class that a link runs through (or passes within 9 px of) is pushed sideways off the line just far enough, or a one-link class turns round its neighbor; kept only if it leaves fewer problems.', '#a0703c', true],
   ['c-pull', 'Clean-up', 'Pulled in from the edge', 'A part hanging off the rest by one link (a one-link class, a chain, a small tree) turns round the class it hangs from or draws in toward it, and whole groups slide toward the middle, into open space; kept only if the drawing gets smaller (or the links of the part much shorter) with no more problems.', '#5b7fa8', true],
-  ['edit', 'Your edit', 'Moved by hand', 'The positions as you left them (here, or in the Layout Lab); the steps after this one were run again from there.', '#e0a100', false],
+  ['edit', 'Your edit', 'Changed by hand', 'The drawing as you left it: classes you moved (the steps after this one were run again from there) or a link you bent.', '#e0a100', false],
   ['r-arcs', 'Links', 'Parallel links as arcs', 'Two or more links between the same two classes (a link and its reverse, or two relationships) spread into arcs, so none hides another.', '#0e7490', true],
   ['r-loops', 'Links', 'Self-link loops', 'A link from a class to itself becomes a loop on its emptiest side.', '#0891b2', false],
   ['r-bends', 'Links', 'Bends round obstacles', 'A link that still runs through a class (or crosses others when that pays off) bends round it; one link per frame.', '#be185d', true],
@@ -315,6 +319,7 @@ const saveCtl = () => store.set('ctl2', CTL);
 // steps that can run in another order
 const ORD = { place: store.get('order:place', ['cross', 'thru', 'tight']), clean: store.get('order:clean', ['c-single', 'c-unit', 'c-spread', 'c-group']) };
 const ordOf = (k) => (ORD.place.includes(k) ? 'place' : ORD.clean.includes(k) ? 'clean' : null);
+let LINES = store.get('lines', 'auto'); // what the link steps do: auto (bends round classes and away from crossings), round (round classes only), straight (none)
 const VERBS = ['has', 'relatedTo', 'ownedBy', 'partOf', 'uses'];
 const esc = (t) => String(t).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/"/g, '&quot;');
 const fmtMs = (ms) => (ms >= 1000 ? (ms / 1000).toFixed(2) + ' s' : ms >= 10 ? Math.round(ms) + ' ms' : ms >= 1 ? ms.toFixed(1) + ' ms' : ms.toFixed(2) + ' ms');
@@ -487,9 +492,9 @@ function tailFrames(G, P, { cleanup, budgetMs, links, run }) {
     try { const EL = G.E.filter((e) => e.s !== e.t).map((e) => [e.s, e.t]); Pc = O.clocked(() => O.traced(sink, () => O.leafSwap(Pc, G.items, EL)));
       if (ctl('c-pull').run) Pc = O.clocked(() => O.traced(sink, () => O.pullIn(Pc, G.items, EL))); } finally { Object.assign(O.tune, keep); }
   }
-  if (!links) return { frames, info, P: Pc };
+  if (!links || LINES === 'straight') return { frames, info, P: Pc };
   // the links, one routing step at a time, on the final positions
-  const RE = G.E.map((e) => [e.s, e.t, e.sub ? 2 : 1, e.name ? e.name.length * 6 + 8 : 0]), FP = flat(Pc), base = { sep: ctl('r-arcs').run ? 24 : 0 };
+  const RE = G.E.map((e) => [e.s, e.t, e.sub ? 2 : 1, e.name ? e.name.length * 6 + 8 : 0]), FP = flat(Pc), base = { sep: ctl('r-arcs').run ? 24 : 0, crossBends: LINES === 'auto' };
   let last = null; const route = (o) => { const w0 = performance.now(), r = O.route(Pc, G.D, RE, { ...base, settle: false, ...o }); last = { r, wall: performance.now() - w0 }; return r.routes; };
   const r1 = route({ bends: false, ports: 0, labels: false }), r2 = ctl('r-bends').run ? route({ ports: 0, labels: false }) : r1;
   const r3 = ctl('r-ports').run ? route({ bends: ctl('r-bends').run, labels: false }) : r2, r4 = ctl('r-names').run ? route({ bends: ctl('r-bends').run, ports: ctl('r-ports').run ? 3 : 0 }) : r3;
@@ -536,12 +541,6 @@ async function recordRun(key, algo, seed) {
     return { ...G, algo, seed, limit, engine, frames: head.frames.concat(tail.frames), runs: head.runs, variants: head.variants, info: tail.info, run: head.run, budgetMs, mcache: new Map() };
   } finally { O.setTimeLimit(prev); }
 }
-// An edit made in the Layout Lab: keep the frames up to where it was made, then run the clean-up and the links again from it
-function applyEdit(msg) {
-  if (!R || msg.graph !== R.key || msg.n !== R.n) return;
-  pushUndo(); if (!R.base) R.base = { frames: R.frames, j: C ? C.fj : R.frames.length - 1, info: R.info };
-  const j = R.base.j; editFrom(R.base.frames.slice(0, j + 1), j, msg.P.map((p) => (p ? { x: p[0], y: p[1] } : null)), 'lab');
-}
 // The frames up to frame j are kept; from the positions P (null: as in frame j; not placed yet: where the layout's own run ended) the
 // clean-up and the link steps run again. An edit made during the link steps reruns only the link steps.
 function editFrom(F, j, Pin, src) {
@@ -549,11 +548,12 @@ function editFrom(F, j, Pin, src) {
   const P = Pin.map((p, v) => p || (isNaN(last[2 * v]) ? { x: fin[2 * v], y: fin[2 * v + 1] } : { x: last[2 * v], y: last[2 * v + 1] })).map((p) => (isNaN(p.x) ? { x: 0, y: 0 } : p));
   const inLinks = F[j].key.startsWith('r-'), prev = O.setTimeLimit(R.limit);
   let tail; try { tail = tailFrames(R, P, { cleanup: !R.engine && !inLinks, budgetMs: Math.max(100, Math.min(500, R.budgetMs || 500)), links: !R.engine || $('ourLinks').checked, run: F[j].run }); } finally { O.setTimeLimit(prev); }
+  if (LINES === 'straight' && F[j].routes) tail.frames.forEach((f) => { if (!f.routes) f.routes = F[j].routes; });
   const moved = []; for (let v = 0; v < R.n; v++) if (!isNaN(last[2 * v]) && Math.hypot(P[v].x - last[2 * v], P[v].y - last[2 * v + 1]) > 0.5) moved.push(v);
-  R.frames = F.concat([{ key: 'edit', P: flat(P), ms: 0, run: F[j].run, moved, routes: F[j].routes, note: `${moved.length} class${moved.length === 1 ? '' : 'es'} moved by hand${src === 'lab' ? ' in the Layout Lab' : ''}. ${inLinks ? 'The link steps' : 'The clean-up and the link steps'} were run again from here: press Play.` }], tail.frames);
+  R.frames = F.concat([{ key: 'edit', P: flat(P), ms: 0, run: F[j].run, moved, routes: F[j].routes, note: `${moved.length} class${moved.length === 1 ? '' : 'es'} moved by hand. ${inLinks ? 'The link steps' : 'The clean-up and the link steps'} were run again from here: press Play.` }], tail.frames);
   R.info = { ...R.base.info, ...tail.info }; R.mcache = new Map();
   pause(); timeline(); buildPanel(); T = TL.at[j + 1]; countsFor = -1; render();
-  $('editTxt').textContent = src === 'lab' ? 'Continuing from your edit in the Layout Lab' : 'Continuing from your edit (Ctrl+Z undoes it)'; $('editBar').classList.add('on');
+  $('editTxt').textContent = 'Continuing from your edit (Ctrl+Z undoes it)'; $('editBar').classList.add('on');
   return moved;
 }
 // ---------- a step done again by hand, on the drawing shown (right-click a step) ----------
@@ -562,7 +562,7 @@ function editFrom(F, j, Pin, src) {
 const REDO_PLACE = { stress: 'stress', 'tm-stress': 'stress', separate: 'separate', cross: 'cross', 'tm-cross': 'cross', thru: 'thru', 'tm-thru': 'thru', 'tm-finish': 'thru', tight: 'tight', 'tm-shrink': 'shrink' };
 const REDO_LEAF = new Set(['leaves', 'leaffix', 'tm-leaves']);
 function canRedo(k) { if (!R || R.engine) return false; if (k === 'stress' || k === 'tm-stress') return !!(R.runs && R.runs.some((r) => r && r.D));
-  return !!REDO_PLACE[k] || REDO_LEAF.has(k) || /^c-(single|unit|spread|group|finish|swap|fence|nudge|pull)$/.test(k) || k.startsWith('r-'); }
+  return !!REDO_PLACE[k] || REDO_LEAF.has(k) || /^c-(single|unit|spread|group|finish|swap|fence|nudge|pull)$/.test(k) || (k.startsWith('r-') && LINES !== 'straight'); }
 const hasBudget = (k) => !!REDO_PLACE[k] || REDO_LEAF.has(k) || /^c-(single|unit|spread|group|finish)$/.test(k);
 function stepNow(k, P, mult, run) {
   const n = R.n, frames = [], now = () => performance.now(); let tl = now(), cur = P.map((p) => p && { x: p.x, y: p.y });
@@ -801,7 +801,7 @@ function overlays(P) {
 // ---------- render ----------
 let C = null;
 function render() {
-  if (!R) return; C = current(); if (EDITP) C.P = EDITP;
+  if (!R) return; C = current(); if (EDITP) C.P = EDITP; if (EDITR) EDITR.forEach((r, k) => (C.routes[k] = r));
   if ($('follow').checked && !userView) steadyView(C.P);
   svg.setAttribute('viewBox', `${view.x} ${view.y} ${view.w} ${view.h}`);
   const thru = new Set(); const paused = !playing;
@@ -812,7 +812,8 @@ function render() {
   }
   let s = '<defs><marker id="ovArrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0,0L10,5L0,10z" fill="var(--ov-group)"/></marker><marker id="ovArrowR" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0,0L10,5L0,10z" fill="var(--ov-ray)"/></marker></defs><g>' + overlays(C.P) + '</g><g>';
   R.E.forEach((e, k) => { const A = C.P[e.s], B = C.P[e.t]; if (!A || !B) return; const r = C.routes[k]; if (e.s === e.t && !(r && r.loop)) return;
-    const op = Math.min(C.alpha[e.s], C.alpha[e.t]); s += `<path class="link${e.sub ? ' sub' : ''}${thru.has(k) ? ' thru' : ''}" d="${pathOf(A, B, r)}"${op < 1 ? ` opacity="${op.toFixed(2)}"` : ''}/>`; });
+    const op = Math.min(C.alpha[e.s], C.alpha[e.t]); s += `<path class="link${e.sub ? ' sub' : ''}${thru.has(k) ? ' thru' : ''}${BEND && BEND.k === k ? ' picked' : ''}" d="${pathOf(A, B, r)}"${op < 1 ? ` opacity="${op.toFixed(2)}"` : ''}/>`; });
+  if (!playing && !PEN) R.E.forEach((e, k) => { const A = C.P[e.s], B = C.P[e.t]; if (A && B && e.s !== e.t) s += `<path class="hit" data-k="${k}" d="${pathOf(A, B, C.routes[k])}"/>`; }); // a wide, invisible stroke to grab a link by
   s += '</g><g>';
   if ($('names').checked) R.E.forEach((e, k) => { const r = C.routes[k]; if (!r || !r.label || !e.name) return; const L = r.label, op = r.labelU;
     s += `<g class="lname" opacity="${op.toFixed(2)}"><rect x="${L.x - L.w / 2}" y="${L.y - L.h / 2}" width="${L.w}" height="${L.h}" rx="3"/><text x="${L.x}" y="${L.y + 3.5}" text-anchor="middle">${esc(e.name)}</text></g>`; });
@@ -820,6 +821,8 @@ function render() {
   C.P.forEach((p, v) => { if (!p) return; const d = R.D[v];
     s += `<g class="node${C.moved.has(v) ? ' moved' : ''}${SEL.has(v) ? ' sel' : ''}${ndrag && ndrag.moved && ndrag.group.includes(v) ? ' dragged' : ''}" data-v="${v}" transform="translate(${p.x.toFixed(1)},${p.y.toFixed(1)})"${C.alpha[v] < 1 ? ` opacity="${C.alpha[v].toFixed(2)}"` : ''}>${LayoutGraphs.nodeSvg(R.labels[v], d, esc)}</g>`; });
   s += '</g>';
+  if (!playing && !PEN && $('handles').checked) R.E.forEach((e, k) => { const r = C.routes[k], A = C.P[e.s], B = C.P[e.t]; if (!r || !r.bends || !r.bends.length || r.loop || !A || !B || e.s === e.t) return;
+    _ogRoutePts(A, B, r.bends).forEach((h, j) => (s += `<circle class="handle" data-k="${k}" data-j="${j}" cx="${h.x.toFixed(1)}" cy="${h.y.toFixed(1)}" r="5"/>`)); });
   INK.forEach((k) => (s += `<path class="ink${k.noted ? ' old' : ''}" d="${inkD(k.pts)}"/>`));
   if (idrag) s += `<path class="ink" d="${inkD(idrag.pts)}"/>`;
   if (mq) s += `<rect class="marquee" x="${Math.min(mq.a.x, mq.b.x)}" y="${Math.min(mq.a.y, mq.b.y)}" width="${Math.abs(mq.b.x - mq.a.x)}" height="${Math.abs(mq.b.y - mq.a.y)}"/>`;
@@ -836,7 +839,7 @@ function render() {
   $('steps').querySelectorAll('tr[data-k]').forEach((tr) => tr.classList.toggle('cur', tr.dataset.k === C.key));
   $('tbar').querySelectorAll('.tseg').forEach((el) => el.classList.toggle('cur', el.dataset.k === C.key));
   $('bPlay').textContent = playing ? '⏸ Pause' : '▶ Play';
-  showCounts(); postFrame();
+  showCounts();
 }
 // counts on a frame (on the drawn paths), cached
 function metricsAt(j) {
@@ -986,14 +989,17 @@ document.addEventListener('keydown', (ev) => { if (ev.target.tagName === 'INPUT'
   if ((k === 'p' || k === 'P') && !ev.ctrlKey && !ev.metaKey && !ev.altKey) { setPen(!PEN); return; } if (k === 'Escape' && PEN) { setPen(false); return; } if (k === ' ') { ev.preventDefault(); playing ? pause() : play(); } else if (k === 'ArrowRight') frameStep(1); else if (k === 'ArrowLeft') frameStep(-1);
   else if (k === 'PageDown') { ev.preventDefault(); stepStep(1); } else if (k === 'PageUp') { ev.preventDefault(); stepStep(-1); } else if (k === 'Home') $('bStart').onclick(); else if (k === 'End') $('bEnd').onclick(); });
 $('speed').oninput = () => { showSpeed(); store.set('speed3', +$('speed').value); };
-['follow', 'names', 'marks'].forEach((id) => ($(id).onchange = () => { store.set(id, $(id).checked); if (id === 'follow') userView = false; countsFor = -1; if (R) R.mcache = new Map(); render(); }));
+['follow', 'names', 'marks', 'handles'].forEach((id) => ($(id).onchange = () => { store.set(id, $(id).checked); if (id === 'follow') userView = false; countsFor = -1; if (R) R.mcache = new Map(); render(); }));
 // pan and zoom by hand stop the camera from following until Play or Home
-let mq = null, pan = null, ndrag = null, idrag = null, EDITP = null, SEL = new Set(), PEN = false, INK = [];
+let BEND = null, EDITR = null, lastClick = null, mq = null, pan = null, ndrag = null, idrag = null, EDITP = null, SEL = new Set(), PEN = false, INK = [];
 const svgPt = (ev) => { const p = svg.createSVGPoint(); p.x = ev.clientX; p.y = ev.clientY; return p.matrixTransform(svg.getScreenCTM().inverse()); };
-const showSel = () => ($('selInfo').textContent = SEL.size ? 'Selected: ' + [...SEL].map((v) => R.labels[v]).join(', ') : 'Drag a class to move it; Ctrl+click or Shift+drag to select several');
+const showSel = () => ($('selInfo').textContent = SEL.size ? 'Selected: ' + [...SEL].map((v) => R.labels[v]).join(', ') : 'Drag a class to move it, or a link to bend it; Ctrl+click or Shift+drag selects several');
 svg.addEventListener('pointerdown', (ev) => {
   if (!R || !C) return; svg.setPointerCapture(ev.pointerId); const p = svgPt(ev);
   if (PEN && ev.button === 0) { if (playing) pause(); idrag = { pts: [[+p.x.toFixed(1), +p.y.toFixed(1)]], c: [ev.clientX, ev.clientY] }; return; }
+  const tg = ev.target, isH = tg.classList && tg.classList.contains('handle'), isL = tg.classList && tg.classList.contains('hit');
+  if (ev.button === 0 && (isH || isL) && !ev.shiftKey) { const k = +tg.dataset.k, r0 = C.routes[k];
+    BEND = { k, j: isH ? +tg.dataset.j : -1, kind: isH ? 'handle' : 'link', p0: p, moved: false, r: { bends: ((r0 && r0.bends) || []).map((h) => ({ t: h.t, d: h.d })), ports: (r0 && r0.ports) || null, loop: null, label: (r0 && r0.label) || null, labelU: 1 } }; return; }
   const node = ev.target.closest('.node');
   if (node && ev.button === 0) { // moving a class pauses the playback; on release the steps after this frame run again from the new positions
     const v = +node.dataset.v; if (ev.ctrlKey || ev.metaKey) { SEL.has(v) ? SEL.delete(v) : SEL.add(v); } else if (!SEL.has(v)) SEL = new Set();
@@ -1004,11 +1010,22 @@ svg.addEventListener('pointerdown', (ev) => {
 svg.addEventListener('pointermove', (ev) => {
   if (idrag) { if (Math.hypot(ev.clientX - idrag.c[0], ev.clientY - idrag.c[1]) < 3) return; const p = svgPt(ev); idrag.c = [ev.clientX, ev.clientY]; idrag.pts.push([+p.x.toFixed(1), +p.y.toFixed(1)]); render(); return; }
   if (mq) { mq.b = svgPt(ev); render(); return; }
+  if (BEND) { const p = svgPt(ev); if (!BEND.moved && Math.hypot(p.x - BEND.p0.x, p.y - BEND.p0.y) < 3) return;
+    if (!BEND.moved && BEND.kind === 'link') { const h = bendAt(BEND.k, BEND.p0); BEND.r.bends.push(h); BEND.r.bends.sort((a, b) => a.t - b.t); BEND.j = BEND.r.bends.indexOf(h); }
+    BEND.moved = true; const hb = bendAt(BEND.k, p); BEND.r.bends[BEND.j] = hb; BEND.r.bends.sort((a, b) => a.t - b.t); BEND.j = BEND.r.bends.indexOf(hb);
+    EDITR = new Map([[BEND.k, BEND.r]]); render(); return; }
   if (ndrag) { const p = svgPt(ev), dx = p.x - ndrag.p0.x, dy = p.y - ndrag.p0.y; if (!ndrag.moved && Math.hypot(dx, dy) < 2) return; ndrag.moved = true;
     ndrag.group.forEach((i, j) => (ndrag.P[i] = { x: ndrag.start[j].x + dx, y: ndrag.start[j].y + dy })); EDITP = ndrag.P; render(); return; }
   if (!pan) return; pan.moved = true; const r = svg.getBoundingClientRect(), s = view.w / r.width; view.x = pan.v.x - (ev.clientX - pan.x) * s; view.y = pan.v.y - (ev.clientY - pan.y) * s; userView = true; svg.setAttribute('viewBox', `${view.x} ${view.y} ${view.w} ${view.h}`); });
 svg.addEventListener('pointerup', () => {
   if (idrag) { const d = idrag; idrag = null; if (d.pts.length > 1) inkDone(d.pts); else render(); return; }
+  if (BEND) { const d = BEND; BEND = null; EDITR = null;
+    // double-clicks are found here: every redraw replaces the elements, which can swallow the browser's own dblclick
+    const key = d.kind + ':' + d.k + ':' + d.j, now = performance.now(), dbl = !d.moved && lastClick && lastClick.key === key && now - lastClick.t < 400; lastClick = d.moved ? null : { key, t: now };
+    if (d.moved) linkEdit(d.k, d.r, d.kind === 'link' ? 'Bent' : 'Reshaped');
+    else if (dbl && d.kind === 'handle') { d.r.bends.splice(d.j, 1); linkEdit(d.k, d.r, 'Removed a bend from'); lastClick = null; }
+    else if (dbl && d.r.bends.length) { d.r.bends = []; linkEdit(d.k, d.r, 'Straightened'); lastClick = null; }
+    else render(); return; }
   if (mq) { const x1 = Math.min(mq.a.x, mq.b.x), x2 = Math.max(mq.a.x, mq.b.x), y1 = Math.min(mq.a.y, mq.b.y), y2 = Math.max(mq.a.y, mq.b.y); if (!mq.add) SEL = new Set();
     C.P.forEach((p, v) => { if (p && p.x >= x1 && p.x <= x2 && p.y >= y1 && p.y <= y2) SEL.add(v); }); mq = null; showSel(); render(); return; }
   if (ndrag) { const d = ndrag; ndrag = null; EDITP = null;
@@ -1017,6 +1034,19 @@ svg.addEventListener('pointerup', () => {
       note('edit', { classes: moved.map((v) => R.labels[v]), dx: Math.round(d.P[g0].x - d.start[0].x), dy: Math.round(d.P[g0].y - d.start[0].y), ...d.ctx, after: brief(metricsAt(j + 1)) }); }
     else render(); return; }
   if (pan && !pan.moved && SEL.size) { SEL.clear(); showSel(); render(); } pan = null; });
+// a point as a bend of link k: t along the line between its ends, d off it (the library's own bends)
+function bendAt(k, p) { const e = R.E[k], A = C.P[e.s], B = C.P[e.t], dx = B.x - A.x, dy = B.y - A.y, L2 = dx * dx + dy * dy || 1, L = Math.sqrt(L2);
+  return { t: Math.max(0.03, Math.min(0.97, ((p.x - A.x) * dx + (p.y - A.y) * dy) / L2)), d: ((p.x - A.x) * -dy + (p.y - A.y) * dx) / L }; }
+// a link bent by hand: a frame of its own after the frame shown (the frames after it are left out until Ctrl+Z)
+function linkEdit(k, r, what) {
+  pause(); const ctx = ctxNow(), j = C.fj, F = R.frames.slice(0, j + 1), left = R.frames.length - 1 - j, nm = R.labels[R.E[k].s] + ' — ' + R.labels[R.E[k].t];
+  pushUndo(); if (!R.base) R.base = { frames: R.frames, j, info: R.info };
+  const routes = R.E.map((e, i) => (i === k ? r : C.routes[i] ? { bends: (C.routes[i].bends || []).map((h) => ({ t: h.t, d: h.d })), ports: C.routes[i].ports, loop: C.routes[i].loop, label: C.routes[i].label } : null));
+  R.frames = F.concat([{ key: 'edit', P: flat(C.P.map((q) => q || { x: NaN, y: NaN })), ms: 0, run: F[j].run, moved: [], routes, note: `${what} by hand: ${nm}.${left ? ` The ${left} frame${left > 1 ? 's' : ''} after this one are left out (Ctrl+Z brings them back).` : ''}` }]);
+  R.mcache = new Map(); timeline(); buildPanel(); T = TL.total; countsFor = -1;
+  $('editTxt').textContent = 'Link bent by hand (Ctrl+Z undoes it)'; $('editBar').classList.add('on');
+  note('bend', { link: nm, what, bends: r.bends.map((h) => [+h.t.toFixed(3), +h.d.toFixed(1)]), ...ctx }); render();
+}
 // ---------- pen ----------
 const inkD = (pts) => pts.map((q, i) => (i ? 'L' : 'M') + q[0] + ',' + q[1]).join('');
 function inPoly(x, y, pts) { let c = false; for (let i = 0, j = pts.length - 1; i < pts.length; j = i++) { const [xi, yi] = pts[i], [xj, yj] = pts[j]; if ((yi > y) !== (yj > y) && x < ((xj - xi) * (y - yi)) / (yj - yi) + xi) c = !c; } return c; }
@@ -1063,6 +1093,7 @@ function showNote(ev) {
   else if (ev.kind === 'experiment') h = 'Time experiments: ' + (Object.keys(ev.tune).length ? esc(JSON.stringify(ev.tune)) : 'back to the shipped settings');
   else if (ev.kind === 'redo') h = at + `Did “${esc(ev.redo)}” again${ev.mult > 1 ? ` with ${ev.mult}× its time` : ''}${ev.then ? ', then the steps after it' : ''}: crossings ${ev.before.cross} → ${ev.after.cross}, through classes ${ev.before.thru} → ${ev.after.thru}`;
   else if (ev.kind === 'undo') h = 'Undone';
+  else if (ev.kind === 'bend') h = at + `${esc(ev.what)} ${esc(ev.link)}`;
   else if (ev.kind === 'ink-clear') h = `Cleared ${ev.cleared.length} mark${ev.cleared.length > 1 ? 's' : ''}`;
   else return; // step toggles, order changes and discarded edits are recorded, not listed (the next run line shows the setup)
   const d = document.createElement('div'); d.className = 'ev ' + ev.kind; d.innerHTML = h; $('nlog').appendChild(d); $('nlog').scrollTop = 1e9;
@@ -1107,22 +1138,6 @@ function showResult() {
 svg.addEventListener('wheel', (ev) => { ev.preventDefault(); const p = svg.createSVGPoint(); p.x = ev.clientX; p.y = ev.clientY; const q = p.matrixTransform(svg.getScreenCTM().inverse()), f = Math.exp(Math.max(-60, Math.min(60, ev.deltaY)) * 0.0015);
   view = { x: q.x - (q.x - view.x) * f, y: q.y - (q.y - view.y) * f, w: view.w * f, h: view.h * f }; userView = true; svg.setAttribute('viewBox', `${view.x} ${view.y} ${view.w} ${view.h}`); }, { passive: false });
 window.addEventListener('resize', () => { CR = null; if (R) render(); });
-
-// ---------- the Layout Lab, kept in step ----------
-// The lab opens on the frame shown here and follows the playback until a class is moved there; each move comes back here
-// and the playback continues from it (BroadcastChannel 'layout-sync'; the frame to open on is left in localStorage).
-const bc = 'BroadcastChannel' in window ? new BroadcastChannel('layout-sync') : null;
-function framePayload() {
-  const P = C.P.map((p) => (p ? [Math.round(p.x * 10) / 10, Math.round(p.y * 10) / 10] : null)), H = [];
-  R.E.forEach((e, k) => { if (e.s === e.t) return; const r = C.routes[k]; H.push(r && r.bends ? r.bends.map((h) => [+h.t.toFixed(4), +h.d.toFixed(1)]) : []); });
-  return { type: 'frame', graph: R.key, algo: R.algo, n: R.n, j: C.fj, of: R.frames.length, key: C.key, step: meta(C.key)[2], group: meta(C.key)[1], P, H };
-}
-let postT = 0, postLast = '';
-function postFrame() { if (!bc || !C) return; const now = performance.now(), sig = C.j + ':' + C.u0.toFixed(2); if (sig === postLast || (playing && now - postT < 90)) return; postT = now; postLast = sig; bc.postMessage(framePayload()); }
-if (bc) bc.onmessage = (ev) => { const m = ev.data || {}; if (m.type === 'edit') applyEdit(m); else if (m.type === 'hello' && R && C) { postLast = ''; postFrame(); } };
-$('labLink').addEventListener('click', (ev) => { if (!R || !C) return; try { localStorage.setItem('layout-sync:frame', JSON.stringify(framePayload())); } catch (e) {}
-  const q = `?graph=${R.key}&algo=${R.engine ? 'auto' : R.algo}&sync=1`; $('labLink').href = 'lab.html' + q;
-  if (window.SiteNav && SiteNav.inSite) { ev.preventDefault(); SiteNav.go('lab', q); } }); // in the one-page site: switch to its Lab
 
 // ---------- file menu: your own graph, exports of the drawing shown, your notes ----------
 $('fileBtn').onclick = (ev) => { ev.stopPropagation(); $('fForget').hidden = !(R && MODELS[R.key] && MODELS[R.key].imported); $('fileMenu').classList.toggle('open'); };
@@ -1190,14 +1205,28 @@ $('ttlFile').onchange = async () => { const file = $('ttlFile').files[0]; $('ttl
   ownGraphs(); $('graph').value = key; run();
   setTimeout(() => note('import', { file: file.name, classes: g.stats.classes, subclassLinks: g.stats.subclassLinks, relationshipLinks: g.stats.relationshipLinks, skipped: g.stats.skipped }), 500); };
 
+// ---------- where to look first: graphs where the chosen layout is not the best of ours ----------
+// bestof.json (written by bestof.mjs) holds the problems each of our layouts leaves on each graph, seed 1, boxes; a graph
+// where another of ours leaves fewer gets a mark in the list, so feedback can start there
+let BEST = null;
+const ALGO_NAME = { auto: 'Best Read', compact: 'Tidy Stress', grouped: 'Mycelium', tidy: 'Tidy Mycelium' };
+function markGraphs() {
+  const a = $('algo').value; let behind = 0;
+  [...$('graph').options].forEach((o) => { if (o.dataset.name == null) o.dataset.name = o.textContent; let t = o.dataset.name; const g = BEST && BEST.graphs[o.value];
+    if (g && g[a] != null) { const best = Math.min(...Object.values(g)); if (g[a] > best) { behind++; t += `  ◂ ${Object.keys(g).filter((k) => g[k] === best).map((k) => ALGO_NAME[k]).join(', ')}: ${g[a] - best} fewer problems`; } }
+    o.textContent = t; });
+  $('graph').title = BEST && ALGO_NAME[a] ? `◂ marks the ${behind} graph${behind === 1 ? '' : 's'} where another of our layouts leaves fewer problems than ${ALGO_NAME[a]} (crossed links, links through classes, covered names and overlapping boxes, after the clean-up and the link drawing; seed 1, boxes; measured ${BEST.made}): good places to start` : 'Graph';
+}
+fetch('bestof.json', { cache: 'no-cache' }).then((r) => (r.ok ? r.json() : null)).then((j) => { BEST = j; markGraphs(); }).catch(() => {});
+
 // ---------- run ----------
 let runSeq = 0;
 function run(keepPlace) {
   const keepU = keepPlace === true && R && TL ? T / TL.total : null;
   const key = $('graph').value, algo = $('algo').value, seed = Math.max(1, +$('seed').value || 1), my = ++runSeq, engine = !!ENGINES[algo];
   pause(); $('status').textContent = engine ? `Running ${ENGINES[algo].name}…` : 'Laying out…'; $('oursTog').hidden = !engine; $('xBox').hidden = engine || algo === 'tidy'; UNDO = [];
-  history.replaceState(null, '', `?graph=${key}&algo=${algo}&seed=${seed}`); $('labLink').href = `lab.html?graph=${key}&sync=1`;
-  store.set('last', { key, algo, seed }); $('editBar').classList.remove('on');
+  history.replaceState(null, '', `?graph=${key}&algo=${algo}&seed=${seed}`);
+  store.set('last', { key, algo, seed }); $('editBar').classList.remove('on'); markGraphs();
   const warm = async () => { if (warmed || engine) return; warmed = true; $('status').textContent = 'Warming up…'; await recordRun(key, algo, seed); };
   setTimeout(() => warm().then(() => recordRun(key, algo, seed)).then((r) => {
     if (my !== runSeq) return; R = r; R.base = null; timeline(); buildPanel(); T = 0; countsFor = -1; userView = false;
@@ -1221,7 +1250,8 @@ $('graph').value = q.get('graph') || last.key || 'crm'; if (!$('graph').value) $
 $('algo').value = q.get('algo') || last.algo || 'auto'; if (!$('algo').value) $('algo').value = 'auto'; $('seed').value = q.get('seed') || last.seed || 1;
 $('speed').value = store.get('speed3', 0.7); showSpeed(); // 5% of real speed
 $('limit').value = store.get('limit2', 1000); showLimit();
-['follow', 'names', 'marks'].forEach((id) => ($(id).checked = store.get(id, true)));
+['follow', 'names', 'marks', 'handles'].forEach((id) => ($(id).checked = store.get(id, true)));
+$('lines').value = LINES; $('lines').onchange = () => { LINES = $('lines').value; store.set('lines', LINES); note('step', { lines: LINES }); run(true); };
 run();
 </script>
 </body>

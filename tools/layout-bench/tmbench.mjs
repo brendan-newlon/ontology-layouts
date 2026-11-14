@@ -11,6 +11,7 @@ if (cut < 0) throw new Error('_bundle.mjs: export block not found; run mkbundle.
 fs.writeFileSync(here('_bundle_tm.mjs'), base.slice(0, cut) + '\n' + fs.readFileSync(here('tidymycelium.js'), 'utf8') + '\nconst OURS = window.OURS;\nexport { MODELS, OURS, _tmLayout, _tmUnits, _tmBest };\n');
 const { MODELS, OURS: O, _tmLayout, _tmBest } = await import('./_bundle_tm.mjs?' + Date.now());
 O.tune.noWall = true;
+if (process.env.TM_TUNE) Object.assign(O.tune, JSON.parse(process.env.TM_TUNE)); // e.g. TM_TUNE='{"leafClaim":0}'
 const SETS = { dev: ['prov', 'uni', 'hotel', 'org', 'brewery', 'trial', 'telecom', 'sosa', 'crm', 'schema', 'health', 'fibo', 'pizza', 'bio', 'big'], held: ['hx_small', 'hx_mesh', 'hx_rome40', 'hx_rings', 'hx_hubs', 'hx_md70', 'hx_rome90', 'hx_tax', 'hx_md160', 'hx_md300'],
   public: ['pb_foaf', 'pb_dcterms', 'pb_time', 'pb_dcat', 'pb_bfo', 'pb_dul', 'pb_saref', 'pb_gr', 'pb_rome117', 'pb_rome121', 'pb_rome115', 'pb_rome135', 'pb_rome120', 'pb_rome134', 'pb_rome1182', 'pb_rome1307', 'pb_rome1192', 'pb_rome1270', 'pb_rome1233', 'pb_rome1381', 'pb_rome481', 'pb_rome2778', 'pb_rome3756', 'pb_rome7130', 'pb_rome7785', 'pb_rome7797'],
   few: ['telecom', 'pizza', 'bio', 'big', 'hx_rome40', 'hx_hubs', 'hx_tax', 'hx_md160', 'pb_dul', 'pb_saref', 'pb_rome7797'] };

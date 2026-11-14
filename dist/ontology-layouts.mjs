@@ -336,9 +336,12 @@ function _ogClLeaves(n, EE) {
 // at least gapOf[v] px from the neighbor's box (room for the link's text). improve: every class is placed already; move one only
 // when the new spot is better than where it is.
 function _ogClPlaceLeaves(P, N, EE, leafOf, gapOf, L, gap, improve, deadline, stage) {
-  const n = P.length, kids = new Map();
+  const n = P.length, kids = new Map(), claim = _OG_TUNE.leafClaim != null ? _OG_TUNE.leafClaim : 100;
   leafOf.forEach((p, v) => { if (p >= 0) { if (!kids.has(p)) kids.set(p, []); kids.get(p).push(v); } });
   const placed = new Uint8Array(n); for (let v = 0; v < n; v++) if (improve || leafOf[v] < 0) placed[v] = 1;
+  // waiting[q]: one-link classes of q still to be placed. A spot nearer to another class with classes still waiting than to
+  // its own neighbor is that class's room: taking it would leave the other's classes to cross this link later.
+  const waiting = new Int32Array(n); if (!improve) leafOf.forEach((q, v) => { if (q >= 0) waiting[q]++; });
   // Every spot tried for a class lies within reach of its neighbor, so only the classes and links near there can count:
   // NB holds those classes for the class being placed (the same answers as checking all, much faster on large models).
   let NB = null;
@@ -361,6 +364,7 @@ function _ogClPlaceLeaves(P, N, EE, leafOf, gapOf, L, gap, improve, deadline, st
       if (cost >= lim) return Infinity;
     }
     for (const u of NB) if (placed[u] && u !== p && u !== v && _ogClSegBox(P[p].x - P[u].x, P[p].y - P[u].y, c.x - P[u].x, c.y - P[u].y, N[u].w / 2 + 4, N[u].h / 2 + 4)) { cost += 80; if (cost >= lim) return Infinity; }
+    if (claim) { const own = Math.hypot(c.x - P[p].x, c.y - P[p].y); for (const u of NB) if (waiting[u] && u !== p && placed[u] && Math.hypot(c.x - P[u].x, c.y - P[u].y) < own) { cost += claim; break; } }
     return cost;
   };
   const order = [...kids.keys()].sort((a, b) => kids.get(b).length - kids.get(a).length);
@@ -411,7 +415,7 @@ function _ogClPlaceLeaves(P, N, EE, leafOf, gapOf, L, gap, improve, deadline, st
         const th = a * Math.PI / 8, c = { x: P[p].x + Math.cos(th) * r * L, y: P[p].y + Math.sin(th) * r * L * 0.75 };
         if (freeAt(v, p, c) || r === 12) { best = { cost: 0, c }; done = true; break; }
       }
-      if (best) P[v] = best.c; placed[v] = 1;
+      if (best) P[v] = best.c; placed[v] = 1; if (waiting[p]) waiting[p]--;
       if (_ogTr) _ogTr.snap(stage || "leaves", P, { v, p });
     }
   }

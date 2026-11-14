@@ -1,7 +1,7 @@
 @echo off
-rem Double-click to open the Layout Playback (and from it the Layout Lab) in your browser.
+rem Double-click to open the Layout Lab in your browser.
 rem It starts up to two small windows: a page server for this folder (first free port from 8611) and the receiver that saves
-rem Layout Lab sessions into _temp\ (port 8613). Close them to stop. Needs Node.js and Python on the PATH.
+rem Layout Lab notes into _temp\ (port 8613). Close them to stop. Needs Node.js and Python on the PATH.
 setlocal EnableDelayedExpansion
 cd /d "%~dp0"
 where node >nul 2>nul || (echo Node.js was not found on the PATH. Install it from https://nodejs.org and run this again. & pause & exit /b 1)
