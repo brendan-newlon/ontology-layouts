@@ -55,6 +55,12 @@ aside { border-left: 1px solid var(--rule); background: var(--paper); display: g
 .arrow.rep { stroke-dasharray: 3 2; opacity: .6; }
 .arrow.tried { stroke: var(--bad); }
 .focus { fill: none; stroke: var(--bad); stroke-width: 3; opacity: .8; }
+.node.tmhid { opacity: .18; }
+.tmroom { fill: var(--unit); fill-opacity: .12; stroke: var(--unit-line); stroke-width: 1.2; stroke-dasharray: 5 4; }
+.tmwedge { fill: var(--open); fill-opacity: .16; stroke: var(--open); stroke-width: 1.4; }
+.tmray { stroke: var(--ghost); stroke-width: 1.2; opacity: .7; }
+.tmray.best { stroke: var(--open); stroke-width: 2.4; opacity: 1; }
+.tmout { stroke: var(--warn); stroke-width: 1.6; stroke-dasharray: 4 3; }
 .link.focusline { stroke: var(--bad); stroke-width: 3; }
 .ev.note .on { display: block; font-size: 11px; color: var(--muted); margin-bottom: 2px; }
 aside h2 { font-size: 13px; margin: 0; padding: 8px 12px; border-bottom: 1px solid var(--rule); display: flex; justify-content: space-between; align-items: center; }
@@ -110,7 +116,7 @@ aside h2 .wk button, aside h2 .wk select { font-size: 12px; padding: 2px 6px; }
 <header>
   <h1>Layout Lab</h1>
   <select id="graph" title="Graph"></select>
-  <select id="algo" title="Starting layout"><option value="auto">Best Read</option><option value="compact">Tidy Stress</option><option value="grouped">Mycelium</option></select>
+  <select id="algo" title="Starting layout"><option value="auto">Best Read</option><option value="compact">Tidy Stress</option><option value="grouped">Mycelium</option><option value="tidy">Tidy Mycelium (new)</option></select>
   <span class="fmenu" id="fileMenu"><button id="fileBtn" title="Open your own graph (Turtle), export the drawing, download this session">File ▾</button>
     <span class="fm">
       <div class="h">Your graph</div>
@@ -145,7 +151,7 @@ aside h2 .wk button, aside h2 .wk select { font-size: 12px; padding: 2px 6px; }
     <div id="help">Drag a class to move it. Ctrl+click classes to select several, then drag one to move them together; Shift+drag on empty space selects an area. Drag on a link to pull a bend into it; drag a bend to reshape; double-click a bend to remove it, or a link to straighten it. Drag empty space to pan, wheel to zoom. ✎ Pen (or P) draws on the drawing: circle something, then type a note about it. Ctrl+Z undoes the last step and grays it out as a trial; "ignore" on any step leaves it out of the analysis. Coming back to a graph continues where you left it; "Lay out again" starts that graph over.</div>
   </div>
   <aside>
-    <h2>Steps and reasoning <span class="wk"><button id="walkBtn" title="Run the clean-up and step through what it does, stage by stage, with notes on each step">Walk through</button><select id="walkFrom" title="Which drawing the walk-through cleans up"><option value="start">from the start</option><option value="here">from here</option></select></span></h2>
+    <h2>Steps and reasoning <span class="wk"><button id="walkBtn" title="Run the clean-up and step through what it does, stage by stage, with notes on each step. With Tidy Mycelium chosen and from the start, its own layout steps come first">Walk through</button><select id="walkFrom" title="Which drawing the walk-through cleans up"><option value="start">from the start</option><option value="here">from here</option></select></span></h2>
     <div id="walk" hidden>
       <div class="where"><span id="wWhere"></span><span id="wPos"></span></div>
       <div class="what" id="wWhat"></div>
@@ -164,6 +170,7 @@ aside h2 .wk button, aside h2 .wk select { font-size: 12px; padding: 2px 6px; }
   </aside>
 </main>
 <script src="base_layout.js"></script>
+<script src="tidymycelium.js"></script>
 <script src="models.js"></script>
 <script src="models2.js"></script>
 <script src="models3.js"></script>
@@ -312,7 +319,7 @@ function describe(ev) {
     case 'undo': return `<span class="d">Undid step ${ev.undid} (a trial)</span>` + m;
     case 'cleanup': { const c = (k) => ev.steps.filter((s) => s.kind === k).length;
       return `<span class="d">Cleaned up in ${(ev.ms / 1000).toFixed(1)} s: ${c('move')} single moves, ${c('unit')} leaf units turned, ${c('spread')} crowds spread, ${c('group')} group moves${ev.fromWalk ? ` (kept from the walk-through, up to step ${ev.upToStep})` : ''}</span>` + m; }
-    case 'walkthrough': return `<span class="d">Started a walk-through of the clean-up ${ev.from === 'start' ? 'from the starting layout' : 'from this drawing'} (${(ev.ms / 1000).toFixed(2)} s, ${ev.stages.length} stages)</span>`;
+    case 'walkthrough': return `<span class="d">Started a walk-through ${ev.layout ? 'of ' + esc(ev.layout) + ' and the clean-up' : 'of the clean-up'} ${ev.from === 'start' ? 'from the starting layout' : 'from this drawing'} (${(ev.ms / 1000).toFixed(2)} s, ${ev.stages.length} stages)</span>`;
     case 'walk-closed': return `<span class="d">Closed the walk-through at step ${ev.atStep}; your drawing is back as it was</span>`;
     case 'lines': return `<span class="d">Lines: ${ev.lines === 'straight' ? 'straight' : ev.lines === 'round' ? 'bent where they overlap' : 'auto-bent'}${ev.lines === 'straight' ? '' : ` (${ev.bent} links bent, ${ev.parallel} repeated links drawn apart)`}</span>` + m;
     case 'route': return `<span class="d">Bent the links as the link routing does: ${ev.bent} links bent, ${ev.parallel} parallel links spread</span>` + m;
@@ -392,8 +399,8 @@ async function load(key, algo, logIt = true) {
 // The starting layout of the current graph, as "Lay out again" draws it
 function freshLayout(algo) {
   const items = G.D.map((d) => ({ w: d.w, h: d.h })), edges = G.E.map((e) => [e.s, e.t, e.sub ? 2 : 1]);
-  const fn = algo === 'compact' ? O.compact : algo === 'grouped' ? (a, b, c) => O.grouped2(a, b, c) || O.compact(a, b, c) : O.auto;
-  const P = fn(items, edges, { seed: 1 }).pos.map((p) => ({ x: p.x, y: p.y }));
+  const fn = algo === 'compact' ? O.compact : algo === 'grouped' ? (a, b, c) => O.grouped2(a, b, c) || O.compact(a, b, c) : algo === 'tidy' ? (a, b, c) => O.clocked(() => _tmBest(a, b, c)) : O.auto;
+  const P = fn(items, edges, { seed: 1, rec: freshLayout.rec || undefined }).pos.map((p) => ({ x: p.x, y: p.y }));
   O.sep(P, G.D.map((d) => ({ w: d.w + 16, h: d.h + 12 })), 6, 200);
   return P;
 }
@@ -541,6 +548,13 @@ const STAGE = {
   unit: ['Leaf units turned', 'A leaf, a short leaf chain or a leaf triangle hangs off one class (its anchor). It is turned, mirrored, reordered or resized around that anchor.'],
   spread: ['Crowds spread outward', 'A grid lies over the drawing; cells holding at least twice the average number of classes and links are crowded (orange). Around each crowd\'s center the space is cut into 8 pizza slices. Classes in the crowd move outward, neighbors further out are pushed less, and slices with more open space beyond them move further. A few repair moves follow, and the step is kept only if the drawing ends up better.'],
   finish: ['Final leaf pass', 'One last pass over leaf units and single classes still in a problem. It runs even when the time is up, because it is quick.'],
+  tm_start: ['Hanging parts set aside', 'Every part that hangs off the rest by one class (a leaf, a chain, a small tree, a triangle or a small cluster, up to 8 classes) is set aside for now: it is shown faded, on the class it hangs from (its anchor). Each anchor remembers how many parts leave it and how many classes they hold, and gets room in proportion (dashed circle): more classes and more separate parts, more room. The rest of the graph, the core, starts from a quick projection of how many links apart its classes are.'],
+  tm_stress: ['Core placed by stress', 'The core is placed so that straight distances match link distances, Mycelium style: links inside a closely linked group shorter, links between groups longer, a hub given a ring wide enough for its neighbors, and each anchor kept further from everything by its room. The best of a few starts, by crossings, is kept.'],
+  tm_coreClean: ['Core cleaned up', 'Classes of the core swap places, or move beside a neighbor, when that removes crossings; then classes that a link runs through move off it.'],
+  tm_unit: ['Hanging parts placed in open slices', 'Largest part first. Rays are cast all round its anchor through the drawing so far; each ray stops at the first class or link it meets. The part goes into the slice whose rays run furthest (green), with a pull toward the outside of the drawing for larger parts (orange line: outward). Inside its slice the part is laid out as a small fan.'],
+  tm_leaves: ['Single leaves placed', 'Classes with only one link are placed last, round their anchor, where their link crosses nothing and runs through no class.'],
+  tm_finish: ['Links moved off classes', 'Classes that still sit on a link move off it, and boxes that touch are pushed apart.'],
+  tm_shrink: ['Pulled in', 'The whole drawing shrinks toward its center a step at a time, boxes pushed apart after each step. Steps are kept while the problems stay within a small allowance (the clean-up after this repairs them), so room that the hanging parts did not need is given back.'],
   group: ['Group moves with look-ahead','For each problem left, the crowd on one side of the problem moves together away from the line, then a few single repair moves follow. The whole step is kept only if the drawing ends up better.'],
 };
 const LEGEND = [
@@ -552,6 +566,8 @@ const LEGEND = [
   ['mover', 'Class moved', 'background:var(--mover);border:1px solid var(--warn)'],
   ['ghost', 'Where it was / arrows', 'background:none;border:1px dashed var(--ghost)'],
   ['tried', 'Tried and dropped', 'background:none;border:1px dashed var(--bad)'],
+  ['room', 'Room kept for hanging parts', 'background:var(--unit);opacity:.5;border:1px dashed var(--unit-line);border-radius:50%'],
+  ['rays', 'Rays cast round an anchor', 'background:none;border-top:2px solid var(--ghost);border-radius:0;height:0'],
 ];
 const LG = Object.fromEntries(LEGEND.map(([k]) => [k, true]));
 $('wLegend').innerHTML = LEGEND.map(([k, l, st]) => `<label><input type="checkbox" data-lg="${k}" checked><span class="sw" style="${st}"></span>${l}</label>`).join('');
@@ -571,6 +587,23 @@ function buildWalk(r, P0) {
   stages.forEach((x) => (x.P1 = x.steps.length ? x.steps[x.steps.length - 1].Pa : x.P0));
   return stages;
 }
+// Tidy Mycelium's own steps, from its recording (rec), as stages ahead of the clean-up's: each stage shows the drawing after
+// that step; placing the hanging parts is one stage with a step per part
+function buildTmWalk(rec) {
+  const stages = [], st = (phase, P, extra) => { const x = { phase, tm: true, round: 0, t: 0, steps: [], P0: P, tried: 1, ...(extra || {}) }; stages.push(x); return x; };
+  let unitSt = null, prev = null;
+  for (const r of rec) {
+    if (r.k === 'unit') {
+      if (!unitSt) unitSt = st('tm_unit', prev.P, { hidden: prev.hidden, room: prev.room, units: 0 });
+      unitSt.steps.push({ kind: 'tmunit', Pb: prev.P, Pa: r.P, hidden: r.hidden, anchor: r.anchor, nodes: r.nodes, wedge: r.wedge, rays: r.rays, outward: r.outward, t: 0 }); unitSt.units++;
+    } else if (r.k === 'beforeLeaves') { /* the leaves stage starts from here */ }
+    else if (r.k === 'leaves') { const b = rec.find((x) => x.k === 'beforeLeaves') || prev; st('tm_leaves', b.P, { hidden: b.hidden, singles: r.singles }).steps.push({ kind: 'tmleaves', Pb: b.P, Pa: r.P, nodes: r.singles, hidBefore: b.hidden.length, t: 0 }); }
+    else st('tm_' + r.k, r.P, r);
+    prev = r;
+  }
+  stages.forEach((x) => (x.P1 = x.steps.length ? x.steps[x.steps.length - 1].Pa : x.P0));
+  return stages;
+}
 function walkFrames() {
   const out = [], drop = $('wDropped').checked;
   W.stages.forEach((st, si) => {
@@ -583,10 +616,11 @@ function walkFrames() {
   return out;
 }
 function framePos(f) { return f.end ? W.final : f.s ? (f.s.kind === 'group-rejected' ? f.s.Pb : f.s.Pa) : f.st.P0; }
-function frameWhere(f) { return f.end ? 'End of the clean-up' : `Round ${f.st.round} · ${STAGE[f.st.phase][0]}`; }
+function frameWhere(f) { return f.end ? 'End of the clean-up' : f.st.tm ? `Tidy Mycelium · ${STAGE[f.st.phase][0]}` : `Round ${f.st.round} · ${STAGE[f.st.phase][0]}`; }
 function frameText(f) {
   if (f.end) return `<b>Done in ${(W.ms / 1000).toFixed(2)} s.</b> "Keep this" keeps the final drawing; "Close" goes back to the drawing before the walk-through.`;
   const st = f.st, s = f.s;
+  if (st.tm) return tmText(f);
   if (!s) {
     const sk = st.skipped ? `, skipped ${st.skipped} (nothing near them had moved since they last failed)` : '';
     const what = { single: 'classes', unit: 'leaf units', spread: 'crowds', group: 'group moves', finish: 'leaf units and classes' }[st.phase];
@@ -604,12 +638,30 @@ function frameText(f) {
   if (s.kind === 'group') return `<b>Group move kept.</b> Problem: ${prob}. ${mv} ${f.delta || ''}${at}`;
   return `<b>Group move tried and dropped.</b> Problem: ${prob}. ${mv} It would have made the drawing worse by ${s.loss} points, so the drawing stays as it was.${at}`;
 }
+function tmText(f) {
+  const st = f.st, s = f.s, hid = (s ? s.hidden || [] : st.hidden || []).length;
+  // while parts are still set aside they sit on their anchors, so the counts at the top include links that are not drawn yet
+  if (s && hid) f.delta = `<small>${hid} classes are still set aside (faded, on their anchors); the counts at the top include them, so they are not compared here.</small>`;
+  else if (s && s.hidBefore) { const m = measure(); f.delta = `<small>Every class is placed now: crossings ${m.cross}, through classes ${m.thru}, cramped ${m.tight}.</small>`; }
+  const deg = (a) => Math.round(((a * 180 / Math.PI) % 360 + 360) % 360);
+  if (s && s.kind === 'tmunit') { const w = s.wedge;
+    return `<b>Placed ${esc(names3(s.nodes))}</b> (${s.nodes.length} classes) beside ${esc(G.labels[s.anchor])}, in the slice toward ${deg(w.th)}° (${Math.round(2 * w.half * 180 / Math.PI)}° wide). Its rays run ${Math.round(w.free)} px before meeting anything; the part needs about ${Math.round(w.r)} px.${s.outward != null ? ` The outside of the drawing lies toward ${deg(s.outward)}°.` : ''} ${f.delta || ''}`; }
+  if (s && s.kind === 'tmleaves') return `<b>Placed ${s.nodes.length} single leaves</b>: ${esc(names3(s.nodes, 8))}. ${f.delta || ''}`;
+  let more = '';
+  if (st.phase === 'tm_start') { const R = st.room || [], hidden = (st.hidden || []).length;
+    more = `${hidden} classes set aside in hanging parts; ${R.length} anchors keep room for them${R.length ? ', the most for ' + esc(R.slice().sort((a, b) => b.r - a.r).slice(0, 3).map((x) => `${G.labels[x.v]} (${x.units} part${x.units > 1 ? 's' : ''}, ${x.classes} classes)`).join(', ')) : ''}.${st.groups ? ` The core forms ${st.groups} groups.` : ''}`; }
+  if (st.phase === 'tm_stress') more = `Kept start ${st.restart + 1}, with ${st.crossings} crossings in the core.`;
+  if (st.phase === 'tm_unit') more = `${st.units} parts of two or more classes, one step each.`;
+  if (st.phase === 'tm_shrink') more = `${st.kept} shrink steps kept.`;
+  return `<b>${STAGE[st.phase][0]}</b>. ${STAGE[st.phase][1]}${more ? `<small>${more}</small>` : ''}`;
+}
 let _med = null; const medLen = () => { if (_med) return _med; const ls = G.E.map((e) => Math.hypot(G.P[e.s].x - G.P[e.t].x, G.P[e.s].y - G.P[e.t].y)).sort((a, b) => a - b); return (_med = ls[ls.length >> 1] || 150); };
 // the overlay for the current frame: open cells under the drawing, highlighted classes, ghosts and arrows on top
 function walkLayer() {
   const f = W.frames[W.i], out = { under: '', over: '', cls: {}, lines: new Set() };
   if (f.end) return out;
   const s = f.s, before = s ? s.Pb : f.st.P0;
+  if (f.st.tm) return tmLayer(f, out);
   if (LG.open && (!s || s.kind !== 'unit')) {
     if (!f.grid) f.grid = HandTidy.openSpace(before, G.D, G.E.map((e) => ({ s: e.s, t: e.t })));
     const g = f.grid; out.under = '<g>' + g.open.map((c) => `<rect class="opencell" x="${c.x - g.s / 2 + 1}" y="${c.y - g.s / 2 + 1}" width="${g.s - 2}" height="${g.s - 2}" rx="3"/>`).join('') + '</g>';
@@ -641,6 +693,24 @@ function walkLayer() {
   out.over = '<g>' + o + '</g>';
   return out;
 }
+function tmLayer(f, out) {
+  const st = f.st, s = f.s, P = framePos(f);
+  (s ? s.hidden || [] : st.hidden || []).forEach((v) => (out.cls[v] = 'tmhid'));
+  let u = '', o = '';
+  if (LG.room && st.room && !s) st.room.forEach((x) => { const p = P[x.v]; u += `<circle class="tmroom" cx="${p.x}" cy="${p.y}" r="${x.r}"><title>${esc(G.labels[x.v])}: ${x.units} part(s), ${x.classes} classes</title></circle>`; });
+  if (s && s.kind === 'tmunit') {
+    const a = s.Pb[s.anchor], w = s.wedge, R = w.r;
+    if (LG.rays && s.rays) s.rays.forEach(([th, len]) => (u += `<line class="tmray" x1="${a.x}" y1="${a.y}" x2="${a.x + Math.cos(th) * len}" y2="${a.y + Math.sin(th) * len}"/>`));
+    const p1 = { x: a.x + Math.cos(w.th - w.half) * R, y: a.y + Math.sin(w.th - w.half) * R }, p2 = { x: a.x + Math.cos(w.th + w.half) * R, y: a.y + Math.sin(w.th + w.half) * R };
+    u += `<path class="tmwedge" d="M${a.x},${a.y}L${p1.x},${p1.y}A${R},${R} 0 ${2 * w.half > Math.PI ? 1 : 0} 1 ${p2.x},${p2.y}Z"/>`;
+    if (LG.rays) u += `<line class="tmray best" x1="${a.x}" y1="${a.y}" x2="${a.x + Math.cos(w.th) * w.free}" y2="${a.y + Math.sin(w.th) * w.free}"/>`;
+    if (s.outward != null) o += `<line class="tmout" x1="${a.x}" y1="${a.y}" x2="${a.x + Math.cos(s.outward) * R * 0.6}" y2="${a.y + Math.sin(s.outward) * R * 0.6}" marker-end="url(#ah)"/>`;
+    if (LG.unit) { s.nodes.forEach((v) => (out.cls[v] = 'unit')); out.cls[s.anchor] = 'anchor'; }
+  }
+  if (s && s.kind === 'tmleaves' && LG.mover) s.nodes.forEach((v) => (out.cls[v] = 'mover'));
+  out.under = '<g>' + u + '</g>'; out.over = '<g>' + o + '</g>';
+  return out;
+}
 function showFrame() {
   const f = W.frames[W.i];
   G.P = toP(framePos(f));
@@ -649,6 +719,10 @@ function showFrame() {
     const ch = [['crossings', a.cross, b.cross], ['through', a.thru, b.thru], ['sharp', a.sharp, b.sharp], ['cramped', a.tight, b.tight]].filter((x) => x[1] !== x[2]);
     f.delta = ch.length ? ch.map(([l, x, y]) => `${l} ${x}→${y}`).join(', ') + '.' : 'No count changed: it bought clearance or a wider angle.';
   }
+  // Tidy Mycelium's steps change the drawing's size a lot (its start is spread wide, the pull-in shrinks it): refit the view
+  // when the drawing no longer fits it or fills under a quarter of it
+  if (f.st && f.st.tm || W.i > 0 && W.frames[W.i - 1].st && W.frames[W.i - 1].st.tm) { const b = bbox(G.P), w = b.x2 - b.x1, h = b.y2 - b.y1;
+    if (b.x1 < view.x || b.y1 < view.y || b.x2 > view.x + view.w || b.y2 > view.y + view.h || w * h < view.w * view.h / 4 && Math.max(w / view.w, h / view.h) < 0.5) fit(); }
   $('wWhere').textContent = frameWhere(f); $('wPos').textContent = `step ${W.i + 1} of ${W.frames.length}`;
   $('wWhat').innerHTML = frameText(f);
   $('wBack').disabled = W.i === 0; $('wNext').disabled = $('wStage').disabled = W.i === W.frames.length - 1;
@@ -661,12 +735,13 @@ $('walkBtn').onclick = () => {
   setTimeout(() => {
     const budgetMs = +$('tidyT').value * 1000, groupDepth = +$('tidyLA').value, E = G.E.map((e) => ({ s: e.s, t: e.t }));
     // "from the starting layout" leaves your drawing alone: the walk-through runs on a fresh layout, and Close brings yours back
-    const from = $('walkFrom').value, home = { P: toP(G.P), H: G.H }, P0 = from === 'start' ? freshLayout($('algo').value) : toP(G.P);
+    const from = $('walkFrom').value, home = { P: toP(G.P), H: G.H }, tmRec = from === 'start' && $('algo').value === 'tidy' ? [] : null;
+    freshLayout.rec = tmRec; let P0; try { P0 = from === 'start' ? freshLayout($('algo').value) : toP(G.P); } finally { freshLayout.rec = null; }
     const r = HandTidy.run(P0, G.D, E, { budgetMs, groupDepth, record: true });
     G.P = P0; _med = null; medLen(); G.P = home.P; // link length of the walked drawing, for telling a nudge from a move
-    W = { P0, home, from, final: toP(r.P), stages: buildWalk(r, P0), i: 0, budgetMs, groupDepth, ms: r.stats.ms };
+    W = { P0, home, from, final: toP(r.P), stages: (tmRec ? buildTmWalk(tmRec) : []).concat(buildWalk(r, P0)), i: 0, budgetMs, groupDepth, ms: r.stats.ms };
     W.frames = walkFrames(); G.sel.clear(); G.pick = -1;
-    record('walkthrough', { from, budgetMs, groupDepth, ms: r.stats.ms, stages: W.stages.map((st) => ({ round: st.round, stage: st.phase, ms: st.ms, tried: st.tried, kept: st.kept, skipped: st.skipped })) });
+    record('walkthrough', { from, layout: tmRec ? 'Tidy Mycelium' : undefined, budgetMs, groupDepth, ms: r.stats.ms, stages: W.stages.map((st) => ({ round: st.round, stage: st.phase, ms: st.ms, tried: st.tried, kept: st.kept, skipped: st.skipped })) });
     if (from === 'start') G.H = G.E.map(() => []);
     W.seq = S.events[S.events.length - 1].seq;
     $('walk').hidden = false; b.textContent = 'Walking through'; showFrame();
