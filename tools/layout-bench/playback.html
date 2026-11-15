@@ -175,7 +175,7 @@ footer .grp { display: flex; gap: 4px; align-items: center; }
   <input type="file" id="ttlFile" accept=".ttl,.nt,.turtle,text/turtle,application/n-triples" hidden>
   <select id="graph" title="Graph"></select>
   <select id="algo" title="Layout">
-    <optgroup label="Our layouts"><option value="auto">Best Read</option><option value="compact">Tidy Stress</option><option value="grouped">Mycelium</option><option value="tidy">TiMy</option><option value="tidyS">TiMy, smallest drawings</option></optgroup>
+    <optgroup label="Our layouts"><option value="tidy">Tidy Mycelium</option><option value="tidyS">Tidy Mycelium, smaller drawings</option><option value="tidyQ">Tidy Mycelium, faster</option><option value="auto">Best Read</option><option value="compact">Tidy Stress</option><option value="grouped">Mycelium</option></optgroup>
     <optgroup label="Open-source layouts"><option value="x:d3">d3-force</option><option value="x:cola">WebCola</option><option value="x:cose">Cytoscape cose</option><option value="x:fcose">Cytoscape fcose</option><option value="x:elk-stress">ELK stress</option><option value="x:elk-force">ELK force</option><option value="x:elk-layered">ELK layered</option><option value="x:neato">Graphviz neato</option><option value="x:fdp">Graphviz fdp</option><option value="x:sfdp">Graphviz sfdp</option><option value="x:dagre">dagre (layered)</option></optgroup>
   </select>
   <label class="tog" title="How each class is drawn: a box or a circle, with its name on it or under it. The layout is given each class's own size. File, then Open a Turtle file, adds your own graph to the list.">Nodes <select id="nstyle"><option value="box">Boxes</option><option value="circle">Circles</option></select></label>
@@ -265,7 +265,6 @@ footer .grp { display: flex; gap: 4px; align-items: center; }
 <div id="menu"></div>
 <div id="tip"></div>
 <script src="base_layout.js"></script>
-<script src="tidymycelium.js"></script>
 <script src="models.js"></script>
 <script src="models2.js"></script>
 <script src="models3.js"></script>
@@ -432,7 +431,7 @@ function variantFrames(runs, win, frames) {
     frames.push({ key: 'variant:' + r.name, P: r.frames[r.frames.length - 1].P, ms: 0, run: i, hold: true,
       note: `${r.name} ends here and is set aside: its score is ${sc(r)}, ${win.name} scores ${sc(win)} (lower is better). ${win.name} plays next from an empty canvas; nothing of ${r.name} carries over.` }); });
 }
-// Tidy Mycelium (tidymycelium.js), recorded the same way: the core's sweeps and moves, each part as it comes back, the pull-in
+// Tidy Mycelium (in the library), recorded the same way: the core's sweeps and moves, each part as it comes back, the pull-in
 function recordTidy(G, seed) {
   const n = G.n, runs = []; let cur = null, rtag = -1, chosen = null, tLast = 0, room = null;
   const KEY = { stress: 'tm-stress', cross: 'tm-cross', leaves: 'tm-leaves' }, CORE = /^(tm-start|restart|tm-stress|separate|tm-cross|tm-thru)$/;
@@ -452,7 +451,7 @@ function recordTidy(G, seed) {
     score(name, s) { const r = runs.find((x) => x.name === name); if (r) r.score = s; },
     chosen(name) { chosen = name; } };
   const tm = { finCross: ctl('tm-cross').run, finThru: ctl('tm-thru').run, shrink: ctl('tm-shrink').run ? _TM_DEF.shrink : false };
-  let res; tLast = performance.now(); res = O.clocked(() => O.traced(sink, () => _tmBest(G.items, G.edges, { seed, tm, variant: G.algo === 'tidyS' ? 'smallest' : undefined })));
+  let res; tLast = performance.now(); res = O.clocked(() => O.traced(sink, () => _tmBest(G.items, G.edges, { seed, tm, variant: TM_PREFER[G.algo] })));
   const tEnd = performance.now(), P = res.pos.map((p) => ({ x: p.x, y: p.y })); O.sep(P, G.N, 6, 200); const tSep = performance.now();
   const win = runs.find((r) => r.name === chosen) || runs[runs.length - 1], wi = runs.indexOf(win);
   const frames = [{ key: 'start', P: new Float64Array(2 * n).fill(NaN), ms: 0, run: -1 }];
@@ -515,7 +514,7 @@ function tailFrames(G, P, { cleanup, budgetMs, links, run }) {
       snap(stage, Q) { const t = performance.now(); frames.push({ key: 'c-' + stage, P: flat(Q), ms: t - tl, run }); tl = performance.now(); } };
     try { const EL = G.E.filter((e) => e.s !== e.t).map((e) => [e.s, e.t]); Pc = O.clocked(() => O.traced(sink, () => O.leafSwap(Pc, G.items, EL)));
       if (ctl('c-pull').run) Pc = O.clocked(() => O.traced(sink, () => O.pullIn(Pc, G.items, EL)));
-      if (isTM(G.algo) && ctl('c-compact').run) Pc = O.clocked(() => O.traced(sink, () => _tmBest.compact(Pc, G.items, namedLinks(G), G.algo === 'tidyS' ? _TM_VAR.smallest.cp : undefined))); } finally { Object.assign(O.tune, keep); }
+      if (isTM(G.algo) && ctl('c-compact').run) Pc = O.clocked(() => O.traced(sink, () => _tmBest.compact(Pc, G.items, namedLinks(G), TM_PREFER[G.algo] ? _TM_VAR[TM_PREFER[G.algo]].cp : undefined))); } finally { Object.assign(O.tune, keep); }
   }
   if (!links || LINES === 'straight') return { frames, info, P: Pc };
   // the links, one routing step at a time, on the final positions
@@ -1204,7 +1203,7 @@ function lastProblems(Rx) {
 const RIVALS = {};
 async function measureRivals(key, algo, seed) {
   const ck = [key, seed, $('limit').value, LayoutGraphs.style(), LINES, $('names').checked].join('|'), M = (RIVALS[ck] = RIVALS[ck] || {});
-  for (const a of ['auto', 'compact', 'grouped', 'tidy', 'tidyS']) if (a !== algo && !(isTM(a) && isTM(algo)) && !M[a]) M[a] = lastProblems(await recordRun(key, a, seed));
+  for (const a of ['auto', 'compact', 'grouped', 'tidy', 'tidyS', 'tidyQ']) if (a !== algo && !(isTM(a) && isTM(algo)) && !M[a]) M[a] = lastProblems(await recordRun(key, a, seed));
   return M;
 }
 // bottom right of the drawing: this run's problems and time against the best of our other layouts on this graph (bestof.json):
@@ -1331,8 +1330,10 @@ $('ttlFile').onchange = async () => { const file = $('ttlFile').files[0]; $('ttl
 // bestof.json (written by bestof.mjs) holds the problems each of our layouts leaves on each graph, seed 1, boxes; a graph
 // where another of ours leaves fewer gets a mark in the list, so feedback can start there
 let BEST = null;
-const ALGO_NAME = { auto: 'Best Read', compact: 'Tidy Stress', grouped: 'Mycelium', tidy: 'TiMy', tidyS: 'TiMy, smallest drawings' };
-function isTM(a) { return a === 'tidy' || a === 'tidyS'; }
+const ALGO_NAME = { auto: 'Best Read', compact: 'Tidy Stress', grouped: 'Mycelium', tidy: 'Tidy Mycelium', tidyS: 'Tidy Mycelium, smaller drawings', tidyQ: 'Tidy Mycelium, faster' };
+// the Lab's Tidy Mycelium entries: the library's prefer option
+const TM_PREFER = { tidyS: 'smaller', tidyQ: 'faster' };
+function isTM(a) { return a === 'tidy' || a === 'tidyS' || a === 'tidyQ'; }
 function markGraphs() {
   const a = $('algo').value; let behind = 0;
   [...$('graph').options].forEach((o) => { if (o.dataset.name == null) o.dataset.name = o.textContent; let t = o.dataset.name; const g = BEST && BEST.graphs[o.value];
@@ -1371,7 +1372,7 @@ const showLimit = () => ($('limitV').textContent = (+$('limit').value / 1000).to
 $('limit').oninput = showLimit; $('limit').onchange = () => { store.set('limit2', +$('limit').value); run(true); };
 const q = new URLSearchParams(location.search), last = store.get('last', {});
 $('graph').value = q.get('graph') || last.key || 'crm'; if (!$('graph').value) $('graph').value = 'crm';
-$('algo').value = (q.get('algo') || last.algo || 'auto').replace(/^tidyF$/, 'tidy'); if (!$('algo').value) $('algo').value = 'auto'; $('seed').value = q.get('seed') || last.seed || 1;
+$('algo').value = (q.get('algo') || last.algo || 'tidy').replace(/^tidyF$/, 'tidy'); if (!$('algo').value) $('algo').value = 'tidy'; $('seed').value = q.get('seed') || last.seed || 1;
 $('speed').value = store.get('speed3', 0.7); showSpeed(); // 5% of real speed
 $('limit').value = store.get('limit2', 1000); showLimit();
 ['follow', 'names', 'marks', 'handles'].forEach((id) => ($(id).checked = store.get(id, true)));

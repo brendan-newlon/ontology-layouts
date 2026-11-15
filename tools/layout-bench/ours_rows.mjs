@@ -5,11 +5,15 @@ const { MODELS, OURS: O } = await import('./_bundle.mjs');
 const stdMetrics = new Function(fs.readFileSync(new URL('./stdmetrics.js', import.meta.url), 'utf8') + '\nreturn stdMetrics;')();
 const arg = process.argv[2], seed = +(process.argv[4] || 1);
 if (process.env.OR_TUNE) Object.assign(O.tune, JSON.parse(process.env.OR_TUNE)); // OR_TUNE='<json>': experiment settings (_OG_TUNE)
-const only = process.env.OR_ONLY; // OR_ONLY='Best Read (ours)': only this layout
+const only = process.env.OR_ONLY; // OR_ONLY='Best Read (ours)': only this layout; OR_MATCH='^Tidy Mycelium': the layouts whose names match
 const keys = arg.includes(',') ? arg.split(',') : Object.keys(MODELS).filter((k) => k.startsWith(arg));
 // f returns positions, or a layout result whose algo says whether the drawing is the top-down tree
 const withCleanUp = (f) => (it, ed, s, N) => { const t0 = O.now(), r = f(it, ed, s), P = (r.pos || r).map((p) => ({ x: p.x, y: p.y })); O.sep(P, N, 6, 200); return O.cleanUp(P, it, ed, t0, r.algo === 'tree'); };
 const ALGOS = {
+  // Tidy Mycelium runs its own clean-up and takes in empty space after it
+  'Tidy Mycelium (ours)': (it, ed, s) => O.api.tidyMycelium(it, ed, { seed: s }).pos,
+  'Tidy Mycelium, smaller (ours)': (it, ed, s) => O.api.tidyMycelium(it, ed, { seed: s, prefer: 'smaller' }).pos,
+  'Tidy Mycelium, faster (ours)': (it, ed, s) => O.api.tidyMycelium(it, ed, { seed: s, prefer: 'faster' }).pos,
   'Tidy Stress (ours)': withCleanUp((it, ed, s) => O.compact(it, ed, { seed: s }).pos),
   'Mycelium (ours)': withCleanUp((it, ed, s) => (O.grouped2(it, ed, { seed: s }) || O.compact(it, ed, { seed: s })).pos),
   'Best Read (ours)': withCleanUp((it, ed, s) => O.auto(it, ed, { seed: s })),
@@ -23,7 +27,7 @@ for (const key of keys) {
   const edges = M.edges.filter((e) => e.s !== e.t).map((e) => [e.s, e.t, e.kind === 'sub' ? 2 : 1]), E = edges.map(([s, t]) => ({ s, t }));
   const N = D.map((d) => ({ w: d.w + 16, h: d.h + 12 }));
   for (const [algo, f] of Object.entries(ALGOS)) {
-    if (only && algo !== only) continue;
+    if (only && algo !== only || process.env.OR_MATCH && !new RegExp(process.env.OR_MATCH).test(algo)) continue;
     const t0 = performance.now(); let P = f(items, edges, seed, N); const ms = performance.now() - t0;
     P = P.map((p) => ({ x: p.x, y: p.y })); O.sep(P, N, 6, 200);
     const m = O.pmetrics(P, D.map((d) => ({ w: d.w + 6, h: d.h + 6 })), E), ml = O.pmetrics(P, N, E);
@@ -31,7 +35,7 @@ for (const key of keys) {
       ...stdMetrics(P, M.edges.filter((e) => e.s !== e.t).map((e) => ({ s: e.s, t: e.t, sub: e.kind === 'sub' }))),
       pos: P.map((q) => [Math.round(q.x * 10) / 10, Math.round(q.y * 10) / 10]), labels: M.labels, edges: M.edges.filter((e) => e.s !== e.t).map((e) => [e.s, e.t, e.kind === 'sub' ? 1 : 0]), box: D.map((d) => d.w) });
   }
-  if (!only) console.log(key, rows.slice(-6, -3).map((r) => r.algo.split(' ')[0] + ' x' + r.cross + ' th' + r.thru + ' ' + Math.round(r.ms) + 'ms').join(' | '));
+  if (!only) console.log(key, rows.filter((r) => r.key === key).slice(0, 3).map((r) => r.algo.split(' ')[0] + ' x' + r.cross + ' th' + r.thru + ' ' + Math.round(r.ms) + 'ms').join(' | '));
 }
 fs.writeFileSync(process.argv[3], JSON.stringify(rows));
 

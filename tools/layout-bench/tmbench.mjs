@@ -1,4 +1,4 @@
-// Experiment (2026-11-14): Tidy Mycelium (tidymycelium.js) against Best Read, each followed by the library's clean-up and
+// Experiment (2026-11-14): Tidy Mycelium (now in the library) against Best Read, each followed by the library's clean-up and
 // link routing exactly as draw() runs them, measured after routing on links named as routenames.mjs names them.
 //   node tmbench.mjs <keys comma | dev | held | public | all> '<variants JSON: {"name": {tm options}, …}>' [seeds] [cleanupJSON]
 // Prints per graph and totals: crossed links, links through classes, covered names, overlapping boxes (= problems), sharp
@@ -8,7 +8,7 @@ import { names } from './routenames.mjs';
 const here = (f) => new URL(f, import.meta.url);
 const base = fs.readFileSync(here('_bundle.mjs'), 'utf8'), cut = base.lastIndexOf('\nconst OURS = window.OURS;');
 if (cut < 0) throw new Error('_bundle.mjs: export block not found; run mkbundle.mjs');
-fs.writeFileSync(here('_bundle_tm.mjs'), base.slice(0, cut) + '\n' + fs.readFileSync(here('tidymycelium.js'), 'utf8') + '\nconst OURS = window.OURS;\nexport { MODELS, OURS, _tmLayout, _tmUnits, _tmBest };\n');
+fs.writeFileSync(here('_bundle_tm.mjs'), base.slice(0, cut) + '\nconst OURS = window.OURS;\nexport { MODELS, OURS, _tmLayout, _tmUnits, _tmBest };\n');
 const { MODELS, OURS: O, _tmLayout, _tmBest } = await import('./_bundle_tm.mjs?' + Date.now());
 O.tune.noWall = true;
 if (process.env.TM_TUNE) Object.assign(O.tune, JSON.parse(process.env.TM_TUNE)); // e.g. TM_TUNE='{"leafClaim":0}'

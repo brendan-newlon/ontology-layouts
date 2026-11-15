@@ -84,7 +84,7 @@ Your styling, selection, menus, data and the rest of your rendering stay as they
 | Situation | Call |
 |---|---|
 | First drawing of a graph | `draw(boxes, links)` |
-| The user added or removed a few nodes | `draw(boxes, links, { keep: oldPos })`, with `null` in `oldPos` for each new node: new nodes go round the old ones, and old nodes move 2–5% of the drawing (a redraw moves about a third). Keeping costs some crossings, so offer a "tidy" button that redraws. |
+| The user added or removed a few nodes | `draw(boxes, links, { keep: oldPos })`, with `null` in `oldPos` for each new node: new nodes go round the old ones, and old nodes move a little (4–14% of a Tidy Mycelium drawing, whose tight packing leaves new nodes less room; 0–10% of a Best Read drawing; a redraw moves about a third). Keeping costs some crossings, so offer a "tidy" button that redraws. |
 | Exploring: a click adds a node's neighbors | `draw(boxes, links, { keep: oldPos, exact: true, route: { straight: true } })`: nothing already drawn moves, new nodes go on an arc on the clicked node's most open side, a few ms per click. A graph of one node works, so exploring can start from one. |
 | The user arranged the nodes by hand | `routeLinks(pos, boxes, links, { settle: false })` (or `routePaths`): links only, no node moves |
 | You have your own layout and want to keep it | `draw(boxes, links, { start: yourPos })`: see [Your own layout, our clean-up](#your-own-layout-our-clean-up) |
@@ -96,9 +96,10 @@ Your styling, selection, menus, data and the rest of your rendering stay as they
 
 | Option | Default | What it does |
 |---|---|---|
-| `layout` | `'auto'` | `'auto'`: Best Read, which runs Tidy Stress and Mycelium (for 8 or more nodes) and keeps the more readable drawing. `'compact'`: Tidy Stress only, best for 10 to 30 nodes. `'grouped'`: Mycelium only, which keeps closely linked groups together; best for large or hub-heavy graphs. `'tree'`: every subclass below its superclass (see below). `'given'`: your positions, see `start`. |
+| `layout` | `'tidyMycelium'` | `'tidyMycelium'`: Tidy Mycelium, the default since November 2026. It places the dense core of the graph in groups (as Mycelium does), puts the parts that hang off it into the open space round them, runs the clean-up, then takes in the empty space. Over 62 graphs and three seeds it drew 14% fewer problems than Best Read in 11% less area, in about the same time. `'auto'`: Best Read, the default until then, which runs Tidy Stress and Mycelium (for 8 or more nodes) and keeps the more readable drawing. `'compact'`: Tidy Stress only, best for 10 to 30 nodes. `'grouped'`: Mycelium only, which keeps closely linked groups together; best for large or hub-heavy graphs. `'tree'`: every subclass below its superclass (see below). `'given'`: your positions, see `start`. |
+| `prefer` | `'fewer-problems'` | With Tidy Mycelium, what matters most to you. `'fewer-problems'`: the fewest crossed links and links through nodes. `'smaller'`: drawings about a quarter smaller, with about 9% more problems. `'faster'`: about 40% less time, with about 6% more problems and drawings about a quarter larger. Each still had fewer problems than Best Read and Mycelium over the 62 graphs. |
 | `start` | none | Your own positions, one `{x, y}` per box. Implies `layout: 'given'`: overlaps are removed, then the clean-up and the routing run. |
-| `cleanUp` | `true` | `false` skips the clean-up after the layout: about 0.14 s faster at the median, with about two and a half times the links through nodes. |
+| `cleanUp` | `true` | `false` skips the clean-up after the layouts other than Tidy Mycelium (which always runs its own): about 0.14 s faster at the median, with about two and a half times the links through nodes. |
 | `timeLimit` | `1000` | Work limit for this call, in ms of the reference laptop. See [Time limit](#time-limit). |
 | `seed` | `1` | Random seed. Another seed gives another drawing of similar quality, for example for a "try another layout" button. |
 | `roomy` | `false` | About 30% more space between nodes. |
@@ -171,7 +172,7 @@ The clean-up never made a drawing worse in these 306 runs, and after a force lay
 ```js
 import L from './ontology-layouts.mjs';
 const t0 = L.now();                                        // the clean-up gets what is left of the limit after the layout
-const lay = L.bestRead(boxes, links, { seed: 1 });         // or tidyStress, mycelium (null under 8 nodes)
+const lay = L.bestRead(boxes, links, { seed: 1 });         // or tidyStress, mycelium (null under 8 nodes); tidyMycelium runs its own clean-up
 const pos = L.cleanUp(lay.pos, boxes, links, t0);
 const r = L.routeLinks(pos, boxes, links, { straight: false });
 const paths = L.routePaths(r.pos, boxes, links, r.routes, { arrow: 8 });

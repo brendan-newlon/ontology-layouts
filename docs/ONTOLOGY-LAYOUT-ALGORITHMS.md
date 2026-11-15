@@ -1,4 +1,4 @@
-# Tidy Stress and Mycelium: layouts for readable ontology diagrams
+# Tidy Mycelium: a layout for readable ontology diagrams
 
 The full write-up is [ONTOLOGY-LAYOUT-ALGORITHMS.html](ONTOLOGY-LAYOUT-ALGORITHMS.html), and [ONTOLOGY-LAYOUT-ALGORITHMS-LAB.html](ONTOLOGY-LAYOUT-ALGORITHMS-LAB.html) is the same page with the Layout Lab built in. Each is a single self-contained page with:
 - an executive summary, and the five problems the rankings count, pictured;
@@ -25,13 +25,16 @@ Over 15 development graphs of 13 to 179 classes, one run each, ours with the cle
 
 | Result | Detail |
 |---|---|
-| **About half the crossings** | Best Read 452 against 960 for tuned `neato` and 971 for tuned WebCola |
-| **An eighth of the links through classes of tuned WebCola** | 39 against 307. Tuned `neato` draws 81, in about 16 times the area |
-| **First of 12 on the five measures** | Best Read's overall score, its average place over the graphs and the five measures (lower is better), is 2.9 among itself and the 11 open-source layouts; next come WebCola (4.8) and `neato` (4.9). Tidy Stress and Mycelium, each ranked on its own against the same 11, also place first |
-| **Every graph** | Best Read has the fewest crossed links plus links through classes, or ties, on all 15 graphs |
-| **Under a second** | Median 0.5 s, clean-up included; at most about 1.3 s up to 537 classes; the same drawing on any computer |
+| **Well under half the crossings** | Tidy Mycelium 402 (Best Read 480) against 960 for tuned `neato` and 971 for tuned WebCola |
+| **A sixth of the links through classes of tuned WebCola** | 54 against 307 (Best Read 51). Tuned `neato` draws 81, in about 11 times the area |
+| **First of 12 on the five measures** | Tidy Mycelium's overall score, its average place over the graphs and the five measures (lower is better), is 3.3 among itself and the 11 open-source layouts; next comes WebCola (4.7). Best Read, Tidy Stress and Mycelium, each ranked on its own against the same 11, also place first |
+| **Nearly every graph** | Tidy Mycelium has the fewest crossed links plus links through classes, or ties, on 13 of the 15 graphs; on the other two a tuned Graphviz layout has one fewer. Best Read did on all 15 |
+| **Under a second** | Median 0.27 s, clean-up included; about 1.5 s at 400 to 1,200 classes; the same drawing on any computer |
+| **Area** | Median 9.1 times the area of the boxes, against Best Read's 6.3 on these 15 graphs; on the unseen graphs below it is the smaller (5.6 against 8.9) |
 
-**Graphs never seen during development** (10 held-out graphs, 8 published ontologies, 18 Rome benchmark graphs): Best Read draws 1,565 crossed links and 138 links through classes, against 2,160 and 212 for tuned `neato` (in nearly ten times the area) and 2,429 and 780 for tuned WebCola. It has the fewest of both, or ties, on all 36 graphs, and places first of 12 with a mean rank of 3.0 (`neato` 4.6, WebCola 4.8).
+**Graphs never seen during development** (10 held-out graphs, 8 published ontologies, 18 Rome benchmark graphs): Tidy Mycelium draws 1,352 crossed links and 150 links through classes (Best Read 1,549 and 127), against 2,160 and 212 for tuned `neato` (in about fifteen times the area) and 2,429 and 780 for tuned WebCola. It has the fewest of both, or ties, on 32 of the 36 graphs (tuned `neato` has one or two fewer on the other four), and places first of 12 with a mean rank of 3.2 (`neato` 4.6, WebCola 4.8).
+
+**Links touching classes, graded.** A link that clips a corner of a class misleads less than one through its middle. On the unseen graphs, where every layout's drawing is recorded, each touch is also counted by how bad it is: through the middle 1, a clipped corner (less than 15% of the box cut off) ½, a near miss within 3 px ¼. Graded, Tidy Mycelium counts 76, Best Read 78, tuned `neato` 125 and tuned WebCola 461; Tidy Mycelium ranks first on that measure too. The Layout Lab colors the three kinds red, orange and yellow.
 
 **Where others lead.** Cytoscape `cose` and dagre pack tighter, by letting links run through boxes. Graphviz is faster: for one graph under 100 classes it takes 20 to 50 ms against our 0.3 to 0.6 s. A person opening one diagram does not notice that, but 100 graphs of about 70 classes take about a minute against about 5 seconds. With distance and even lengths added, WebCola ranks first and Best Read second. At 3,335 classes (the Cell Ontology), d3-force draws fewer problems.
 
@@ -57,9 +60,20 @@ The tidy tree in the library (`_ogTreeLayout`, after Reingold–Tilford, levels 
 | Redraw | 13.3 | 1.6 | 1.1 | 38.5% | 237 ms |
 
 ## The layouts, the auto mode and the clean-up
+- **Tidy Mycelium** (the default since November 2026). The parts that hang off the graph by one class are set aside; the core is placed in Mycelium's groups with room kept round each anchor; the parts come back into the most open slice round their anchor; the clean-up runs; then the empty space is taken in, in bands from each side and corner that take along what is in their way, and class by class. `prefer` chooses what matters most:
+
+  | 62 graphs, 3 seeds | Problems | Area | Time |
+  |---|---|---|---|
+  | `'fewer-problems'` (default) | **15,316** | 1,600 | 59 s |
+  | `'smaller'` | 16,633 | **1,224** | 57 s |
+  | `'faster'` | 16,310 | 2,010 | **33 s** |
+  | Best Read | 17,735 | 1,799 | 59 s |
+  | Mycelium | 17,516 | 2,002 | 42 s |
+
+  Problems are crossed links, links through classes, covered link names and overlaps, with straight links; area is each drawing's bounding box over its boxes' area, summed. At 400 to 1,204 classes it draws a fifth to a third fewer problems than Best Read in about 1.5 s.
 - **Tidy Stress** (up to a few dozen classes). Stress majorization on graph distances, then tidy-up moves that remove crossings, links through boxes and long links. It tries several settings and keeps the most readable drawing.
 - **Mycelium** (large and hub-heavy ontologies). The same placement and tidy-up, plus Louvain pods (shorter links inside groups, longer between), hub rings and leaf fanning.
-- **Best Read** (auto mode). Runs Tidy Stress and Mycelium, scores the drawings (problems, mean length and area; no long-link penalty), and keeps the better one. Above 100 classes it runs Mycelium alone.
+- **Best Read** (`layout: 'auto'`, the default until November 2026). Runs Tidy Stress and Mycelium, scores the drawings (problems, mean length and area; no long-link penalty), and keeps the better one. Above 100 classes it runs Mycelium alone.
 - **Clean-up, first part** (after any layout). Taught by Brendan Newlon, who designed the Layout Lab for teaching it and demonstrated there how he tidies these drawings and why. At his direction, his principles were distilled into:
   - single moves: a class in a problem moves into nearby open space (an open-space grid);
   - leaf units: leaves, leaf chains and leaf triangles hanging off one class are turned around it; long labels go sideways;
@@ -98,7 +112,7 @@ The tidy tree in the library (`_ogTreeLayout`, after Reingold–Tilford, levels 
 
 ## For developers
 - **Code:** the implementation is in `src/ontology-layouts.js`:
-  - `_ogCompactLayout` is Tidy Stress, `_ogGroupedLayout` Mycelium, `_ogAutoLayout` Best Read, `_ogTreeLayout` the tidy tree;
+  - `_ogTidyMycelium` is Tidy Mycelium (`_tmBest` places, `_tmCompact` takes in the empty space), `_ogCompactLayout` Tidy Stress, `_ogGroupedLayout` Mycelium, `_ogAutoLayout` Best Read, `_ogTreeLayout` the tidy tree;
   - `_ogHandTidy` is the clean-up, and `_ogLayoutCleanUp` calls it and the finishing passes after a layout;
   - `_ogRouteLinks` draws the links, `_ogRoutePoly` gives a route's curve, and `_ogRouteMetrics` measures on the curves;
   - `_ogPlaceNew` places new classes round a kept drawing;

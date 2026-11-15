@@ -66,14 +66,20 @@ export interface Path {
 
 export interface DrawOptions {
   /**
-   * Which layout places the classes. 'auto' (default): Best Read, the more readable of Tidy Stress and Mycelium.
-   * 'compact': Tidy Stress. 'grouped': Mycelium (falls back to Tidy Stress under 8 classes). 'tree': every subclass below
+   * Which layout places the classes. 'tidyMycelium' (default): Tidy Mycelium, the core in groups, the parts hanging off it in
+   * the open space round them, the clean-up, then the empty space taken in. 'auto': Best Read, the more readable of Tidy
+   * Stress and Mycelium. 'compact': Tidy Stress. 'grouped': Mycelium (falls back to Tidy Stress under 8 classes). 'tree': every subclass below
    * its superclass. 'given': your positions (start), then the clean-up and the routing.
    */
-  layout?: 'auto' | 'compact' | 'grouped' | 'tree' | 'given';
+  layout?: 'tidyMycelium' | 'auto' | 'compact' | 'grouped' | 'tree' | 'given';
+  /**
+   * With Tidy Mycelium, what matters most: 'fewer-problems' (default), 'smaller' (drawings about a quarter smaller, about 9%
+   * more problems) or 'faster' (about 40% less time, about 6% more problems, drawings about a quarter larger).
+   */
+  prefer?: 'fewer-problems' | 'smaller' | 'faster';
   /** Positions from your own layout, one per box; implies layout 'given'. */
   start?: Point[];
-  /** Run the clean-up after the layout (default true). */
+  /** Run the clean-up after the layout (default true; Tidy Mycelium always runs its own). */
   cleanUp?: boolean;
   /** Work limit for this call in ms of the reference laptop (default: setTimeLimit's, 1000). Same input and limit: same drawing anywhere. */
   timeLimit?: number;
@@ -99,7 +105,7 @@ export interface Drawing {
   paths: Path[];
   /** A group number per class (closely linked classes), for hulls or background areas. */
   groups: number[];
-  /** Which layout drew it: 'compact', 'grouped', 'tree', 'given', 'keep' or 'single'. */
+  /** Which layout drew it: 'tidyMycelium', 'compact', 'grouped', 'tree', 'given', 'keep' or 'single'. */
   algo: string;
 }
 
@@ -114,6 +120,8 @@ export interface OntologyLayouts {
   placeNew(keep: (Point | null)[], boxes: Box[], links: Link[]): Point[];
   /** Boxes with between: [a, b] onto the line from a to b. */
   inline(pos: Point[], boxes: Box[], links: Link[]): Point[];
+  /** Placement, clean-up and empty space taken in, in one call (no cleanUp after it). */
+  tidyMycelium(boxes: Box[], links: Link[], opts?: { seed?: number; prefer?: 'fewer-problems' | 'smaller' | 'faster' }): { pos: Point[]; algo: string };
   bestRead(boxes: Box[], links: Link[], opts?: { seed?: number; roomy?: boolean }): { pos: Point[]; algo: string };
   tidyStress(boxes: Box[], links: Link[], opts?: { seed?: number; roomy?: boolean }): { pos: Point[]; algo: string };
   /** null under 8 classes. */

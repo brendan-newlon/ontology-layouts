@@ -170,14 +170,15 @@ function checkPull(L) {
 // the public entry points: all present, and draw() hands back positions, routes and paths that belong together
 function checkApi(L) {
   const bad = [], A = L.api || {};
-  ['draw', 'bestRead', 'tidyStress', 'mycelium', 'cleanUp', 'routeLinks', 'routePaths', 'groups', 'routeMetrics', 'metrics', 'score', 'setTimeLimit', 'now'].forEach((k) => { if (typeof A[k] !== 'function') bad.push('OntologyLayouts.' + k + ' missing'); });
+  ['draw', 'tidyMycelium', 'bestRead', 'tidyStress', 'mycelium', 'cleanUp', 'routeLinks', 'routePaths', 'groups', 'routeMetrics', 'metrics', 'score', 'setTimeLimit', 'now'].forEach((k) => { if (typeof A[k] !== 'function') bad.push('OntologyLayouts.' + k + ' missing'); });
   if (bad.length) return bad;
   const onBorder = (p, c, d) => { const ex = Math.abs(Math.abs(p.x - c.x) - d.w / 2), ey = Math.abs(Math.abs(p.y - c.y) - d.h / 2), inX = Math.abs(p.x - c.x) <= d.w / 2 + 0.5, inY = Math.abs(p.y - c.y) <= d.h / 2 + 0.5;
     return (ex < 0.5 && inY) || (ey < 0.5 && inX); };
-  // the last two are dense enough that the routing pushes classes off links (seeds found by trying)
+  // the last two are dense enough that the routing pushes classes off Best Read's drawings (seeds found by trying; Tidy
+  // Mycelium's own clean-up leaves the routing nothing to push there), so they are drawn with Best Read
   MODELS.concat([model(5, 20, 20), model(36, 30, 40)]).forEach((m, i) => {
     const D = m.D.map((d) => ({ w: d.w + 16, h: d.h + 12 })), E = m.edges.map((e, k) => [e[0], e[1], e[2], e[2] === 1 ? 40 + (k % 3) * 20 : 0]);
-    const r = A.draw(D, E, { arrow: 8 }), n = D.length;
+    const r = A.draw(D, E, { arrow: 8, layout: i >= MODELS.length ? 'auto' : undefined }), n = D.length;
     if (r.pos.length !== n || r.paths.length !== E.length || r.groups.length !== n) { bad.push(`model ${i}: draw() returned the wrong number of positions, paths or groups`); return; }
     const ids = [...new Set(r.groups)].sort((a, b) => a - b); if (ids.some((g, j) => g !== j)) bad.push(`model ${i}: group numbers are not 0, 1, 2…`);
     let off = 0, gap = 0;
@@ -202,11 +203,19 @@ function checkApi(L) {
     // ports at crowded classes put it on the box side, 36 px out from a circle of 20)
     { const Cc = [{ w: 80, h: 72, shape: 'circle', r: 20 }, { w: 80, h: 72, shape: 'circle', r: 20 }], q = A.routePaths([{ x: 0, y: 0 }, { x: 0, y: 400 }], Cc, [[0, 1, 1]], [{ bends: [], ports: [{ x: 6, y: 36 }, { x: -6, y: -36 }], loop: null, label: null }], {})[0];
       const a = q.points[0], b = q.tip; if (Math.abs(Math.hypot(a.x, a.y) - 20) > 0.5 || Math.abs(Math.hypot(b.x, b.y - 400) - 20) > 0.5) bad.push('a link end at a port on a circle class does not start or end on the circle'); }
-    const tr = A.draw(D, E, { layout: 'tree' }); if (tr.algo !== 'tree') bad.push('draw({ layout: "tree" }) did not draw the tree'); }
+    const tr = A.draw(D, E, { layout: 'tree' }); if (tr.algo !== 'tree') bad.push('draw({ layout: "tree" }) did not draw the tree');
+    // the default is Tidy Mycelium; each prefer gives a drawing of its own with no box on another
+    const dft = A.draw(D, E, {}); if (dft.algo !== 'tidyMycelium') bad.push(`draw() drew with ${dft.algo}, not Tidy Mycelium`);
+    const key = (r) => r.pos.map((p) => Math.round(p.x) + ',' + Math.round(p.y)).join(' ');
+    const seen = new Set([key(dft)]);
+    for (const prefer of ['smaller', 'faster']) { const r = A.draw(D, E, { prefer }); if (r.algo !== 'tidyMycelium') bad.push(`draw({ prefer: "${prefer}" }) drew with ${r.algo}`);
+      if (seen.has(key(r))) bad.push(`draw({ prefer: "${prefer}" }) drew the same as another preference`); seen.add(key(r));
+      for (let u = 0; u < n; u++) for (let v = u + 1; v < n; v++) if (Math.abs(r.pos[u].x - r.pos[v].x) < (D[u].w + D[v].w) / 2 - 1 && Math.abs(r.pos[u].y - r.pos[v].y) < (D[u].h + D[v].h) / 2 - 1) { bad.push(`draw({ prefer: "${prefer}" }) put a class on another`); u = v = n; } } }
   return bad;
 }
 // 8. keeping a drawing and relation classes: draw(..., { keep, exact: true }) leaves every old class exactly where it was and puts
-//    no new class on another; draw(..., { keep }) moves old classes less than a tenth of the drawing; a relation class
+//    no new class on another; draw(..., { keep }) moves old classes less than a tenth of a Best Read drawing (Tidy Mycelium's
+//    tighter drawings leave new classes less room: less than 15%, measured 4-14%); a relation class
 //    (between: [a, b]) off the line with room on it goes onto the line, and inline() never adds more than one crossing per class
 function checkKeep(L) {
   const bad = [], A = L.api || {};
@@ -215,16 +224,16 @@ function checkKeep(L) {
     E.forEach(([s, t], k) => { if (s === t) return; D.forEach((d, u) => { if (u !== s && u !== t && L.segBox(P[s].x - P[u].x, P[s].y - P[u].y, P[t].x - P[u].x, P[t].y - P[u].y, d.w / 2 + 9, d.h / 2 + 9)) c += 10; });
       E.forEach(([a, b], f) => { if (f > k && a !== b && a !== s && a !== t && b !== s && b !== t && L.segX(P[s], P[t], P[a], P[b])) c += 6; }); });
     return c; };
-  MODELS.forEach((m, i) => {
+  for (const [lay, lim] of [['auto', 0.1], ['tidyMycelium', 0.15]]) MODELS.forEach((m, i) => {
     const n = m.D.length, isNew = (v) => v % 5 === 2, old = [...Array(n).keys()].filter((v) => !isNew(v)), at = new Map(old.map((v, j) => [v, j]));
     const E1 = m.edges.filter((e) => !isNew(e[0]) && !isNew(e[1])).map((e) => [at.get(e[0]), at.get(e[1]), e[2]]);
-    const d1 = A.draw(old.map((v) => m.D[v]), E1, {}), keep = Array.from({ length: n }, (_, v) => (isNew(v) ? null : d1.pos[at.get(v)]));
+    const d1 = A.draw(old.map((v) => m.D[v]), E1, { layout: lay }), keep = Array.from({ length: n }, (_, v) => (isNew(v) ? null : d1.pos[at.get(v)]));
     const ex = A.draw(m.D, m.edges, { keep, exact: true }).pos;
-    if (old.some((v) => ex[v].x !== keep[v].x || ex[v].y !== keep[v].y)) bad.push(`model ${i}: exact keeping moved an old class`);
-    for (let u = 0; u < n; u++) for (let v = u + 1; v < n; v++) if ((isNew(u) || isNew(v)) && Math.abs(ex[u].x - ex[v].x) < (m.D[u].w + m.D[v].w) / 2 && Math.abs(ex[u].y - ex[v].y) < (m.D[u].h + m.D[v].h) / 2) { bad.push(`model ${i}: a new class placed on another`); u = v = 1e9; }
+    if (old.some((v) => ex[v].x !== keep[v].x || ex[v].y !== keep[v].y)) bad.push(`model ${i} (${lay}): exact keeping moved an old class`);
+    for (let u = 0; u < n; u++) for (let v = u + 1; v < n; v++) if ((isNew(u) || isNew(v)) && Math.abs(ex[u].x - ex[v].x) < (m.D[u].w + m.D[v].w) / 2 && Math.abs(ex[u].y - ex[v].y) < (m.D[u].h + m.D[v].h) / 2) { bad.push(`model ${i} (${lay}): a new class placed on another`); u = v = 1e9; }
     const so = A.draw(m.D, m.edges, { keep }).pos; let x1 = 1e18, x2 = -1e18, y1 = 1e18, y2 = -1e18, mv = 0;
     old.forEach((v) => { x1 = Math.min(x1, keep[v].x); x2 = Math.max(x2, keep[v].x); y1 = Math.min(y1, keep[v].y); y2 = Math.max(y2, keep[v].y); mv += Math.hypot(so[v].x - keep[v].x, so[v].y - keep[v].y); });
-    if (mv / old.length > 0.1 * Math.hypot(x2 - x1, y2 - y1)) bad.push(`model ${i}: keeping moved the old classes by more than a tenth of the drawing`);
+    if (mv / old.length > lim * Math.hypot(x2 - x1, y2 - y1)) bad.push(`model ${i} (${lay}): keeping moved the old classes by more than ${lim * 100}% of the drawing`);
   });
   // a relation class pulled off its line, with room on the line
   { const D = [{ w: 80, h: 30 }, { w: 80, h: 30 }, { w: 90, h: 30, between: [0, 1] }, { w: 80, h: 30 }], E = [[0, 2, 1], [2, 1, 1], [3, 0, 1]];
@@ -357,7 +366,9 @@ if (process.argv.includes('--self-test')) {
     ['api', 'paths not clipped at the start class', code.replace('if (i < pl.length - 1 && inside(pl[i], A, items[s])) pl =', 'if (false) pl =')],
     ['api', 'draw() returns the positions before the routing moved classes', code.replace('return { pos: rr.pos, routes: rr.routes,', 'return { pos: clean, routes: rr.routes,')],
     ['api', 'no room left for the arrowhead', code.replace('let rem = Math.min(o.arrow,', 'let rem = Math.min(0,')],
-    ['keep', 'exact keeping still runs the clean-up', code.replace('const clean = ex || o.cleanUp === false ? lay.pos :', 'const clean = o.cleanUp === false ? lay.pos :')],
+    ['keep', 'exact keeping still runs the clean-up', code.replace('const clean = ex || o.cleanUp === false || lay.algo === "tidyMycelium" ? lay.pos :', 'const clean = o.cleanUp === false || lay.algo === "tidyMycelium" ? lay.pos :')],
+    ['api', 'draw() defaults to Best Read, not Tidy Mycelium', code.replace('const kind = o.layout || (o.start ? "given" : "tidyMycelium")', 'const kind = o.layout || (o.start ? "given" : "auto")')],
+    ['api', 'the prefer option ignored', code.replace('v = _TM_VAR[o.prefer] ? o.prefer : undefined', 'v = undefined')],
     ['api', 'draw({ timeLimit }) does not restore the limit', code.replace('finally { _ogSetTimeLimit(prev); }', 'finally { }')],
     ['api', 'the paths ignore circle classes', code.replace('if (it.shape === "circle") {', 'if (false) {')],
     ['api', 'a port on a circle class left on the box side', code.replace('const shaped = (it) => it && (it.shape === "circle" || it.shape === "ellipse");', 'const shaped = () => false;')],
@@ -365,7 +376,7 @@ if (process.argv.includes('--self-test')) {
     ['keep', 'new classes placed without looking for a free spot', code.replace('const free = (v, p) => { _ogWorkN[2] += n;', 'const free = (v, p) => { return true;')],
     ['keep', 'the earlier positions ignored', code.replace('(keep && keep[v] && isFinite(keep[v].x)', '(false && keep[v] && isFinite(keep[v].x)')],
     ['keep', 'relation classes left off their line', code.replace('if (!R.length || n > 1500) return P;', 'return P;')],
-    ['explore', 'a drawing of one class sent to the layouts', code.replace(': boxes.length < 2 ? { pos: boxes.map(() => ({ x: 0, y: 0 })), algo: "single" }', ': false ? null')],
+    ['explore', 'a drawing of one class placed nowhere', code.replace(': boxes.length < 2 ? { pos: boxes.map(() => ({ x: 0, y: 0 })), algo: "single" }', ': boxes.length < 2 ? { pos: boxes.map(() => ({ x: NaN, y: 0 })), algo: "single" }')],
     ['explore', 'straight routing ignored', code.replace('if (o.straight) { o.bends = false; o.crossBends = false; }', '')],
     ['apart', 'classes with no link left in the main graph', code.replace('if (!units.length) return pos;', 'return pos;')],
     ['apart', 'parts moved over other classes', code.replace('if (hit) continue;', '')],

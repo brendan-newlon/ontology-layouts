@@ -133,7 +133,7 @@ function drawing(row) {
 function intro() {
   const rows = Object.values(JSON.parse(read('tools/layout-bench/demo_drawings.json')));
   const pick = (k, a) => rows.find((r) => r.key === k && r.algo === a);
-  const theirs = pick('crm', 'Graphviz neato'), ours = pick('crm', 'Best Read (ours)');
+  const theirs = pick('crm', 'Graphviz neato'), ours = pick('crm', 'Tidy Mycelium (ours)');
   const fig = (row, name) => `<figure><figcaption><b>${name}</b><span class="n"><em>${row.cross}</em> crossed links · <em>${row.thru}</em> links through classes</span></figcaption>${drawing(row)}</figure>`;
   const body = `<div class="kicker">Graph layout for ontologies</div>
 <h1 class="big">Ontology diagrams a reader can follow</h1>
@@ -150,22 +150,23 @@ function intro() {
 <p class="note"><strong>Getting around:</strong> the menu at the top left of every page (<em>Ontology Layouts · Introduction ▾</em>) lists the pages: this introduction, the Playback, the Lab, how it was built, the benchmarks and the developer guide. Switching keeps each page as you left it, so you can read a section and go back to a paused playback or a half-tidied drawing.</p>
 
 <h2 id="see">The difference on one ontology</h2>
-<p class="prose">A customer-data ontology of 31 classes around one large hub, drawn by Graphviz <code>neato</code>, a widely used layout, and by ours (Best Read with its clean-up). Dots mark crossed links; red links run through a class they do not belong to, so two unrelated classes look connected. Links are drawn straight here; in use, ours also bends the few links that remain.</p>
-<div class="cmp">${fig(theirs, 'Graphviz neato')}${fig(ours, 'Ours: Best Read')}</div>
+<p class="prose">A customer-data ontology of 31 classes around one large hub, drawn by Graphviz <code>neato</code>, a widely used layout, and by ours (Tidy Mycelium). Dots mark crossed links; red links run through a class they do not belong to, so two unrelated classes look connected. Links are drawn straight here; in use, ours also bends the few links that remain.</p>
+<div class="cmp">${fig(theirs, 'Graphviz neato')}${fig(ours, 'Ours: Tidy Mycelium')}</div>
 <p class="note">Both drawings are recorded in the benchmarks (the open-source layouts at general settings there; tuned, they do somewhat better). Every test graph can be compared in the <a ${site('benchmarks', '')}>Benchmarks</a>.</p>
 
 <h2 id="numbers">In numbers</h2>
 <div class="stats">
-  <div class="stat"><b>About half the crossed links</b><span>of the best tuned open-source layouts over 15 development graphs: 480 against 960 for tuned Graphviz <code>neato</code>.</span></div>
-  <div class="stat"><b>An eighth of the links through classes</b><span>of tuned WebCola (39 against 307); tuned <code>neato</code> comes closer (81) in about 16 times the area.</span></div>
+  <div class="stat"><b>Well under half the crossed links</b><span>of the best tuned open-source layouts over 15 development graphs: 402 against 960 for tuned Graphviz <code>neato</code>.</span></div>
+  <div class="stat"><b>A sixth of the links through classes</b><span>of tuned WebCola (54 against 307); tuned <code>neato</code> comes closer (81) in about 11 times the area.</span></div>
   <div class="stat"><b>First of 12</b><span>on the five measures that matter for ontologies, and first again on 36 graphs never seen during development.</span></div>
-  <div class="stat"><b>Under a second</b><span>at the median, clean-up included; about 1.3 s for 1,200 classes, where Graphviz takes 20 s.</span></div>
+  <div class="stat"><b>Under a second</b><span>at the median, clean-up included; about 1.7 s for 1,200 classes, where Graphviz takes 20 s.</span></div>
 </div>
 
 <h2 id="how">How it works</h2>
 <ol class="steps">
-<li><strong>Placement.</strong> Two layouts place every class at once so that distance on the page follows distance in the graph: Tidy Stress for typical ontologies, Mycelium for large and hub-heavy ones, which keeps closely linked groups together. Best Read runs both and keeps the more readable drawing.</li>
+<li><strong>Placement.</strong> Tidy Mycelium places the dense core of the graph first, in closely linked groups with room round each hub, then puts the parts that hang off it into the open space round them. Two earlier layouts remain available: Tidy Stress, for typical ontologies, and Mycelium; Best Read runs both and keeps the more readable drawing.</li>
 <li><strong>Clean-up, taught by a person.</strong> Then the drawing is tidied the way a person tidies it: a class moved off a link into open space, leaves turned round the class they hang from, crowded corners spread out. These moves come from Brendan Newlon, who built the Lab to teach them: he tidied drawings there while explaining what he looks for, what he fixes first and why, and an AI assistant worked out the rules and their math from what he showed and said.</li>
+<li><strong>Empty space taken in.</strong> After the clean-up, Tidy Mycelium takes back the room it kept: whole bands of the drawing move inward from each side and corner, taking along what is in their way, and then class by class, as long as nothing gets worse.</li>
 <li><strong>Link routing.</strong> Parallel links become arcs side by side, self-links loops, a link that still runs through a class bends round it, and link names go where they cover nothing.</li>
 </ol>
 <p class="prose">Each step can be watched in the <a ${site('playback')}>Playback</a>, switched off to see what it is worth, or replaced by your own layout: the clean-up and the routing also tidy a drawing made by another layout. The same methods keep a drawing stable as a graph grows: expand a class, and nothing already drawn moves.</p>
