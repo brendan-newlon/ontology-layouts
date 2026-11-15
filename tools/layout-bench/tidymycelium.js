@@ -10,7 +10,7 @@
 //      leaf placement;
 //   5. classes off links, boxes apart; then (in tmbench) the library's clean-up, pull-in and routing as for Best Read.
 //   6. after the clean-up: empty space taken in (_tmCompact), each class with what hangs from it stepping inward while that adds no problem.
-const _TM_DEF = { K: 8, Kfrac: 0.25, L: 170, Lbig: 260, pods: 2, podIn: 2, hub: 20, room: 1, roomMode: 'add', cntW: 0.5, linkShare: 0.5,
+const _TM_DEF = { K: 8, Kfrac: 0.25, L: 150, Lbig: 260, pods: 1.6, podIn: 1.6, hub: 20, room: 1, roomMode: 'add', cntW: 0.5, linkShare: 0.5,
   restarts: 8, sweeps: 240, finCross: true, finThru: true, coreTight: false, endTight: true, endTightR: 2, unitGap: 0.75, dirs: 36, outward: 0.5,
   budget: 1000, singlesBySlice: false, shrink: 'strict', shrinkMs: 150, shrinkF: 0.88, shrinkSlack: 0.06, hubBig: 20, tries: 1, triesMs: 400, grid: true, coreRoom: 0.25, denseCore: 2.7, budgetBig: 0 };
 
