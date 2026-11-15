@@ -1315,7 +1315,7 @@ $('fileMenu').querySelector('.fm').onclick = (ev) => { const b = ev.target.close
 function ownGraphs() { // the graphs read from files, first in the list
   let g = $('graph').querySelector('optgroup[data-own]'); if (g) g.remove();
   const ks = LayoutGraphs.imported(); if (!ks.length) return;
-  g = document.createElement('optgroup'); g.label = 'Your graphs'; g.dataset.own = '1';
+  g = document.createElement('optgroup'); g.label = 'Your graphs (only in this browser)'; g.dataset.own = '1';
   ks.forEach((k) => { const o = document.createElement('option'); o.value = k; o.textContent = MODELS[k].name; g.appendChild(o); }); $('graph').prepend(g);
 }
 $('ttlFile').onchange = async () => { const file = $('ttlFile').files[0]; $('ttlFile').value = ''; if (!file) return;
