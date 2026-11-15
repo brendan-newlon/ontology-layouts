@@ -9,7 +9,7 @@
 //      large units prefer slices that open to the outside), laid out radially in that slice; single leaves by the library's
 //      leaf placement;
 //   5. classes off links, boxes apart; then (in tmbench) the library's clean-up, pull-in and routing as for Best Read.
-const _TM_DEF = { K: 8, Kfrac: 0.25, L: 170, Lbig: 260, pods: 1.6, podIn: 0.85, hub: 20, room: 1, roomMode: 'add', cntW: 0.5, linkShare: 0.5,
+const _TM_DEF = { K: 8, Kfrac: 0.25, L: 170, Lbig: 260, pods: 2, podIn: 2, hub: 20, room: 1, roomMode: 'add', cntW: 0.5, linkShare: 0.5,
   restarts: 3, sweeps: 240, finCross: true, finThru: true, coreTight: false, endTight: false, unitGap: 0.75, dirs: 36, outward: 0.5,
   budget: 600, singlesBySlice: false, shrink: 'slack', shrinkMs: 150, shrinkF: 0.88, shrinkSlack: 0.06, hubBig: 20, tries: 1, triesMs: 400, grid: true, coreRoom: 0.25 };
 

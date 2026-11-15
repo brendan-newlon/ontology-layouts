@@ -30,7 +30,7 @@ label.tog .sw { margin-right: 0; }
 a { color: var(--accent); }
 main { display: grid; grid-template-columns: 1fr 420px; min-height: 0; }
 #stage { position: relative; min-width: 0; min-height: 0; }
-#tally { position: absolute; right: 8px; bottom: 8px; background: color-mix(in srgb, var(--paper) 90%, transparent); border: 1px solid var(--rule); border-radius: 6px; padding: 3px 8px; font-size: 12px; font-variant-numeric: tabular-nums; color: var(--muted); line-height: 1.45; }
+#tally { position: absolute; right: 6px; bottom: 2px; z-index: 3; max-width: 46%; background: color-mix(in srgb, var(--paper) 90%, transparent); border: 1px solid var(--rule); border-radius: 6px; padding: 3px 8px; font-size: 12px; font-variant-numeric: tabular-nums; color: var(--muted); line-height: 1.45; }
 #tally b { font-weight: 600; } #tally .win { color: #2e9a5a; } #tally .lose { color: #d0453a; } #tally:empty { display: none; }
 #svg { width: 100%; height: 100%; display: block; background: var(--bg); touch-action: none; user-select: none; cursor: grab; }
 #caption { position: absolute; left: 6px; top: 6px; max-width: max(200px, min(460px, calc(100% - 90px))); background: color-mix(in srgb, var(--paper) 88%, transparent); border: 1px solid var(--rule); border-radius: 6px; padding: 3px 7px; pointer-events: none; font-size: 12px; line-height: 1.35; }
@@ -285,7 +285,7 @@ const STEPS = [ // key, group, name, what it does, color, can it be left out (Ru
   ['leaves', 'Placement', 'One-link classes placed', 'Classes with one link come back, each beside its neighbor in the direction where its link crosses nothing A long name goes to the side rather than above or below. Each frame is one class with all its one-link classes.', '#2f9d6a', false],
   ['leaffix', 'Placement', 'One-link classes re-placed', 'One-link classes that the moves left too close or on a line are placed again.', '#5fb98a', false],
   ['tm-start', 'Tidy Mycelium', 'Start: hanging parts set aside', 'Parts that hang off the rest by one class (a leaf, a chain, a small tree, a triangle) are set aside. The class each hangs from keeps room for them: more for more classes, and more again for each separate part, since each needs a slice of its own. The rest, the core, starts where a quick projection of the graph distances puts it.', '#5b8def', false],
-  ['tm-stress', 'Tidy Mycelium', 'Stress majorization, with room', 'The core\'s classes are pulled toward distances that match how many links apart they are, plus the room each keeps for its hidden parts, so a class with more hidden parts keeps further from the others. A class with many links gets longer links, so its neighbors fit round it in a ring, and groups (Mycelium\'s pods) keep apart. Each frame is one sweep.', '#3d6fd6', false],
+  ['tm-stress', 'Tidy Mycelium', 'Stress majorization, with room', 'The core\'s classes are pulled toward distances that match how many links apart they are, plus the room each keeps for its hidden parts, so a class with more hidden parts keeps further from the others. A class with many links gets longer links, so its neighbors fit round it in a ring. Links in the core are twice the usual length, which leaves room for the parts placed later and crosses fewer links. Each frame is one sweep.', '#3d6fd6', false],
   ['tm-cross', 'Tidy Mycelium', 'Core crossing swaps', 'Before the hidden parts come back: a class at the end of a crossed link swaps place with another, or moves beside a neighbor, when that crosses fewer links.', '#c43d32', true],
   ['tm-thru', 'Tidy Mycelium', 'Core off-link moves', 'Before the hidden parts come back: a class with a link running through its box moves off it, never adding a crossing.', '#e0702b', true],
   ['tm-unit', 'Tidy Mycelium', 'Parts placed in open slices', 'Each part set aside comes back, largest first, fanned out round the class it hangs from, in the slice with the most open space. Rays are cast round that class through a grid of what is drawn already; a larger part also prefers a slice that opens to the outside of the drawing ("don\'t fence me in"). Each frame is one part.', '#1f8577', false],
@@ -441,7 +441,7 @@ function recordTidy(G, seed) {
       if (map) map.forEach((v, k) => { A[2 * v] = P[k].x; A[2 * v + 1] = P[k].y; });
       else for (let v = 0; v < n; v++) if (!cur.hidden[v] && P[v]) { A[2 * v] = P[v].x; A[2 * v + 1] = P[v].y; }
       const ov = info && info.ov ? info.ov : room && CORE.test(key) ? { room } : null;
-      cur.frames.push({ key, P: A, r: rtag, ms: t - tLast, ov, from: info && info.from != null ? info.from : undefined, note: key === 'tm-start' && info && info.groups ? `${info.groups} groups (pods) found in the core.` : undefined }); tLast = performance.now(); },
+      cur.frames.push({ key, P: A, r: rtag, ms: t - tLast, ov, from: info && info.from != null ? info.from : undefined, note: undefined }); tLast = performance.now(); },
     score(name, s) { const r = runs.find((x) => x.name === name); if (r) r.score = s; },
     chosen(name) { chosen = name; } };
   const tm = { finCross: ctl('tm-cross').run, finThru: ctl('tm-thru').run, shrink: ctl('tm-shrink').run ? 'slack' : false };
@@ -1173,7 +1173,10 @@ function showTally(F, m, work) {
   const me = lastProblems(R), M = R.rivals || {}; let riv = null;
   Object.keys(M).forEach((a) => { if (a !== R.algo && (riv == null || M[a].pr < M[riv].pr || M[a].pr === M[riv].pr && M[a].ms < M[riv].ms)) riv = a; });
   const r = riv && M[riv], cls = !r || me.pr === r.pr ? '' : me.pr < r.pr ? 'win' : 'lose', tcls = !r ? '' : work <= r.ms ? 'win' : 'lose';
-  $('tally').innerHTML = `Total problems <b class="${cls}">${me.pr}</b>${r ? ` (vs ${r.pr} ${ALGO_NAME[riv]})` : ' <small>(measuring the others…)</small>'}<br>Total time <b class="${tcls}">${Math.round(work)} ms</b>${r ? ` (vs ${Math.round(r.ms)} ms)` : ''}`;
+  const off = setupNow().leftOut, odd = off.length || ORD.place.join() !== 'cross,thru,tight' || ORD.clean.join() !== 'c-single,c-unit,c-spread,c-group' || xOn();
+  $('tally').innerHTML = `Total problems <b class="${cls}">${me.pr}</b>${r ? ` (vs ${r.pr} ${ALGO_NAME[riv]})` : ' <small>(measuring the others…)</small>'}<br>Total time <b class="${tcls}">${Math.round(work)} ms</b>${r ? ` (vs ${Math.round(r.ms)} ms)` : ''}`
+    + (odd ? `<br><small class="lose">Not the usual steps${off.length ? ': without ' + esc(off.join(', ')) : ''}</small>` : '');
+  const lg = $('legend'); if (lg) lg.style.right = ($('tally').offsetWidth + 14) + 'px';
   $('tally').title = 'Problems: crossed links, links through classes, covered names and overlapping boxes, in the last frame. Time: all the steps of the run, measured in this browser.'
     + (r ? ` In brackets: ${ALGO_NAME[riv]}, the best of our other layouts on this graph, run here with the same steps and links: ` + Object.keys(M).map((a) => `${ALGO_NAME[a]} ${M[a].pr} in ${Math.round(M[a].ms)} ms`).join(', ') + '.' : '');
 }
