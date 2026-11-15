@@ -279,27 +279,27 @@ const STEPS = [ // key, group, name, what it does, color, can it be left out (Ru
   ['cross', 'Placement', 'Crossing swaps', 'A class at the end of a crossed link swaps place with another class, or moves beside a neighbor, when that crosses fewer links.', '#c43d32', true],
   ['thru', 'Placement', 'Off-link moves', 'A class with a link running through its box moves off it, never adding a crossing.', '#e0702b', true],
   ['tight', 'Placement', 'Shortening long links', 'Each class is pulled toward its neighbors when its links get shorter and nothing gets worse; then the whole drawing shrinks as far as the boxes allow.', '#8a6fd1', true],
-  ['leaves', 'Placement', 'One-link classes placed', 'Classes with one link come back, each beside its neighbor in the direction where its link crosses nothing.', '#2f9d6a', false],
+  ['leaves', 'Placement', 'One-link classes placed', 'Classes with one link come back, each beside its neighbor in the direction where its link crosses nothing A long name goes to the side rather than above or below. Each frame is one class with all its one-link classes.', '#2f9d6a', false],
   ['leaffix', 'Placement', 'One-link classes re-placed', 'One-link classes that the moves left too close or on a line are placed again.', '#5fb98a', false],
   ['tm-start', 'Tidy Mycelium', 'Start: hanging parts set aside', 'Parts that hang off the rest by one class (a leaf, a chain, a small tree, a triangle) are set aside. The class each hangs from keeps room for them: more for more classes, and more again for each separate part, since each needs a slice of its own. The rest, the core, starts where a quick projection of the graph distances puts it.', '#5b8def', false],
   ['tm-stress', 'Tidy Mycelium', 'Stress majorization, with room', 'The core\'s classes are pulled toward distances that match how many links apart they are, plus the room each keeps for its hidden parts, so a class with more hidden parts keeps further from the others. A class with many links gets longer links, so its neighbors fit round it in a ring, and groups (Mycelium\'s pods) keep apart. Each frame is one sweep.', '#3d6fd6', false],
   ['tm-cross', 'Tidy Mycelium', 'Core crossing swaps', 'Before the hidden parts come back: a class at the end of a crossed link swaps place with another, or moves beside a neighbor, when that crosses fewer links.', '#c43d32', true],
   ['tm-thru', 'Tidy Mycelium', 'Core off-link moves', 'Before the hidden parts come back: a class with a link running through its box moves off it, never adding a crossing.', '#e0702b', true],
   ['tm-unit', 'Tidy Mycelium', 'Parts placed in open slices', 'Each part set aside comes back, largest first, fanned out round the class it hangs from, in the slice with the most open space. Rays are cast round that class through a grid of what is drawn already; a larger part also prefers a slice that opens to the outside of the drawing ("don\'t fence me in"). Each frame is one part.', '#1f8577', false],
-  ['tm-leaves', 'Tidy Mycelium', 'One-link classes placed', 'Single classes with one link come back, each beside its neighbor in the direction where its link crosses nothing.', '#2f9d6a', false],
+  ['tm-leaves', 'Tidy Mycelium', 'One-link classes placed', 'Single classes with one link come back, each beside its neighbor in the direction where its link crosses nothing A long name goes to the side rather than above or below. Each frame is one class with all its one-link classes.', '#2f9d6a', false],
   ['tm-finish', 'Tidy Mycelium', 'Classes moved off links', 'Boxes that touch are pushed apart, and a class with a link running through it moves off it.', '#9f4f2f', false],
   ['tm-shrink', 'Tidy Mycelium', 'Pulled in', 'The whole drawing shrinks toward its middle a step at a time, boxes pushed apart after each step, as long as the problems stay within a small allowance that the clean-up then repairs. Each frame is one step kept.', '#5b7fa8', true],
   ['e-iter', 'Open-source layout', 'Iterations', 'The open-source layout at work; each frame is a few of its iterations.', '#64748b', false],
   ['e-final', 'Open-source layout', 'Result', 'This layout does not report its steps: its result appears at once, after the time it took.', '#475569', false],
   ['c-single', 'Clean-up', 'Moves into open space', 'A class in a problem moves into nearby open space (cells with no class and no link) or is nudged.', '#d9822b', true],
   ['c-unit', 'Clean-up', 'Leaf units turned', 'A leaf, leaf chain or leaf triangle hanging off one class is turned, mirrored or resized around it.', '#1f8577', true],
-  ['c-spread', 'Clean-up', 'Crowds spread outward', 'Where problems pile up, the region is pushed outward in 8 slices, more toward open space, then repaired; kept only if better.', '#2f5fb3', true],
+  ['c-spread', 'Clean-up', 'Crowds spread outward', 'Where problems pile up, the region is pushed outward in 8 slices, more toward open space, then repaired; kept only if better. A region that would push more than half of all classes is not tried: that would only enlarge the whole drawing.', '#2f5fb3', true],
   ['c-group', 'Clean-up', 'Group moves', 'The classes on one side of a remaining problem move together away from the line, with a few repair moves; kept only if better.', '#b5548c', true],
-  ['c-finish', 'Clean-up', 'Final leaf pass', 'A last pass over leaf units and single classes still in a problem.', '#6f9a54', true],
+  ['c-finish', 'Clean-up', 'Final leaf pass', 'A last pass over leaf units and single classes still in a problem. Left out when the last such passes found nothing and nothing has moved since.', '#6f9a54', true],
   ['c-swap', 'Clean-up', 'Leaves trade places', 'Two one-link classes of the same class trade places when that leaves fewer problems (a shorter box fits where a longer one was in the way).', '#94a34a', true],
   ['c-fence', 'Clean-up', 'Leaves to open space', 'A one-link class whose link still crosses another link or runs through a class moves to the most open spot round its neighbor: fewest problems first, then the most room around it, then the shorter link.', '#4d9a8a', true],
   ['c-nudge', 'Clean-up', 'Pushed off a link', 'A class that a link runs through (or passes within 9 px of) is pushed sideways off the line just far enough, or a one-link class turns round its neighbor; kept only if it leaves fewer problems.', '#a0703c', true],
-  ['c-pull', 'Clean-up', 'Pulled in from the edge', 'A part hanging off the rest by one link (a one-link class, a chain, a small tree) turns round the class it hangs from or draws in toward it, and whole groups slide toward the middle, into open space; kept only if the drawing gets smaller (or the links of the part much shorter) with no more problems.', '#5b7fa8', true],
+  ['c-pull', 'Clean-up', 'Pulled in from the edge', 'A part hanging off the rest by one link (a one-link class, a chain, a small tree) turns round the class it hangs from or draws in toward it, and whole groups slide toward the middle, into open space; kept only if the drawing gets smaller (or the links of the part much shorter) with no more problems. Only a part in a problem, or one whose link is drawn out (more than 150 px between the boxes), is moved: a part that is fine where it is stays. A group slides only when that makes the drawing at least 10% smaller.', '#5b7fa8', true],
   ['edit', 'Your edit', 'Changed by hand', 'The drawing as you left it: classes you moved (the steps after this one were run again from there) or a link you bent.', '#e0a100', false],
   ['r-arcs', 'Links', 'Parallel links as arcs', 'Two or more links between the same two classes (a link and its reverse, or two relationships) spread into arcs, so none hides another.', '#0e7490', true],
   ['r-loops', 'Links', 'Self-link loops', 'A link from a class to itself becomes a loop on its emptiest side.', '#0891b2', false],
@@ -396,7 +396,7 @@ function recordOurs(G, algo, seed) {
     keepRestart(r) { const keep = [], drop = []; cur.frames.forEach((f) => (f.r < 0 || f.r === r ? keep : drop).push(f)); cur.frames = keep;
       if (drop.length) { const starts = new Set(drop.map((f) => f.r)).size; keep.push({ key: 'restart', P: keep[keep.length - 1].P, r: -1, ms: drop.reduce((s, f) => s + f.ms, 0), hold: true, note: `${starts} other start${starts > 1 ? 's' : ''} tried and dropped; the one shown ended with the fewest crossings.` }); }
       rtag = -1; },
-    snap(stage, P, info) { if (!cur) return; const t = performance.now(); if (info && info.v != null) cur.hidden[info.v] = 0; if (info && info.D) cur.D = info.D;
+    snap(stage, P, info) { if (!cur) return; const t = performance.now(); if (info && info.v != null) cur.hidden[info.v] = 0; if (info && info.show) info.show.forEach((v) => (cur.hidden[v] = 0)); if (info && info.D) cur.D = info.D;
       const A = new Float64Array(2 * n).fill(NaN), map = sink.map;
       if (map) map.forEach((v, k) => { A[2 * v] = P[k].x; A[2 * v + 1] = P[k].y; });
       else for (let v = 0; v < n; v++) if (!cur.hidden[v]) { A[2 * v] = P[v].x; A[2 * v + 1] = P[v].y; }
@@ -538,8 +538,17 @@ async function recordRun(key, algo, seed) {
     // the clean-up gets what is left of the time limit, at most a third of it, as in the layouts
     const budgetMs = Math.min(500, 1500 - (O.now() - t0));
     const tail = tailFrames(G, head.P, { cleanup: !engine, budgetMs, links: !engine || $('ourLinks').checked, run: head.run });
-    return { ...G, algo, seed, limit, engine, frames: head.frames.concat(tail.frames), runs: head.runs, variants: head.variants, info: tail.info, run: head.run, budgetMs, mcache: new Map() };
+    const frames = head.frames.concat(tail.frames); idleNotes(frames);
+    return { ...G, algo, seed, limit, engine, frames, runs: head.runs, variants: head.variants, info: tail.info, run: head.run, budgetMs, mcache: new Map() };
   } finally { O.setTimeLimit(prev); }
+}
+// A frame in which no class moved (and no link changed) still shows the time it took: say so, so that a step that spends time
+// and changes nothing is plain to see.
+function idleNotes(frames) {
+  for (let j = 1; j < frames.length; j++) { const f = frames[j], g = frames[j - 1];
+    if (f.note || f.hold || f.key === 'start' || f.key.startsWith('variant:') || f.run !== g.run || f.ms < 0.5 || f.routes !== g.routes && (f.routes || g.routes) && JSON.stringify(f.routes) !== JSON.stringify(g.routes)) continue;
+    let same = true; for (let i = 0; i < f.P.length && same; i++) if (!(f.P[i] === g.P[i] || (isNaN(f.P[i]) && isNaN(g.P[i])) || Math.abs(f.P[i] - g.P[i]) < 0.05)) same = false;
+    if (same) f.note = `Nothing moved here: ${fmtMs(f.ms)} of work checked and found nothing to change.`; }
 }
 // The frames up to frame j are kept; from the positions P (null: as in frame j; not placed yet: where the layout's own run ended) the
 // clean-up and the link steps run again. An edit made during the link steps reruns only the link steps.
@@ -551,7 +560,7 @@ function editFrom(F, j, Pin, src) {
   if (LINES === 'straight' && F[j].routes) tail.frames.forEach((f) => { if (!f.routes) f.routes = F[j].routes; });
   const moved = []; for (let v = 0; v < R.n; v++) if (!isNaN(last[2 * v]) && Math.hypot(P[v].x - last[2 * v], P[v].y - last[2 * v + 1]) > 0.5) moved.push(v);
   R.frames = F.concat([{ key: 'edit', P: flat(P), ms: 0, run: F[j].run, moved, routes: F[j].routes, note: `${moved.length} class${moved.length === 1 ? '' : 'es'} moved by hand. ${inLinks ? 'The link steps' : 'The clean-up and the link steps'} were run again from here: press Play.` }], tail.frames);
-  R.info = { ...R.base.info, ...tail.info }; R.mcache = new Map();
+  idleNotes(R.frames); R.info = { ...R.base.info, ...tail.info }; R.mcache = new Map();
   pause(); timeline(); buildPanel(); T = TL.at[j + 1]; countsFor = -1; render();
   $('editTxt').textContent = 'Continuing from your edit (Ctrl+Z undoes it)'; $('editBar').classList.add('on');
   return moved;

@@ -337,6 +337,10 @@ function _ogClLeaves(n, EE) {
 // when the new spot is better than where it is.
 function _ogClPlaceLeaves(P, N, EE, leafOf, gapOf, L, gap, improve, deadline, stage) {
   const n = P.length, kids = new Map(), claim = _OG_TUNE.leafClaim != null ? _OG_TUNE.leafClaim : 100;
+  // side: a long name goes beside its neighbor rather than above or below it. Stacked above or below, a wide box blocks
+  // the room of the classes beside it; to the side it reads like a list. Cost per unit of |sin| of the direction, for each
+  // box height of width beyond three heights.
+  const side = _OG_TUNE.leafSide != null ? _OG_TUNE.leafSide : 25;
   leafOf.forEach((p, v) => { if (p >= 0) { if (!kids.has(p)) kids.set(p, []); kids.get(p).push(v); } });
   const placed = new Uint8Array(n); for (let v = 0; v < n; v++) if (improve || leafOf[v] < 0) placed[v] = 1;
   // waiting[q]: one-link classes of q still to be placed. A spot nearer to another class with classes still waiting than to
@@ -357,6 +361,7 @@ function _ogClPlaceLeaves(P, N, EE, leafOf, gapOf, L, gap, improve, deadline, st
   const costAt = (v, p, c, cur, limit) => {
     _ogWorkN[5]++;
     let cost = Math.hypot(c.x - P[p].x, c.y - P[p].y); const lim = limit === undefined ? Infinity : limit;
+    if (side && N[v].w > 3 * N[v].h) cost += side * (N[v].w - 3 * N[v].h) / N[v].h * Math.abs(c.y - P[p].y) / (cost || 1);
     if (cost >= lim) return Infinity;
     for (const e of cur) {
       if (_ogClSegBox(P[e.s].x - c.x, P[e.s].y - c.y, P[e.t].x - c.x, P[e.t].y - c.y, N[v].w / 2 + 4, N[v].h / 2 + 4)) cost += 80;
@@ -416,8 +421,9 @@ function _ogClPlaceLeaves(P, N, EE, leafOf, gapOf, L, gap, improve, deadline, st
         if (freeAt(v, p, c) || r === 12) { best = { cost: 0, c }; done = true; break; }
       }
       if (best) P[v] = best.c; placed[v] = 1; if (waiting[p]) waiting[p]--;
-      if (_ogTr) _ogTr.snap(stage || "leaves", P, { v, p });
     }
+    // the playback shows a class's one-link classes appear together, as they are placed one right after the other
+    if (_ogTr) _ogTr.snap(stage || "leaves", P, { show: kids.get(p), p });
   }
 }
 // One layout run. cfg: { L, init: "pmds", leaves, leafFix, hub, pods, restarts, budget }.
@@ -707,7 +713,7 @@ const _ogHandTidy = (function () {
     }
     return true;
   }
-  const DEF = { budgetMs: 2000, idleMs: 110, unitSize: 4, clearance: 8, groupDepth: 4, groups: true, spread: true, spreadRepair: true, finish: true, order: ['single', 'unit', 'spread', 'group'], cell: 0.3, repReach: 1.8, repOpen: 12, repCap: 99, crowdMax: 10, groupTop: 2, downGap: 20, W: { cross: 6, sharp: 3, thru: 10, tight: 1, ov: 1e6, area: 6 } };
+  const DEF = { budgetMs: 2000, idleMs: 110, unitSize: 4, clearance: 8, groupDepth: 4, groups: true, spread: true, spreadRepair: true, finish: true, order: ['single', 'unit', 'spread', 'group'], cell: 0.3, repReach: 1.8, repOpen: 12, repCap: 99, crowdMax: 10, groupTop: 1, spreadShare: 0.5, downGap: 20, W: { cross: 6, sharp: 3, thru: 10, tight: 1, ov: 1e6, area: 6 } };
 
   function Model(P0, D, E0, o) {
     const n = P0.length, seen = new Set(), E = [];
@@ -1078,7 +1084,11 @@ const _ogHandTidy = (function () {
     const stamp = new Int32Array(M.n); let clock = 1;
     const moved = (S) => { clock++; S.forEach((v) => (stamp[v] = clock)); keptAt = _ogNow(); };
     const quietSince = (q, R, c) => { for (let v = 0; v < M.n; v++) if (stamp[v] > c && Math.abs(M.P[v].x - q.x) < R && Math.abs(M.P[v].y - q.y) < R) return false; return true; };
-    const failedV = new Map(), failedIssue = new Map(), failedCrowd = [], reach = 2 * M.medLen;
+    const failedV = new Map(), failedU = new Map(), failedIssue = new Map(), failedCrowd = [], reach = 2 * M.medLen;
+    // singleQuiet / unitQuiet: the clock when a whole pass of single moves / leaf-unit moves last ran and kept nothing (-1:
+    // it kept something or ran out of time). The final pass is the same two passes again, so when neither has found
+    // anything and nothing has moved since, it has nothing to do and is not run.
+    let singleQuiet = -1, unitQuiet = -1;
     let grid = openGrid(M);
     const repair = (q, R, steps, S) => { // a few single moves on the classes in problems around the point
       const reps = [];
@@ -1105,7 +1115,7 @@ const _ogHandTidy = (function () {
     // 1. single classes at the end of a crossed link or under a link: move into open space
     // up: when to stop; own: a stage of its own (false in the finish, which is one stage for both passes)
     const doSingle = (up = timeUp, own = true) => {
-      if (own) stage('single');
+      if (own) stage('single'); const c0 = clock;
       const { issues } = total(M, true), hot = new Set(); issues.forEach((is) => is.nodes.forEach((v) => hot.add(v)));
       grid = openGrid(M);
       // for the playback: the open-space grid this pass chose from, on its stage marker (record only)
@@ -1119,19 +1129,23 @@ const _ogHandTidy = (function () {
         if (g > 0) { gained += g; stats.singleMoves++; tick('kept'); moved([v]); failedV.delete(v); step({ kind: 'move', nodes: [v], from, to: rec ? cp([v], M) : null, gain: +g.toFixed(1) }); }
         else failedV.set(v, clock);
       }
+      if (own && !up()) singleQuiet = clock === c0 ? clock : -1;
       if (own) lap('single');
     };
     // 2. leaf units involved in a problem (the easy fixes): turn, mirror or reorder them around their anchor, then stretch or shrink
     const doUnit = (up = timeUp, own = true) => {
-      if (own) stage('unit');
+      if (own) stage('unit'); const c0 = clock;
       const { issues } = total(M, true), hot = new Set(); issues.forEach((is) => is.nodes.forEach((v) => hot.add(v)));
       for (const U of units) {
         if (up()) break;
         if (!U.nodes.some((v) => hot.has(v)) && !hot.has(U.anchor)) continue;
+        if (failedU.has(U) && quietSince(M.P[U.anchor], reach, failedU.get(U))) { stats.skipped++; tick('skipped'); continue; }
         const from = rec ? cp(U.nodes, M) : null; tick('tried');
         const g = best(M, U.nodes, unitCands(M, U)) + best(M, U.nodes, unitScale(M, U));
-        if (g > 0) { gained += g; stats.unitMoves++; tick('kept'); moved(U.nodes); step({ kind: 'unit', anchor: U.anchor, nodes: U.nodes.slice(), from, to: rec ? cp(U.nodes, M) : null, gain: +g.toFixed(1) }); }
+        if (g > 0) { gained += g; stats.unitMoves++; tick('kept'); moved(U.nodes); failedU.delete(U); step({ kind: 'unit', anchor: U.anchor, nodes: U.nodes.slice(), from, to: rec ? cp(U.nodes, M) : null, gain: +g.toFixed(1) }); }
+        else failedU.set(U, clock);
       }
+      if (own && !up()) unitQuiet = clock === c0 ? clock : -1;
       if (own) lap('unit');
     };
     // 3. spread the regions with the most problems: cut the space around each into slices and shift them outward, toward open space
@@ -1142,8 +1156,12 @@ const _ogHandTidy = (function () {
       for (const C of crowds.slice(0, o.spreadMax || 6)) {
         if (timeUp()) break;
         if (failedCrowd.some((f) => Math.hypot(f.x - C.c.x, f.y - C.c.y) < C.r0 && quietSince(C.c, 3 * C.r0, f.at))) { stats.skipped++; tick('skipped'); continue; }
+        // a crowd is a part of the drawing: when the classes it would push hold more than spreadShare of all classes, pushing
+        // them outward only scales the whole drawing up (seen in the Lab: every class moved, nothing changed relative to the
+        // rest), so it is not tried. On 62 graphs no such try had paid off.
+        { let k = 0; const R3 = 3 * C.r0; for (let v = 0; v < M.n; v++) if (Math.hypot(M.P[v].x - C.c.x, M.P[v].y - C.c.y) < R3) k++; if (k > o.spreadShare * M.n) { stats.skipped++; tick('skipped'); continue; } }
         tick('tried');
-        const { S, cands, room } = spreadCands(M, dg, C); if (S.length < 3) continue;
+        const { S, cands, room } = spreadCands(M, dg, C); if (S.length < 3) continue; const share0 = +(S.length / M.n).toFixed(2);
         const snapAll = M.P.slice(); let g = best(M, S, cands), pushed = null;
         if (!(g > 0) && o.spreadRepair) { // the room pays off only after a few single moves: push, repair, keep if better overall
           const snap = M.P.slice(); let bestC = 0, bestF = Infinity;
@@ -1156,8 +1174,8 @@ const _ogHandTidy = (function () {
           if (F1 < F0b - 0.5) { Sa.forEach((v, i) => (M.P[v] = now[i])); g = F0b - F1; S.length = 0; Sa.forEach((v) => S.push(v)); } else M.P = snap;
         }
         if (g > 0) { gained += g; stats.spreadMoves = (stats.spreadMoves || 0) + 1; tick('kept'); moved(S);
-          step({ kind: 'spread', center: { x: Math.round(C.c.x), y: Math.round(C.c.y) }, r0: Math.round(C.r0), problems: C.weight, cells: rec ? C.cells.map((p) => [Math.round(p.x), Math.round(p.y)]) : undefined, cell: Math.round(C.cellSize || dg.s), room: rec ? room.map((x) => +x.toFixed(1)) : undefined, nodes: S.slice(), from: rec ? S.map((v) => [Math.round(snapAll[v].x * 10) / 10, Math.round(snapAll[v].y * 10) / 10]) : null, to: rec ? cp(S, M) : null, pushed: pushed || undefined, gain: +g.toFixed(1) }); }
-        else failedCrowd.push({ x: C.c.x, y: C.c.y, at: clock });
+          step({ kind: 'spread', share: share0, center: { x: Math.round(C.c.x), y: Math.round(C.c.y) }, r0: Math.round(C.r0), problems: C.weight, cells: rec ? C.cells.map((p) => [Math.round(p.x), Math.round(p.y)]) : undefined, cell: Math.round(C.cellSize || dg.s), room: rec ? room.map((x) => +x.toFixed(1)) : undefined, nodes: S.slice(), from: rec ? S.map((v) => [Math.round(snapAll[v].x * 10) / 10, Math.round(snapAll[v].y * 10) / 10]) : null, to: rec ? cp(S, M) : null, pushed: pushed || undefined, gain: +g.toFixed(1) }); }
+        else { failedCrowd.push({ x: C.c.x, y: C.c.y, at: clock }); if (rec) step({ kind: 'spread-rejected', problems: C.weight, share: share0, nodes: S.length }); }
       }
       lap('spread');
     };
@@ -1197,7 +1215,7 @@ const _ogHandTidy = (function () {
             const reps = repair(is.q, 2 * R, o.groupDepth, S);
             const Sa = [...S], F1 = local(M, Sa) + areaPen(M), now = Sa.map((v) => M.P[v]);
             Sa.forEach((v) => (M.P[v] = snap[v])); const F0 = local(M, Sa) + areaPen(M);
-            const info = rec ? { problem: { kind: is.kind, q: { x: Math.round(is.q.x), y: Math.round(is.q.y) }, edges: is.edges.map((k) => [M.E[k].s, M.E[k].t]) }, nodes: t.G.slice(), from, dx: Math.round(t.dx), dy: Math.round(t.dy), repairs: reps } : {};
+            const info = rec ? { imm: +t.imm.toFixed(1), rank: tries.indexOf(t), problem: { kind: is.kind, q: { x: Math.round(is.q.x), y: Math.round(is.q.y) }, edges: is.edges.map((k) => [M.E[k].s, M.E[k].t]) }, nodes: t.G.slice(), from, dx: Math.round(t.dx), dy: Math.round(t.dy), repairs: reps } : {};
             if (F1 < F0 - 0.5) { Sa.forEach((v, i) => (M.P[v] = now[i])); gained += F0 - F1; stats.groupKept++; tick('kept'); moved(Sa); step({ kind: 'group', ...info, nodes: t.G.slice(), dx: Math.round(t.dx), dy: Math.round(t.dy), gain: +(F0 - F1).toFixed(1), after: rec ? Sa.map((v) => [v, ...cp([v], M)[0]]) : undefined }); kept = true; break; }
             if (rec) step({ kind: 'group-rejected', ...info, loss: +(F1 - F0).toFixed(1) });
             M.P = snap;
@@ -1216,7 +1234,7 @@ const _ogHandTidy = (function () {
     // finish: one last pass over leaves and single classes, even when the time is up, since it is cheap and the group moves
     // can leave a leaf on a line (the hand sessions also tidied leaves last)
     // the rounds stop at 80% of the budget, so the finish has the rest; it stops at the budget too
-    if (o.finish) {
+    if (o.finish && !(singleQuiet === clock && unitQuiet === clock)) {
       rounds++; stage('finish');
       const hardUp = () => _ogNow() - t0 > o.budgetMs;
       doUnit(hardUp, false); doSingle(hardUp, false);
@@ -1461,7 +1479,7 @@ function _ogLeafSwap(pos, items, edges, down) {
 // leaves no more problems (crossing 6, link through a class 10, measured on the part's links and on links through its
 // boxes) and either shrinks the drawing's box or, with the box unchanged, makes the part's links much shorter. Parts
 // on the edge go first; at most `ms` of the work clock. Positions in, new positions out.
-const _OG_PULL = { ms: 100, maxPart: 0.4, gain: 0.01, shorter: 0.25, room: 14, pad: 9, minGap: 70, groupRoom: 40 };
+const _OG_PULL = { ms: 100, maxPart: 0.4, gain: 0.01, shorter: 0.25, room: 14, pad: 9, minGap: 70, groupRoom: 40, stretch: 150, groupGain: 0.1 };
 function _ogPullIn(pos, items, edges, opt) {
   const o = { ..._OG_PULL, ...(opt || {}) }, n = pos.length, P = pos.map((p) => ({ x: p.x, y: p.y }));
   const EE = edges.filter((e) => e[0] !== e[1]).map((e) => ({ s: e[0], t: e[1] })), m = EE.length;
@@ -1503,6 +1521,10 @@ function _ogPullIn(pos, items, edges, opt) {
       if (_ogNow() - t0 > o.ms) break;
       const S = pt.S, inS = new Array(n).fill(false); S.forEach((v) => (inS[v] = true));
       B = box(); const c0 = cost(S, inS), old = S.map((v) => P[v]), h = P[pt.hang];
+      // only a part that is wrong is moved: one in a problem, or one whose link is drawn out (more than stretch px between
+      // the two boxes). A part that is fine where it is stays there, even if moving it would make the drawing a little
+      // smaller ("it's not broken; don't fix it").
+      if (o.stretch && !c0.c) { const k = inc[pt.root].find((k) => EE[k].s === pt.hang || EE[k].t === pt.hang); if (k == null || gap(EE[k]) <= o.stretch) continue; }
       let best = null;
       for (const sc of scales) for (const da of [0, ...angs]) {
         if (sc === 1 && da === 0) continue; const t = da * Math.PI / 180, cs = Math.cos(t), sn = Math.sin(t);
@@ -1536,7 +1558,8 @@ function _ogPullIn(pos, items, edges, opt) {
             S.forEach((v, i) => (P[v] = { x: old[i].x + ux * st, y: old[i].y + uy * st }));
             const inward = d0 - Math.hypot(gx + ux * st - cx, gy + uy * st - cy);
             if (inward > 30 && !clash(S, inS, o.groupRoom, true)) { const B1 = box(), gain = (B0.a - B1.a) / B0.a;
-              if (gain > -1e-9) { const sc = gain * 1e4 + inward; if ((!best || sc > best.sc) && cost(S, inS).c <= c0.c) best = { sc, gain, at: S.map((v) => P[v]) }; } }
+              // a slide must close a real gap: the drawing at least groupGain smaller (a group that sits fine stays)
+              if (gain >= o.groupGain) { const sc = gain * 1e4 + inward; if ((!best || sc > best.sc) && cost(S, inS).c <= c0.c) best = { sc, gain, at: S.map((v) => P[v]) }; } }
             S.forEach((v, i) => (P[v] = old[i])); } }
         if (best) { S.forEach((v, i) => (P[v] = best.at[i])); moved++; any = true; }
       }
@@ -1927,6 +1950,13 @@ function _ogRoutePaths(pos, items, edges, routes, opts) {
     return { x: a.x + (b.x - a.x) * hi, y: a.y + (b.y - a.y) * hi }; };
   return edges.map(([s, t], k) => {
     const A = pos[s], B = pos[t], r = routes ? routes[k] : null; let pl = _ogRoutePoly(A, B, r, o.samples), i = 0;
+    // a port is on the side of the box; a circle or ellipse drawn inside that box starts the path where the line from its
+    // center to the port leaves it (so ends spread along a side stay apart, and on the shape)
+    const shaped = (it) => it && (it.shape === "circle" || it.shape === "ellipse");
+    if (r && r.ports && s !== t) {
+      if (r.ports[0] && shaped(items[s]) && !inside(pl[0], A, items[s])) pl[0] = leave(A, pl[0], A, items[s]);
+      if (r.ports[1] && shaped(items[t]) && !inside(pl[pl.length - 1], B, items[t])) pl[pl.length - 1] = leave(B, pl[pl.length - 1], B, items[t]);
+    }
     while (i < pl.length - 1 && inside(pl[i + 1], A, items[s])) i++;
     if (i < pl.length - 1 && inside(pl[i], A, items[s])) pl = [leave(pl[i], pl[i + 1], A, items[s]), ...pl.slice(i + 1)];
     let j = pl.length - 1; while (j > 0 && inside(pl[j - 1], B, items[t])) j--;

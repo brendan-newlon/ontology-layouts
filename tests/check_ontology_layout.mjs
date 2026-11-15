@@ -198,6 +198,10 @@ function checkApi(L) {
     const C = D.map((d) => ({ w: Math.max(40, d.w), h: 72, shape: 'circle', r: 20 })), c = A.draw(C, E, {}); let offC = 0;
     E.forEach(([s, t], k) => { if (s === t) return; const p0 = c.paths[k].points[0], A0 = c.pos[s]; if (Math.hypot(A0.x - c.pos[t].x, A0.y - c.pos[t].y) > 60 && Math.abs(Math.hypot(p0.x - A0.x, p0.y - A0.y) - 20) > 0.5) offC++; });
     if (offC) bad.push(`${offC} paths of circle classes do not start on the circle`);
+    // a link end spread along the side of a circle class's box (a port) still starts and ends on the circle (2026-11-14: the
+    // ports at crowded classes put it on the box side, 36 px out from a circle of 20)
+    { const Cc = [{ w: 80, h: 72, shape: 'circle', r: 20 }, { w: 80, h: 72, shape: 'circle', r: 20 }], q = A.routePaths([{ x: 0, y: 0 }, { x: 0, y: 400 }], Cc, [[0, 1, 1]], [{ bends: [], ports: [{ x: 6, y: 36 }, { x: -6, y: -36 }], loop: null, label: null }], {})[0];
+      const a = q.points[0], b = q.tip; if (Math.abs(Math.hypot(a.x, a.y) - 20) > 0.5 || Math.abs(Math.hypot(b.x, b.y - 400) - 20) > 0.5) bad.push('a link end at a port on a circle class does not start or end on the circle'); }
     const tr = A.draw(D, E, { layout: 'tree' }); if (tr.algo !== 'tree') bad.push('draw({ layout: "tree" }) did not draw the tree'); }
   return bad;
 }
@@ -356,6 +360,7 @@ if (process.argv.includes('--self-test')) {
     ['keep', 'exact keeping still runs the clean-up', code.replace('const clean = ex || o.cleanUp === false ? lay.pos :', 'const clean = o.cleanUp === false ? lay.pos :')],
     ['api', 'draw({ timeLimit }) does not restore the limit', code.replace('finally { _ogSetTimeLimit(prev); }', 'finally { }')],
     ['api', 'the paths ignore circle classes', code.replace('if (it.shape === "circle") {', 'if (false) {')],
+    ['api', 'a port on a circle class left on the box side', code.replace('const shaped = (it) => it && (it.shape === "circle" || it.shape === "ellipse");', 'const shaped = () => false;')],
     ['api', 'draw() ignores the positions given', code.replace(': kind === "given" ? { pos: o.start.map(', ': false ? { pos: o.start.map(')],
     ['keep', 'new classes placed without looking for a free spot', code.replace('const free = (v, p) => { _ogWorkN[2] += n;', 'const free = (v, p) => { return true;')],
     ['keep', 'the earlier positions ignored', code.replace('(keep && keep[v] && isFinite(keep[v].x)', '(false && keep[v] && isFinite(keep[v].x)')],

@@ -166,6 +166,8 @@ function _tmLayout(items, edges, opts) {
     mark('coreClean');
     snap('coreClean', fullOf(PC), { room: roomInfo });
   }
+  // the time the core's last checks took (often finding nothing to move) goes to a frame of their own, not to the first part placed
+  if (tr && m > 1 && EC2.length) tr.snap('thru', PC);
   if (tr) tr.map = null;
   const P = new Array(n), placed = new Uint8Array(n); core.forEach((v, k) => { P[v] = PC[k]; placed[v] = 1; });
   // 4. units, largest first, each into the most open slice round its anchor
