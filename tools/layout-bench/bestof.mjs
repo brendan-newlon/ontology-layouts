@@ -14,7 +14,8 @@ const { MODELS, OURS: O, _tmBest } = await import('./_bundle_bo.mjs?' + Date.now
 O.tune.noWall = true; // the same drawing on any computer, however busy (times are still measured)
 const TOO_BIG = new Set(['huge', 'hx_md1200', 'pb_cl', 'sf400']); // as in the page's list
 const LAYOUTS = { auto: (b, e, s) => O.auto(b, e, { seed: s }), compact: (b, e, s) => O.compact(b, e, { seed: s }),
-  grouped: (b, e, s) => O.grouped2(b, e, { seed: s }) || O.compact(b, e, { seed: s }), tidy: (b, e, s) => O.clocked(() => _tmBest(b, e, { seed: s })) };
+  grouped: (b, e, s) => O.grouped2(b, e, { seed: s }) || O.compact(b, e, { seed: s }), tidy: (b, e, s) => O.clocked(() => _tmBest(b, e, { seed: s })),
+  tidyF: (b, e, s) => O.clocked(() => _tmBest(b, e, { seed: s, variant: 'fewer' })) };
 function overlaps(P, B) { let c = 0; for (let i = 0; i < P.length; i++) for (let j = i + 1; j < P.length; j++) if (Math.abs(P[i].x - P[j].x) < (B[i].w + B[j].w) / 2 && Math.abs(P[i].y - P[j].y) < (B[i].h + B[j].h) / 2) c++; return c; }
 const out = { made: new Date().toISOString().slice(0, 10), seed: 1, nodes: 'box', measure: 'crossed links + links through classes + covered names + overlapping boxes, after the clean-up and the link drawing', graphs: {}, ms: {} };
 // node bestof.mjs tidy  -> only the named layouts run again; the others keep their numbers from bestof.json
@@ -26,7 +27,7 @@ for (const key of Object.keys(MODELS).filter((k) => !TOO_BIG.has(k))) {
   const row = {}, ms = {};
   for (const [k, fn] of Object.entries(LAYOUTS)) {
     if (ONLY && !ONLY.includes(k) && OLD.graphs[key]) { row[k] = OLD.graphs[key][k]; ms[k] = (OLD.ms && OLD.ms[key] || {})[k]; continue; }
-    const w0 = performance.now(), t0 = O.now(), r = fn(boxes, lay, 1), P0 = O.cleanUp(r.pos, boxes, lay, t0, false), P = k === 'tidy' ? _tmBest.compact(P0, boxes, links) : P0, rr = O.route(P, boxes, links, { straight: true }), m = O.routeMetrics(rr.pos, boxes, links, rr.routes);
+    const w0 = performance.now(), t0 = O.now(), r = fn(boxes, lay, 1), P0 = O.cleanUp(r.pos, boxes, lay, t0, false), P = k.startsWith('tidy') ? _tmBest.compact(P0, boxes, links) : P0, rr = O.route(P, boxes, links, { straight: true }), m = O.routeMetrics(rr.pos, boxes, links, rr.routes);
     ms[k] = Math.round(performance.now() - w0); row[k] = m.cross + m.thru + m.labelOver + overlaps(rr.pos, boxes);
   }
   out.graphs[key] = row; out.ms[key] = ms; console.log(key.padEnd(14), JSON.stringify(row));

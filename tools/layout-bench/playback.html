@@ -39,7 +39,7 @@ main { display: grid; grid-template-columns: 1fr 420px; min-height: 0; }
 #caption .k { color: var(--muted); font-size: 11px; }
 #caption .d { color: var(--muted); display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
 #caption .body { pointer-events: auto; }
-#counts { position: absolute; right: 4px; top: 6px; background: color-mix(in srgb, var(--paper) 88%, transparent); border: 1px solid var(--rule); border-radius: 6px; padding: 2px 4px 3px; font-size: 11.5px; font-variant-numeric: tabular-nums; color: var(--muted); pointer-events: none; }
+#counts { display: none !important; position: absolute; right: 4px; top: 6px; background: color-mix(in srgb, var(--paper) 88%, transparent); border: 1px solid var(--rule); border-radius: 6px; padding: 2px 4px 3px; font-size: 11.5px; font-variant-numeric: tabular-nums; color: var(--muted); pointer-events: none; }
 #countsB { display: grid; grid-template-columns: 16px auto auto; gap: 3px 6px; align-items: center; pointer-events: auto; }
 #countsB svg { width: 16px; height: 16px; fill: none; stroke: var(--muted); stroke-width: 1.6; stroke-linecap: round; }
 #countsB b { color: var(--ink); text-align: right; font-weight: 600; } #countsB span { white-space: nowrap; }
@@ -175,7 +175,7 @@ footer .grp { display: flex; gap: 4px; align-items: center; }
   <input type="file" id="ttlFile" accept=".ttl,.nt,.turtle,text/turtle,application/n-triples" hidden>
   <select id="graph" title="Graph"></select>
   <select id="algo" title="Layout">
-    <optgroup label="Our layouts"><option value="auto">Best Read</option><option value="compact">Tidy Stress</option><option value="grouped">Mycelium</option><option value="tidy">Tidy Mycelium (TiMy, new)</option></optgroup>
+    <optgroup label="Our layouts"><option value="auto">Best Read</option><option value="compact">Tidy Stress</option><option value="grouped">Mycelium</option><option value="tidy">TiMy, smaller drawings</option><option value="tidyF">TiMy, fewer problems</option></optgroup>
     <optgroup label="Open-source layouts"><option value="x:d3">d3-force</option><option value="x:cola">WebCola</option><option value="x:cose">Cytoscape cose</option><option value="x:fcose">Cytoscape fcose</option><option value="x:elk-stress">ELK stress</option><option value="x:elk-force">ELK force</option><option value="x:elk-layered">ELK layered</option><option value="x:neato">Graphviz neato</option><option value="x:fdp">Graphviz fdp</option><option value="x:sfdp">Graphviz sfdp</option><option value="x:dagre">dagre (layered)</option></optgroup>
   </select>
   <label class="tog" title="How each class is drawn: a box or a circle, with its name on it or under it. The layout is given each class's own size. File, then Open a Turtle file, adds your own graph to the list.">Nodes <select id="nstyle"><option value="box">Boxes</option><option value="circle">Circles</option></select></label>
@@ -308,7 +308,7 @@ const STEPS = [ // key, group, name, what it does, color, can it be left out (Ru
   ['c-fence', 'Clean-up', 'Leaves to open space', 'A one-link class whose link still crosses another link or runs through a class moves to the most open spot round its neighbor: fewest problems first, then the most room around it, then the shorter link.', '#4d9a8a', true],
   ['c-nudge', 'Clean-up', 'Pushed off a link', 'A class that a link runs through (or passes within 9 px of) is pushed sideways off the line just far enough, or a one-link class turns round its neighbor; kept only if it leaves fewer problems.', '#a0703c', true],
   ['c-pull', 'Clean-up', 'Pulled in from the edge', 'A part hanging off the rest by one link (a one-link class, a chain, a small tree) turns round the class it hangs from or draws in toward it, and whole groups slide toward the middle, into open space; kept only if the drawing gets smaller (or the links of the part much shorter) with no more problems. Only a part in a problem, or one whose link is drawn out (more than 150 px between the boxes), is moved: a part that is fine where it is stays. A group slides only when that makes the drawing at least 10% smaller.', '#5b7fa8', true],
-  ['c-compact', 'Clean-up', 'Empty space taken in', 'The last step of Tidy Mycelium: each class, carrying the parts that hang from it, steps toward the middle of the drawing, toward the classes it links to, or toward the class it hangs from, as long as that adds no crossing and no link through a class, keeps boxes 20 px apart and leaves each link room for its name. Outermost first; one frame per round. A class pushed just clear of a link that runs through it, when that leaves fewer problems.', '#3f7d6e', true],
+  ['c-compact', 'Clean-up', 'Empty space taken in', 'The last step of Tidy Mycelium: each class, carrying the parts that hang from it, steps toward the middle of the drawing, toward the classes it links to, or toward the class it hangs from, or straight in from the edge, as long as that adds no crossing, no link through a class and no two links lying on each other, keeps boxes 20 px apart and leaves each link room for its name. Outermost first; one frame per round. A part hanging on the edge of the drawing turns round its class into open space inside only when there is ample room there, it adds no crossing, and the drawing gets at least 3% smaller. Two links from one class that lie on each other are turned a few degrees apart. A class pushed just clear of a link that runs through it, when that leaves fewer problems.', '#3f7d6e', true],
   ['edit', 'Your edit', 'Changed by hand', 'The drawing as you left it: classes you moved (the steps after this one were run again from there) or a link you bent.', '#e0a100', false],
   ['r-arcs', 'Links', 'Parallel links as arcs', 'Two or more links between the same two classes (a link and its reverse, or two relationships) spread into arcs, so none hides another.', '#0e7490', true],
   ['r-loops', 'Links', 'Self-link loops', 'A link from a class to itself becomes a loop on its emptiest side.', '#0891b2', false],
@@ -451,7 +451,7 @@ function recordTidy(G, seed) {
     score(name, s) { const r = runs.find((x) => x.name === name); if (r) r.score = s; },
     chosen(name) { chosen = name; } };
   const tm = { finCross: ctl('tm-cross').run, finThru: ctl('tm-thru').run, shrink: ctl('tm-shrink').run ? _TM_DEF.shrink : false };
-  let res; tLast = performance.now(); res = O.clocked(() => O.traced(sink, () => _tmBest(G.items, G.edges, { seed, tm })));
+  let res; tLast = performance.now(); res = O.clocked(() => O.traced(sink, () => _tmBest(G.items, G.edges, { seed, tm, variant: G.algo === 'tidyF' ? 'fewer' : undefined })));
   const tEnd = performance.now(), P = res.pos.map((p) => ({ x: p.x, y: p.y })); O.sep(P, G.N, 6, 200); const tSep = performance.now();
   const win = runs.find((r) => r.name === chosen) || runs[runs.length - 1], wi = runs.indexOf(win);
   const frames = [{ key: 'start', P: new Float64Array(2 * n).fill(NaN), ms: 0, run: -1 }];
@@ -514,7 +514,7 @@ function tailFrames(G, P, { cleanup, budgetMs, links, run }) {
       snap(stage, Q) { const t = performance.now(); frames.push({ key: 'c-' + stage, P: flat(Q), ms: t - tl, run }); tl = performance.now(); } };
     try { const EL = G.E.filter((e) => e.s !== e.t).map((e) => [e.s, e.t]); Pc = O.clocked(() => O.traced(sink, () => O.leafSwap(Pc, G.items, EL)));
       if (ctl('c-pull').run) Pc = O.clocked(() => O.traced(sink, () => O.pullIn(Pc, G.items, EL)));
-      if (G.algo === 'tidy' && ctl('c-compact').run) Pc = O.clocked(() => O.traced(sink, () => _tmBest.compact(Pc, G.items, namedLinks(G)))); } finally { Object.assign(O.tune, keep); }
+      if (isTM(G.algo) && ctl('c-compact').run) Pc = O.clocked(() => O.traced(sink, () => _tmBest.compact(Pc, G.items, namedLinks(G)))); } finally { Object.assign(O.tune, keep); }
   }
   if (!links || LINES === 'straight') return { frames, info, P: Pc };
   // the links, one routing step at a time, on the final positions
@@ -558,7 +558,7 @@ async function recordRun(key, algo, seed) {
   const prev = O.setTimeLimit(limit);
   try {
     const xk = engine ? [] : Object.keys(XT); xk.forEach((k) => (O.tune[k] = XT[k]));
-    let head; const t0 = O.now(); try { head = engine ? await recordEngine(G, algo, seed) : algo === 'tidy' ? recordTidy(G, seed) : recordOurs(G, algo, seed); } finally { xk.forEach((k) => delete O.tune[k]); }
+    let head; const t0 = O.now(); try { head = engine ? await recordEngine(G, algo, seed) : isTM(algo) ? recordTidy(G, seed) : recordOurs(G, algo, seed); } finally { xk.forEach((k) => delete O.tune[k]); }
     // the clean-up gets what is left of the time limit, at most a third of it, as in the layouts
     const budgetMs = Math.min(500, 1500 - (O.now() - t0));
     const tail = tailFrames(G, head.P, { cleanup: !engine, budgetMs, links: !engine || $('ourLinks').checked, run: head.run });
@@ -916,7 +916,7 @@ let SS = null;
 function buildPanel() {
   SS = stepStats();
   // a step of another layout (Best Read's placement for Tidy Mycelium, or the other way round) is not listed
-  const mine = (k) => (R.algo === 'tidy' ? !ORD.place.includes(k) && !/^(stress|leaves|leaffix|tight)$/.test(k) : !k.startsWith('tm-') && k !== 'c-compact');
+  const mine = (k) => (isTM(R.algo) ? !ORD.place.includes(k) && !/^(stress|leaves|leaffix|tight)$/.test(k) : !k.startsWith('tm-') && k !== 'c-compact');
   const ks = new Set(Object.keys(SS)); STEPS.forEach((s) => { if (s[5] && !ctl(s[0]).run && !(R.engine && !s[0].startsWith('r-')) && mine(s[0])) ks.add(s[0]); }); // left out: still listed, to put back
   if (!R.engine) [...ORD.place, ...ORD.clean].filter(mine).forEach((k) => ks.add(k)); // steps that can be reordered: always listed, even when they made no move
   const keys = [...ks];
@@ -1177,7 +1177,7 @@ function lastProblems(Rx) {
 const RIVALS = {};
 async function measureRivals(key, algo, seed) {
   const ck = [key, seed, $('limit').value, LayoutGraphs.style(), LINES, $('names').checked].join('|'), M = (RIVALS[ck] = RIVALS[ck] || {});
-  for (const a of ['auto', 'compact', 'grouped', 'tidy']) if (a !== algo && !M[a]) M[a] = lastProblems(await recordRun(key, a, seed));
+  for (const a of ['auto', 'compact', 'grouped', 'tidy', 'tidyF']) if (a !== algo && !(isTM(a) && isTM(algo)) && !M[a]) M[a] = lastProblems(await recordRun(key, a, seed));
   return M;
 }
 // bottom right of the drawing: this run's problems and time against the best of our other layouts on this graph (bestof.json):
@@ -1303,11 +1303,12 @@ $('ttlFile').onchange = async () => { const file = $('ttlFile').files[0]; $('ttl
 // bestof.json (written by bestof.mjs) holds the problems each of our layouts leaves on each graph, seed 1, boxes; a graph
 // where another of ours leaves fewer gets a mark in the list, so feedback can start there
 let BEST = null;
-const ALGO_NAME = { auto: 'Best Read', compact: 'Tidy Stress', grouped: 'Mycelium', tidy: 'Tidy Mycelium' };
+const ALGO_NAME = { auto: 'Best Read', compact: 'Tidy Stress', grouped: 'Mycelium', tidy: 'TiMy, smaller drawings', tidyF: 'TiMy, fewer problems' };
+function isTM(a) { return a === 'tidy' || a === 'tidyF'; }
 function markGraphs() {
   const a = $('algo').value; let behind = 0;
   [...$('graph').options].forEach((o) => { if (o.dataset.name == null) o.dataset.name = o.textContent; let t = o.dataset.name; const g = BEST && BEST.graphs[o.value];
-    if (g && g[a] != null) { const best = Math.min(...Object.values(g)); if (g[a] > best) { behind++; t += `  ◂ ${Object.keys(g).filter((k) => g[k] === best).map((k) => ALGO_NAME[k]).join(', ')}: ${g[a] - best} fewer problems`; } }
+    if (g && g[a] != null) { const ks = Object.keys(g).filter((k) => k === a || !(isTM(k) && isTM(a))), best = Math.min(...ks.map((k) => g[k])); if (g[a] > best) { behind++; t += `  ◂ ${ks.filter((k) => g[k] === best).map((k) => ALGO_NAME[k]).join(', ')}: ${g[a] - best} fewer problems`; } }
     o.textContent = t; });
   $('graph').title = BEST && ALGO_NAME[a] ? `◂ marks the ${behind} graph${behind === 1 ? '' : 's'} where another of our layouts leaves fewer problems than ${ALGO_NAME[a]} (crossed links, links through classes, covered names and overlapping boxes, after the clean-up and the link drawing; seed 1, boxes; measured ${BEST.made}): good places to start` : 'Graph';
 }
@@ -1318,7 +1319,7 @@ let runSeq = 0;
 function run(keepPlace) {
   const keepU = keepPlace === true && R && TL ? T / TL.total : null;
   const key = $('graph').value, algo = $('algo').value, seed = Math.max(1, +$('seed').value || 1), my = ++runSeq, engine = !!ENGINES[algo];
-  pause(); $('status').textContent = engine ? `Running ${ENGINES[algo].name}…` : 'Laying out…'; $('oursTog').hidden = !engine; $('xBox').hidden = engine || algo === 'tidy'; UNDO = [];
+  pause(); $('status').textContent = engine ? `Running ${ENGINES[algo].name}…` : 'Laying out…'; $('oursTog').hidden = !engine; $('xBox').hidden = engine || isTM(algo); UNDO = [];
   history.replaceState(null, '', `?graph=${key}&algo=${algo}&seed=${seed}`);
   store.set('last', { key, algo, seed }); $('editBar').classList.remove('on'); markGraphs();
   const warm = async () => { if (warmed || engine) return; warmed = true; $('status').textContent = 'Warming up…'; await recordRun(key, algo, seed); };
