@@ -1,6 +1,7 @@
 // For the Layout Lab's graph list: on every graph it offers, how many problems each of our layouts leaves (seed 1, boxes with
 // the name on them, as the page opens), after the clean-up and the link drawing exactly as the page runs them.
-// Problems = crossed links + links through classes + covered names + overlapping boxes, measured after routing.
+// Problems = crossed links + links through classes + covered names + overlapping boxes, measured after routing with straight links
+// for every layout (no bends round classes), so that the layouts are compared on where they put the classes.
 // Writes bestof.json, which the page reads to mark the graphs where the chosen layout is not the best of ours.
 //   node bestof.mjs            (a few minutes; run again after a change to a layout)
 import fs from 'node:fs';
@@ -24,7 +25,7 @@ for (const key of Object.keys(MODELS).filter((k) => !TOO_BIG.has(k))) {
   const row = {}, ms = {};
   for (const [k, fn] of Object.entries(LAYOUTS)) {
     if (ONLY && !ONLY.includes(k) && OLD.graphs[key]) { row[k] = OLD.graphs[key][k]; ms[k] = (OLD.ms && OLD.ms[key] || {})[k]; continue; }
-    const w0 = performance.now(), t0 = O.now(), r = fn(boxes, lay, 1), P = O.cleanUp(r.pos, boxes, lay, t0, false), rr = O.route(P, boxes, links), m = O.routeMetrics(rr.pos, boxes, links, rr.routes);
+    const w0 = performance.now(), t0 = O.now(), r = fn(boxes, lay, 1), P0 = O.cleanUp(r.pos, boxes, lay, t0, false), P = k === 'tidy' ? _tmBest.compact(P0, boxes, lay) : P0, rr = O.route(P, boxes, links, { straight: true }), m = O.routeMetrics(rr.pos, boxes, links, rr.routes);
     ms[k] = Math.round(performance.now() - w0); row[k] = m.cross + m.thru + m.labelOver + overlaps(rr.pos, boxes);
   }
   out.graphs[key] = row; out.ms[key] = ms; console.log(key.padEnd(14), JSON.stringify(row));

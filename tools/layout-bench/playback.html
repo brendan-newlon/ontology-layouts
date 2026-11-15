@@ -40,9 +40,12 @@ main { display: grid; grid-template-columns: 1fr 420px; min-height: 0; }
 #caption .d { color: var(--muted); display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
 #caption .body { pointer-events: auto; }
 #counts { position: absolute; right: 4px; top: 6px; background: color-mix(in srgb, var(--paper) 88%, transparent); border: 1px solid var(--rule); border-radius: 6px; padding: 2px 4px 3px; font-size: 11.5px; font-variant-numeric: tabular-nums; color: var(--muted); pointer-events: none; }
-#countsB { display: grid; grid-template-columns: 16px auto; gap: 3px 4px; align-items: center; pointer-events: auto; }
+#countsB { display: grid; grid-template-columns: 16px auto auto; gap: 3px 6px; align-items: center; pointer-events: auto; }
 #countsB svg { width: 16px; height: 16px; fill: none; stroke: var(--muted); stroke-width: 1.6; stroke-linecap: round; }
-#countsB b { color: var(--ink); text-align: right; font-weight: 600; }
+#countsB b { color: var(--ink); text-align: right; font-weight: 600; } #countsB span { white-space: nowrap; }
+#vsrow { position: absolute; left: 0; bottom: 19px; z-index: 2; padding: 1px 8px; font-size: 11.5px; font-variant-numeric: tabular-nums; color: var(--muted); background: color-mix(in srgb, var(--paper) 88%, transparent); border-top: 1px solid var(--rule); white-space: nowrap; overflow: hidden; pointer-events: none; }
+#vsrow:empty { display: none; } #vsrow b { color: var(--ink); font-weight: 600; } #vsrow .win { color: #2e9a5a; } #vsrow .lose { color: #d0453a; } #vsrow span { margin-right: 14px; }
+.node.thru .shape { stroke: var(--bad); stroke-width: 2.4; } .xdot { fill: none; stroke: var(--bad); stroke-width: 1.3; }
 #legend { position: absolute; left: 0; right: 0; bottom: 0; background: color-mix(in srgb, var(--paper) 88%, transparent); border-top: 1px solid var(--rule); padding: 1px 6px; font-size: 11px; line-height: 16px; color: var(--muted); pointer-events: none; display: none; white-space: nowrap; overflow: hidden; }
 #legendB { display: inline-flex; gap: 12px; pointer-events: auto; }
 #legend span { display: inline-flex; gap: 4px; align-items: center; cursor: help; }
@@ -202,6 +205,7 @@ footer .grp { display: flex; gap: 4px; align-items: center; }
     <svg id="svg"></svg>
     <div id="caption" class="pnl" data-name="Step"><div class="body"><div class="t1"><span class="t" id="cT"></span> <span class="k" id="cK"></span></div><div class="d" id="cD"></div></div></div>
     <div id="tally"></div>
+    <div id="vsrow"></div>
     <div id="counts" class="pnl" data-name="Counts"><div class="body" id="countsB"></div></div>
     <div id="legend" class="pnl" data-name="Legend"><div class="body" id="legendB"></div></div>
     <div id="drawer"></div>
@@ -250,7 +254,7 @@ footer .grp { display: flex; gap: 4px; align-items: center; }
   <label class="tog" title="Playing speed as a share of the real speed. 100%: the layout plays as fast as it ran in this browser; 10%: ten times as long. Every frame plays for its share of the measured work, so the progress bar's proportions are the work's proportions.">Speed <input type="range" id="speed" min="-1" max="2" step="0.01" value="0.7" style="width:120px"> <span id="speedV">5%</span> <small>of real speed</small></label>
   <label class="tog" title="Keep the whole drawing in view. The drawing stays centered; the view only zooms, gradually, when the drawing outgrows the space or shrinks to under half of it."><input type="checkbox" id="follow" checked> Follow the drawing</label>
   <label class="tog"><input type="checkbox" id="names" checked> Link names</label>
-  <label class="tog"><input type="checkbox" id="marks" checked> Mark links through classes</label>
+  <label class="tog"><input type="checkbox" id="marks" checked> Mark crossings and classes a link runs through</label>
   <label class="tog" title="Show a handle on each bend while paused: drag it to reshape the link, double-click it to remove it"><input type="checkbox" id="handles" checked> Bend handles</label>
   <span id="result"></span>
   <div id="scrub" title="Click or drag to move through the layout; right-click a step to do it now on the drawing shown"></div>
@@ -303,6 +307,7 @@ const STEPS = [ // key, group, name, what it does, color, can it be left out (Ru
   ['c-fence', 'Clean-up', 'Leaves to open space', 'A one-link class whose link still crosses another link or runs through a class moves to the most open spot round its neighbor: fewest problems first, then the most room around it, then the shorter link.', '#4d9a8a', true],
   ['c-nudge', 'Clean-up', 'Pushed off a link', 'A class that a link runs through (or passes within 9 px of) is pushed sideways off the line just far enough, or a one-link class turns round its neighbor; kept only if it leaves fewer problems.', '#a0703c', true],
   ['c-pull', 'Clean-up', 'Pulled in from the edge', 'A part hanging off the rest by one link (a one-link class, a chain, a small tree) turns round the class it hangs from or draws in toward it, and whole groups slide toward the middle, into open space; kept only if the drawing gets smaller (or the links of the part much shorter) with no more problems. Only a part in a problem, or one whose link is drawn out (more than 150 px between the boxes), is moved: a part that is fine where it is stays. A group slides only when that makes the drawing at least 10% smaller.', '#5b7fa8', true],
+  ['c-compact', 'Clean-up', 'Empty space taken in', 'The last step of Tidy Mycelium: each class, carrying the parts that hang from it, steps toward the middle of the drawing, toward the classes it links to, or toward the class it hangs from, as long as that adds no crossing and no link through a class, keeps boxes 20 px apart and leaves each link room for its name. Outermost first; one frame per round. A class pushed just clear of a link that runs through it, when that leaves fewer problems.', '#3f7d6e', true],
   ['edit', 'Your edit', 'Changed by hand', 'The drawing as you left it: classes you moved (the steps after this one were run again from there) or a link you bent.', '#e0a100', false],
   ['r-arcs', 'Links', 'Parallel links as arcs', 'Two or more links between the same two classes (a link and its reverse, or two relationships) spread into arcs, so none hides another.', '#0e7490', true],
   ['r-loops', 'Links', 'Self-link loops', 'A link from a class to itself becomes a loop on its emptiest side.', '#0891b2', false],
@@ -505,7 +510,8 @@ function tailFrames(G, P, { cleanup, budgetMs, links, run }) {
     let tl = performance.now(); const sink = { map: null, begin() {}, restart() {}, keepRestart() {}, score() {}, chosen() {},
       snap(stage, Q) { const t = performance.now(); frames.push({ key: 'c-' + stage, P: flat(Q), ms: t - tl, run }); tl = performance.now(); } };
     try { const EL = G.E.filter((e) => e.s !== e.t).map((e) => [e.s, e.t]); Pc = O.clocked(() => O.traced(sink, () => O.leafSwap(Pc, G.items, EL)));
-      if (ctl('c-pull').run) Pc = O.clocked(() => O.traced(sink, () => O.pullIn(Pc, G.items, EL))); } finally { Object.assign(O.tune, keep); }
+      if (ctl('c-pull').run) Pc = O.clocked(() => O.traced(sink, () => O.pullIn(Pc, G.items, EL)));
+      if (G.algo === 'tidy' && ctl('c-compact').run) Pc = O.clocked(() => O.traced(sink, () => _tmBest.compact(Pc, G.items, EL))); } finally { Object.assign(O.tune, keep); }
   }
   if (!links || LINES === 'straight') return { frames, info, P: Pc };
   // the links, one routing step at a time, on the final positions
@@ -545,7 +551,7 @@ showX();
 // would misstate what each step costs: before the first recording, the same run is recorded once and thrown away.
 let warmed = false;
 async function recordRun(key, algo, seed) {
-  const Md = await MODELS[key].load(), G = graphOf(key, Md), engine = !!ENGINES[algo], limit = +$('limit').value;
+  const Md = await MODELS[key].load(), G = graphOf(key, Md), engine = !!ENGINES[algo], limit = +$('limit').value; G.algo = algo;
   const prev = O.setTimeLimit(limit);
   try {
     const xk = engine ? [] : Object.keys(XT); xk.forEach((k) => (O.tune[k] = XT[k]));
@@ -586,7 +592,7 @@ function editFrom(F, j, Pin, src) {
 const REDO_PLACE = { stress: 'stress', 'tm-stress': 'stress', separate: 'separate', cross: 'cross', 'tm-cross': 'cross', thru: 'thru', 'tm-thru': 'thru', 'tm-finish': 'thru', tight: 'tight', 'tm-shrink': 'shrink' };
 const REDO_LEAF = new Set(['leaves', 'leaffix', 'tm-leaves']);
 function canRedo(k) { if (!R || R.engine) return false; if (k === 'stress' || k === 'tm-stress') return !!(R.runs && R.runs.some((r) => r && r.D));
-  return !!REDO_PLACE[k] || REDO_LEAF.has(k) || /^c-(single|unit|spread|group|finish|swap|fence|nudge|pull)$/.test(k) || (k.startsWith('r-') && LINES !== 'straight'); }
+  return !!REDO_PLACE[k] || REDO_LEAF.has(k) || /^c-(single|unit|spread|group|finish|swap|fence|nudge|pull|compact)$/.test(k) || (k.startsWith('r-') && LINES !== 'straight'); }
 const hasBudget = (k) => !!REDO_PLACE[k] || REDO_LEAF.has(k) || /^c-(single|unit|spread|group|finish)$/.test(k);
 function stepNow(k, P, mult, run) {
   const n = R.n, frames = [], now = () => performance.now(); let tl = now(), cur = P.map((p) => p && { x: p.x, y: p.y });
@@ -619,8 +625,8 @@ function stepNow(k, P, mult, run) {
   else if (/^c-(single|unit|spread|group|finish)$/.test(k)) { cur = fill(); const st = k.slice(2);
     const c = cleanFrames(R, cur, { budgetMs: 500 * mult, order: st === 'finish' ? [] : [st], spread: st === 'spread', groups: st === 'group', finish: st === 'finish' }, run);
     c.frames.forEach((f) => frames.push({ ...f, key: k })); cur = c.P; info.tried = c.info[k]; }
-  else if (/^c-(swap|fence|nudge|pull)$/.test(k)) { cur = fill(); const EL = R.E.filter((e) => e.s !== e.t).map((e) => [e.s, e.t]), keep = { noSwap: O.tune.noSwap, noFence: O.tune.noFence, noNudge: O.tune.noNudge };
-    try { if (k === 'c-pull') cur = traced(() => O.pullIn(cur, R.items, EL)); else { Object.assign(O.tune, { noSwap: k !== 'c-swap', noFence: k !== 'c-fence', noNudge: k !== 'c-nudge' }); cur = traced(() => O.leafSwap(cur, R.items, EL)); } }
+  else if (/^c-(swap|fence|nudge|pull|compact)$/.test(k)) { cur = fill(); const EL = R.E.filter((e) => e.s !== e.t).map((e) => [e.s, e.t]), keep = { noSwap: O.tune.noSwap, noFence: O.tune.noFence, noNudge: O.tune.noNudge };
+    try { if (k === 'c-pull') cur = traced(() => O.pullIn(cur, R.items, EL)); else if (k === 'c-compact') cur = traced(() => _tmBest.compact(cur, R.items, EL)); else { Object.assign(O.tune, { noSwap: k !== 'c-swap', noFence: k !== 'c-fence', noNudge: k !== 'c-nudge' }); cur = traced(() => O.leafSwap(cur, R.items, EL)); } }
     finally { Object.assign(O.tune, keep); }
     frames.forEach((f) => (f.key = k)); }
   else if (k.startsWith('r-')) { cur = fill(); const t = tailFrames(R, cur, { cleanup: false, links: true, run }); frames.push(...t.frames); cur = t.P; }
@@ -829,23 +835,28 @@ function render() {
   if (!R) return; C = current(); if (EDITP) C.P = EDITP; if (EDITR) EDITR.forEach((r, k) => (C.routes[k] = r));
   if ($('follow').checked && !userView) steadyView(C.P);
   svg.setAttribute('viewBox', `${view.x} ${view.y} ${view.w} ${view.h}`);
-  const thru = new Set(); const paused = !playing;
+  const thru = new Set(), xs = []; const paused = !playing; // classes a link runs through (red outline), points where links cross (small red rings)
   if ($('marks').checked && (paused || R.n < 120)) {
-    R.E.forEach((e, k) => { const A = C.P[e.s], B = C.P[e.t]; if (!A || !B || e.s === e.t) return; const pl = O.routePoly(A, B, C.routes[k], 6);
-      for (let v = 0; v < R.n && !thru.has(k); v++) { if (v === e.s || v === e.t || !C.P[v]) continue; const p = C.P[v]; // the box, or the circle and its name
-        for (let i = 0; i < pl.length - 1; i++) if (LayoutGraphs.hits(R.D[v], pl[i].x - p.x, pl[i].y - p.y, pl[i + 1].x - p.x, pl[i + 1].y - p.y, 3, O.segBox)) { thru.add(k); break; } } });
+    const PL = R.E.map((e, k) => { const A = C.P[e.s], B = C.P[e.t]; return !A || !B || e.s === e.t ? null : O.routePoly(A, B, C.routes[k], 6); });
+    R.E.forEach((e, k) => { const pl = PL[k]; if (!pl) return;
+      for (let v = 0; v < R.n; v++) { if (thru.has(v) || v === e.s || v === e.t || !C.P[v]) continue; const p = C.P[v]; // the box, or the circle and its name
+        for (let i = 0; i < pl.length - 1; i++) if (LayoutGraphs.hits(R.D[v], pl[i].x - p.x, pl[i].y - p.y, pl[i + 1].x - p.x, pl[i + 1].y - p.y, 3, O.segBox)) { thru.add(v); break; } }
+      for (let g = k + 1; g < R.E.length; g++) { const q = PL[g], f = R.E[g]; if (!q || e.s === f.s || e.s === f.t || e.t === f.s || e.t === f.t) continue;
+        for (let i = 0; i < pl.length - 1; i++) for (let j = 0; j < q.length - 1; j++) { const a = pl[i], b = pl[i + 1], c = q[j], d = q[j + 1], den = (b.x - a.x) * (d.y - c.y) - (b.y - a.y) * (d.x - c.x); if (!den) continue;
+          const t = ((c.x - a.x) * (d.y - c.y) - (c.y - a.y) * (d.x - c.x)) / den, u = ((c.x - a.x) * (b.y - a.y) - (c.y - a.y) * (b.x - a.x)) / den;
+          if (t > 0 && t < 1 && u > 0 && u < 1) xs.push([a.x + t * (b.x - a.x), a.y + t * (b.y - a.y)]); } } });
   }
   let s = '<defs><marker id="ovArrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0,0L10,5L0,10z" fill="var(--ov-group)"/></marker><marker id="ovArrowR" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0,0L10,5L0,10z" fill="var(--ov-ray)"/></marker><marker id="ovArrowD" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M0,0L10,5L0,10z" fill="var(--ov-drop)"/></marker></defs><g>' + overlays(C.P) + '</g><g>';
   R.E.forEach((e, k) => { const A = C.P[e.s], B = C.P[e.t]; if (!A || !B) return; const r = C.routes[k]; if (e.s === e.t && !(r && r.loop)) return;
-    const op = Math.min(C.alpha[e.s], C.alpha[e.t]); s += `<path class="link${e.sub ? ' sub' : ''}${thru.has(k) ? ' thru' : ''}${BEND && BEND.k === k ? ' picked' : ''}" d="${pathOf(A, B, r)}"${op < 1 ? ` opacity="${op.toFixed(2)}"` : ''}/>`; });
+    const op = Math.min(C.alpha[e.s], C.alpha[e.t]); s += `<path class="link${e.sub ? ' sub' : ''}${BEND && BEND.k === k ? ' picked' : ''}" d="${pathOf(A, B, r)}"${op < 1 ? ` opacity="${op.toFixed(2)}"` : ''}/>`; });
   if (!playing && !PEN) R.E.forEach((e, k) => { const A = C.P[e.s], B = C.P[e.t]; if (A && B && e.s !== e.t) s += `<path class="hit" data-k="${k}" d="${pathOf(A, B, C.routes[k])}"/>`; }); // a wide, invisible stroke to grab a link by
   s += '</g><g>';
   if ($('names').checked) R.E.forEach((e, k) => { const r = C.routes[k]; if (!r || !r.label || !e.name) return; const L = r.label, op = r.labelU;
     s += `<g class="lname" opacity="${op.toFixed(2)}"><rect x="${L.x - L.w / 2}" y="${L.y - L.h / 2}" width="${L.w}" height="${L.h}" rx="3"/><text x="${L.x}" y="${L.y + 3.5}" text-anchor="middle">${esc(e.name)}</text></g>`; });
   s += '</g><g>';
   C.P.forEach((p, v) => { if (!p) return; const d = R.D[v];
-    s += `<g class="node${C.moved.has(v) ? ' moved' : ''}${SEL.has(v) ? ' sel' : ''}${ndrag && ndrag.moved && ndrag.group.includes(v) ? ' dragged' : ''}" data-v="${v}" transform="translate(${p.x.toFixed(1)},${p.y.toFixed(1)})"${C.alpha[v] < 1 ? ` opacity="${C.alpha[v].toFixed(2)}"` : ''}>${LayoutGraphs.nodeSvg(R.labels[v], d, esc)}</g>`; });
-  s += '</g>';
+    s += `<g class="node${thru.has(v) ? ' thru' : ''}${C.moved.has(v) ? ' moved' : ''}${SEL.has(v) ? ' sel' : ''}${ndrag && ndrag.moved && ndrag.group.includes(v) ? ' dragged' : ''}" data-v="${v}" transform="translate(${p.x.toFixed(1)},${p.y.toFixed(1)})"${C.alpha[v] < 1 ? ` opacity="${C.alpha[v].toFixed(2)}"` : ''}>${LayoutGraphs.nodeSvg(R.labels[v], d, esc)}</g>`; });
+  s += '</g>' + xs.map(([x, y]) => `<circle class="xdot" cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="3.2"/>`).join('');
   if (!playing && !PEN && $('handles').checked) R.E.forEach((e, k) => { const r = C.routes[k], A = C.P[e.s], B = C.P[e.t]; if (!r || !r.bends || !r.bends.length || r.loop || !A || !B || e.s === e.t) return;
     _ogRoutePts(A, B, r.bends).forEach((h, j) => (s += `<circle class="handle" data-k="${k}" data-j="${j}" cx="${h.x.toFixed(1)}" cy="${h.y.toFixed(1)}" r="5"/>`)); });
   INK.forEach((k) => (s += `<path class="ink${k.noted ? ' old' : ''}" d="${inkD(k.pts)}"/>`));
@@ -887,8 +898,8 @@ function showCounts() {
   clearTimeout(countsT); countsT = setTimeout(() => {
     if (!R.frames[j]) { countsFor = -1; return; } // the frames changed since (a step done again, an undo)
     countsFor = j; const f = R.frames[j], m = metricsAt(j);
-    $('countsB').innerHTML = [['Crossings', m.cross, 'cross'], ['Sharp crossings (under 30°)', m.sharp, 'sharp'], ['Links through a class', m.thru, 'thru'], ['Bends', m.bends, 'bend'], ['Classes placed', m.placed === R.n ? m.placed : m.placed + '/' + R.n, 'placed']]
-      .map(([l, v, ic]) => `<svg viewBox="0 0 16 16"><title>${l}</title>${ICON[ic]}</svg><b title="${l}: ${v}">${v}</b>`).join('');
+    $('countsB').innerHTML = [['Crossings', m.cross, 'cross', 'Crossings'], ['Sharp crossings (under 30°)', m.sharp, 'sharp', 'Sharp'], ['Links through a class', m.thru, 'thru', 'Through a class'], ['Covered names', m.labelOver || 0, 'thru', 'Covered names'], ['Bends', m.bends, 'bend', 'Bends'], ['Classes placed', m.placed === R.n ? m.placed : m.placed + '/' + R.n, 'placed', 'Placed']]
+      .filter(([l, v], i) => i !== 3 || v).map(([l, v, ic, sh]) => `<svg viewBox="0 0 16 16"><title>${l}</title>${ICON[ic]}</svg><span title="${l}">${sh}</span><b title="${l}: ${v}">${v}</b>`).join('');
   }, playing ? 250 : 30);
 }
 
@@ -902,7 +913,7 @@ let SS = null;
 function buildPanel() {
   SS = stepStats();
   // a step of another layout (Best Read's placement for Tidy Mycelium, or the other way round) is not listed
-  const mine = (k) => (R.algo === 'tidy' ? !ORD.place.includes(k) && !/^(stress|leaves|leaffix|tight)$/.test(k) : !k.startsWith('tm-'));
+  const mine = (k) => (R.algo === 'tidy' ? !ORD.place.includes(k) && !/^(stress|leaves|leaffix|tight)$/.test(k) : !k.startsWith('tm-') && k !== 'c-compact');
   const ks = new Set(Object.keys(SS)); STEPS.forEach((s) => { if (s[5] && !ctl(s[0]).run && !(R.engine && !s[0].startsWith('r-')) && mine(s[0])) ks.add(s[0]); }); // left out: still listed, to put back
   if (!R.engine) [...ORD.place, ...ORD.clean].filter(mine).forEach((k) => ks.add(k)); // steps that can be reordered: always listed, even when they made no move
   const keys = [...ks];
@@ -1157,7 +1168,7 @@ function lastProblems(Rx) {
   Rx.E.forEach((e, k) => { if (idx.has(e.s) && idx.has(e.t)) ks.push(k); });
   const m = O.routeMetrics(P, D, ks.map((k) => [idx.get(Rx.E[k].s), idx.get(Rx.E[k].t), Rx.E[k].sub ? 2 : 1, 0]), ks.map((k) => (f.routes ? { ...f.routes[k], label: $('names').checked && Rx.E[k].name ? f.routes[k].label : null } : null)), 3);
   let ov = 0; for (let i = 0; i < P.length; i++) for (let j = i + 1; j < P.length; j++) if (Math.abs(P[i].x - P[j].x) < (D[i].w + D[j].w) / 2 && Math.abs(P[i].y - P[j].y) < (D[i].h + D[j].h) / 2) ov++;
-  return { pr: m.cross + m.thru + (m.labelOver || 0) + ov, ms: Rx.frames.reduce((a, x) => a + (x.ms || 0), 0) };
+  return { pr: m.cross + m.thru + (m.labelOver || 0) + ov, ms: Rx.frames.reduce((a, x) => a + (x.ms || 0), 0), cross: m.cross, thru: m.thru, sharp: m.sharp, area: m.area };
 }
 // our other layouts on the same graph, run here the same way (same steps switched on, same links), once per graph and setup
 const RIVALS = {};
@@ -1177,6 +1188,10 @@ function showTally(F, m, work) {
   $('tally').innerHTML = `Total problems <b class="${cls}">${me.pr}</b>${r ? ` (vs ${r.pr} ${ALGO_NAME[riv]})` : ' <small>(measuring the others…)</small>'}<br>Total time <b class="${tcls}">${Math.round(work)} ms</b>${r ? ` (vs ${Math.round(r.ms)} ms)` : ''}`
     + (odd ? `<br><small class="lose">Not the usual steps${off.length ? ': without ' + esc(off.join(', ')) : ''}</small>` : '');
   const lg = $('legend'); if (lg) lg.style.right = ($('tally').offsetWidth + 14) + 'px';
+  const one = (l, a, b, f = (x) => x, tip = '') => `<span title="${tip}">${l}: <b class="${b == null || a === b ? '' : a < b ? 'win' : 'lose'}">${f(a)}</b>${b == null ? '' : ` (vs ${f(b)})`}</span>`, ar = (x) => (x == null ? '–' : x.toFixed(1));
+  $('vsrow').innerHTML = me.cross == null ? '' : one('Crossing', me.cross, r && r.cross) + one('Through a class', me.thru, r && r.thru) + one('Sharp crossings', me.sharp, r && r.sharp) + one('Area', me.area, r && r.area, ar, 'Width times height of the drawing, over the room the boxes take: smaller is tighter.')
+    + (r ? `<span>vs ${ALGO_NAME[riv]}</span>` : '');
+  $('vsrow').style.right = lg ? lg.style.right : '';
   $('tally').title = 'Problems: crossed links, links through classes, covered names and overlapping boxes, in the last frame. Time: all the steps of the run, measured in this browser.'
     + (r ? ` In brackets: ${ALGO_NAME[riv]}, the best of our other layouts on this graph, run here with the same steps and links: ` + Object.keys(M).map((a) => `${ALGO_NAME[a]} ${M[a].pr} in ${Math.round(M[a].ms)} ms`).join(', ') + '.' : '');
 }
