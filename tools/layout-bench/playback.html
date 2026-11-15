@@ -175,7 +175,7 @@ footer .grp { display: flex; gap: 4px; align-items: center; }
   <input type="file" id="ttlFile" accept=".ttl,.nt,.turtle,text/turtle,application/n-triples" hidden>
   <select id="graph" title="Graph"></select>
   <select id="algo" title="Layout">
-    <optgroup label="Our layouts"><option value="auto">Best Read</option><option value="compact">Tidy Stress</option><option value="grouped">Mycelium</option><option value="tidy">TiMy, smaller drawings</option><option value="tidyF">TiMy, fewer problems</option></optgroup>
+    <optgroup label="Our layouts"><option value="auto">Best Read</option><option value="compact">Tidy Stress</option><option value="grouped">Mycelium</option><option value="tidy">TiMy, smaller drawings</option><option value="tidyF">TiMy, fewer problems</option><option value="tidyS">TiMy, smallest drawings</option></optgroup>
     <optgroup label="Open-source layouts"><option value="x:d3">d3-force</option><option value="x:cola">WebCola</option><option value="x:cose">Cytoscape cose</option><option value="x:fcose">Cytoscape fcose</option><option value="x:elk-stress">ELK stress</option><option value="x:elk-force">ELK force</option><option value="x:elk-layered">ELK layered</option><option value="x:neato">Graphviz neato</option><option value="x:fdp">Graphviz fdp</option><option value="x:sfdp">Graphviz sfdp</option><option value="x:dagre">dagre (layered)</option></optgroup>
   </select>
   <label class="tog" title="How each class is drawn: a box or a circle, with its name on it or under it. The layout is given each class's own size. File, then Open a Turtle file, adds your own graph to the list.">Nodes <select id="nstyle"><option value="box">Boxes</option><option value="circle">Circles</option></select></label>
@@ -195,6 +195,7 @@ footer .grp { display: flex; gap: 4px; align-items: center; }
   <label class="tog" title="During crowd spreading: the 8 slices round the crowd's center; the darker a slice, the more open space lay beyond it and the further it was pushed"><input type="checkbox" data-ov="slice"><span class="sw" style="background:var(--ov-slice)"></span>Spreading slices</label>
   <label class="tog" title="During group moves: the problem being fixed, the side of the drawing that moves together and where it moves"><input type="checkbox" data-ov="group"><span class="sw" style="background:var(--ov-group)"></span>Group-move side</label>
   <label class="tog" title="During placement: rings round each class show how far it is from where its link distances want it; more and tighter rings, a stronger pull"><input type="checkbox" data-ov="stress"><span class="sw" style="background:var(--ov-stress)"></span>Stress rings</label>
+  <label class="tog" title="Rulers along the top and left of the drawing: its width and height, against the best other layout on this graph"><input type="checkbox" data-ov="ruler"><span class="sw" style="background:var(--ov-extent)"></span>Rulers</label>
   <label class="tog" title="The drawing's extent: the area the scores count"><input type="checkbox" data-ov="extent"><span class="sw" style="background:var(--ov-extent)"></span>Drawing extent</label>
   <label class="tog" title="During the link steps: the margin round each class that a link must keep clear of"><input type="checkbox" data-ov="clear"><span class="sw" style="background:var(--ov-clear)"></span>Link clearance</label>
   <label class="tog" title="During group moves: the moves tried and thrown away just before this one (dashed boxes where the group would have gone)"><input type="checkbox" data-ov="drop"><span class="sw" style="background:var(--ov-drop)"></span>Dropped tries</label>
@@ -308,7 +309,7 @@ const STEPS = [ // key, group, name, what it does, color, can it be left out (Ru
   ['c-fence', 'Clean-up', 'Leaves to open space', 'A one-link class whose link still crosses another link or runs through a class moves to the most open spot round its neighbor: fewest problems first, then the most room around it, then the shorter link.', '#4d9a8a', true],
   ['c-nudge', 'Clean-up', 'Pushed off a link', 'A class that a link runs through (or passes within 9 px of) is pushed sideways off the line just far enough, or a one-link class turns round its neighbor; kept only if it leaves fewer problems.', '#a0703c', true],
   ['c-pull', 'Clean-up', 'Pulled in from the edge', 'A part hanging off the rest by one link (a one-link class, a chain, a small tree) turns round the class it hangs from or draws in toward it, and whole groups slide toward the middle, into open space; kept only if the drawing gets smaller (or the links of the part much shorter) with no more problems. Only a part in a problem, or one whose link is drawn out (more than 150 px between the boxes), is moved: a part that is fine where it is stays. A group slides only when that makes the drawing at least 10% smaller.', '#5b7fa8', true],
-  ['c-compact', 'Clean-up', 'Empty space taken in', 'The last step of Tidy Mycelium: each class, carrying the parts that hang from it, steps toward the middle of the drawing, toward the classes it links to, or toward the class it hangs from, or straight in from the edge, as long as that adds no crossing, no link through a class and no two links lying on each other, keeps boxes 20 px apart and leaves each link room for its name. Outermost first; one frame per round. A part hanging on the edge of the drawing turns round its class into open space inside only when there is ample room there, it adds no crossing, and the drawing gets at least 3% smaller. Two links from one class that lie on each other are turned a few degrees apart. A class pushed just clear of a link that runs through it, when that leaves fewer problems.', '#3f7d6e', true],
+  ['c-compact', 'Clean-up', 'Empty space taken in', 'The last step of Tidy Mycelium. First and last, bands and islands: everything beyond a line across the drawing (from each side and each corner, an outer sixth, a third or half of the way in) moves inward as one block, taking along any class in its way, as long as nothing overlaps, every name fits and no problem is added. Between those, each class, carrying the parts that hang from it, steps toward the middle of the drawing, toward the classes it links to, or toward the class it hangs from, or straight in from the edge, as long as that adds no crossing, no link through a class and no two links lying on each other, keeps boxes 20 px apart and leaves each link room for its name. Outermost first; one frame per round. A part hanging on the edge of the drawing turns round its class into open space inside only when there is ample room there, it adds no crossing, and the drawing gets at least 3% smaller. Two links from one class that lie on each other are turned a few degrees apart. A class pushed just clear of a link that runs through it, when that leaves fewer problems.', '#3f7d6e', true],
   ['edit', 'Your edit', 'Changed by hand', 'The drawing as you left it: classes you moved (the steps after this one were run again from there) or a link you bent.', '#e0a100', false],
   ['r-arcs', 'Links', 'Parallel links as arcs', 'Two or more links between the same two classes (a link and its reverse, or two relationships) spread into arcs, so none hides another.', '#0e7490', true],
   ['r-loops', 'Links', 'Self-link loops', 'A link from a class to itself becomes a loop on its emptiest side.', '#0891b2', false],
@@ -451,7 +452,7 @@ function recordTidy(G, seed) {
     score(name, s) { const r = runs.find((x) => x.name === name); if (r) r.score = s; },
     chosen(name) { chosen = name; } };
   const tm = { finCross: ctl('tm-cross').run, finThru: ctl('tm-thru').run, shrink: ctl('tm-shrink').run ? _TM_DEF.shrink : false };
-  let res; tLast = performance.now(); res = O.clocked(() => O.traced(sink, () => _tmBest(G.items, G.edges, { seed, tm, variant: G.algo === 'tidyF' ? 'fewer' : undefined })));
+  let res; tLast = performance.now(); res = O.clocked(() => O.traced(sink, () => _tmBest(G.items, G.edges, { seed, tm, variant: { tidyF: 'fewer', tidyS: 'smallest' }[G.algo] })));
   const tEnd = performance.now(), P = res.pos.map((p) => ({ x: p.x, y: p.y })); O.sep(P, G.N, 6, 200); const tSep = performance.now();
   const win = runs.find((r) => r.name === chosen) || runs[runs.length - 1], wi = runs.indexOf(win);
   const frames = [{ key: 'start', P: new Float64Array(2 * n).fill(NaN), ms: 0, run: -1 }];
@@ -514,7 +515,7 @@ function tailFrames(G, P, { cleanup, budgetMs, links, run }) {
       snap(stage, Q) { const t = performance.now(); frames.push({ key: 'c-' + stage, P: flat(Q), ms: t - tl, run }); tl = performance.now(); } };
     try { const EL = G.E.filter((e) => e.s !== e.t).map((e) => [e.s, e.t]); Pc = O.clocked(() => O.traced(sink, () => O.leafSwap(Pc, G.items, EL)));
       if (ctl('c-pull').run) Pc = O.clocked(() => O.traced(sink, () => O.pullIn(Pc, G.items, EL)));
-      if (isTM(G.algo) && ctl('c-compact').run) Pc = O.clocked(() => O.traced(sink, () => _tmBest.compact(Pc, G.items, namedLinks(G)))); } finally { Object.assign(O.tune, keep); }
+      if (isTM(G.algo) && ctl('c-compact').run) Pc = O.clocked(() => O.traced(sink, () => _tmBest.compact(Pc, G.items, namedLinks(G), G.algo === 'tidyS' ? _TM_VAR.smallest.cp : undefined))); } finally { Object.assign(O.tune, keep); }
   }
   if (!links || LINES === 'straight') return { frames, info, P: Pc };
   // the links, one routing step at a time, on the final positions
@@ -725,7 +726,7 @@ function bounds(P) { let x1 = 1e18, y1 = 1e18, x2 = -1e18, y2 = -1e18; P.forEach
 // no longer fits, in when it fills less than half of the space, and then gradually (at most 4% per frame), with 8% to spare.
 let CR = null; // the stage and its margins, measured once until the window or the panels change
 function area() {
-  const st = $('stage').getBoundingClientRect(), W = Math.max(1, st.width), H = Math.max(1, st.height), m = 10; let ix = m, iy = m;
+  const st = $('stage').getBoundingClientRect(), W = Math.max(1, st.width), H = Math.max(1, st.height), m = OV.ruler ? 44 : 10; let ix = m, iy = m;
   document.querySelectorAll('#stage .pnl').forEach((el) => { if (!el.offsetParent || getComputedStyle(el).display === 'none') return; const r = el.getBoundingClientRect();
     if (el.id === 'counts') ix = Math.max(ix, st.right - r.left + m); else if (r.top - st.top < H / 2) iy = Math.max(iy, r.bottom - st.top + m); else iy = Math.max(iy, st.bottom - r.top + m); });
   ix = Math.min(ix, W / 4); iy = Math.min(iy, H / 4); return { W, H, ix, iy };
@@ -767,7 +768,7 @@ function pathOf(A, B, r) {
 }
 
 // ---------- the math made visible: one color per idea, drawn faintly behind the graph ----------
-const OV = store.get('ov', {}); document.querySelectorAll('[data-ov]').forEach((el) => { el.checked = !!OV[el.dataset.ov]; el.onchange = () => { OV[el.dataset.ov] = el.checked; store.set('ov', OV); if (R) render(); }; });
+const OV = store.get('ov', {}); if (OV.ruler === undefined) OV.ruler = true; document.querySelectorAll('[data-ov]').forEach((el) => { el.checked = !!OV[el.dataset.ov]; el.onchange = () => { OV[el.dataset.ov] = el.checked; CR = null; store.set('ov', OV); if (R) render(); }; });
 const OVS = { grid: 'Grid', slice: 'Slices', group: 'Group side', stress: 'Stress', extent: 'Extent', clear: 'Clearance', drop: 'Dropped tries', room: 'Room kept', ray: 'Slice search' };
 const OVL = { grid: ['var(--ov-grid)', 'Open-space grid', 'tinted cells hold no class and no link; the dashed circle is how far the class may jump (moves into open space)'],
   slice: ['var(--ov-slice)', 'Spreading slices', 'the 8 slices round a crowd; the darker, the more open space beyond, so pushed further (crowd spreading)'],
@@ -787,8 +788,31 @@ function stressOf(f) { // per class: Σ over pairs ((distance − target) / targ
   let mx = 0; for (let i = 0; i < m; i++) mx = Math.max(mx, e[i]); if (!mx) return null;
   f.stress = { core, e: Array.from(e, (x) => x / mx) }; return f.stress;
 }
+// Rulers on the top and left edges of the drawing: ticks in drawing px, the width and height called out at the outer end, with the
+// best other layout's width and height on the same graph (and a mark on the ruler where it would end)
+let RIVNOW = null;
+function rulers(P) {
+  const b = bounds(P); if (!(b.x1 < b.x2)) return ''; const z = 1 / (camK || 1), T = 16 * z, g = 5 * z, W = b.x2 - b.x1, H = b.y2 - b.y1, fs = 11 * z;
+  const r = RIVNOW && R.rivals && R.rivals[RIVNOW], rw = r && r.w, rh = r && r.h, nm = r ? ALGO_NAME[RIVNOW] : '';
+  const step = [25, 50, 100, 200, 500, 1000, 2000].find((x) => x / z >= 36) || 5000, col = (me, them) => (them == null || Math.round(me) === Math.round(them) ? 'var(--ink)' : me < them ? '#2e9a5a' : '#d0453a');
+  let s = '<g pointer-events="none">';
+  const ty = b.y1 - g - T, lx = b.x1 - g - T, L = Math.max(W, rw || 0), Hh = Math.max(H, rh || 0);
+  s += '<rect x="' + b.x1 + '" y="' + ty + '" width="' + W + '" height="' + T + '" fill="var(--ov-extent)" fill-opacity=".22"/>';
+  s += '<rect x="' + lx + '" y="' + b.y1 + '" width="' + T + '" height="' + H + '" fill="var(--ov-extent)" fill-opacity=".22"/>';
+  let d = ''; for (let x = 0; x <= W; x += step) { const big = (x / step) % 2 === 0; d += 'M' + (b.x1 + x) + ',' + (ty + T) + 'v' + (-(big ? 0.6 : 0.35) * T); }
+  for (let y = 0; y <= H; y += step) { const big = (y / step) % 2 === 0; d += 'M' + (lx + T) + ',' + (b.y1 + y) + 'h' + (-(big ? 0.6 : 0.35) * T); }
+  s += '<path d="' + d + '" stroke="var(--muted)" stroke-width="1" vector-effect="non-scaling-stroke" opacity=".8"/>';
+  for (let x = 2 * step; x < W - step; x += 2 * step) s += '<text x="' + (b.x1 + x + 2 * z) + '" y="' + (ty + 0.45 * T) + '" font-size="' + 8 * z + '" fill="var(--muted)">' + x + '</text>';
+  if (rw) s += '<path d="M' + (b.x1 + rw) + ',' + (ty - g) + 'v' + (T + 2 * g) + '" stroke="var(--muted)" stroke-width="2" stroke-dasharray="3 2" vector-effect="non-scaling-stroke"/>';
+  if (rh) s += '<path d="M' + (lx - g) + ',' + (b.y1 + rh) + 'h' + (T + 2 * g) + '" stroke="var(--muted)" stroke-width="2" stroke-dasharray="3 2" vector-effect="non-scaling-stroke"/>';
+  const lab = (v, o) => '<tspan font-weight="600" fill="' + col(v, o) + '">' + Math.round(v) + ' px</tspan>' + (o ? ' (vs ' + Math.round(o) + ' ' + esc(nm) + ')' : '');
+  s += '<text x="' + (b.x1 + L + 2 * g) + '" y="' + (ty + 0.75 * T) + '" font-size="' + fs + '" fill="var(--muted)">' + lab(W, rw) + '</text>';
+  s += '<text x="' + (lx + T) + '" y="' + (b.y1 + Hh + 2 * g + fs) + '" font-size="' + fs + '" fill="var(--muted)" text-anchor="end" transform="rotate(-90 ' + (lx + T) + ' ' + (b.y1 + Hh + 2 * g + fs) + ')" dx="' + (-0) + '">' + lab(H, rh) + '</text>';
+  return s + '</g>';
+}
 function overlays(P) {
   const f = C.f, on = (k) => OV[k], now = []; let s = ''; const nse = 'vector-effect="non-scaling-stroke"';
+  if (on('ruler')) s += rulers(P);
   if (on('extent')) { const b = bounds(P); if (b.x1 < b.x2) { s += `<rect x="${b.x1}" y="${b.y1}" width="${b.x2 - b.x1}" height="${b.y2 - b.y1}" fill="none" stroke="var(--ov-extent)" stroke-width="1.2" stroke-dasharray="7 5" opacity=".7" ${nse}/>`
     + `<text x="${b.x1 + 4}" y="${b.y1 - 6}" font-size="11" fill="var(--ov-extent)">${Math.round(b.x2 - b.x1)} × ${Math.round(b.y2 - b.y1)} px</text>`; now.push('extent'); } }
   const ov = f.ov || {};
@@ -1171,13 +1195,14 @@ function lastProblems(Rx) {
   Rx.E.forEach((e, k) => { if (idx.has(e.s) && idx.has(e.t)) ks.push(k); });
   const m = O.routeMetrics(P, D, ks.map((k) => [idx.get(Rx.E[k].s), idx.get(Rx.E[k].t), Rx.E[k].sub ? 2 : 1, 0]), ks.map((k) => (f.routes ? { ...f.routes[k], label: $('names').checked && Rx.E[k].name ? f.routes[k].label : null } : null)), 3);
   let ov = 0; for (let i = 0; i < P.length; i++) for (let j = i + 1; j < P.length; j++) if (Math.abs(P[i].x - P[j].x) < (D[i].w + D[j].w) / 2 && Math.abs(P[i].y - P[j].y) < (D[i].h + D[j].h) / 2) ov++;
-  return { pr: m.cross + m.thru + (m.labelOver || 0) + ov, ms: Rx.frames.reduce((a, x) => a + (x.ms || 0), 0), cross: m.cross, thru: m.thru, sharp: m.sharp, area: m.area };
+  let bx0 = 1e18, by0 = 1e18, bx1 = -1e18, by1 = -1e18; P.forEach((p, i) => { bx0 = Math.min(bx0, p.x - D[i].w / 2); bx1 = Math.max(bx1, p.x + D[i].w / 2); by0 = Math.min(by0, p.y - D[i].h / 2); by1 = Math.max(by1, p.y + D[i].h / 2); });
+  return { w: bx1 - bx0, h: by1 - by0, pr: m.cross + m.thru + (m.labelOver || 0) + ov, ms: Rx.frames.reduce((a, x) => a + (x.ms || 0), 0), cross: m.cross, thru: m.thru, sharp: m.sharp, area: m.area };
 }
 // our other layouts on the same graph, run here the same way (same steps switched on, same links), once per graph and setup
 const RIVALS = {};
 async function measureRivals(key, algo, seed) {
   const ck = [key, seed, $('limit').value, LayoutGraphs.style(), LINES, $('names').checked].join('|'), M = (RIVALS[ck] = RIVALS[ck] || {});
-  for (const a of ['auto', 'compact', 'grouped', 'tidy', 'tidyF']) if (a !== algo && !(isTM(a) && isTM(algo)) && !M[a]) M[a] = lastProblems(await recordRun(key, a, seed));
+  for (const a of ['auto', 'compact', 'grouped', 'tidy', 'tidyF', 'tidyS']) if (a !== algo && !(isTM(a) && isTM(algo)) && !M[a]) M[a] = lastProblems(await recordRun(key, a, seed));
   return M;
 }
 // bottom right of the drawing: this run's problems and time against the best of our other layouts on this graph (bestof.json):
@@ -1186,6 +1211,7 @@ function showTally(F, m, work) {
   if (R.engine) { $('tally').innerHTML = ''; return; }
   const me = lastProblems(R), M = R.rivals || {}; let riv = null;
   Object.keys(M).forEach((a) => { if (a !== R.algo && (riv == null || M[a].pr < M[riv].pr || M[a].pr === M[riv].pr && M[a].ms < M[riv].ms)) riv = a; });
+  if (RIVNOW !== riv) { RIVNOW = riv; if (OV.ruler) setTimeout(() => R && render(), 0); }
   const r = riv && M[riv], cls = !r || me.pr === r.pr ? '' : me.pr < r.pr ? 'win' : 'lose', tcls = !r ? '' : work <= r.ms ? 'win' : 'lose';
   const off = setupNow().leftOut, odd = off.length || ORD.place.join() !== 'cross,thru,tight' || ORD.clean.join() !== 'c-single,c-unit,c-spread,c-group' || xOn();
   $('tally').innerHTML = `Total problems <b class="${cls}">${me.pr}</b>${r ? ` (vs ${r.pr} ${ALGO_NAME[riv]})` : ' <small>(measuring the others…)</small>'}<br>Total time <b class="${tcls}">${Math.round(work)} ms</b>${r ? ` (vs ${Math.round(r.ms)} ms)` : ''}`
@@ -1303,8 +1329,8 @@ $('ttlFile').onchange = async () => { const file = $('ttlFile').files[0]; $('ttl
 // bestof.json (written by bestof.mjs) holds the problems each of our layouts leaves on each graph, seed 1, boxes; a graph
 // where another of ours leaves fewer gets a mark in the list, so feedback can start there
 let BEST = null;
-const ALGO_NAME = { auto: 'Best Read', compact: 'Tidy Stress', grouped: 'Mycelium', tidy: 'TiMy, smaller drawings', tidyF: 'TiMy, fewer problems' };
-function isTM(a) { return a === 'tidy' || a === 'tidyF'; }
+const ALGO_NAME = { auto: 'Best Read', compact: 'Tidy Stress', grouped: 'Mycelium', tidy: 'TiMy, smaller drawings', tidyF: 'TiMy, fewer problems', tidyS: 'TiMy, smallest drawings' };
+function isTM(a) { return a === 'tidy' || a === 'tidyF' || a === 'tidyS'; }
 function markGraphs() {
   const a = $('algo').value; let behind = 0;
   [...$('graph').options].forEach((o) => { if (o.dataset.name == null) o.dataset.name = o.textContent; let t = o.dataset.name; const g = BEST && BEST.graphs[o.value];

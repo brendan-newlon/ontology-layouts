@@ -291,7 +291,8 @@ function _tmCoreDensity(n, edges) {
 const _TM_DENSE = { K: 1, room: 0, ringAll: true, comAll: true, coreTight: true, coreThru2: true, pods: 1.6, podIn: 0.85, sweeps: 120 };
 // Variants shown side by side in the Lab: 'fewer' keeps core links twice the usual length and the usual length at 170
 // (more room, fewer crossings, larger drawings); the default is the smaller drawing.
-const _TM_VAR = { fewer: { L: 170, pods: 2, podIn: 2 } };
+// 'smallest' also keeps links on graphs over 100 classes at 200 rather than 260, and its bands take along whatever is in their way.
+const _TM_VAR = { fewer: { L: 170, pods: 2, podIn: 2 }, smallest: { Lbig: 200, cp: { lasso: 8, bandMs: 60 } } };
 function _tmBest(items, edges, opts) {
   const o0 = opts || {}, vb = _TM_VAR[o0.variant] || {}, T0 = { ..._TM_DEF, ...vb, ...(o0.tm || {}) }, dense = T0.denseCore && _tmCoreDensity(items.length, edges) > T0.denseCore;
   const big = T0.budgetBig && items.length > 100 ? { budget: T0.budgetBig } : {}; // a big graph: less time, as Mycelium gives it
@@ -371,15 +372,15 @@ function _tmCompact(P, boxes, lay, v) {
   const pM = Math.max(pad, ...padK);
   const thru = (k, w) => { const [a, b] = E[k], p = padK[k]; return a !== w && b !== w && _tmCB(X[a], Y[a], X[b], Y[b], X[w] - hw[w] - p, Y[w] - hh[w] - p, X[w] + hw[w] + p, Y[w] + hh[w] + p); };
   const inS = new Int32Array(n), inK = new Int32Array(m); let sp = 0;
-  function cost(S, ks, lim) { // crossings and links through classes that touch S (the moved boxes and links are off the grid while tried)
+  function cost(S, ks, lim, rigid) { // rigid: S moves as one block, so links inside it keep their crossings with each other // crossings and links through classes that touch S (the moved boxes and links are off the grid while tried)
     let c = 0, t = 0;
     for (const k of ks) { const [a, b] = E[k];
       nearE(eB(k), (j) => { const [p, r] = E[j]; if (p === a || p === b || r === a || r === b) return; if (_tmCX(X[a], Y[a], X[b], Y[b], X[p], Y[p], X[r], Y[r])) c++; });
-      for (const j of ks) if (j > k) { const [p, r] = E[j]; if (p === a || p === b || r === a || r === b) continue; if (_tmCX(X[a], Y[a], X[b], Y[b], X[p], Y[p], X[r], Y[r])) c++; }
+      const ink = rigid && inS[a] === sp && inS[b] === sp; for (const j of ks) if (j > k) { const [p, r] = E[j]; if (ink && inS[p] === sp && inS[r] === sp) continue; if (p === a || p === b || r === a || r === b) continue; if (_tmCX(X[a], Y[a], X[b], Y[b], X[p], Y[p], X[r], Y[r])) c++; }
       const bb = eB(k), pk = padK[k]; nearB([bb[0] - pk, bb[1] - pk, bb[2] + pk, bb[3] + pk], (w) => { if (thru(k, w)) t++; });
       if (lim && (c > lim[0] || t > lim[1])) return [c, t]; } // already worse: no need to count on
     for (const u of S) { nearE([X[u] - hw[u] - pM, Y[u] - hh[u] - pM, X[u] + hw[u] + pM, Y[u] + hh[u] + pM], (k) => { if (thru(k, u)) t++; });
-      for (const k of ks) if (thru(k, u)) t++; if (lim && t > lim[1]) return [c, t]; }
+      for (const k of ks) if (!(rigid && inS[E[k][0]] === sp && inS[E[k][1]] === sp) && thru(k, u)) t++; if (lim && t > lim[1]) return [c, t]; }
     return [c, t]; }
   // two links from the same class lying on each other: within 4 px for more than 12 px outside the class's box
   const onLine = (k, j) => { const [a, b] = E[k], [p, r] = E[j]; const s = a === p || a === r ? a : b === p || b === r ? b : -1; if (s < 0) return false;
@@ -446,6 +447,38 @@ function _tmCompact(P, boxes, lay, v) {
       else S.forEach((x, i) => { X[x] = ox[i]; Y[x] = oy[i]; });
       S.forEach(addB); ks.forEach(addE); }
     return got; }
+  // Bands and islands: everything beyond a line across the drawing (from each side and each corner, an outer sixth, a third or
+  // half of the way in) moves inward as one block, the links across the line getting shorter. A class in the way is taken
+  // along (the selection widens round it, as a lasso would) rather than blocking. Kept when nothing overlaps, every name
+  // still fits, and the crossings, links through classes and links on links do not rise. Largest step first.
+  let banded = 0; const BWHY = { name: 0, block: 0, lassoMax: 0, sweep: 0, cross: 0, thru: 0, line: 0, ok: 0 };
+  function bands() { if (o.bands === false) return 0; let got = 0; const inB = new Int32Array(n); let bs = 0; const tb = performance.now(), bms = o.bandMs ?? 30, late = () => performance.now() - t0 > ms || performance.now() - tb > bms;
+    for (let dir = 0; dir < 8; dir++) { if (late()) break; const a = dir * Math.PI / 4, ux = Math.cos(a), uy = Math.sin(a);
+      for (const f of o.bandF || [1 / 6, 1 / 3, 1 / 2]) { if (late()) break;
+        let cx = 0, cy = 0; for (let i = 0; i < n; i++) { cx += X[i] / n; cy += Y[i] / n; }
+        let s0 = 1e18, s1 = -1e18; const s = new Float64Array(n); for (let i = 0; i < n; i++) { s[i] = (X[i] - cx) * ux + (Y[i] - cy) * uy; s0 = Math.min(s0, s[i]); s1 = Math.max(s1, s[i]); }
+        const D = s1 - s0, cut = s1 - f * D; if (D < 40) continue;
+        for (const g of o.bandG || [0.06, 0.02]) { const d = g * D; if (d < 4) continue;
+          bs++; let S = []; for (let i = 0; i < n; i++) if (s[i] > cut && inB[i] !== bs) for (const w of carry[i]) if (inB[w] !== bs) { inB[w] = bs; S.push(w); }
+          if (!S.length || S.length >= n - 1) continue;
+          let ok = false; for (let grow = 0; grow <= (o.lasso ?? 0); grow++) {
+            sp++; S.forEach((x) => (inS[x] = sp)); const ks = []; S.forEach((x) => adj[x].forEach((q) => { if (inK[q] !== sp) { inK[q] = sp; ks.push(q); } }));
+            S.forEach(delB); ks.forEach(delE); const ox = S.map((x) => X[x]), oy = S.map((x) => Y[x]), c0 = cost(S, ks, null, true); c0.push(onLines(ks));
+            S.forEach((x, i) => { X[x] = ox[i] - ux * d; Y[x] = oy[i] - uy * d; });
+            let blk = -1, bad = false; for (const k of ks) if ((inS[E[k][0]] === sp) !== (inS[E[k][1]] === sp) && clear(k) < need[k]) { bad = true; blk = inS[E[k][0]] === sp ? E[k][1] : E[k][0]; break; }
+            if (!bad) for (const u of S) { nearB(bB(u), (w) => { if (blk < 0 && Math.abs(X[u] - X[w]) < hw[u] + hw[w] + gap && Math.abs(Y[u] - Y[w]) < hh[u] + hh[w] + gap) blk = w; }); if (blk >= 0) break; }
+            if (bad) BWHY.name++; else if (blk >= 0) BWHY.block++; else if (o.bandSweep !== false && sweeps(S, ox, oy)) BWHY.sweep++; else { const c1 = cost(S, ks, c0, true), l1 = onLines(ks); if (c1[0] <= c0[0] && c1[1] <= c0[1] && l1 <= c0[2]) { ok = true; BWHY.ok++; } else { BWHY[c1[0] > c0[0] ? 'cross' : c1[1] > c0[1] ? 'thru' : 'line']++;
+              // a link across the line now running through a class: that class is taken along
+              if (c1[0] <= c0[0] && c1[1] > c0[1]) for (const k of ks) { if ((inS[E[k][0]] === sp) === (inS[E[k][1]] === sp)) continue; const bb = eB(k), pk = padK[k]; nearB([bb[0] - pk, bb[1] - pk, bb[2] + pk, bb[3] + pk], (w) => { if (blk < 0 && inS[w] !== sp && thru(k, w)) blk = w; }); if (blk >= 0) break; } } }
+            if (!ok) S.forEach((x, i) => { X[x] = ox[i]; Y[x] = oy[i]; });
+            S.forEach(addB); ks.forEach(addE);
+            if (ok || blk < 0) break;
+            // the lasso widens round the class in the way (with what hangs from it, or what it hangs from)
+            let r = blk; while (par[r] >= 0) r = par[r]; for (const w of carry[r]) if (inB[w] !== bs) { inB[w] = bs; S.push(w); } if (S.length >= n - 1) break; }
+          if (ok) { got++; banded++; tick++; for (let i = 0; i < n; i++) s[i] = (X[i] - cx) * ux + (Y[i] - cy) * uy; break; } } } }
+    if (got && typeof _ogTr !== 'undefined' && _ogTr) _ogTr.snap('compact', [...Array(n).keys()].map((i) => ({ x: X[i], y: Y[i] })));
+    return got; }
+  for (let b = 0; b < (o.bandRounds ?? 4) && bands(); b++);
   while (rounds < maxR && performance.now() - t0 < ms) {
     const jg = relocate();
     rounds++; let cx = 0, cy = 0; for (let i = 0; i < n; i++) { cx += X[i] / n; cy += Y[i] / n; }
@@ -497,7 +530,8 @@ function _tmCompact(P, boxes, lay, v) {
         if (clash(S, ks)) continue; const c1 = cost(S, ks, c0); if (c1[0] <= c0[0] && c1[1] <= c0[1] && onLines(ks) < l0) { done = true; break; } }
       if (!done) S.forEach((x, i) => { X[x] = ox[i]; Y[x] = oy[i]; }); else nudged++;
       S.forEach(addB); ks.forEach(addE); } }
-  unThru(); _tmCompact.last = { why: WHY, moves, rounds, fixed, nudged, jumped, ms: performance.now() - t0 };
+  for (let b = 0; b < (o.bandRounds ?? 4) && bands(); b++);
+  unThru(); _tmCompact.last = { why: WHY, moves, rounds, fixed, nudged, jumped, banded, bwhy: BWHY, ms: performance.now() - t0 };
   return [...Array(n).keys()].map((i) => ({ x: X[i], y: Y[i] }));
 }
 _tmBest.compact = _tmCompact;
