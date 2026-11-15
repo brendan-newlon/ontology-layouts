@@ -11,7 +11,7 @@
 //   5. classes off links, boxes apart; then (in tmbench) the library's clean-up, pull-in and routing as for Best Read.
 //   6. after the clean-up: empty space taken in (_tmCompact), each class with what hangs from it stepping inward while that adds no problem.
 const _TM_DEF = { K: 8, Kfrac: 0.25, L: 170, Lbig: 260, pods: 2, podIn: 2, hub: 20, room: 1, roomMode: 'add', cntW: 0.5, linkShare: 0.5,
-  restarts: 8, sweeps: 240, finCross: true, finThru: true, coreTight: false, endTight: false, unitGap: 0.75, dirs: 36, outward: 0.5,
+  restarts: 8, sweeps: 240, finCross: true, finThru: true, coreTight: false, endTight: true, endTightR: 2, unitGap: 0.75, dirs: 36, outward: 0.5,
   budget: 1000, singlesBySlice: false, shrink: 'strict', shrinkMs: 150, shrinkF: 0.88, shrinkSlack: 0.06, hubBig: 20, tries: 1, triesMs: 400, grid: true, coreRoom: 0.25, denseCore: 2.7, budgetBig: 0 };
 
 function _tmUnits(n, EE, K, Kfrac) {
@@ -225,7 +225,7 @@ function _tmLayout(items, edges, opts) {
   mark('leaves');
   if (singles.length) snap('leaves', P, { singles });
   _ogClSeparate(P, N, 12, 120); if (tr) { tr.snap('separate', P); tr.tmPhase = 'fin'; }
-  if (EE.length <= 2500) { _ogClFinThru(P, N, EE, 6, 10, Math.max(20, T.budget - (_ogNow() - t0)) / 2); if (T.endTight) _ogClFinTight(P, N, EE, 6, 26, Math.max(20, T.budget - (_ogNow() - t0))); }
+  if (EE.length <= 2500) { _ogClFinThru(P, N, EE, 6, 10, Math.max(20, T.budget - (_ogNow() - t0)) / 2); if (T.endTight) _ogClFinTight(P, N, EE, T.endTightR || 6, 26, Math.min(T.endTightMs || 1e9, Math.max(20, T.budget - (_ogNow() - t0)))); }
   mark('finish');
   snap('finish', P);
   if (T.shrink) { const kept = _tmShrink(P, N, EE, T, t0); snap('shrink', P, { kept }); }

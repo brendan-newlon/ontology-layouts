@@ -295,7 +295,7 @@ const STEPS = [ // key, group, name, what it does, color, can it be left out (Ru
   ['tm-thru', 'Tidy Mycelium', 'Core off-link moves', 'Before the hidden parts come back: a class with a link running through its box moves off it, never adding a crossing.', '#e0702b', true],
   ['tm-unit', 'Tidy Mycelium', 'Parts placed in open slices', 'Each part set aside comes back, largest first, fanned out round the class it hangs from, in the slice with the most open space. Rays are cast round that class through a grid of what is drawn already; a larger part also prefers a slice that opens to the outside of the drawing ("don\'t fence me in"). Each frame is one part.', '#1f8577', false],
   ['tm-leaves', 'Tidy Mycelium', 'One-link classes placed', 'Single classes with one link come back, each beside its neighbor in the direction where its link crosses nothing A long name goes to the side rather than above or below. Each frame is one class with all its one-link classes.', '#2f9d6a', false],
-  ['tm-finish', 'Tidy Mycelium', 'Classes moved off links', 'Boxes that touch are pushed apart, and a class with a link running through it moves off it.', '#9f4f2f', false],
+  ['tm-finish', 'Tidy Mycelium', 'Classes moved off links', 'Boxes that touch are pushed apart, a class with a link running through it moves off it, and two rounds of tightening draw long links in where that crosses nothing new.', '#9f4f2f', false],
   ['tm-shrink', 'Tidy Mycelium', 'Pulled in', 'The whole drawing shrinks toward its middle a step at a time, boxes pushed apart after each step; a step is kept only when it adds no crossing and no link through a class, so nothing is pulled across other links. Each frame is one step kept.', '#5b7fa8', true],
   ['e-iter', 'Open-source layout', 'Iterations', 'The open-source layout at work; each frame is a few of its iterations.', '#64748b', false],
   ['e-final', 'Open-source layout', 'Result', 'This layout does not report its steps: its result appears at once, after the time it took.', '#475569', false],
@@ -441,7 +441,7 @@ function recordTidy(G, seed) {
     keepRestart(r) { const keep = [], drop = []; cur.frames.forEach((f) => (f.r < 0 || f.r === r ? keep : drop).push(f)); cur.frames = keep;
       if (drop.length) { const starts = new Set(drop.map((f) => f.r)).size; keep.push({ key: 'restart', P: keep[keep.length - 1].P, r: -1, ms: drop.reduce((a, f) => a + f.ms, 0), hold: true, ov: room ? { room } : null, note: `${starts} other start${starts > 1 ? 's' : ''} tried and dropped; the one shown ended with the fewest crossings.` }); }
       rtag = -1; },
-    snap(stage, P, info) { if (!cur) return; const t = performance.now(), key = KEY[stage] || (stage === 'thru' ? (sink.tmPhase === 'fin' ? 'tm-finish' : 'tm-thru') : stage);
+    snap(stage, P, info) { if (!cur) return; const t = performance.now(), key = stage === 'tight' ? (sink.tmPhase === 'fin' ? 'tm-finish' : 'tm-thru') : KEY[stage] || (stage === 'thru' ? (sink.tmPhase === 'fin' ? 'tm-finish' : 'tm-thru') : stage);
       if (info && info.show) info.show.forEach((v) => (cur.hidden[v] = 0)); if (info && info.v != null) cur.hidden[info.v] = 0; if (info && info.D) cur.D = info.D; if (info && info.room) room = info.room;
       const A = new Float64Array(2 * n).fill(NaN), map = sink.map;
       if (map) map.forEach((v, k) => { A[2 * v] = P[k].x; A[2 * v + 1] = P[k].y; });
