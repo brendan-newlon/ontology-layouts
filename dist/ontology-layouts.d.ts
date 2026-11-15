@@ -122,9 +122,12 @@ export interface OntologyLayouts {
   placeNew(keep: (Point | null)[], boxes: Box[], links: Link[]): Point[];
   /** Boxes with between: [a, b] onto the line from a to b. */
   inline(pos: Point[], boxes: Box[], links: Link[]): Point[];
-  /** Placement, clean-up and empty space taken in, in one call (no cleanUp after it). */
-  /** midNames: if your app draws each link's name at the middle of the link, the name's height in px; the take-in then never makes a name cover a class or another name. */
+  /**
+   * Tidy Mycelium, the default layout: placement, clean-up and empty space taken in, in one call (no cleanUp after it).
+   * midNames: if your app draws each link's name at the middle of the link, the name's height in px; the take-in then never makes a name cover a class or another name.
+   */
   tidyMycelium(boxes: Box[], links: Link[], opts?: { seed?: number; prefer?: 'fewer-problems' | 'smaller' | 'faster'; midNames?: number }): { pos: Point[]; algo: string };
+  /** Best Read, the default until November 2026: the more readable of Tidy Stress and Mycelium. Run cleanUp after it. */
   bestRead(boxes: Box[], links: Link[], opts?: { seed?: number; roomy?: boolean }): { pos: Point[]; algo: string };
   tidyStress(boxes: Box[], links: Link[], opts?: { seed?: number; roomy?: boolean }): { pos: Point[]; algo: string };
   /** null under 8 classes. */
