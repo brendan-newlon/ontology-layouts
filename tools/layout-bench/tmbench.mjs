@@ -17,7 +17,7 @@ const SETS = { dev: ['prov', 'uni', 'hotel', 'org', 'brewery', 'trial', 'telecom
   few: ['telecom', 'pizza', 'bio', 'big', 'hx_rome40', 'hx_hubs', 'hx_tax', 'hx_md160', 'pb_dul', 'pb_saref', 'pb_rome7797'] };
 SETS.all = [...SETS.dev, ...SETS.held, ...SETS.public];
 SETS.ex = Object.keys(MODELS).filter((k) => !['huge', 'hx_md1200', 'pb_cl', 'sf400'].includes(k)); // the Lab's 62 graphs (9 to 304 classes)
-// TM_EX=1: large circles (circles of radius 156 px, names 20 px per letter + 14), in library units (÷ 51/14)
+// TM_EX=1: large circles (radius 156 px, names 20 px per letter + 14), in library units (÷ 51/14)
 const EXS = process.env.TM_EX ? 51 / 14 : 0;
 const keys = process.argv[2].split(',').flatMap((k) => SETS[k] || [k]);
 const variants = JSON.parse(process.argv[3] || '{"tm":{}}'), seeds = +(process.argv[4] || 1), cleanup = JSON.parse(process.argv[5] || 'null');
