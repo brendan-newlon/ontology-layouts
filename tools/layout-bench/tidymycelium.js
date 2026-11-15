@@ -10,8 +10,8 @@
 //      leaf placement;
 //   5. classes off links, boxes apart; then (in tmbench) the library's clean-up, pull-in and routing as for Best Read.
 const _TM_DEF = { K: 8, Kfrac: 0.25, L: 170, Lbig: 260, pods: 1.6, podIn: 0.85, hub: 20, room: 1, roomMode: 'add', cntW: 0.5, linkShare: 0.5,
-  restarts: 3, sweeps: 120, finCross: true, finThru: true, coreTight: false, endTight: false, unitGap: 0.75, dirs: 36, outward: 0.5,
-  budget: 600, singlesBySlice: false, shrink: 'slack', shrinkMs: 150, shrinkF: 0.88, shrinkSlack: 0.06, hubBig: 20, tries: 2, triesMs: 400, grid: true };
+  restarts: 3, sweeps: 240, finCross: true, finThru: true, coreTight: false, endTight: false, unitGap: 0.75, dirs: 36, outward: 0.5,
+  budget: 600, singlesBySlice: false, shrink: 'slack', shrinkMs: 150, shrinkF: 0.88, shrinkSlack: 0.06, hubBig: 20, tries: 1, triesMs: 400, grid: true, coreRoom: 0.25 };
 
 function _tmUnits(n, EE, K, Kfrac) {
   const adj = Array.from({ length: n }, () => []), seen = new Set();
@@ -158,9 +158,11 @@ function _tmLayout(items, edges, opts) {
     PC = best.P; mark('stress'); if (tr) tr.keepRestart(best.r);
     if (rec) { snap('start', fullOf(best.start), { room: roomInfo, restart: best.r, groups: com ? new Set(com).size : 0 }); snap('stress', fullOf(PC), { room: roomInfo, restart: best.r, crossings: best.x }); }
     const left = () => Math.max(20, T.budget - (_ogNow() - t0));
+    // coreRoom: the core's crossing swaps and moves off links see each anchor as big as the room it keeps for its parts
+    const NR = T.coreRoom ? core.map((v, k) => ({ w: NC[k].w + 2 * T.coreRoom * R[k], h: NC[k].h + 2 * T.coreRoom * R[k] })) : NC;
     if (EC2.length && EC2.length <= 2500) {
-      if (T.finCross) { _ogClFinCross(PC, NC, EC2, Math.min(m <= 30 ? 150 : 300, left() / 3), seed); _ogClSeparate(PC, NC, 12, 120); }
-      if (T.finThru) _ogClFinThru(PC, NC, EC2, 12, 10, left() / 3);
+      if (T.finCross) { _ogClFinCross(PC, NR, EC2, Math.min(m <= 30 ? 150 : 300, left() / 3), seed); _ogClSeparate(PC, NR, 12, 120); }
+      if (T.finThru) _ogClFinThru(PC, NR, EC2, 12, 10, left() / 3);
       if (T.coreTight) _ogClFinTight(PC, NC, EC2, 12, 26, left() / 2);
     }
     mark('coreClean');
@@ -265,3 +267,11 @@ function _tmBest(items, edges, opts) {
   if (o.rec) { o.rec.push(...best.r.rec); best.r.recTry = best.i; best.r.recTries = k; }
   return best.r;
 }
+
+// The pull-in at the very end (after the clean-up): the whole drawing shrinks toward its middle while that adds no crossing,
+// no link through a class and no overlap; parts that have no problem are pulled in too.
+function _tmEndPull(P, items, edges, ms, f) {
+  const N = items.map((it) => ({ w: it.w + 16, h: it.h + 12 })), EE = edges.filter((e) => e[0] !== e[1]).map((e) => ({ s: e[0], t: e[1] }));
+  return _tmShrink(P, N, EE, { shrink: 'strict', shrinkF: f || 0.8, shrinkMs: ms || 100 }, 0);
+}
+_tmBest.endPull = _tmEndPull;

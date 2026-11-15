@@ -337,7 +337,7 @@
         // side: a long name goes beside its neighbor rather than above or below it. Stacked above or below, a wide box blocks
         // the room of the classes beside it; to the side it reads like a list. Cost per unit of |sin| of the direction, for each
         // box height of width beyond three heights.
-        const side = _OG_TUNE.leafSide != null ? _OG_TUNE.leafSide : 25;
+        const side = _OG_TUNE.leafSide != null ? _OG_TUNE.leafSide : 25, leafX = _OG_TUNE.leafX != null ? _OG_TUNE.leafX : 100;
         leafOf.forEach((p, v) => { if (p >= 0) { if (!kids.has(p)) kids.set(p, []); kids.get(p).push(v); } });
         const placed = new Uint8Array(n); for (let v = 0; v < n; v++) if (improve || leafOf[v] < 0) placed[v] = 1;
         // waiting[q]: one-link classes of q still to be placed. A spot nearer to another class with classes still waiting than to
@@ -362,7 +362,7 @@
           if (cost >= lim) return Infinity;
           for (const e of cur) {
             if (_ogClSegBox(P[e.s].x - c.x, P[e.s].y - c.y, P[e.t].x - c.x, P[e.t].y - c.y, N[v].w / 2 + 4, N[v].h / 2 + 4)) cost += 80;
-            if (e.s !== p && e.t !== p && _ogClSegX(P[p], c, P[e.s], P[e.t])) cost += 100;
+            if (e.s !== p && e.t !== p && _ogClSegX(P[p], c, P[e.s], P[e.t])) cost += leafX;
             if (cost >= lim) return Infinity;
           }
           for (const u of NB) if (placed[u] && u !== p && u !== v && _ogClSegBox(P[p].x - P[u].x, P[p].y - P[u].y, c.x - P[u].x, c.y - P[u].y, N[u].w / 2 + 4, N[u].h / 2 + 4)) { cost += 80; if (cost >= lim) return Infinity; }

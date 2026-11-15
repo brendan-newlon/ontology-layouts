@@ -30,6 +30,8 @@ label.tog .sw { margin-right: 0; }
 a { color: var(--accent); }
 main { display: grid; grid-template-columns: 1fr 420px; min-height: 0; }
 #stage { position: relative; min-width: 0; min-height: 0; }
+#tally { position: absolute; right: 8px; bottom: 8px; background: color-mix(in srgb, var(--paper) 90%, transparent); border: 1px solid var(--rule); border-radius: 6px; padding: 3px 8px; font-size: 12px; font-variant-numeric: tabular-nums; color: var(--muted); line-height: 1.45; }
+#tally b { font-weight: 600; } #tally .win { color: #2e9a5a; } #tally .lose { color: #d0453a; } #tally:empty { display: none; }
 #svg { width: 100%; height: 100%; display: block; background: var(--bg); touch-action: none; user-select: none; cursor: grab; }
 #caption { position: absolute; left: 6px; top: 6px; max-width: max(200px, min(460px, calc(100% - 90px))); background: color-mix(in srgb, var(--paper) 88%, transparent); border: 1px solid var(--rule); border-radius: 6px; padding: 3px 7px; pointer-events: none; font-size: 12px; line-height: 1.35; }
 #caption .t1 { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
@@ -199,6 +201,7 @@ footer .grp { display: flex; gap: 4px; align-items: center; }
   <div id="stage">
     <svg id="svg"></svg>
     <div id="caption" class="pnl" data-name="Step"><div class="body"><div class="t1"><span class="t" id="cT"></span> <span class="k" id="cK"></span></div><div class="d" id="cD"></div></div></div>
+    <div id="tally"></div>
     <div id="counts" class="pnl" data-name="Counts"><div class="body" id="countsB"></div></div>
     <div id="legend" class="pnl" data-name="Legend"><div class="body" id="legendB"></div></div>
     <div id="drawer"></div>
@@ -408,10 +411,19 @@ function recordOurs(G, algo, seed) {
   const tEnd = performance.now(), P = res.pos.map((p) => ({ x: p.x, y: p.y })); O.sep(P, G.N, 6, 200); const tSep = performance.now();
   const win = runs.find((r) => r.name === chosen) || runs[runs.length - 1], wi = runs.indexOf(win);
   const frames = [{ key: 'start', P: new Float64Array(2 * n).fill(NaN), ms: 0, run: -1 }]; // the empty canvas: the start fades in where it is
-  runs.forEach((r, i) => { if (r !== win) r.frames.forEach((f) => frames.push({ key: 'variant:' + r.name, P: f.P, ms: f.ms, run: i })); });
+  variantFrames(runs, win, frames);
   win.frames.forEach((f) => frames.push({ key: f.key, P: f.P, ms: f.ms, run: wi, hold: f.hold, note: f.note }));
   frames.push({ key: 'separate', P: flat(P), ms: (tEnd - tLast) + (tSep - tEnd), run: wi });
   return { frames, P, runs: runs.map((r) => ({ D: r.D, core: r.core })), variants: runs.map((r) => ({ name: r.name, score: r.score, kept: r === win, frames: r.frames.length })), run: wi };
+}
+// The variants not kept: each is a whole layout of its own, played to its end, then set aside for the one that scores best,
+// which starts again from an empty canvas. A held frame at the end of each says so, with the scores.
+function variantFrames(runs, win, frames) {
+  const sc = (r) => (r.score == null ? '?' : Math.round(r.score));
+  runs.forEach((r, i) => { if (r === win || !r.frames.length) return;
+    r.frames.forEach((f) => frames.push({ key: 'variant:' + r.name, P: f.P, ms: f.ms, run: i }));
+    frames.push({ key: 'variant:' + r.name, P: r.frames[r.frames.length - 1].P, ms: 0, run: i, hold: true,
+      note: `${r.name} ends here and is set aside: its score is ${sc(r)}, ${win.name} scores ${sc(win)} (lower is better). ${win.name} plays next from an empty canvas; nothing of ${r.name} carries over.` }); });
 }
 // Tidy Mycelium (tidymycelium.js), recorded the same way: the core's sweeps and moves, each part as it comes back, the pull-in
 function recordTidy(G, seed) {
@@ -437,7 +449,7 @@ function recordTidy(G, seed) {
   const tEnd = performance.now(), P = res.pos.map((p) => ({ x: p.x, y: p.y })); O.sep(P, G.N, 6, 200); const tSep = performance.now();
   const win = runs.find((r) => r.name === chosen) || runs[runs.length - 1], wi = runs.indexOf(win);
   const frames = [{ key: 'start', P: new Float64Array(2 * n).fill(NaN), ms: 0, run: -1 }];
-  runs.forEach((r, i) => { if (r !== win) r.frames.forEach((f) => frames.push({ key: 'variant:' + r.name, P: f.P, ms: f.ms, run: i })); });
+  variantFrames(runs, win, frames);
   win.frames.forEach((f) => frames.push({ key: f.key, P: f.P, ms: f.ms, run: wi, hold: f.hold, note: f.note, ov: f.ov, from: f.from }));
   frames.push({ key: 'separate', P: flat(P), ms: (tEnd - tLast) + (tSep - tEnd), run: wi });
   return { frames, P, runs: runs.map((r) => ({ D: r.D, core: r.core })), variants: runs.map((r) => ({ name: r.name, score: r.score, kept: r === win, frames: r.frames.length })), run: wi };
@@ -459,7 +471,10 @@ function cleanFrames(G, P, opt, run) {
   const wall = performance.now() - w0; let tTot = 0; r.log.forEach((s) => { tTot = Math.max(tTot, s.t || 0, s.kind === 'phase-end' ? s.t0 + s.ms : 0); });
   const k = tTot > 0 ? wall / tTot : 0; // the log's work-clock ms -> ms measured here
   let Q = P.map((p) => ({ ...p })), phase = 'single', prevT = 0, inPhase = 0, grid = null, dropped = [];
-  const push = (f) => { if (dropped.length) { f.ov = { ...(f.ov || {}), dropped }; dropped = []; } frames.push({ run, ...f }); inPhase++; };
+  const push = (f) => { if (dropped.length) { f.ov = { ...(f.ov || {}), dropped };
+      const cls = dropped.reduce((a, t) => a + t.nodes.length, 0);
+      f.note = `${dropped.length} group move${dropped.length > 1 ? 's' : ''} tried and thrown away just before this (dashed boxes: where ${cls} class${cls > 1 ? 'es' : ''} would have gone; none was drawn, since each left more problems).` + (f.note ? ' ' + f.note : ''); dropped = []; }
+    frames.push({ run, ...f }); inPhase++; };
   for (const s of r.log) {
     if (s.kind === 'phase') { phase = s.phase; prevT = s.t; inPhase = 0; grid = s.grid || null; continue; }
     const key = 'c-' + phase;
@@ -646,7 +661,7 @@ const frameDur = (f) => Math.max(0, f.ms || 0) / 1000;
 function timeline() { const F = R.frames, at = [0], disp = [0];
   for (let j = 1; j < F.length; j++) { at.push(at[j - 1] + frameDur(F[j])); disp.push(ctl(F[j].key).show ? j : disp[j - 1]); }
   TL = { at, disp, total: at[at.length - 1] || 0.001 }; }
-const meta = (k) => k.startsWith('variant:') ? ['variant', 'Variants not kept', `Variant "${k.slice(8)}"`, 'Best Read runs several layouts (variants) and keeps the best-scoring drawing; Tidy Stress does the same on small graphs, and Tidy Mycelium makes two tries with different seeds. This one was not kept: it plays first, then the one kept starts over.', '#b0b7c3', false] : STEPS[SI[k]] || [k, '', k, '', '#888', false];
+const meta = (k) => k.startsWith('variant:') ? ['variant', 'Variants not kept', `Variant "${k.slice(8)}"`, 'Best Read runs several layouts (variants) and keeps the best-scoring drawing; Tidy Stress does the same on small graphs. This one was not kept: it plays to its end first, then the one kept starts over from an empty canvas.', '#b0b7c3', false] : STEPS[SI[k]] || [k, '', k, '', '#888', false];
 function frameAt(t) { const at = TL.at; let lo = 0, hi = at.length - 1; if (t >= at[hi]) return [hi, 0]; while (lo < hi - 1) { const m = (lo + hi) >> 1; if (at[m] <= t) lo = m; else hi = m; }
   while (lo < at.length - 1 && at[lo + 1] <= t) lo++; // several frames at the same time (a step shown at once): the last of them
   const span = at[lo + 1] - at[lo]; return [lo, span > 0 ? (t - at[lo]) / span : 1]; }
@@ -788,7 +803,8 @@ function overlays(P) {
       for (let r = 1; r <= n; r++) { const o = r * gap; s += `<rect x="${(p.x - d.w / 2 - o).toFixed(1)}" y="${(p.y - d.h / 2 - o).toFixed(1)}" width="${(d.w + 2 * o).toFixed(1)}" height="${(d.h + 2 * o).toFixed(1)}" rx="${(6 + o).toFixed(1)}" fill="none" stroke="var(--ov-stress)" stroke-opacity="${(0.65 - 0.12 * r).toFixed(2)}" stroke-width="1.1" ${nse}/>`; } }); now.push('stress'); } }
   if (on('drop') && ov.dropped) { ov.dropped.forEach((t) => { (t.from || []).forEach(([x, y], i) => { const v = t.nodes[i], d = R.D[v]; if (!d) return; const X = x + t.dx, Y = y + t.dy;
       s += `<rect x="${(X - d.w / 2).toFixed(1)}" y="${(Y - d.h / 2).toFixed(1)}" width="${d.w}" height="${d.h}" rx="4" fill="var(--ov-drop)" fill-opacity=".06" stroke="var(--ov-drop)" stroke-width="1.1" stroke-dasharray="4 3" ${nse}/>`
-        + `<line x1="${x}" y1="${y}" x2="${X}" y2="${Y}" stroke="var(--ov-drop)" stroke-opacity=".6" stroke-width="1" ${nse}/>`; }); }); now.push('drop'); }
+        + `<line x1="${x}" y1="${y}" x2="${X}" y2="${Y}" stroke="var(--ov-drop)" stroke-opacity=".6" stroke-width="1" stroke-dasharray="2 3" marker-end="url(#ovArrowD)" ${nse}/>`
+        + `<text x="${X.toFixed(1)}" y="${(Y + 3.5).toFixed(1)}" text-anchor="middle" font-size="10" fill="var(--ov-drop)" opacity=".85">${esc(R.labels[v])}</text>`; }); }); now.push('drop'); }
   if (on('room') && ov.room) { ov.room.forEach((q) => { const p = P[q.v]; if (!p) return;
       s += `<circle cx="${p.x.toFixed(1)}" cy="${p.y.toFixed(1)}" r="${q.r.toFixed(1)}" fill="var(--ov-room)" fill-opacity=".05" stroke="var(--ov-room)" stroke-width="1.2" stroke-dasharray="6 4" opacity=".8" ${nse}/>`
         + `<text x="${(p.x + R.D[q.v].w / 2 + 4).toFixed(1)}" y="${(p.y - R.D[q.v].h / 2 - 3).toFixed(1)}" font-size="11" font-weight="600" fill="var(--ov-room)">+${q.classes}${q.units > 1 ? ` in ${q.units}` : ''}</text>`; }); now.push('room'); }
@@ -819,7 +835,7 @@ function render() {
       for (let v = 0; v < R.n && !thru.has(k); v++) { if (v === e.s || v === e.t || !C.P[v]) continue; const p = C.P[v]; // the box, or the circle and its name
         for (let i = 0; i < pl.length - 1; i++) if (LayoutGraphs.hits(R.D[v], pl[i].x - p.x, pl[i].y - p.y, pl[i + 1].x - p.x, pl[i + 1].y - p.y, 3, O.segBox)) { thru.add(k); break; } } });
   }
-  let s = '<defs><marker id="ovArrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0,0L10,5L0,10z" fill="var(--ov-group)"/></marker><marker id="ovArrowR" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0,0L10,5L0,10z" fill="var(--ov-ray)"/></marker></defs><g>' + overlays(C.P) + '</g><g>';
+  let s = '<defs><marker id="ovArrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0,0L10,5L0,10z" fill="var(--ov-group)"/></marker><marker id="ovArrowR" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0,0L10,5L0,10z" fill="var(--ov-ray)"/></marker><marker id="ovArrowD" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M0,0L10,5L0,10z" fill="var(--ov-drop)"/></marker></defs><g>' + overlays(C.P) + '</g><g>';
   R.E.forEach((e, k) => { const A = C.P[e.s], B = C.P[e.t]; if (!A || !B) return; const r = C.routes[k]; if (e.s === e.t && !(r && r.loop)) return;
     const op = Math.min(C.alpha[e.s], C.alpha[e.t]); s += `<path class="link${e.sub ? ' sub' : ''}${thru.has(k) ? ' thru' : ''}${BEND && BEND.k === k ? ' picked' : ''}" d="${pathOf(A, B, r)}"${op < 1 ? ` opacity="${op.toFixed(2)}"` : ''}/>`; });
   if (!playing && !PEN) R.E.forEach((e, k) => { const A = C.P[e.s], B = C.P[e.t]; if (A && B && e.s !== e.t) s += `<path class="hit" data-k="${k}" d="${pathOf(A, B, C.routes[k])}"/>`; }); // a wide, invisible stroke to grab a link by
@@ -1133,6 +1149,34 @@ $('chips').addEventListener('dragend', () => { dragK = null; $('chips').querySel
 $('chips').addEventListener('drop', (ev) => { const ch = ev.target.closest('.chip'); if (!dragK || !ch) return; ev.preventDefault(); moveStep(dragK, ch.dataset.k); });
 // ---------- the result of a run, against the run with every step in the usual order ----------
 const REF = {};
+// problems in the last frame of a recording, measured as the counts box measures them, plus overlapping boxes
+function lastProblems(Rx) {
+  const f = Rx.frames[Rx.frames.length - 1], vis = [], idx = new Map();
+  for (let v = 0; v < Rx.n; v++) if (!isNaN(f.P[2 * v])) { idx.set(v, vis.length); vis.push(v); }
+  const P = vis.map((v) => ({ x: f.P[2 * v], y: f.P[2 * v + 1] })), D = vis.map((v) => Rx.D[v]), ks = [];
+  Rx.E.forEach((e, k) => { if (idx.has(e.s) && idx.has(e.t)) ks.push(k); });
+  const m = O.routeMetrics(P, D, ks.map((k) => [idx.get(Rx.E[k].s), idx.get(Rx.E[k].t), Rx.E[k].sub ? 2 : 1, 0]), ks.map((k) => (f.routes ? { ...f.routes[k], label: $('names').checked && Rx.E[k].name ? f.routes[k].label : null } : null)), 3);
+  let ov = 0; for (let i = 0; i < P.length; i++) for (let j = i + 1; j < P.length; j++) if (Math.abs(P[i].x - P[j].x) < (D[i].w + D[j].w) / 2 && Math.abs(P[i].y - P[j].y) < (D[i].h + D[j].h) / 2) ov++;
+  return { pr: m.cross + m.thru + (m.labelOver || 0) + ov, ms: Rx.frames.reduce((a, x) => a + (x.ms || 0), 0) };
+}
+// our other layouts on the same graph, run here the same way (same steps switched on, same links), once per graph and setup
+const RIVALS = {};
+async function measureRivals(key, algo, seed) {
+  const ck = [key, seed, $('limit').value, LayoutGraphs.style(), LINES, $('names').checked].join('|'), M = (RIVALS[ck] = RIVALS[ck] || {});
+  for (const a of ['auto', 'compact', 'grouped', 'tidy']) if (a !== algo && !M[a]) M[a] = lastProblems(await recordRun(key, a, seed));
+  return M;
+}
+// bottom right of the drawing: this run's problems and time against the best of our other layouts on this graph (bestof.json):
+// the one that beats it, or the runner-up when this one wins
+function showTally(F, m, work) {
+  if (R.engine) { $('tally').innerHTML = ''; return; }
+  const me = lastProblems(R), M = R.rivals || {}; let riv = null;
+  Object.keys(M).forEach((a) => { if (a !== R.algo && (riv == null || M[a].pr < M[riv].pr || M[a].pr === M[riv].pr && M[a].ms < M[riv].ms)) riv = a; });
+  const r = riv && M[riv], cls = !r || me.pr === r.pr ? '' : me.pr < r.pr ? 'win' : 'lose', tcls = !r ? '' : work <= r.ms ? 'win' : 'lose';
+  $('tally').innerHTML = `Total problems <b class="${cls}">${me.pr}</b>${r ? ` (vs ${r.pr} ${ALGO_NAME[riv]})` : ' <small>(measuring the others…)</small>'}<br>Total time <b class="${tcls}">${Math.round(work)} ms</b>${r ? ` (vs ${Math.round(r.ms)} ms)` : ''}`;
+  $('tally').title = 'Problems: crossed links, links through classes, covered names and overlapping boxes, in the last frame. Time: all the steps of the run, measured in this browser.'
+    + (r ? ` In brackets: ${ALGO_NAME[riv]}, the best of our other layouts on this graph, run here with the same steps and links: ` + Object.keys(M).map((a) => `${ALGO_NAME[a]} ${M[a].pr} in ${Math.round(M[a].ms)} ms`).join(', ') + '.' : '');
+}
 function showResult() {
   const F = R.frames, m = metricsAt(F.length - 1), work = F.reduce((a, f) => a + (f.ms || 0), 0), cfg = setupNow(), key = [R.key, R.algo, R.seed, R.limit].join('|');
   const usual = !cfg.leftOut.length && ORD.place.join() === 'cross,thru,tight' && ORD.clean.join() === 'c-single,c-unit,c-spread,c-group' && !R.base && !xOn();
@@ -1142,7 +1186,7 @@ function showResult() {
   $('result').innerHTML = `Result: work <b>${fmtMs(work)}</b>${ref && !usual ? d(work, ref.work, fmtMs) : ''} · crossings <b>${m.cross}</b>${ref && !usual ? d(m.cross, ref.cross) : ''} · through classes <b>${m.thru}</b>${ref && !usual ? d(m.thru, ref.thru) : ''} · sharp <b>${m.sharp}</b>${ref && !usual ? d(m.sharp, ref.sharp) : ''}`
     + (usual ? ' <small>(every step, shipped settings)</small>' : ref ? ' <small>(in brackets: against every step with the shipped settings)</small>' : ' <small>(run once with every step and the shipped settings to compare)</small>');
   $('result').title = 'Work is measured in this browser and varies by a few percent from run to run; the counts are those of the last frame.';
-  return res;
+  showTally(F, m, work); return res;
 }
 svg.addEventListener('wheel', (ev) => { ev.preventDefault(); const p = svg.createSVGPoint(); p.x = ev.clientX; p.y = ev.clientY; const q = p.matrixTransform(svg.getScreenCTM().inverse()), f = Math.exp(Math.max(-60, Math.min(60, ev.deltaY)) * 0.0015);
   view = { x: q.x - (q.x - view.x) * f, y: q.y - (q.y - view.y) * f, w: view.w * f, h: view.h * f }; userView = true; svg.setAttribute('viewBox', `${view.x} ${view.y} ${view.w} ${view.h}`); }, { passive: false });
@@ -1242,6 +1286,7 @@ function run(keepPlace) {
     if (SESS.key !== R.key + '|' + R.algo + '|' + R.seed) newSession();
     fitView(unflat(R.frames[R.frames.length - 1].P), true);
     const res = showResult(); note('run', { setup: setupNow(), result: res });
+    if (!engine) setTimeout(() => measureRivals(key, algo, seed).then((M) => { if (my !== runSeq) return; R.rivals = M; showTally(R.frames, null, R.frames.reduce((a, f) => a + (f.ms || 0), 0)); }).catch((e) => console.error(e)), 400);
     $('status').textContent = `${R.n} classes, ${R.E.length} links`;
     if (keepU != null) { T = keepU * TL.total; render(); } else play(); // a toggle keeps the place and stays paused, so the change is seen at the same moment
   }).catch((err) => { if (my === runSeq) $('status').textContent = 'Could not lay out: ' + err.message; console.error(err); }), 20);
