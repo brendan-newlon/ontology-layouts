@@ -65,6 +65,14 @@ a.path i { display: block; font-style: normal; font-size: .75rem; text-transform
 .steps { counter-reset: s; list-style: none; padding: 0; display: grid; gap: 8px; max-width: 74ch; }
 .steps li { counter-increment: s; position: relative; padding: 2px 0 2px 38px; margin: 0; }
 .steps li::before { content: counter(s); position: absolute; left: 0; top: 2px; width: 26px; height: 26px; border-radius: 50%; background: var(--accent-soft); color: var(--accent); font-weight: 700; display: grid; place-items: center; font-size: .85rem; }
+.tabs { display: flex; flex-wrap: wrap; gap: 4px; margin: 2rem 0 0; border-bottom: 1px solid var(--rule); }
+.tabs button { font: inherit; font-size: .98rem; font-weight: 600; text-align: left; color: var(--muted); background: none; border: 1px solid transparent; border-bottom: 0; border-radius: 9px 9px 0 0; padding: 8px 14px; margin-bottom: -1px; cursor: pointer; }
+.tabs button:hover { color: var(--ink); }
+.tabs button[aria-selected="true"] { color: var(--accent); background: var(--paper); border-color: var(--rule); box-shadow: inset 0 3px 0 var(--accent); }
+.tabs button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+@media (max-width: 520px) { .tabs button { flex: 1 1 100%; border-radius: 9px; border: 1px solid var(--rule); margin-bottom: 4px; } .tabs { border-bottom: 0; } }
+h2.tabhead { border-top: 0; margin-top: 1.4rem; padding-top: 0; font-size: 1.7rem; }
+h2.tabhead small { display: block; text-transform: uppercase; letter-spacing: .12em; font-size: .78rem; color: var(--accent); font-weight: 600; margin-bottom: .2rem; }
 .foot { margin-top: 3rem; padding-top: 1rem; border-top: 1px solid var(--rule); color: var(--muted); font-size: .9rem; }
 </style>
 <script src="../site-nav.js" data-page="${pageKey}" defer></script>
@@ -138,6 +146,7 @@ function intro() {
   const body = `<div class="kicker">Graph layout for ontologies</div>
 <h1 class="big">Ontology diagrams a reader can follow</h1>
 <p class="lede">Automatic layouts that place each class so its links can be followed: few crossed links, no link running under a class that it does not belong to, and a compact drawing. In under a second, the same drawing on any computer, with one function call for your app.</p>
+<p class="prose">The layout to use is <strong>Tidy Mycelium</strong>, our best, and the default everywhere: in the library and in the Lab, which opens with it. The earlier layouts remain available beside it (<a href="#families">two families of layouts</a>).</p>
 
 <div class="paths">
   <a class="path" ${site('playback')}><i>2 minutes</i><b>Watch it work</b><span>Play a layout step by step on a progress bar as long as the work itself. Switch steps off, move classes, mark what you see.</span></a>
@@ -154,22 +163,26 @@ function intro() {
 <div class="cmp">${fig(theirs, 'Graphviz neato')}${fig(ours, 'Ours: Tidy Mycelium')}</div>
 <p class="note">Both drawings are recorded in the benchmarks (the open-source layouts at general settings there; tuned, they do somewhat better). Every test graph can be compared in the <a ${site('benchmarks', '')}>Benchmarks</a>.</p>
 
-<h2 id="numbers">In numbers</h2>
+<h2 id="numbers">Tidy Mycelium in numbers</h2>
 <div class="stats">
   <div class="stat"><b>Well under half the crossed links</b><span>of the best tuned open-source layouts over 15 development graphs: 402 against 960 for tuned Graphviz <code>neato</code>.</span></div>
   <div class="stat"><b>A sixth of the links through classes</b><span>of tuned WebCola (54 against 307); tuned <code>neato</code> comes closer (81) in about 11 times the area.</span></div>
   <div class="stat"><b>First of 12</b><span>on the five measures that matter for ontologies, and first again on 36 graphs never seen during development.</span></div>
-  <div class="stat"><b>Under a second</b><span>at the median, clean-up included; about 1.7 s for 1,200 classes, where Graphviz takes 20 s.</span></div>
+  <div class="stat"><b>Under a second</b><span>about a quarter of a second at the median, clean-up included; about 1.7 s for 1,200 classes, where Graphviz takes about 20 s.</span></div>
 </div>
 
-<h2 id="how">How it works</h2>
+<h2 id="how">How Tidy Mycelium works</h2>
 <ol class="steps">
-<li><strong>Placement.</strong> Tidy Mycelium places the dense core of the graph first, in closely linked groups with room round each hub, then puts the parts that hang off it into the open space round them. Two earlier layouts remain available: Tidy Stress, for typical ontologies, and Mycelium; Best Read runs both and keeps the more readable drawing.</li>
+<li><strong>Placement.</strong> Tidy Mycelium places the dense core of the graph first, in closely linked groups with room round each hub, then puts the parts that hang off it into the open space round them.</li>
 <li><strong>Clean-up, taught by a person.</strong> Then the drawing is tidied the way a person tidies it: a class moved off a link into open space, leaves turned round the class they hang from, crowded corners spread out. These moves come from Brendan Newlon, who built the Lab to teach them: he tidied drawings there while explaining what he looks for, what he fixes first and why, and an AI assistant worked out the rules and their math from what he showed and said.</li>
 <li><strong>Empty space taken in.</strong> After the clean-up, Tidy Mycelium takes back the room it kept: whole bands of the drawing move inward from each side and corner, taking along what is in their way, and then class by class, as long as nothing gets worse.</li>
 <li><strong>Link routing.</strong> Parallel links become arcs side by side, self-links loops, a link that still runs through a class bends round it, and link names go where they cover nothing.</li>
 </ol>
 <p class="prose">Each step can be watched in the <a ${site('playback')}>Playback</a>, switched off to see what it is worth, or replaced by your own layout: the clean-up and the routing also tidy a drawing made by another layout. The same methods keep a drawing stable as a graph grows: expand a class, and nothing already drawn moves.</p>
+
+<h2 id="families">Two families of layouts</h2>
+<p class="prose"><strong>Tidy Mycelium</strong> is the newest layout and the default of the library and the Lab. Our drawing and the numbers above are all its own.</p>
+<p class="prose"><strong>The earlier layouts</strong> remain available, because each brought an approach of its own that also worked well. Tidy Stress places the classes by stress, the way most general-purpose layouts do, then makes tidy-up moves; Mycelium keeps closely linked groups together, with rings of classes round each hub and fans of leaves; Best Read runs both and keeps the more readable drawing. It was the default until November 2026. They share the clean-up and the link routing with Tidy Mycelium; the <a ${site('developers', ':best-read')}>developer guide</a> shows how to choose one.</p>
 
 <h2 id="taught">How it was built</h2>
 <p class="prose">The placement stands on published methods: stress majorization started from pivot MDS, Louvain community detection to find groups of closely linked classes, and readability measures from graph-drawing research. The clean-up did not come from the literature. Brendan Newlon designed the Lab and the Playback as a place to teach it: he tidied drawings by hand while explaining how he spots problems, which come first and how he thinks about solving them, and had an AI assistant, Claude, derive rules and the math behind them from what he showed and said. Every rule was kept only if it held on graphs nobody had looked at. Then he watched the result in the Playback and named what was still wrong in a few words ("don't fence me in", "pull it in from the edge"); each phrase became a short pass of its own. Ideas that did not hold up, such as bending links instead of moving classes, were measured and dropped. The full account, with the teaching sessions and the lab to try, is on <a ${site('story')}>How it was built</a>.</p>
@@ -177,9 +190,53 @@ function intro() {
   return page({ title: 'Ontology Layouts', description: 'Readable automatic layouts for ontology diagrams: what they do, the difference on one ontology, and where to go next.', pageKey: 'intro', barTitle: 'Introduction', body });
 }
 
+// The guide has two parts, each between <!--tab:id Label--> and <!--/tab--> in the Markdown. On GitHub they read as two
+// sections, each under its own ## heading with ### sections; here each becomes a tab panel: its ## heading is the panel's
+// header (saying which part the reader is in) and its ### sections become the page's h2 sections. The first part is shown;
+// #id (a panel) or #anchor (a heading inside a panel) in the address opens that panel.
 function guide() {
-  const md = read('docs/DEVELOPER-GUIDE.md'), title = /^# (.*)$/m.exec(md)[1];
-  const body = `<div class="kicker">For developers</div>\n<h1 class="big">${esc(title.replace(/^Developer guide: /, ''))}</h1>\n<div class="prose" style="max-width:80ch">${markdown(md)}</div>`;
+  const md = read('docs/DEVELOPER-GUIDE.md').replace(/\r\n/g, '\n'), title = /^# (.*)$/m.exec(md)[1];
+  const tabs = [], rest = md.replace(/<!--tab:(\S+) (.*?)-->\n([\s\S]*?)<!--\/tab-->/g, (_, id, label, part) => {
+    const head = /^## (.*)$/m.exec(part);
+    tabs.push({ id, label, head: head ? head[1] : label, md: part.replace(/^## .*\n/m, '').replace(/^### /gm, '## ') });
+    return '';
+  });
+  const bar = `<div class="tabs" role="tablist" aria-label="Layouts">${tabs.map((t, i) => `<button type="button" role="tab" id="tab-${t.id}" data-tab="${t.id}" aria-controls="${t.id}" aria-selected="${i === 0}" tabindex="${i === 0 ? 0 : -1}">${esc(t.label)}</button>`).join('')}</div>`;
+  const panels = tabs.map((t, i) => `<section class="tabpanel" role="tabpanel" id="${t.id}" aria-labelledby="tab-${t.id}"${i ? ' hidden' : ''}>
+<h2 class="tabhead" id="${slug(t.head)}"><small>Part ${i + 1} of ${tabs.length}</small>${inline(t.head)}</h2>
+${markdown(t.md)}
+</section>`).join('\n');
+  const script = `<script>
+(function () {
+  var tabs = [].slice.call(document.querySelectorAll('[role=tab]')), panels = [].slice.call(document.querySelectorAll('[role=tabpanel]'));
+  function select(id, focus) {
+    tabs.forEach(function (t) { var on = t.dataset.tab === id; t.setAttribute('aria-selected', on); t.tabIndex = on ? 0 : -1; if (on && focus) t.focus(); });
+    panels.forEach(function (p) { p.hidden = p.id !== id; });
+  }
+  // the panel holding the element with this id (or the panel itself), opened if it is hidden; returns the element
+  function open(id) {
+    var el = id && document.getElementById(id), p = el && el.closest('[role=tabpanel]');
+    if (p && p.hidden) select(p.id);
+    return p ? el : null;
+  }
+  function fromHash() { var el = open(decodeURIComponent(location.hash.slice(1))); if (el) el.scrollIntoView(); }
+  tabs.forEach(function (t, i) {
+    t.addEventListener('click', function () { select(t.dataset.tab); history.replaceState(null, '', '#' + t.dataset.tab); });
+    t.addEventListener('keydown', function (ev) {
+      var k = ev.key === 'ArrowRight' ? 1 : ev.key === 'ArrowLeft' ? -1 : 0; if (!k) return;
+      ev.preventDefault(); var n = tabs[(i + k + tabs.length) % tabs.length]; select(n.dataset.tab, true); history.replaceState(null, '', '#' + n.dataset.tab);
+    });
+  });
+  // a link to a section in the other part opens that part before the browser scrolls to it
+  document.addEventListener('click', function (ev) { var a = ev.target.closest && ev.target.closest('a[href^="#"]'); if (a) open(decodeURIComponent(a.getAttribute('href').slice(1))); });
+  window.addEventListener('hashchange', fromHash);
+  // the one-page site scrolls a section into view without changing this page's address: open its part first
+  var scrollIntoView = Element.prototype.scrollIntoView;
+  Element.prototype.scrollIntoView = function () { var p = this.closest && this.closest('[role=tabpanel]'); if (p && p.hidden) select(p.id); return scrollIntoView.apply(this, arguments); };
+  if (location.hash) fromHash();
+})();
+</script>`;
+  const body = `<div class="kicker">For developers</div>\n<h1 class="big">${esc(title.replace(/^Developer guide: /, ''))}</h1>\n<div class="prose" style="max-width:80ch">${markdown(rest)}\n${bar}\n${panels}</div>\n${script}`;
   return page({ title: 'Developer guide · Ontology Layouts', description: 'How to use the ontology layouts in your app: one call, your own node shapes, every option with its measured trade-offs.', pageKey: 'developers', barTitle: 'Developer guide', body });
 }
 

@@ -34,6 +34,11 @@ const DEFAULTS = ['Graphviz neato', 'Graphviz fdp', 'Graphviz sfdp', 'ELK stress
 const TUNED = ['Graphviz neato (tuned)', 'Graphviz sfdp (tuned)', 'Graphviz fdp (tuned)', 'ELK stress (tuned)', 'ELK force (tuned)', 'ELK layered (tuned)', 'dagre (tuned)', 'WebCola (tuned)', 'd3-force (tuned)', 'Cytoscape cose (tuned)', 'Cytoscape fcose (tuned)'];
 const TM = 'Tidy Mycelium (ours)', TS = 'Tidy Stress (ours)', MY = 'Mycelium (ours)', BR = 'Best Read (ours)', OWN = [BR, TS, MY];
 const TMO = ['Tidy Mycelium, smaller (ours)', 'Tidy Mycelium, faster (ours)'];
+// The page has a tab for each family: Tidy Mycelium (with its two preferences, each ranked on its own) and the earlier layouts
+// (Best Read, with the two layouts it chooses between, each ranked on its own). Each family gets its own tables.
+const FAM = {
+  TM: { head: TM, own: TMO, key: '', note: (n, pool) => `Tidy Mycelium with <code>prefer: 'smaller'</code> and <code>prefer: 'faster'</code>, each ranked on its own against the same ${n} layouts (a separate ranking of ${pool} for each).` },
+  BR: { head: BR, own: [TS, MY], key: '_BR', note: (n, pool) => `Best Read draws with one of these two layouts. Each of them, ranked on its own against the same ${n} layouts: two separate rankings of ${pool}, one without Mycelium and one without Tidy Stress (and neither with Best Read). So "1st of ${pool}" means first in its own ranking, not a tie between them.` } };
 const show = (a) => a.replace(' (ours)', '').replace(' (tuned)', '').replace('dagre (layered)', 'dagre');
 const msf = (x) => (x >= 1000 ? (x / 1000).toFixed(1) + ' s' : Math.round(x) + ' ms');
 const n1 = (x) => x.toFixed(1), int = (x) => Math.round(x).toLocaleString('en-US');
@@ -61,36 +66,38 @@ function setOf(rows, keys) {
   // one ranking table: Best Read against the open-source layouts, one pool, best mean rank first; then Tidy Stress and
   // Mycelium, each ranked on its own against the same layouts (its own pool of the same size), so every number is a rank
   // among the same number of layouts
-  function rankTable(others, M) {
-    const RH = ranks([TM, ...others], M), RO = Object.fromEntries(OWN.map((a) => [a, ranks([a, ...others], M)]));
+  function rankTable(others, M, F) {
+    const H = F.head, OWN = F.own, RH = ranks([H, ...others], M), RO = Object.fromEntries(OWN.map((a) => [a, ranks([a, ...others], M)]));
     const pool = others.length + 1, ord = (i) => i + (i % 10 === 1 && i % 100 !== 11 ? 'st' : i % 10 === 2 && i % 100 !== 12 ? 'nd' : i % 10 === 3 && i % 100 !== 13 ? 'rd' : 'th');
-    const best = Object.fromEntries([...M.map(([f]) => f), 'mean'].map((f) => [f, Math.min(...[TM, ...others].map((a) => RH[a][f]))]));
+    const best = Object.fromEntries([...M.map(([f]) => f), 'mean'].map((f) => [f, Math.min(...[H, ...others].map((a) => RH[a][f]))]));
     const cell = (v, f, b) => `<td${b && Math.abs(v - b[f]) < 1e-9 ? ' class="best"' : ''}>${n1(v)}</td>`;
     const cols = (a, src, b) => M.map(([f]) => cell(src[a][f], f, b)).join('') + cell(src[a].mean, 'mean', b) + `<td>${int(sum(a, 'cross'))}</td><td>${int(sum(a, 'thru'))}</td><td>${msf(med(a, 'ms'))}</td>`;
-    const sorted = [TM, ...others].sort((x, y) => RH[x].mean - RH[y].mean);
+    const sorted = [H, ...others].sort((x, y) => RH[x].mean - RH[y].mean);
     const head = (first) => `<thead><tr><th>${first}</th><th>Layout</th>${M.map(([, l]) => `<th>${l}</th>`).join('')}<th>Overall score (average place, lower is better)</th><th>Crossed links, total</th><th>Links through classes, total</th><th>Median time</th></tr></thead>`;
-    const body = sorted.map((a, i) => `<tr${a === TM ? ' class="ours"' : ''}><td>${i + 1}</td><td>${a === TM ? 'Tidy Mycelium (ours)' : show(a)}</td>${cols(a, RH, best)}</tr>`).join('');
+    const name = (a) => (a === H ? H : show(a)).replace(/^Tidy Mycelium, (smaller|faster) \(ours\)$/, "Tidy Mycelium, prefer '$1'");
+    const body = sorted.map((a, i) => `<tr${a === H ? ' class="ours"' : ''}><td>${i + 1}</td><td>${name(a)}</td>${cols(a, RH, best)}</tr>`).join('');
     const place = (R, a) => [a, ...others].sort((x, y) => R[x].mean - R[y].mean).indexOf(a) + 1;
-    const body2 = OWN.map((a) => `<tr class="ours"><td>${ord(place(RO[a], a))} of ${pool}</td><td>${show(a)}</td>${cols(a, RO[a], null)}</tr>`).join('');
-    const html = `<div class="tbl"><table>${head('Place')}<tbody>${body}</tbody></table></div>` +
-      `<p class="rnote">Our earlier layouts, each ranked on its own against the same ${others.length} layouts (a separate ranking of ${pool} for each, without Tidy Mycelium): Best Read, which keeps the better of Tidy Stress and Mycelium, and the two it chooses from.</p>` +
-      `<div class="tbl"><table>${head('Place in its own ranking')}<tbody>${body2}</tbody></table></div>`;
-    return { html, RH, R: Object.fromEntries([TM, ...OWN, ...others].map((a) => [a, OWN.includes(a) ? RO[a][a] : RH[a]])), places: { [TM]: place(RH, TM), ...Object.fromEntries(OWN.map((a) => [a, place(RO[a], a)])) }, next: sorted.find((a) => a !== TM) };
+    const own = OWN.filter((a) => keys.every((k) => get(k, a)));
+    const body2 = own.map((a) => `<tr class="ours"><td>${ord(place(RO[a], a))} of ${pool}</td><td>${name(a)}</td>${cols(a, RO[a], null)}</tr>`).join('');
+    const html = `<div class="tbl"><table>${head('Place')}<tbody>${body}</tbody></table></div>` + (own.length ?
+      `<p class="rnote">${F.note(others.length, pool)}</p><div class="tbl"><table>${head('Place in its own ranking')}<tbody>${body2}</tbody></table></div>` : '');
+    return { html, RH, R: Object.fromEntries([H, ...OWN, ...others].map((a) => [a, OWN.includes(a) ? RO[a][a] : RH[a]])), places: { [H]: place(RH, H), ...Object.fromEntries(OWN.map((a) => [a, place(RO[a], a)])) }, next: sorted.find((a) => a !== H) };
   }
   // the tabs: the five measures, then the same ranking with optional measures added
-  function rankTabs(others, extra) {
-    const out = [...EXTRA, ...(extra || [])].map((x) => ({ ...x, ...rankTable(others, x.m) }));
+  function rankTabs(others, extra, F) {
+    const out = [...EXTRA, ...(extra || [])].map((x) => ({ ...x, ...rankTable(others, x.m, F) }));
     const html = `<div class="rtabs" role="tablist">${out.map((x, i) => `<button role="tab" aria-selected="${i ? 'false' : 'true'}" data-i="${i}">${x.label}</button>`).join('')}</div>` +
       out.map((x, i) => `<div class="rpanel"${i ? ' hidden' : ''}>${x.note ? `<p class="rnote">${x.note}</p>` : ''}${x.html}</div>`).join('');
     return { html: `<div class="rgroup">${html}</div>`, tabs: out };
   }
-  function perGraph() {
-    const head = '<thead><tr><th>Graph</th><th>Classes</th><th>Links</th><th>Tidy Mycelium</th><th>Best Read</th><th>Tidy Stress</th><th>Mycelium</th><th>Best tuned open-source layout</th></tr></thead>';
+  function perGraph(F) {
+    const ours = [F.head, ...F.own.filter((a) => a !== TMO[0] && a !== TMO[1])], label = (a) => show(a);
+    const head = `<thead><tr><th>Graph</th><th>Classes</th><th>Links</th>${ours.map((a) => `<th>${label(a)}</th>`).join('')}<th>Best tuned open-source layout</th></tr></thead>`;
     const ct = (r) => (r ? `${r.cross} / ${r.thru}` : '–');
-    return `<div class="tbl"><table>${head}<tbody>${keys.map((k) => { const r0 = get(k, TM) || get(k, TS) || get(k, BR); const bo = TUNED.map((a) => get(k, a)).filter(Boolean).sort((x, y) => x.cross + x.thru - y.cross - y.thru || x.fill - y.fill)[0];
-      return `<tr><td>${nameOf(k)}</td><td>${r0.n}</td><td>${r0.links}</td><td>${ct(get(k, TM))}</td><td>${ct(get(k, BR))}</td><td>${ct(get(k, TS))}</td><td>${ct(get(k, MY))}</td><td>${bo ? show(bo.algo) + ' ' + ct(bo) : '–'}</td></tr>`; }).join('')}</tbody></table></div>`;
+    return `<div class="tbl"><table>${head}<tbody>${keys.map((k) => { const r0 = ours.map((a) => get(k, a)).find(Boolean); const bo = TUNED.map((a) => get(k, a)).filter(Boolean).sort((x, y) => x.cross + x.thru - y.cross - y.thru || x.fill - y.fill)[0];
+      return `<tr><td>${nameOf(k)}</td><td>${r0.n}</td><td>${r0.links}</td>${ours.map((a) => `<td>${ct(get(k, a))}</td>`).join('')}<td>${bo ? show(bo.algo) + ' ' + ct(bo) : '–'}</td></tr>`; }).join('')}</tbody></table></div>`;
   }
-  const wins = () => { const w = {}; keys.forEach((k) => { const b = [TM, ...TUNED].map((a) => get(k, a)).filter(Boolean).sort((x, y) => x.cross + x.thru - y.cross - y.thru)[0]; if (b) w[show(b.algo)] = (w[show(b.algo)] || 0) + 1; }); return w; };
+  const wins = (H) => { const w = {}; keys.forEach((k) => { const b = [H, ...TUNED].map((a) => get(k, a)).filter(Boolean).sort((x, y) => x.cross + x.thru - y.cross - y.thru)[0]; if (b) w[show(b.algo)] = (w[show(b.algo)] || 0) + 1; }); return w; };
   const totals = () => Object.fromEntries([TM, ...TMO, BR, TS, MY, ...TUNED, ...DEFAULTS].map((a) => [show(a) + (TUNED.includes(a) ? ' (tuned)' : ''), { cross: sum(a, 'cross'), thru: sum(a, 'thru'), fill: +med(a, 'fill').toFixed(1), ms: Math.round(med(a, 'ms')), maxMs: Math.round(maxOf(a, 'ms')), xang: +mean(a, 'xang').toFixed(1), down: +mean(a, 'down').toFixed(2), thruG: +sum(a, 'thruG').toFixed(2) }]));
   return { get, sum, med, mean, rankTable, rankTabs, perGraph, wins, totals, keys };
 }
@@ -99,8 +106,10 @@ const T = {}, P = {};
 // the 15 development graphs
 {
   const S = setOf(TRAIN_ROWS, ORDER.filter((k) => TRAIN_ROWS.some((r) => r.key === k)));
-  const tuned = S.rankTabs(TUNED), def = S.rankTabs(DEFAULTS);
-  T.TABLE_TUNED = tuned.html; T.TABLE_DEFAULT = def.html; T.TABLE_PERGRAPH = S.perGraph();
+  for (const F of Object.values(FAM)) { const tu = S.rankTabs(TUNED, null, F), de = S.rankTabs(DEFAULTS, null, F);
+    T['TABLE_TUNED' + F.key] = tu.html; T['TABLE_DEFAULT' + F.key] = de.html; T['TABLE_PERGRAPH' + F.key] = S.perGraph(F);
+    P['dev' + F.key] = { tunedRank: +tu.tabs[0].RH[F.head].mean.toFixed(2), next: show(tu.tabs[0].next), nextRank: +tu.tabs[0].RH[tu.tabs[0].next].mean.toFixed(2), defaultRank: +de.tabs[0].RH[F.head].mean.toFixed(2), defaultNext: show(de.tabs[0].next), defaultNextRank: +de.tabs[0].RH[de.tabs[0].next].mean.toFixed(2), places: Object.fromEntries(Object.entries(tu.tabs[0].places).map(([a, v]) => [show(a), v])), wins: S.wins(F.head) }; }
+  const tuned = S.rankTabs(TUNED, null, FAM.TM), def = S.rankTabs(DEFAULTS, null, FAM.TM);
   // effect of the clean-up on each of our layouts
   const L = [['Tidy Stress', TS, 'Tidy Stress, no clean-up (ours)'], ['Mycelium', MY, 'Mycelium, no clean-up (ours)'], ['Best Read', BR, 'Best Read, no clean-up (ours)']];
   const head = '<thead><tr><th>Layout</th><th>Crossed links, total</th><th>Links through classes, total</th><th>Mean crossing angle</th><th>Mean angular resolution</th><th>Median area</th><th>Median time</th></tr></thead>';
@@ -116,17 +125,19 @@ const T = {}, P = {};
   P.tunedRanksDetail = Object.fromEntries(Object.entries(tuned.tabs[0].R).map(([a, r]) => [show(a), Object.fromEntries(Object.entries(r).map(([f, v]) => [f, +v.toFixed(2)]))]));
   P.defaultRanks = Object.fromEntries(Object.entries(def.tabs[0].R).map(([a, r]) => [show(a), +r.mean.toFixed(2)]));
   P.defaultRanksTM = +def.tabs[0].RH[TM].mean.toFixed(2);
-  P.winsTMvsTuned = S.wins();
+  P.winsTMvsTuned = S.wins(TM);
 }
 // graphs never seen during development: the held-out graphs and the public benchmark graphs
 for (const [id, label, pick] of [['HELDOUT', 'heldout', (k) => k.startsWith('hx_')], ['PUBLIC', 'public', (k) => k.startsWith('pb_')], ['UNSEEN', 'unseen', (k) => /^(hx|pb)_/.test(k)]]) {
   const keys = [...new Set(UNSEEN_ROWS.map((r) => r.key))].filter(pick).filter((k) => UNSEEN_ROWS.some((r) => r.key === k && r.algo === TM) && UNSEEN_ROWS.some((r) => r.key === k && r.algo === TUNED[0]));
   if (!keys.length) continue;
   keys.sort((a, b) => (UNSEEN_ROWS.find((r) => r.key === a).n - UNSEEN_ROWS.find((r) => r.key === b).n) || a.localeCompare(b));
-  const S = setOf(UNSEEN_ROWS, keys), tuned = S.rankTabs(TUNED, [GRADED]);
-  // the page shows one ranking over all unseen graphs, and the per-graph results of each set
-  if (id === 'UNSEEN') T.TABLE_UNSEEN = tuned.html; else T['TABLE_' + id + '_PERGRAPH'] = S.perGraph();
-  P[label] = { graphs: keys.length, totals: S.totals(), ranks: Object.fromEntries(tuned.tabs.map((t) => [t.id, Object.fromEntries(Object.entries(t.R).map(([a, r]) => [show(a), +r.mean.toFixed(2)]))])), ranksTM: Object.fromEntries(tuned.tabs.map((t) => [t.id, +t.RH[TM].mean.toFixed(2)])), places: Object.fromEntries(tuned.tabs.map((t) => [t.id, { ...Object.fromEntries(Object.entries(t.places).map(([a, v]) => [show(a), v])), next: show(t.next), nextRank: +t.RH[t.next].mean.toFixed(2) }])), wins: S.wins() };
+  const S = setOf(UNSEEN_ROWS, keys), tuned = S.rankTabs(TUNED, [GRADED], FAM.TM);
+  // the page shows one ranking over all unseen graphs, and the per-graph results of each set, for each family
+  for (const F of Object.values(FAM)) { if (id === 'UNSEEN') { const tu = F === FAM.TM ? tuned : S.rankTabs(TUNED, [GRADED], F); T['TABLE_UNSEEN' + F.key] = tu.html;
+      P['unseen' + F.key] = { rank: +tu.tabs[0].RH[F.head].mean.toFixed(2), next: show(tu.tabs[0].next), nextRank: +tu.tabs[0].RH[tu.tabs[0].next].mean.toFixed(2), graded: +tu.tabs[3].RH[F.head].mean.toFixed(2), wins: S.wins(F.head) }; }
+    else T['TABLE_' + id + '_PERGRAPH' + F.key] = S.perGraph(F); }
+  P[label] = { graphs: keys.length, totals: S.totals(), ranks: Object.fromEntries(tuned.tabs.map((t) => [t.id, Object.fromEntries(Object.entries(t.R).map(([a, r]) => [show(a), +r.mean.toFixed(2)]))])), ranksTM: Object.fromEntries(tuned.tabs.map((t) => [t.id, +t.RH[TM].mean.toFixed(2)])), places: Object.fromEntries(tuned.tabs.map((t) => [t.id, { ...Object.fromEntries(Object.entries(t.places).map(([a, v]) => [show(a), v])), next: show(t.next), nextRank: +t.RH[t.next].mean.toFixed(2) }])), wins: S.wins(TM) };
 }
 // Top-down drawings (results_topdown.json, from topdown.mjs) against the layered layouts, which were given subclass links
 // oriented parent to child: on the development graphs the runs kept to top-down settings, on the others the tuned runs.
