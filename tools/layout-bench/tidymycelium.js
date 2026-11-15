@@ -10,7 +10,7 @@
 //      leaf placement;
 //   5. classes off links, boxes apart; then (in tmbench) the library's clean-up, pull-in and routing as for Best Read.
 //   6. after the clean-up: empty space taken in (_tmCompact), each class with what hangs from it stepping inward while that adds no problem.
-const _TM_DEF = { K: 8, Kfrac: 0.25, L: 150, Lbig: 260, pods: 1.6, podIn: 1.6, hub: 20, room: 1, roomMode: 'add', cntW: 0.5, linkShare: 0.5,
+const _TM_DEF = { K: 8, Kfrac: 0.25, L: 170, Lbig: 260, pods: 2, podIn: 2, hub: 20, room: 1, roomMode: 'add', cntW: 0.5, linkShare: 0.5,
   restarts: 8, sweeps: 240, finCross: true, finThru: true, coreTight: false, endTight: true, endTightR: 2, unitGap: 0.75, dirs: 36, outward: 0.5,
   budget: 1000, singlesBySlice: false, shrink: 'strict', shrinkMs: 150, shrinkF: 0.88, shrinkSlack: 0.06, hubBig: 20, tries: 1, triesMs: 400, grid: true, coreRoom: 0.25, denseCore: 2.7, budgetBig: 0 };
 
@@ -289,10 +289,11 @@ function _tmCoreDensity(n, edges) {
 // kept round them (rings round busy classes count every neighbor instead), groups found on the whole graph, links inside a
 // group 0.85 and between groups 1.6 times the usual length, and a last tightening of the core. Found over 3 seeds on 62 graphs.
 const _TM_DENSE = { K: 1, room: 0, ringAll: true, comAll: true, coreTight: true, coreThru2: true, pods: 1.6, podIn: 0.85, sweeps: 120 };
-// Variants shown side by side in the Lab: 'fewer' keeps core links twice the usual length and the usual length at 170
-// (more room, fewer crossings, larger drawings); the default is the smaller drawing.
-// 'smallest' also keeps links on graphs over 100 classes at 200 rather than 260, and its bands take along whatever is in their way.
-const _TM_VAR = { fewer: { L: 170, pods: 2, podIn: 2 }, smallest: { Lbig: 200, cp: { lasso: 8, bandMs: 60 } } };
+// The default places with room (core links twice the usual length, the usual length 170: the fewest problems) and then takes
+// the room back in bands and islands that take along what is in their way. 'smallest' (shown beside it in the Lab) places
+// tighter (150, core links 1.6 times) with links on graphs over 100 classes at 200 rather than 260, and its bands take along
+// more: smaller drawings, more problems.
+const _TM_VAR = { smallest: { L: 150, pods: 1.6, podIn: 1.6, Lbig: 200, cp: { lasso: 8, bandMs: 60 } } };
 function _tmBest(items, edges, opts) {
   const o0 = opts || {}, vb = _TM_VAR[o0.variant] || {}, T0 = { ..._TM_DEF, ...vb, ...(o0.tm || {}) }, dense = T0.denseCore && _tmCoreDensity(items.length, edges) > T0.denseCore;
   const big = T0.budgetBig && items.length > 100 ? { budget: T0.budgetBig } : {}; // a big graph: less time, as Mycelium gives it
@@ -452,7 +453,7 @@ function _tmCompact(P, boxes, lay, v) {
   // along (the selection widens round it, as a lasso would) rather than blocking. Kept when nothing overlaps, every name
   // still fits, and the crossings, links through classes and links on links do not rise. Largest step first.
   let banded = 0; const BWHY = { name: 0, block: 0, lassoMax: 0, sweep: 0, cross: 0, thru: 0, line: 0, ok: 0 };
-  function bands() { if (o.bands === false) return 0; let got = 0; const inB = new Int32Array(n); let bs = 0; const tb = performance.now(), bms = o.bandMs ?? 30, late = () => performance.now() - t0 > ms || performance.now() - tb > bms;
+  function bands() { if (o.bands === false) return 0; let got = 0; const inB = new Int32Array(n); let bs = 0; const tb = performance.now(), bms = o.bandMs ?? 40, late = () => performance.now() - t0 > ms || performance.now() - tb > bms;
     for (let dir = 0; dir < 8; dir++) { if (late()) break; const a = dir * Math.PI / 4, ux = Math.cos(a), uy = Math.sin(a);
       for (const f of o.bandF || [1 / 6, 1 / 3, 1 / 2]) { if (late()) break;
         let cx = 0, cy = 0; for (let i = 0; i < n; i++) { cx += X[i] / n; cy += Y[i] / n; }
@@ -461,13 +462,13 @@ function _tmCompact(P, boxes, lay, v) {
         for (const g of o.bandG || [0.06, 0.02]) { const d = g * D; if (d < 4) continue;
           bs++; let S = []; for (let i = 0; i < n; i++) if (s[i] > cut && inB[i] !== bs) for (const w of carry[i]) if (inB[w] !== bs) { inB[w] = bs; S.push(w); }
           if (!S.length || S.length >= n - 1) continue;
-          let ok = false; for (let grow = 0; grow <= (o.lasso ?? 0); grow++) {
+          let ok = false; for (let grow = 0; grow <= (o.lasso ?? 4); grow++) {
             sp++; S.forEach((x) => (inS[x] = sp)); const ks = []; S.forEach((x) => adj[x].forEach((q) => { if (inK[q] !== sp) { inK[q] = sp; ks.push(q); } }));
-            S.forEach(delB); ks.forEach(delE); const ox = S.map((x) => X[x]), oy = S.map((x) => Y[x]), c0 = cost(S, ks, null, true); c0.push(onLines(ks));
-            S.forEach((x, i) => { X[x] = ox[i] - ux * d; Y[x] = oy[i] - uy * d; });
+            S.forEach(delB); ks.forEach(delE); const ox = S.map((x) => X[x]), oy = S.map((x) => Y[x]), mv = (t) => S.forEach((x, i) => { X[x] = ox[i] - ux * t; Y[x] = oy[i] - uy * t; });
+            mv(d); // scored (cost) only once the cheap checks below pass
             let blk = -1, bad = false; for (const k of ks) if ((inS[E[k][0]] === sp) !== (inS[E[k][1]] === sp) && clear(k) < need[k]) { bad = true; blk = inS[E[k][0]] === sp ? E[k][1] : E[k][0]; break; }
             if (!bad) for (const u of S) { nearB(bB(u), (w) => { if (blk < 0 && Math.abs(X[u] - X[w]) < hw[u] + hw[w] + gap && Math.abs(Y[u] - Y[w]) < hh[u] + hh[w] + gap) blk = w; }); if (blk >= 0) break; }
-            if (bad) BWHY.name++; else if (blk >= 0) BWHY.block++; else if (o.bandSweep !== false && sweeps(S, ox, oy)) BWHY.sweep++; else { const c1 = cost(S, ks, c0, true), l1 = onLines(ks); if (c1[0] <= c0[0] && c1[1] <= c0[1] && l1 <= c0[2]) { ok = true; BWHY.ok++; } else { BWHY[c1[0] > c0[0] ? 'cross' : c1[1] > c0[1] ? 'thru' : 'line']++;
+            if (bad) BWHY.name++; else if (blk >= 0) BWHY.block++; else if (o.bandSweep !== false && sweeps(S, ox, oy)) BWHY.sweep++; else { mv(0); const c0 = cost(S, ks, null, true); c0.push(onLines(ks)); mv(d); const c1 = cost(S, ks, c0, true), l1 = onLines(ks); if (c1[0] <= c0[0] && c1[1] <= c0[1] && l1 <= c0[2]) { ok = true; BWHY.ok++; } else { BWHY[c1[0] > c0[0] ? 'cross' : c1[1] > c0[1] ? 'thru' : 'line']++;
               // a link across the line now running through a class: that class is taken along
               if (c1[0] <= c0[0] && c1[1] > c0[1]) for (const k of ks) { if ((inS[E[k][0]] === sp) === (inS[E[k][1]] === sp)) continue; const bb = eB(k), pk = padK[k]; nearB([bb[0] - pk, bb[1] - pk, bb[2] + pk, bb[3] + pk], (w) => { if (blk < 0 && inS[w] !== sp && thru(k, w)) blk = w; }); if (blk >= 0) break; } } }
             if (!ok) S.forEach((x, i) => { X[x] = ox[i]; Y[x] = oy[i]; });
@@ -535,3 +536,31 @@ function _tmCompact(P, boxes, lay, v) {
   return [...Array(n).keys()].map((i) => ({ x: X[i], y: Y[i] }));
 }
 _tmBest.compact = _tmCompact;
+// How bad a link touching a class is: 3 = through the middle (red), 2 = clips a corner, the smaller piece cut off under 15% of the box (orange),
+// 1 = misses the box but runs within `pad` px of it (yellow), 0 = clear. Segment a-b relative to the class center, half sizes hw, hh.
+function _tmTouch(ax, ay, bx, by, hw, hh, pad) {
+  const dx = bx - ax, dy = by - ay; let t0 = 0, t1 = 1;
+  const clip = (p, q) => { if (p === 0) return q >= 0; const r = q / p; if (p < 0) { if (r > t1) return false; if (r > t0) t0 = r; } else { if (r < t0) return false; if (r < t1) t1 = r; } return true; };
+  const inBox = (w, h) => { t0 = 0; t1 = 1; return clip(-dx, ax + w) && clip(dx, w - ax) && clip(-dy, ay + h) && clip(dy, h - ay) && t0 <= t1; };
+  if (!inBox(hw, hh)) return inBox(hw + pad, hh + pad) ? 1 : 0;
+  if ((Math.abs(ax) < hw && Math.abs(ay) < hh) || (Math.abs(bx) < hw && Math.abs(by) < hh)) return 3; // ends behind the class
+  const L = Math.hypot(dx, dy) || 1, nx = -dy / L, ny = dx / L, c = nx * ax + ny * ay, C = [[-hw, -hh], [hw, -hh], [hw, hh], [-hw, hh]], poly = [];
+  for (let i = 0; i < 4; i++) { const p = C[i], q = C[(i + 1) % 4], sp = nx * p[0] + ny * p[1] - c, sq = nx * q[0] + ny * q[1] - c;
+    if (sp <= 0) poly.push(p); if ((sp < 0) !== (sq < 0) && sp !== sq) { const t = sp / (sp - sq); poly.push([p[0] + t * (q[0] - p[0]), p[1] + t * (q[1] - p[1])]); } }
+  let a = 0; for (let i = 0; i < poly.length; i++) { const p = poly[i], q = poly[(i + 1) % poly.length]; a += p[0] * q[1] - q[0] * p[1]; }
+  const f = Math.abs(a) / 2 / (4 * hw * hh); return Math.min(f, 1 - f) < 0.15 ? 2 : 3;
+}
+// Grades every link-class touch of a drawing: { red, orange, yellow, worst: per class 0-3, w: red + orange / 2 + yellow / 4 }.
+// polys: one polyline per link (null to skip), or straight lines from pos when left out.
+function _tmGrade(pos, boxes, links, polys, pad) {
+  const n = pos.length, worst = new Array(n).fill(0), g = { red: 0, orange: 0, yellow: 0 }, pd = pad == null ? 9 : pad;
+  links.forEach((e, k) => { if (e[0] === e[1]) return; const pl = polys ? polys[k] : [pos[e[0]], pos[e[1]]]; if (!pl) return;
+    let x1 = 1e18, y1 = 1e18, x2 = -1e18, y2 = -1e18; pl.forEach((p) => { x1 = Math.min(x1, p.x); x2 = Math.max(x2, p.x); y1 = Math.min(y1, p.y); y2 = Math.max(y2, p.y); });
+    for (let v = 0; v < n; v++) { if (v === e[0] || v === e[1]) continue; const c = pos[v], hw = boxes[v].w / 2, hh = boxes[v].h / 2;
+      if (x2 < c.x - hw - pd || x1 > c.x + hw + pd || y2 < c.y - hh - pd || y1 > c.y + hh + pd) continue;
+      let s = 0; for (let i = 0; i < pl.length - 1 && s < 3; i++) s = Math.max(s, _tmTouch(pl[i].x - c.x, pl[i].y - c.y, pl[i + 1].x - c.x, pl[i + 1].y - c.y, hw, hh, pd));
+      if (s) { g[['', 'yellow', 'orange', 'red'][s]]++; if (s > worst[v]) worst[v] = s; } } });
+  return { ...g, worst, w: g.red + g.orange / 2 + g.yellow / 4 };
+}
+_tmBest.grade = _tmGrade;
+_tmBest.touch = _tmTouch;
