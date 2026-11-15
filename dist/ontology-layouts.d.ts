@@ -77,6 +77,8 @@ export interface DrawOptions {
    * more problems) or 'faster' (about 40% less time, about 6% more problems, drawings about a quarter larger).
    */
   prefer?: 'fewer-problems' | 'smaller' | 'faster';
+  /** With Tidy Mycelium: if you draw each link's name at the middle of the link, the name's height in px (none is made to cover a class or another name). */
+  midNames?: number;
   /** Positions from your own layout, one per box; implies layout 'given'. */
   start?: Point[];
   /** Run the clean-up after the layout (default true; Tidy Mycelium always runs its own). */
@@ -121,7 +123,8 @@ export interface OntologyLayouts {
   /** Boxes with between: [a, b] onto the line from a to b. */
   inline(pos: Point[], boxes: Box[], links: Link[]): Point[];
   /** Placement, clean-up and empty space taken in, in one call (no cleanUp after it). */
-  tidyMycelium(boxes: Box[], links: Link[], opts?: { seed?: number; prefer?: 'fewer-problems' | 'smaller' | 'faster' }): { pos: Point[]; algo: string };
+  /** midNames: if your app draws each link's name at the middle of the link, the name's height in px; the take-in then never makes a name cover a class or another name. */
+  tidyMycelium(boxes: Box[], links: Link[], opts?: { seed?: number; prefer?: 'fewer-problems' | 'smaller' | 'faster'; midNames?: number }): { pos: Point[]; algo: string };
   bestRead(boxes: Box[], links: Link[], opts?: { seed?: number; roomy?: boolean }): { pos: Point[]; algo: string };
   tidyStress(boxes: Box[], links: Link[], opts?: { seed?: number; roomy?: boolean }): { pos: Point[]; algo: string };
   /** null under 8 classes. */

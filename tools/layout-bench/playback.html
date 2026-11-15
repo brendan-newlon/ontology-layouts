@@ -451,7 +451,7 @@ function recordTidy(G, seed) {
     score(name, s) { const r = runs.find((x) => x.name === name); if (r) r.score = s; },
     chosen(name) { chosen = name; } };
   const tm = { finCross: ctl('tm-cross').run, finThru: ctl('tm-thru').run, shrink: ctl('tm-shrink').run ? _TM_DEF.shrink : false };
-  let res; tLast = performance.now(); res = O.clocked(() => O.traced(sink, () => _tmBest(G.items, G.edges, { seed, tm, variant: TM_PREFER[G.algo] })));
+  let res; tLast = performance.now(); res = O.clocked(() => O.traced(sink, () => _tmBest(G.items, namedLinks(G), { seed, tm, variant: TM_PREFER[G.algo] })));
   const tEnd = performance.now(), P = res.pos.map((p) => ({ x: p.x, y: p.y })); O.sep(P, G.N, 6, 200); const tSep = performance.now();
   const win = runs.find((r) => r.name === chosen) || runs[runs.length - 1], wi = runs.indexOf(win);
   const frames = [{ key: 'start', P: new Float64Array(2 * n).fill(NaN), ms: 0, run: -1 }];

@@ -70,7 +70,7 @@ The tidy tree in the library (`_ogTreeLayout`, after Reingold–Tilford, levels 
   | Best Read | 17,735 | 1,799 | 59 s |
   | Mycelium | 17,516 | 2,002 | 42 s |
 
-  Problems are crossed links, links through classes, covered link names and overlaps, with straight links; area is each drawing's bounding box over its boxes' area, summed. At 400 to 1,204 classes it draws a fifth to a third fewer problems than Best Read in about 1.5 s.
+  Problems are crossed links, links through classes and overlaps, with straight links and no link names; area is each drawing's bounding box over its boxes' area, summed. With a name on every relationship (seed 1) Tidy Mycelium draws 5,325 problems (52 covered names) against Best Read's 6,191 (183), in drawings about a tenth larger (704 against 647). At 400 to 1,204 classes it draws a fifth to a third fewer problems than Best Read in about 1.5 s.
 - **Tidy Stress** (up to a few dozen classes). Stress majorization on graph distances, then tidy-up moves that remove crossings, links through boxes and long links. It tries several settings and keeps the most readable drawing.
 - **Mycelium** (large and hub-heavy ontologies). The same placement and tidy-up, plus Louvain pods (shorter links inside groups, longer between), hub rings and leaf fanning.
 - **Best Read** (`layout: 'auto'`, the default until November 2026). Runs Tidy Stress and Mycelium, scores the drawings (problems, mean length and area; no long-link penalty), and keeps the better one. Above 100 classes it runs Mycelium alone.
