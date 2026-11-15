@@ -167,6 +167,7 @@ footer .grp { display: flex; gap: 4px; align-items: center; }
       <button data-f="forget" id="fForget">Remove this graph from the list</button>
       <div class="h">Export the drawing shown</div>
       <button data-f="svg">SVG image</button><button data-f="png">PNG image</button>
+      <button data-f="math" title="The whole run as plain text: the graph, every step in order with its time and the problems after it, the result against our other layouts, and the final positions. Paste it into another assistant to ask for ideas.">Copy the math (the run as text)</button>
       <button data-f="json">JSON: positions, sizes and link paths</button><button data-f="graphml">GraphML (yEd, Gephi, Cytoscape)</button>
       <div class="h">Your notes</div>
       <button data-f="session">Download this session (JSON)</button>
@@ -288,14 +289,14 @@ const STEPS = [ // key, group, name, what it does, color, can it be left out (Ru
   ['tight', 'Placement', 'Shortening long links', 'Each class is pulled toward its neighbors when its links get shorter and nothing gets worse; then the whole drawing shrinks as far as the boxes allow.', '#8a6fd1', true],
   ['leaves', 'Placement', 'One-link classes placed', 'Classes with one link come back, each beside its neighbor in the direction where its link crosses nothing A long name goes to the side rather than above or below. Each frame is one class with all its one-link classes.', '#2f9d6a', false],
   ['leaffix', 'Placement', 'One-link classes re-placed', 'One-link classes that the moves left too close or on a line are placed again.', '#5fb98a', false],
-  ['tm-start', 'Tidy Mycelium', 'Start: hanging parts set aside', 'Parts that hang off the rest by one class (a leaf, a chain, a small tree, a triangle) are set aside. The class each hangs from keeps room for them: more for more classes, and more again for each separate part, since each needs a slice of its own. The rest, the core, starts where a quick projection of the graph distances puts it.', '#5b8def', false],
+  ['tm-start', 'Tidy Mycelium', 'Start: hanging parts set aside', 'Parts that hang off the rest by one class (a leaf, a chain, a small tree, a triangle) are set aside. The class each hangs from keeps room for them: more for more classes, and more again for each separate part, since each needs a slice of its own. The rest, the core, starts where a quick projection of the graph distances puts it. A dense core (more than 2.7 links per class once everything that hangs off is peeled away) is placed the way Mycelium places it instead: only one-link classes are set aside, no room is kept, links inside a group are shorter and between groups longer, and the core is tightened at the end.', '#5b8def', false],
   ['tm-stress', 'Tidy Mycelium', 'Stress majorization, with room', 'The core\'s classes are pulled toward distances that match how many links apart they are, plus the room each keeps for its hidden parts, so a class with more hidden parts keeps further from the others. A class with many links gets longer links, so its neighbors fit round it in a ring. Links in the core are twice the usual length, which leaves room for the parts placed later and crosses fewer links. Each frame is one sweep.', '#3d6fd6', false],
   ['tm-cross', 'Tidy Mycelium', 'Core crossing swaps', 'Before the hidden parts come back: a class at the end of a crossed link swaps place with another, or moves beside a neighbor, when that crosses fewer links.', '#c43d32', true],
   ['tm-thru', 'Tidy Mycelium', 'Core off-link moves', 'Before the hidden parts come back: a class with a link running through its box moves off it, never adding a crossing.', '#e0702b', true],
   ['tm-unit', 'Tidy Mycelium', 'Parts placed in open slices', 'Each part set aside comes back, largest first, fanned out round the class it hangs from, in the slice with the most open space. Rays are cast round that class through a grid of what is drawn already; a larger part also prefers a slice that opens to the outside of the drawing ("don\'t fence me in"). Each frame is one part.', '#1f8577', false],
   ['tm-leaves', 'Tidy Mycelium', 'One-link classes placed', 'Single classes with one link come back, each beside its neighbor in the direction where its link crosses nothing A long name goes to the side rather than above or below. Each frame is one class with all its one-link classes.', '#2f9d6a', false],
   ['tm-finish', 'Tidy Mycelium', 'Classes moved off links', 'Boxes that touch are pushed apart, and a class with a link running through it moves off it.', '#9f4f2f', false],
-  ['tm-shrink', 'Tidy Mycelium', 'Pulled in', 'The whole drawing shrinks toward its middle a step at a time, boxes pushed apart after each step, as long as the problems stay within a small allowance that the clean-up then repairs. Each frame is one step kept.', '#5b7fa8', true],
+  ['tm-shrink', 'Tidy Mycelium', 'Pulled in', 'The whole drawing shrinks toward its middle a step at a time, boxes pushed apart after each step; a step is kept only when it adds no crossing and no link through a class, so nothing is pulled across other links. Each frame is one step kept.', '#5b7fa8', true],
   ['e-iter', 'Open-source layout', 'Iterations', 'The open-source layout at work; each frame is a few of its iterations.', '#64748b', false],
   ['e-final', 'Open-source layout', 'Result', 'This layout does not report its steps: its result appears at once, after the time it took.', '#475569', false],
   ['c-single', 'Clean-up', 'Moves into open space', 'A class in a problem moves into nearby open space (cells with no class and no link) or is nudged.', '#d9822b', true],
@@ -449,7 +450,7 @@ function recordTidy(G, seed) {
       cur.frames.push({ key, P: A, r: rtag, ms: t - tLast, ov, from: info && info.from != null ? info.from : undefined, note: undefined }); tLast = performance.now(); },
     score(name, s) { const r = runs.find((x) => x.name === name); if (r) r.score = s; },
     chosen(name) { chosen = name; } };
-  const tm = { finCross: ctl('tm-cross').run, finThru: ctl('tm-thru').run, shrink: ctl('tm-shrink').run ? 'slack' : false };
+  const tm = { finCross: ctl('tm-cross').run, finThru: ctl('tm-thru').run, shrink: ctl('tm-shrink').run ? _TM_DEF.shrink : false };
   let res; tLast = performance.now(); res = O.clocked(() => O.traced(sink, () => _tmBest(G.items, G.edges, { seed, tm })));
   const tEnd = performance.now(), P = res.pos.map((p) => ({ x: p.x, y: p.y })); O.sep(P, G.N, 6, 200); const tSep = performance.now();
   const win = runs.find((r) => r.name === chosen) || runs[runs.length - 1], wi = runs.indexOf(win);
@@ -497,6 +498,8 @@ function cleanFrames(G, P, opt, run) {
   }
   return { frames, info, P: r.P.map((p) => ({ x: p.x, y: p.y })) };
 }
+// the links with the width of their names (for the room the last step of Tidy Mycelium keeps along each link)
+const namedLinks = (G) => G.E.filter((e) => e.s !== e.t).map((e) => [e.s, e.t, e.sub ? 2 : 1, e.name ? e.name.length * 6 + 8 : 0]);
 // the clean-up (ours only) and the link steps, from positions P
 function tailFrames(G, P, { cleanup, budgetMs, links, run }) {
   const frames = [], info = {}; let Pc = P;
@@ -511,7 +514,7 @@ function tailFrames(G, P, { cleanup, budgetMs, links, run }) {
       snap(stage, Q) { const t = performance.now(); frames.push({ key: 'c-' + stage, P: flat(Q), ms: t - tl, run }); tl = performance.now(); } };
     try { const EL = G.E.filter((e) => e.s !== e.t).map((e) => [e.s, e.t]); Pc = O.clocked(() => O.traced(sink, () => O.leafSwap(Pc, G.items, EL)));
       if (ctl('c-pull').run) Pc = O.clocked(() => O.traced(sink, () => O.pullIn(Pc, G.items, EL)));
-      if (G.algo === 'tidy' && ctl('c-compact').run) Pc = O.clocked(() => O.traced(sink, () => _tmBest.compact(Pc, G.items, EL))); } finally { Object.assign(O.tune, keep); }
+      if (G.algo === 'tidy' && ctl('c-compact').run) Pc = O.clocked(() => O.traced(sink, () => _tmBest.compact(Pc, G.items, namedLinks(G)))); } finally { Object.assign(O.tune, keep); }
   }
   if (!links || LINES === 'straight') return { frames, info, P: Pc };
   // the links, one routing step at a time, on the final positions
@@ -619,14 +622,14 @@ function stepNow(k, P, mult, run) {
       else if (what === 'cross') traced(() => { _ogClFinCross(Q, N, E2, 150 * mult, R.seed); O.sep(Q, N, 12, 120); sink.snap(k, Q); });
       else if (what === 'thru') traced(() => _ogClFinThru(Q, N, E2, 12, 10, 150 * mult));
       else if (what === 'tight') traced(() => _ogClFinTight(Q, N, E2, 12, 26, 200 * mult));
-      else if (what === 'shrink') { O.sep(Q, N, 12, 120); const kept = traced(() => _tmShrink(Q, N, E2.map((e) => ({ s: e.s, t: e.t })), { ..._TM_DEF, shrink: 'slack', shrinkMs: 150 * mult }, _ogNow())); info.note = `${kept} shrink step${kept === 1 ? '' : 's'} kept.`; } }
+      else if (what === 'shrink') { O.sep(Q, N, 12, 120); const kept = traced(() => _tmShrink(Q, N, E2.map((e) => ({ s: e.s, t: e.t })), { ..._TM_DEF, shrinkMs: 150 * mult }, _ogNow())); info.note = `${kept} shrink step${kept === 1 ? '' : 's'} kept.`; } }
   } else if (REDO_LEAF.has(k)) { cur = fill(); const leafOf = _ogClLeaves(n, R.E2), Q = cur.map((p) => ({ ...p }));
     traced(() => _ogClPlaceLeaves(Q, R.N, R.E2, leafOf, new Array(n).fill(40), 170, 10, true, _ogNow() + 200 * mult)); }
   else if (/^c-(single|unit|spread|group|finish)$/.test(k)) { cur = fill(); const st = k.slice(2);
     const c = cleanFrames(R, cur, { budgetMs: 500 * mult, order: st === 'finish' ? [] : [st], spread: st === 'spread', groups: st === 'group', finish: st === 'finish' }, run);
     c.frames.forEach((f) => frames.push({ ...f, key: k })); cur = c.P; info.tried = c.info[k]; }
   else if (/^c-(swap|fence|nudge|pull|compact)$/.test(k)) { cur = fill(); const EL = R.E.filter((e) => e.s !== e.t).map((e) => [e.s, e.t]), keep = { noSwap: O.tune.noSwap, noFence: O.tune.noFence, noNudge: O.tune.noNudge };
-    try { if (k === 'c-pull') cur = traced(() => O.pullIn(cur, R.items, EL)); else if (k === 'c-compact') cur = traced(() => _tmBest.compact(cur, R.items, EL)); else { Object.assign(O.tune, { noSwap: k !== 'c-swap', noFence: k !== 'c-fence', noNudge: k !== 'c-nudge' }); cur = traced(() => O.leafSwap(cur, R.items, EL)); } }
+    try { if (k === 'c-pull') cur = traced(() => O.pullIn(cur, R.items, EL)); else if (k === 'c-compact') cur = traced(() => _tmBest.compact(cur, R.items, namedLinks(R))); else { Object.assign(O.tune, { noSwap: k !== 'c-swap', noFence: k !== 'c-fence', noNudge: k !== 'c-nudge' }); cur = traced(() => O.leafSwap(cur, R.items, EL)); } }
     finally { Object.assign(O.tune, keep); }
     frames.forEach((f) => (f.key = k)); }
   else if (k.startsWith('r-')) { cur = fill(); const t = tailFrames(R, cur, { cleanup: false, links: true, run }); frames.push(...t.frames); cur = t.P; }
@@ -1242,6 +1245,25 @@ function exportJson() {
     nodes: R.labels.map((l, i) => ({ id: i, label: l, iri: iris ? iris[i] : undefined, x: C.P[i] ? r1(C.P[i].x) : null, y: C.P[i] ? r1(C.P[i].y) : null, w: r1(R.D[i].w), h: r1(R.D[i].h), shape: R.D[i].shape || 'box', r: R.D[i].r })),
     links: R.E.map((e, k) => ({ source: e.s, target: e.t, kind: e.sub ? 'subClassOf' : 'relationship', name: e.name || undefined, path: linkPoly(k).map((q) => [r1(q.x), r1(q.y)]) })) }, null, 1);
 }
+// "Copy the math": the run as plain text, for a reader (or another assistant) who has not seen the page
+function mathText() {
+  const r0 = (x) => Math.round(x), F = R.frames, SS2 = stepStats(), me = lastProblems(R), M = R.rivals || {}, setup = setupNow();
+  const L = [`Graph layout run: ${(MODELS[R.key] && MODELS[R.key].name) || R.key}, ${R.n} classes (boxes), ${R.E.length} links. Layout: ${ALGO_NAME[R.algo] || R.algo}, seed ${R.seed}.`,
+    'Problems = links crossing + links running through a class box (within 3 px) + link names covered + overlapping boxes. Area = drawing width x height / room the boxes take. Lower is better for all.',
+    `Lines: ${LINES === 'straight' ? 'straight' : LINES === 'round' ? 'bent round classes only' : 'bent round classes and away from crossings'}. Steps switched off: ${setup.leftOut.join(', ') || 'none'}.`,
+    `Result: problems ${me.pr} (crossings ${me.cross}, through a class ${me.thru}, sharp crossings ${me.sharp}), area ${me.area != null ? me.area.toFixed(1) : '?'}, time ${r0(me.ms)} ms.`,
+    'Our other layouts on the same graph, same settings: ' + (Object.keys(M).filter((a) => a !== R.algo).map((a) => `${ALGO_NAME[a]}: problems ${M[a].pr} (crossings ${M[a].cross}, through ${M[a].thru}, sharp ${M[a].sharp}), area ${M[a].area != null ? M[a].area.toFixed(1) : '?'}, ${r0(M[a].ms)} ms`).join('; ') || 'not measured yet'), '',
+    'STEPS, in the order they ran (time, frames, problems on the drawing after the last frame of the step: crossings / through a class / classes placed):'];
+  const told = new Set();
+  for (let j = 1; j < F.length;) { const k = F[j].key; let e = j, ms = 0; while (e < F.length && F[e].key === k) ms += F[e++].ms || 0;
+    const m = metricsAt(e - 1), md = meta(k);
+    L.push(`- ${md[2]} [${md[1]}]: ${r0(ms)} ms, ${e - j} frame${e - j > 1 ? 's' : ''}; after: ${m.cross} / ${m.thru} / ${m.placed} of ${R.n}.${told.has(k) ? '' : ' What it does: ' + md[3]}`); told.add(k); j = e; }
+  L.push('', 'CLASSES (id, name, x, y, box width, box height), final positions:');
+  const P = C && C.P ? C.P : []; const f = F[F.length - 1];
+  R.labels.forEach((l, i) => { const x = f.P[2 * i], y = f.P[2 * i + 1]; L.push(`${i} ${String(l).replace(/\s+/g, '_')} ${isNaN(x) ? '-' : r0(x)} ${isNaN(y) ? '-' : r0(y)} ${r0(R.D[i].w)} ${r0(R.D[i].h)}`); });
+  L.push('', 'LINKS (from id, to id, kind, name):'); R.E.forEach((e) => L.push(`${e.s} ${e.t} ${e.sub ? 'subClassOf' : 'rel'}${e.name ? ' ' + e.name : ''}`));
+  return L.join(String.fromCharCode(10));
+}
 function exportGraphml() {
   const x = (t) => String(t).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/"/g, '&quot;'), r1 = (v) => Math.round(v * 10) / 10, iris = R.iris;
   let s = '<?xml version="1.0" encoding="UTF-8"?>\n<graphml xmlns="http://graphml.graphdrawing.org/xmlns">\n'
@@ -1261,6 +1283,7 @@ $('fileMenu').querySelector('.fm').onclick = (ev) => { const b = ev.target.close
   else if (f === 'json') LayoutGraphs.download(baseName() + '.layout.json', exportJson(), 'application/json');
   else if (f === 'graphml') LayoutGraphs.download(baseName() + '.graphml', exportGraphml(), 'application/xml');
   else if (f === 'session') LayoutGraphs.download(SESS.id + '.json', sessionBody(), 'application/json');
+  else if (f === 'math') { const t = mathText(); (navigator.clipboard ? navigator.clipboard.writeText(t) : Promise.reject()).then(() => ($('saveInfo').textContent = 'the math is copied (' + Math.round(t.length / 1000) + ' k characters)'), () => LayoutGraphs.download(baseName() + '.math.txt', t, 'text/plain')); }
   note('export', { format: f, frame: C.fj + 1 }); };
 function ownGraphs() { // the graphs read from files, first in the list
   let g = $('graph').querySelector('optgroup[data-own]'); if (g) g.remove();

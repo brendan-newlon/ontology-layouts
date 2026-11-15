@@ -11,6 +11,7 @@ const base = fs.readFileSync(here('_bundle.mjs'), 'utf8'), cut = base.lastIndexO
 if (cut < 0) throw new Error('_bundle.mjs: export block not found; run mkbundle.mjs');
 fs.writeFileSync(here('_bundle_bo.mjs'), base.slice(0, cut) + '\n' + fs.readFileSync(here('tidymycelium.js'), 'utf8') + '\nconst OURS = window.OURS;\nexport { MODELS, OURS, _tmBest };\n');
 const { MODELS, OURS: O, _tmBest } = await import('./_bundle_bo.mjs?' + Date.now());
+O.tune.noWall = true; // the same drawing on any computer, however busy (times are still measured)
 const TOO_BIG = new Set(['huge', 'hx_md1200', 'pb_cl', 'sf400']); // as in the page's list
 const LAYOUTS = { auto: (b, e, s) => O.auto(b, e, { seed: s }), compact: (b, e, s) => O.compact(b, e, { seed: s }),
   grouped: (b, e, s) => O.grouped2(b, e, { seed: s }) || O.compact(b, e, { seed: s }), tidy: (b, e, s) => O.clocked(() => _tmBest(b, e, { seed: s })) };
@@ -25,7 +26,7 @@ for (const key of Object.keys(MODELS).filter((k) => !TOO_BIG.has(k))) {
   const row = {}, ms = {};
   for (const [k, fn] of Object.entries(LAYOUTS)) {
     if (ONLY && !ONLY.includes(k) && OLD.graphs[key]) { row[k] = OLD.graphs[key][k]; ms[k] = (OLD.ms && OLD.ms[key] || {})[k]; continue; }
-    const w0 = performance.now(), t0 = O.now(), r = fn(boxes, lay, 1), P0 = O.cleanUp(r.pos, boxes, lay, t0, false), P = k === 'tidy' ? _tmBest.compact(P0, boxes, lay) : P0, rr = O.route(P, boxes, links, { straight: true }), m = O.routeMetrics(rr.pos, boxes, links, rr.routes);
+    const w0 = performance.now(), t0 = O.now(), r = fn(boxes, lay, 1), P0 = O.cleanUp(r.pos, boxes, lay, t0, false), P = k === 'tidy' ? _tmBest.compact(P0, boxes, links) : P0, rr = O.route(P, boxes, links, { straight: true }), m = O.routeMetrics(rr.pos, boxes, links, rr.routes);
     ms[k] = Math.round(performance.now() - w0); row[k] = m.cross + m.thru + m.labelOver + overlaps(rr.pos, boxes);
   }
   out.graphs[key] = row; out.ms[key] = ms; console.log(key.padEnd(14), JSON.stringify(row));

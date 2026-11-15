@@ -12,7 +12,7 @@
 //   6. after the clean-up: empty space taken in (_tmCompact), each class with what hangs from it stepping inward while that adds no problem.
 const _TM_DEF = { K: 8, Kfrac: 0.25, L: 170, Lbig: 260, pods: 2, podIn: 2, hub: 20, room: 1, roomMode: 'add', cntW: 0.5, linkShare: 0.5,
   restarts: 8, sweeps: 240, finCross: true, finThru: true, coreTight: false, endTight: false, unitGap: 0.75, dirs: 36, outward: 0.5,
-  budget: 600, singlesBySlice: false, shrink: 'slack', shrinkMs: 150, shrinkF: 0.88, shrinkSlack: 0.06, hubBig: 20, tries: 1, triesMs: 400, grid: true, coreRoom: 0.25 };
+  budget: 1000, singlesBySlice: false, shrink: 'strict', shrinkMs: 150, shrinkF: 0.88, shrinkSlack: 0.06, hubBig: 20, tries: 1, triesMs: 400, grid: true, coreRoom: 0.25, denseCore: 2.7, budgetBig: 0 };
 
 function _tmUnits(n, EE, K, Kfrac) {
   const adj = Array.from({ length: n }, () => []), seen = new Set();
@@ -126,8 +126,10 @@ function _tmLayout(items, edges, opts) {
   // 2. Mycelium on the core
   const EC = EE.filter((e) => ci[e.s] >= 0 && ci[e.t] >= 0);
   const ring = new Float64Array(n); const hubW = n >= 100 && T.hubBig != null ? T.hubBig : T.hub;
-  if (hubW) for (const v of core) { let s = 0; for (const u of adj[v]) if (ci[u] >= 0) s += Math.max(N[u].w, N[u].h * 2.5) + hubW; ring[v] = s / (2 * Math.PI); }
-  let com = null; if (T.pods && m >= 8) { const E3 = EC.map((e) => [ci[e.s], ci[e.t], 1]); com = _ogClMergeSmall(_ogClLouvain(m, E3), E3, 4); }
+  if (hubW) for (const v of core) { let s = 0; for (const u of adj[v]) if (T.ringAll || ci[u] >= 0) s += Math.max(N[u].w, N[u].h * 2.5) + hubW; ring[v] = s / (2 * Math.PI); }
+  let com = null;
+  if (T.pods && T.comAll && n >= 8) { const E3 = EE.map((e) => [e.s, e.t, 1]), cAll = _ogClMergeSmall(_ogClLouvain(n, E3), E3, 4); com = core.map((v) => cAll[v]); }
+  else if (T.pods && m >= 8) { const E3 = EC.map((e) => [ci[e.s], ci[e.t], 1]); com = _ogClMergeSmall(_ogClLouvain(m, E3), E3, 4); }
   // room round an anchor: grows with the classes it hides (sqrt: they spread out in 2-D) and with the number of separate units
   // leaving it (each needs a slice of its own)
   const R = core.map((v) => (mass[v] ? T.room * L * (Math.sqrt(mass[v]) + T.cntW * Math.max(0, cnt[v] - 1)) / Math.PI : 0));
@@ -150,7 +152,7 @@ function _tmLayout(items, edges, opts) {
     mark('paths');
     const sBud = T.budget * 0.35; let best = null;
     for (let r = 0; r < Math.max(1, T.restarts) && (r === 0 || _ogNow() - t0 < sBud); r++) {
-      const P0 = r === 0 && m > 2 ? _ogClPivotMDS(D, m, rnd) : NC.map(() => ({ x: (rnd() - 0.5) * 400, y: (rnd() - 0.5) * 400 }));
+      const P0 = r === 0 && m > 2 ? _ogClPivotMDS(D, m, rnd) : T.init3d && m > 3 && (T.init3d === 'all' || r % 2) ? _tm3d(D, m, rnd, T) : NC.map(() => ({ x: (rnd() - 0.5) * 400, y: (rnd() - 0.5) * 400 }));
       const start = rec ? P0.map((p) => ({ x: p.x, y: p.y })) : null;
       if (tr) { tr.restart(r); tr.snap(r === 0 && m > 2 ? 'tm-start' : 'restart', P0, { room: roomInfo, groups: com ? new Set(com).size : 0 }); }
       _ogClStress(P0, D, T.sweeps, rnd, t0 + sBud); _ogClSeparate(P0, NC, 12, 120); if (tr) tr.snap('separate', P0);
@@ -162,9 +164,9 @@ function _tmLayout(items, edges, opts) {
     // coreRoom: the core's crossing swaps and moves off links see each anchor as big as the room it keeps for its parts
     const NR = T.coreRoom ? core.map((v, k) => ({ w: NC[k].w + 2 * T.coreRoom * R[k], h: NC[k].h + 2 * T.coreRoom * R[k] })) : NC;
     if (EC2.length && EC2.length <= 2500) {
-      if (T.finCross) { _ogClFinCross(PC, NR, EC2, Math.min(m <= 30 ? 150 : 300, left() / 3), seed); _ogClSeparate(PC, NR, 12, 120); }
+      if (T.finCross) { _ogClFinCross(PC, NR, EC2, Math.min(m <= 30 ? 150 : 300, left() / 3) * (T.coreX || 1), seed); _ogClSeparate(PC, NR, 12, 120); }
       if (T.finThru) _ogClFinThru(PC, NR, EC2, 12, 10, left() / 3);
-      if (T.coreTight) _ogClFinTight(PC, NC, EC2, 12, 26, left() / 2);
+      if (T.coreTight) { _ogClFinTight(PC, NC, EC2, 12, 26, left() / 2); if (T.coreThru2) _ogClFinThru(PC, NR, EC2, 8, 10, left() / 2); }
     }
     mark('coreClean');
     snap('coreClean', fullOf(PC), { room: roomInfo });
@@ -251,18 +253,56 @@ function _tmShrink(P, N, EE, T, t0) {
   return kept;
 }
 
+// A start for the core found in 3-D: stress with a third axis, where parts can pass round each other, then the thinnest axis
+// squashed a little at a time while the stress goes on (a ball letting out its air), then dropped.
+function _tm3d(D, m, rnd, T) {
+  const X = new Float64Array(m), Y = new Float64Array(m), Z = new Float64Array(m); let sc = 0; for (let i = 0; i < m; i++) for (let j = i + 1; j < m; j++) sc = Math.max(sc, D[i][j]);
+  for (let i = 0; i < m; i++) { X[i] = (rnd() - 0.5) * sc; Y[i] = (rnd() - 0.5) * sc; Z[i] = (rnd() - 0.5) * sc; }
+  const sweep = (zf) => { _ogWorkN[3] += m * m * 1.5;
+    for (let i = 0; i < m; i++) { const Di = D[i]; let nx = 0, ny = 0, nz = 0, den = 0;
+      for (let j = 0; j < m; j++) { if (i === j) continue; const d = Di[j], w = 1 / (d * d); let dx = X[i] - X[j], dy = Y[i] - Y[j], dz = Z[i] - Z[j], cur = Math.sqrt(dx * dx + dy * dy + dz * dz);
+        if (cur < 1e-3) { dx = rnd() - 0.5; dy = rnd() - 0.5; dz = rnd() - 0.5; cur = Math.sqrt(dx * dx + dy * dy + dz * dz); }
+        nx += w * (X[j] + d * dx / cur); ny += w * (Y[j] + d * dy / cur); nz += w * (Z[j] + d * dz / cur); den += w; }
+      X[i] = nx / den; Y[i] = ny / den; Z[i] = (nz / den) * zf; } };
+  const s3 = T.sweeps3d || 60; for (let k = 0; k < s3; k++) sweep(1);
+  // turn so that z is the thinnest axis (power iteration on the covariance for the two widest axes)
+  let mx = 0, my = 0, mz = 0; for (let i = 0; i < m; i++) { mx += X[i] / m; my += Y[i] / m; mz += Z[i] / m; }
+  const C = [[0, 0, 0], [0, 0, 0], [0, 0, 0]]; for (let i = 0; i < m; i++) { const v = [X[i] - mx, Y[i] - my, Z[i] - mz]; for (let a = 0; a < 3; a++) for (let b = 0; b < 3; b++) C[a][b] += v[a] * v[b]; }
+  const pw = (M, o) => { let v = [rnd() + 0.1, rnd() + 0.1, rnd() + 0.1]; for (let it = 0; it < 60; it++) { if (o) { const d = v[0] * o[0] + v[1] * o[1] + v[2] * o[2]; v = v.map((x, k) => x - d * o[k]); }
+    const w = [0, 1, 2].map((a) => M[a][0] * v[0] + M[a][1] * v[1] + M[a][2] * v[2]); const l = Math.hypot(...w) || 1; v = w.map((x) => x / l); } return v; };
+  const e1 = pw(C), e2 = pw(C, e1), e3 = [e1[1] * e2[2] - e1[2] * e2[1], e1[2] * e2[0] - e1[0] * e2[2], e1[0] * e2[1] - e1[1] * e2[0]];
+  for (let i = 0; i < m; i++) { const v = [X[i] - mx, Y[i] - my, Z[i] - mz]; X[i] = v[0] * e1[0] + v[1] * e1[1] + v[2] * e1[2]; Y[i] = v[0] * e2[0] + v[1] * e2[1] + v[2] * e2[2]; Z[i] = v[0] * e3[0] + v[1] * e3[1] + v[2] * e3[2]; }
+  for (let k = 0; k < (T.flat3d || 12); k++) sweep(T.squash3d || 0.7);
+  return Array.from({ length: m }, (_, i) => ({ x: X[i], y: Y[i] }));
+}
+
 // One layout, a few tries: the placement (before the clean-up) with tm.tries seeds, the best by Best Read's own choice score.
+// Links per class in the 2-core (what is left once every class with one link or none is peeled off, again and again)
+function _tmCoreDensity(n, edges) {
+  const adj = Array.from({ length: n }, () => new Set()); edges.forEach((e) => { if (e[0] !== e[1]) { adj[e[0]].add(e[1]); adj[e[1]].add(e[0]); } });
+  const deg = adj.map((s) => s.size), gone = new Array(n).fill(false); let q = deg.map((d, i) => (d <= 1 ? i : -1)).filter((i) => i >= 0);
+  while (q.length) { const nq = []; for (const v of q) { if (gone[v]) continue; gone[v] = true; adj[v].forEach((w) => { if (!gone[w] && --deg[w] <= 1) nq.push(w); }); } q = nq; }
+  let c = 0, e = 0; for (let v = 0; v < n; v++) if (!gone[v]) { c++; adj[v].forEach((w) => { if (!gone[w]) e++; }); }
+  return c ? e / 2 / c : 0;
+}
+// A dense core (more than denseCore links per class) is placed as Mycelium places it: only one-link classes set aside, no room
+// kept round them (rings round busy classes count every neighbor instead), groups found on the whole graph, links inside a
+// group 0.85 and between groups 1.6 times the usual length, and a last tightening of the core. Found over 3 seeds on 62 graphs.
+const _TM_DENSE = { K: 1, room: 0, ringAll: true, comAll: true, coreTight: true, coreThru2: true, pods: 1.6, podIn: 0.85, sweeps: 120 };
 function _tmBest(items, edges, opts) {
-  const o = opts || {}, T = { ..._TM_DEF, ...(o.tm || {}) }, k = Math.max(1, T.tries || 1);
-  if (k === 1) return _tmLayout(items, edges, o);
+  const o0 = opts || {}, T0 = { ..._TM_DEF, ...(o0.tm || {}) }, dense = T0.denseCore && _tmCoreDensity(items.length, edges) > T0.denseCore;
+  const big = T0.budgetBig && items.length > 100 ? { budget: T0.budgetBig } : {}; // a big graph: less time, as Mycelium gives it
+  const o = { ...o0, tm: { ...(dense ? _TM_DENSE : {}), ...big, ...(o0.tm || {}) } }, T = { ..._TM_DEF, ...(o.tm || {}) }, k = Math.max(1, T.tries || 1);
+  if (k === 1) { const r = _tmLayout(items, edges, o); r.dense = dense; return r; }
   const N = items.map((it) => ({ w: it.w + 16, h: it.h + 12 })), E2 = edges.filter((e) => e[0] !== e[1]).map((e) => ({ s: e[0], t: e[1] }));
   let best = null; const t0 = _ogNow();
   for (let i = 0; i < k; i++) {
     if (i && _ogNow() - t0 > (T.triesMs || 400)) break;
     const r = _tmLayout(items, edges, { ...o, tryName: 'Try ' + (i + 1), rec: o.rec ? [] : null, seed: (o.seed || 1) + 1000 * i, tm: { ...T, budget: T.budget / (T.split ? k : 1), ...(T.altPods && i % 2 ? { pods: 1, podIn: 1 } : {}) } });
-    const s = _ogChoiceScore(_ogPlacementMetrics(r.pos, N, E2));
+    const pm = _ogPlacementMetrics(r.pos, N, E2), s = T.choose === 'p1' ? pm.cross + pm.thru + 100 * pm.ov + pm.len / 1e4 : _ogChoiceScore(pm);
     if (typeof _ogTr !== 'undefined' && _ogTr) _ogTr.score('Try ' + (i + 1), s);
     if (!best || s < best.s) best = { s, r, i };
+    if (T.choose === 'p1' && best.s < 1) break; // nothing left to improve
   }
   if (typeof _ogTr !== 'undefined' && _ogTr) _ogTr.chosen('Try ' + (best.i + 1));
   if (o.rec) { o.rec.push(...best.r.rec); best.r.recTry = best.i; best.r.recTries = k; }
@@ -288,7 +328,7 @@ function _tmCB(ax, ay, bx, by, x0, y0, x1, y1) { let t0 = 0, t1 = 1; const dx = 
   const cl = (p, q) => { if (p === 0) return q >= 0; const r = q / p; if (p < 0) { if (r > t1) return false; if (r > t0) t0 = r; } else { if (r < t0) return false; if (r < t1) t1 = r; } return true; };
   return cl(-dx, ax - x0) && cl(dx, x1 - ax) && cl(-dy, ay - y0) && cl(dy, y1 - ay) && t0 <= t1; }
 function _tmCompact(P, boxes, lay, v) {
-  const o = v || {}, n = P.length, E = lay.filter((e) => e[0] !== e[1]).map((e) => [e[0], e[1]]), m = E.length, pad = o.pad ?? 9, gap = o.gap ?? 20, ms = o.ms ?? 300, maxR = o.rounds ?? 20, minL = o.minL ?? 70;
+  const o = v || {}, n = P.length, LE = lay.filter((e) => e[0] !== e[1]), E = LE.map((e) => [e[0], e[1]]), m = E.length, pad = o.pad ?? 9, gap = o.gap ?? 20, ms = o.ms ?? 300, maxR = o.rounds ?? 12, minL = o.minL ?? 70;
   if (n < 2) return P;
   const adj = Array.from({ length: n }, () => []); E.forEach((e, k) => { adj[e[0]].push(k); adj[e[1]].push(k); });
   const other = (k, u) => (E[k][0] === u ? E[k][1] : E[k][0]);
@@ -303,50 +343,72 @@ function _tmCompact(P, boxes, lay, v) {
   const hw = boxes.map((b) => b.w / 2), hh = boxes.map((b) => b.h / 2);
   const clear = (k) => { const [a, b] = E[k], dx = Math.abs(X[a] - X[b]), dy = Math.abs(Y[a] - Y[b]), d = Math.hypot(dx, dy) || 1, ux = dx / d, uy = dy / d;
     const ext = (w) => Math.min(ux ? hw[w] / ux : 1e9, uy ? hh[w] / uy : 1e9); return d - ext(a) - ext(b); };
-  const need = E.map((e, k) => Math.min(minL, clear(k)) - 0.5);
+  // room along each link for its name: the name's width (links[3]) when known, else minL
+  const need = E.map((e, k) => Math.min(LE[k].length > 3 ? (LE[k][3] ? LE[k][3] + (o.nameGap ?? 12) : (o.bare ?? 24)) : minL, clear(k)) - 0.5);
   // grid
   const CS = 140, G = new Map(), key = (i, j) => i * 65536 + j;
   const cellsOf = (x0, y0, x1, y1, f) => { for (let i = Math.floor(x0 / CS); i <= Math.floor(x1 / CS); i++) for (let j = Math.floor(y0 / CS); j <= Math.floor(y1 / CS); j++) f(key(i, j)); };
   const cell = (c) => { let g = G.get(c); if (!g) G.set(c, (g = { b: new Set(), e: new Set(), t: 0 })); return g; };
   const bB = (u) => [X[u] - hw[u] - gap, Y[u] - hh[u] - gap, X[u] + hw[u] + gap, Y[u] + hh[u] + gap];
   const eB = (k) => { const [a, b] = E[k]; return [Math.min(X[a], X[b]), Math.min(Y[a], Y[b]), Math.max(X[a], X[b]), Math.max(Y[a], Y[b])]; };
-  const addB = (u) => cellsOf(...bB(u), (c) => cell(c).b.add(u)), delB = (u) => cellsOf(...bB(u), (c) => G.get(c).b.delete(u));
-  const addE = (k) => cellsOf(...eB(k), (c) => cell(c).e.add(k)), delE = (k) => cellsOf(...eB(k), (c) => G.get(c).e.delete(k));
+  // the hot paths walk the cells directly (no closures per cell)
+  const put = (bb, kind, id, add) => { const i0 = Math.floor(bb[0] / CS), i1 = Math.floor(bb[2] / CS), j0 = Math.floor(bb[1] / CS), j1 = Math.floor(bb[3] / CS);
+    for (let i = i0; i <= i1; i++) for (let j = j0; j <= j1; j++) { const c = i * 65536 + j; if (add) cell(c)[kind].add(id); else { const g = G.get(c); if (g) g[kind].delete(id); } } };
+  const addB = (u) => put(bB(u), 'b', u, true), delB = (u) => put(bB(u), 'b', u, false), addE = (k) => put(eB(k), 'e', k, true), delE = (k) => put(eB(k), 'e', k, false);
   for (let u = 0; u < n; u++) addB(u);
   for (let k = 0; k < m; k++) addE(k);
   const seenB = new Int32Array(n), seenE = new Int32Array(m); let ep = 0;
-  const nearB = (bb, f) => { ep++; cellsOf(...bb, (c) => { const g = G.get(c); if (g) for (const w of g.b) if (seenB[w] !== ep) { seenB[w] = ep; f(w); } }); };
-  const nearE = (bb, f) => { ep++; cellsOf(...bb, (c) => { const g = G.get(c); if (g) for (const k of g.e) if (seenE[k] !== ep) { seenE[k] = ep; f(k); } }); };
-  const thru = (k, w) => { const [a, b] = E[k]; return a !== w && b !== w && _tmCB(X[a], Y[a], X[b], Y[b], X[w] - hw[w] - pad, Y[w] - hh[w] - pad, X[w] + hw[w] + pad, Y[w] + hh[w] + pad); };
+  const nearB = (bb, f) => { ep++; const i0 = Math.floor(bb[0] / CS), i1 = Math.floor(bb[2] / CS), j0 = Math.floor(bb[1] / CS), j1 = Math.floor(bb[3] / CS);
+    for (let i = i0; i <= i1; i++) for (let j = j0; j <= j1; j++) { const g = G.get(i * 65536 + j); if (g) for (const w of g.b) if (seenB[w] !== ep) { seenB[w] = ep; f(w); } } };
+  const nearE = (bb, f) => { ep++; const i0 = Math.floor(bb[0] / CS), i1 = Math.floor(bb[2] / CS), j0 = Math.floor(bb[1] / CS), j1 = Math.floor(bb[3] / CS);
+    for (let i = i0; i <= i1; i++) for (let j = j0; j <= j1; j++) { const g = G.get(i * 65536 + j); if (g) for (const k of g.e) if (seenE[k] !== ep) { seenE[k] = ep; f(k); } } };
+  // two or more links between the same two classes are drawn as arcs that bow out about 12 px each way: such a link is wider
+  const mult = new Map(); E.forEach(([a, b]) => { const kk = Math.min(a, b) * 1e6 + Math.max(a, b); mult.set(kk, (mult.get(kk) || 0) + 1); });
+  const padK = E.map(([a, b]) => pad + (o.arcPad ?? 12) * Math.max(0, mult.get(Math.min(a, b) * 1e6 + Math.max(a, b)) - 1));
+  const pM = Math.max(pad, ...padK);
+  const thru = (k, w) => { const [a, b] = E[k], p = padK[k]; return a !== w && b !== w && _tmCB(X[a], Y[a], X[b], Y[b], X[w] - hw[w] - p, Y[w] - hh[w] - p, X[w] + hw[w] + p, Y[w] + hh[w] + p); };
   const inS = new Int32Array(n), inK = new Int32Array(m); let sp = 0;
-  function cost(S, ks) { // crossings and links through classes that touch S (the moved boxes and links are off the grid while tried)
+  function cost(S, ks, lim) { // crossings and links through classes that touch S (the moved boxes and links are off the grid while tried)
     let c = 0, t = 0;
     for (const k of ks) { const [a, b] = E[k];
       nearE(eB(k), (j) => { const [p, r] = E[j]; if (p === a || p === b || r === a || r === b) return; if (_tmCX(X[a], Y[a], X[b], Y[b], X[p], Y[p], X[r], Y[r])) c++; });
       for (const j of ks) if (j > k) { const [p, r] = E[j]; if (p === a || p === b || r === a || r === b) continue; if (_tmCX(X[a], Y[a], X[b], Y[b], X[p], Y[p], X[r], Y[r])) c++; }
-      const bb = eB(k); nearB([bb[0] - pad, bb[1] - pad, bb[2] + pad, bb[3] + pad], (w) => { if (thru(k, w)) t++; }); }
-    for (const u of S) { nearE([X[u] - hw[u] - pad, Y[u] - hh[u] - pad, X[u] + hw[u] + pad, Y[u] + hh[u] + pad], (k) => { if (thru(k, u)) t++; });
-      for (const k of ks) if (thru(k, u)) t++; }
+      const bb = eB(k), pk = padK[k]; nearB([bb[0] - pk, bb[1] - pk, bb[2] + pk, bb[3] + pk], (w) => { if (thru(k, w)) t++; });
+      if (lim && (c > lim[0] || t > lim[1])) return [c, t]; } // already worse: no need to count on
+    for (const u of S) { nearE([X[u] - hw[u] - pM, Y[u] - hh[u] - pM, X[u] + hw[u] + pM, Y[u] + hh[u] + pM], (k) => { if (thru(k, u)) t++; });
+      for (const k of ks) if (thru(k, u)) t++; if (lim && t > lim[1]) return [c, t]; }
     return [c, t]; }
   function clash(S, ks) {
-    for (const k of ks) if (clear(k) < need[k]) return true;
-    for (const u of S) { let hit = false; nearB(bB(u), (w) => { if (!hit && Math.abs(X[u] - X[w]) < hw[u] + hw[w] + gap && Math.abs(Y[u] - Y[w]) < hh[u] + hh[w] + gap) hit = true; }); if (hit) return true; }
-    for (let i = 0; i < S.length; i++) for (let j = i + 1; j < S.length; j++) { const u = S[i], w = S[j]; if (Math.abs(X[u] - X[w]) < hw[u] + hw[w] + 1 && Math.abs(Y[u] - Y[w]) < hh[u] + hh[w] + 1) return true; }
+    for (const k of ks) if (clear(k) < need[k]) return 'name';
+    for (const u of S) { let hit = false; nearB(bB(u), (w) => { if (!hit && Math.abs(X[u] - X[w]) < hw[u] + hw[w] + gap && Math.abs(Y[u] - Y[w]) < hh[u] + hh[w] + gap) hit = true; }); if (hit) return 'gap'; }
+    for (let i = 0; i < S.length; i++) for (let j = i + 1; j < S.length; j++) { const u = S[i], w = S[j]; if (Math.abs(X[u] - X[w]) < hw[u] + hw[w] + 1 && Math.abs(Y[u] - Y[w]) < hh[u] + hh[w] + 1) return 'gap'; }
+    return ''; }
+  // repelled, not passed through: a class may not cross another link on its way (its box's corners and middle swept along the move)
+  function sweeps(S, ox, oy) {
+    for (let i = 0; i < S.length; i++) { const u = S[i], dx = X[u] - ox[i], dy = Y[u] - oy[i];
+      const bb = [Math.min(ox[i], X[u]) - hw[u], Math.min(oy[i], Y[u]) - hh[u], Math.max(ox[i], X[u]) + hw[u], Math.max(oy[i], Y[u]) + hh[u]]; let hit = false;
+      nearE(bb, (k) => { if (hit) return; const [a, b] = E[k]; if (inS[a] === sp || inS[b] === sp) return;
+        for (const [sx, sy] of [[0, 0], [-hw[u], -hh[u]], [hw[u], -hh[u]], [-hw[u], hh[u]], [hw[u], hh[u]]]) if (_tmCX(ox[i] + sx, oy[i] + sy, X[u] + sx, Y[u] + sy, X[a], Y[a], X[b], Y[b])) { hit = true; return; } });
+      if (hit) return true; }
     return false; }
   const t0 = performance.now(), failAt = new Float64Array(n).fill(-1); let moves = 0, rounds = 0, tick = 1, fixed = 0;
   // a class that a link runs through (or passes within pad of) is pushed, with what hangs from it, just clear of the line,
   // when that leaves fewer crossings plus links through classes
   function unThru() {
-    for (let w = 0; w < n; w++) { let ks0 = []; nearE([X[w] - hw[w] - pad, Y[w] - hh[w] - pad, X[w] + hw[w] + pad, Y[w] + hh[w] + pad], (k) => { if (thru(k, w)) ks0.push(k); });
+    for (let w = 0; w < n; w++) { let ks0 = []; nearE([X[w] - hw[w] - pM, Y[w] - hh[w] - pM, X[w] + hw[w] + pM, Y[w] + hh[w] + pM], (k) => { if (thru(k, w)) ks0.push(k); });
       for (const k of ks0) { const [a, b] = E[k]; if (!thru(k, w)) continue; let nx = -(Y[b] - Y[a]), ny = X[b] - X[a]; const L = Math.hypot(nx, ny) || 1; nx /= L; ny /= L;
         const d = (X[w] - X[a]) * nx + (Y[w] - Y[a]) * ny, sg = d < 0 ? -1 : 1, ext = hw[w] * Math.abs(nx) + hh[w] * Math.abs(ny), sh = ext + pad + 1.5 - Math.abs(d);
         const S = carry[w].includes(a) || carry[w].includes(b) ? [w] : carry[w]; sp++; S.forEach((x) => (inS[x] = sp)); const ks = []; S.forEach((x) => adj[x].forEach((j) => { if (inK[j] !== sp) { inK[j] = sp; ks.push(j); } }));
         S.forEach(delB); ks.forEach(delE); const ox = S.map((x) => X[x]), oy = S.map((x) => Y[x]), c0 = cost(S, ks); let ok = false;
         for (const f of [1, 1.6, -1]) { const s2 = f < 0 ? -(ext + pad + 1.5 + Math.abs(d)) : sh * f; S.forEach((x, i) => { X[x] = ox[i] + sg * s2 * nx; Y[x] = oy[i] + sg * s2 * ny; });
-          if (!clash(S, ks)) { const c1 = cost(S, ks); if (c1[0] <= c0[0] && c1[0] + c1[1] < c0[0] + c0[1]) { ok = true; break; } } }
+          if (!clash(S, ks)) { const c1 = cost(S, ks, c0); if (c1[0] <= c0[0] && c1[0] + c1[1] < c0[0] + c0[1]) { ok = true; break; } } }
         if (!ok) S.forEach((x, i) => { X[x] = ox[i]; Y[x] = oy[i]; }); else fixed++;
         S.forEach(addB); ks.forEach(addE); } } }
   unThru();
+  const WHY = { name: 0, gap: 0, sweep: 0, cross: 0, thru: 0 }; let GRP = null; if (o.groups !== false && n >= 12) { const top = [...Array(n).keys()].filter((u) => par[u] < 0), ti = new Map(top.map((u, i) => [u, i]));
+    const E3 = E.filter(([a, b]) => ti.has(a) && ti.has(b)).map(([a, b]) => [ti.get(a), ti.get(b), 1]);
+    if (E3.length) { const c = _ogClMergeSmall(_ogClLouvain(top.length, E3), E3, 3), by = new Map(); top.forEach((u, i) => { if (!by.has(c[i])) by.set(c[i], []); by.get(c[i]).push(u); });
+      GRP = [...by.values()].filter((g) => g.length >= 2 && g.length < top.length); } }
   const touched = (u) => { let t = 0; cellsOf(X[u] - 2 * CS, Y[u] - 2 * CS, X[u] + 2 * CS, Y[u] + 2 * CS, (c) => { const g = G.get(c); if (g && g.t > t) t = g.t; }); return t; };
   while (rounds < maxR && performance.now() - t0 < ms) {
     rounds++; let cx = 0, cy = 0; for (let i = 0; i < n; i++) { cx += X[i] / n; cy += Y[i] / n; }
@@ -358,19 +420,34 @@ function _tmCompact(P, boxes, lay, v) {
       const nb = adj[u].map((k) => other(k, u)).filter((w) => inS[w] !== sp); let bx = 0, by = 0; nb.forEach((w) => { bx += X[w] / nb.length; by += Y[w] / nb.length; });
       const cands = []; for (const f of o.fs || [0.3, 0.12]) { cands.push([(cx - X[u]) * f, (cy - Y[u]) * f]); if (nb.length) cands.push([(bx - X[u]) * f, (by - Y[u]) * f]); if (par[u] >= 0) cands.push([(X[par[u]] - X[u]) * f, (Y[par[u]] - Y[u]) * f]); }
       S.forEach(delB); ks.forEach(delE);
-      const ox = S.map((w) => X[w]), oy = S.map((w) => Y[w]), c0 = cost(S, ks); let ok = false;
+      const ox = S.map((w) => X[w]), oy = S.map((w) => Y[w]); let ok = false, c0 = null; // the count before, only once a try passes the quick checks
       for (const [mx, my] of cands) { if (Math.abs(mx) + Math.abs(my) < 3) continue;
         S.forEach((w, i) => { X[w] = ox[i] + mx; Y[w] = oy[i] + my; });
-        if (!clash(S, ks)) { const c1 = cost(S, ks); if (c1[0] <= c0[0] && c1[1] <= c0[1]) { ok = true; break; } } }
+        const cl = clash(S, ks); if (cl) WHY[cl]++; else if (sweeps(S, ox, oy)) WHY.sweep++; else { if (!c0) { const nx = S.map((w) => X[w]), ny = S.map((w) => Y[w]); S.forEach((w, i) => { X[w] = ox[i]; Y[w] = oy[i]; }); c0 = cost(S, ks); S.forEach((w, i) => { X[w] = nx[i]; Y[w] = ny[i]; }); } const c1 = cost(S, ks, c0); if (c1[0] <= c0[0] && c1[1] <= c0[1]) { ok = true; break; } WHY[c1[0] > c0[0] ? 'cross' : 'thru']++; } }
       if (!ok) S.forEach((w, i) => { X[w] = ox[i]; Y[w] = oy[i]; });
       S.forEach(addB); ks.forEach(addE);
       if (ok) { any++; moves++; tick++; S.forEach((w, i) => cellsOf(Math.min(ox[i], X[w]) - 1, Math.min(oy[i], Y[w]) - 1, Math.max(ox[i], X[w]) + 1, Math.max(oy[i], Y[w]) + 1, (c) => (cell(c).t = tick))); failAt[u] = -1; }
       else failAt[u] = tick;
     }
+    // whole groups (Louvain), each with what hangs from its classes, slide toward the middle as one block
+    if (GRP) for (const g of GRP) { if (performance.now() - t0 > ms) break; if (g.failAt != null && g.failAt === tick) continue; // nothing has moved since it last failed
+      let gx = 0, gy = 0; g.forEach((w) => { gx += X[w] / g.length; gy += Y[w] / g.length; });
+      sp++; const S = []; g.forEach((w) => carry[w].forEach((x) => { if (inS[x] !== sp) { inS[x] = sp; S.push(x); } }));
+      const ks = []; S.forEach((w) => adj[w].forEach((k) => { if (inK[k] !== sp) { inK[k] = sp; ks.push(k); } }));
+      S.forEach(delB); ks.forEach(delE);
+      const ox = S.map((w) => X[w]), oy = S.map((w) => Y[w]); let ok = false, c0 = null; // the count before, only once a try passes the quick checks
+      for (const f of [0.3, 0.15, 0.07]) { const mx = (cx - gx) * f, my = (cy - gy) * f; if (Math.abs(mx) + Math.abs(my) < 3) continue;
+        S.forEach((w, i) => { X[w] = ox[i] + mx; Y[w] = oy[i] + my; });
+        const cl = clash(S, ks); if (cl) WHY[cl]++; else if (sweeps(S, ox, oy)) WHY.sweep++; else { if (!c0) { const nx = S.map((w) => X[w]), ny = S.map((w) => Y[w]); S.forEach((w, i) => { X[w] = ox[i]; Y[w] = oy[i]; }); c0 = cost(S, ks); S.forEach((w, i) => { X[w] = nx[i]; Y[w] = ny[i]; }); } const c1 = cost(S, ks, c0); if (c1[0] <= c0[0] && c1[1] <= c0[1]) { ok = true; break; } WHY[c1[0] > c0[0] ? 'cross' : 'thru']++; } }
+      if (!ok) S.forEach((w, i) => { X[w] = ox[i]; Y[w] = oy[i]; });
+      S.forEach(addB); ks.forEach(addE);
+      if (ok) { any++; moves++; tick++; g.failAt = null; S.forEach((w, i) => cellsOf(Math.min(ox[i], X[w]) - 1, Math.min(oy[i], Y[w]) - 1, Math.max(ox[i], X[w]) + 1, Math.max(oy[i], Y[w]) + 1, (c) => (cell(c).t = tick))); }
+      else g.failAt = tick;
+    }
     if (typeof _ogTr !== 'undefined' && _ogTr && any) _ogTr.snap('compact', [...Array(n).keys()].map((i) => ({ x: X[i], y: Y[i] })));
     if (!any) break;
   }
-  unThru(); _tmCompact.last = { moves, rounds, fixed, ms: performance.now() - t0 };
+  unThru(); _tmCompact.last = { why: WHY, moves, rounds, fixed, ms: performance.now() - t0 };
   return [...Array(n).keys()].map((i) => ({ x: X[i], y: Y[i] }));
 }
 _tmBest.compact = _tmCompact;
