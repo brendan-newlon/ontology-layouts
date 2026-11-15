@@ -1,0 +1,22 @@
+{
+ "place": {
+  "cross": 430,
+  "thru": 106,
+  "area": 24.9
+ },
+ "clean": {
+  "cross": 400,
+  "thru": 37,
+  "area": 21.1
+ },
+ "take": {
+  "cross": 402,
+  "thru": 48,
+  "area": 9.1
+ },
+ "noclean": {
+  "cross": 429,
+  "thru": 94,
+  "area": 7.5
+ }
+}

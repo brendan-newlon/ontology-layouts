@@ -154,7 +154,13 @@ footer .grp { display: flex; gap: 4px; align-items: center; }
 #menu .sep { border-top: 1px solid var(--rule); margin: 3px 0; }
 #menu .sub { font-size: 11px; color: var(--muted); padding: 2px 10px 4px; }
 @media (max-width: 900px) { main { grid-template-columns: 1fr; grid-template-rows: 60vh auto; } aside { border-left: 0; border-top: 1px solid var(--rule); } }
+/* embedded in the comparison page (?embed=1): the drawing alone, without the Lab's panels and controls */
+html.embed body { grid-template-rows: minmax(0, 1fr); }
+html.embed header, html.embed nav, html.embed aside, html.embed footer, html.embed #tally, html.embed #vsrow, html.embed #drawer, html.embed .pnl .pb, html.embed #caption .d { display: none !important; }
+html.embed main { grid-template-columns: 1fr !important; grid-template-rows: minmax(0, 1fr) !important; }
+html.embed #caption { padding-right: 7px !important; }
 </style>
+<script>if (/[?&]embed=1(&|$)/.test(location.search)) document.documentElement.classList.add('embed');</script>
 <script src="../../site-nav.js" data-page="lab" defer></script>
 </head>
 <body>
@@ -319,6 +325,9 @@ const STEPS = [ // key, group, name, what it does, color, can it be left out (Ru
 ];
 const SI = Object.fromEntries(STEPS.map((s, i) => [s[0], i]));
 const store = { get(k, d) { try { const v = localStorage.getItem('playback:' + k); return v == null ? d : JSON.parse(v); } catch (e) { return d; } }, set(k, v) { try { localStorage.setItem('playback:' + k, JSON.stringify(v)); } catch (e) {} } };
+// Embedded (?embed=1): the shipped settings, and the reader's own Lab settings are neither read nor changed
+const EMBED = document.documentElement.classList.contains('embed');
+if (EMBED) { store.get = (k, d) => d; store.set = () => {}; }
 const CTL = store.get('ctl2', {}); // per step: { show (animate it), run (the layout runs it) }
 const ctl = (k) => (CTL[k] = CTL[k] || { show: true, run: true });
 // The variants not kept used to be hidden by default, which left the drawing empty for their share of the time: show them
@@ -903,6 +912,7 @@ function render() {
   $('tbar').querySelectorAll('.tseg').forEach((el) => el.classList.toggle('cur', el.dataset.k === C.key));
   $('bPlay').textContent = playing ? '⏸ Pause' : '▶ Play';
   showCounts();
+  if (EMBED) embedState();
 }
 // counts on a frame (on the drawn paths), cached
 function metricsAt(j) {
@@ -1138,7 +1148,7 @@ function newSession() { const d = new Date(), p = (x) => String(x).padStart(2, '
   SESS = { id: `pb_${R.key}_${d.getFullYear()}${p(d.getMonth() + 1)}${p(d.getDate())}-${p(d.getHours())}${p(d.getMinutes())}${p(d.getSeconds())}`, key: R.key + '|' + R.algo + '|' + R.seed, events: [], t0: performance.now() };
   INK = []; SEL = new Set(); $('nlog').innerHTML = ''; $('saveInfo').textContent = 'not saved yet'; }
 function note(kind, detail) {
-  if (!R || !SESS.id) return; const ev = { seq: SESS.events.length + 1, at: new Date().toISOString(), s: Math.round((performance.now() - SESS.t0) / 1000), kind, ...detail };
+  if (!R || !SESS.id || EMBED) return; const ev = { seq: SESS.events.length + 1, at: new Date().toISOString(), s: Math.round((performance.now() - SESS.t0) / 1000), kind, ...detail };
   SESS.events.push(ev); showNote(ev);
   const body = JSON.stringify({ id: SESS.id, graph: R.key, algo: R.algo, seed: R.seed, labels: R.labels, links: R.E.map((e) => [e.s, e.t, e.sub ? 1 : 0]), boxes: R.D.map((d) => d.w), events: SESS.events });
   try { localStorage.setItem('playback-notes:' + SESS.id, body); } catch (e) {}
@@ -1357,10 +1367,10 @@ function run(keepPlace) {
     if (SESS.key !== R.key + '|' + R.algo + '|' + R.seed) newSession();
     fitView(unflat(R.frames[R.frames.length - 1].P), true);
     const res = showResult(); note('run', { setup: setupNow(), result: res });
-    if (!engine) setTimeout(() => measureRivals(key, algo, seed).then((M) => { if (my !== runSeq) return; R.rivals = M; showTally(R.frames, null, R.frames.reduce((a, f) => a + (f.ms || 0), 0)); }).catch((e) => console.error(e)), 400);
+    if (!engine && !EMBED) setTimeout(() => measureRivals(key, algo, seed).then((M) => { if (my !== runSeq) return; R.rivals = M; showTally(R.frames, null, R.frames.reduce((a, f) => a + (f.ms || 0), 0)); }).catch((e) => console.error(e)), 400);
     $('status').textContent = `${R.n} classes, ${R.E.length} links`;
-    if (keepU != null) { T = keepU * TL.total; render(); } else play(); // a toggle keeps the place and stays paused, so the change is seen at the same moment
-  }).catch((err) => { if (my === runSeq) $('status').textContent = 'Could not lay out: ' + err.message; console.error(err); }), 20);
+    if (keepU != null) { T = keepU * TL.total; render(); } else if (EMBED) embedReady(); else play(); // a toggle keeps the place and stays paused, so the change is seen at the same moment
+  }).catch((err) => { if (my === runSeq) $('status').textContent = 'Could not lay out: ' + err.message; if (EMBED && my === runSeq) embPost({ type: 'error', id: EMB.id, message: err.message }); console.error(err); }), 20);
 }
 ownGraphs();
 { const st = LayoutGraphs.parse(LayoutGraphs.style()); $('nstyle').value = st.shape; $('nlabel').value = st.label; }
@@ -1377,7 +1387,52 @@ $('speed').value = store.get('speed3', 0.7); showSpeed(); // 5% of real speed
 $('limit').value = store.get('limit2', 1000); showLimit();
 ['follow', 'names', 'marks', 'handles'].forEach((id) => ($(id).checked = store.get(id, true)));
 $('lines').value = LINES; $('lines').onchange = () => { LINES = $('lines').value; store.set('lines', LINES); note('step', { lines: LINES }); run(true); };
-run();
+
+// ---------- embedded in another page (?embed=1&side=L): the drawing alone, driven by the page around it ----------
+// The comparison page (compare.html) holds two of these side by side and sends { cmd: 'load', graph, algo, seed, pct, id },
+// 'play', 'pause', 'restart', 'end', 'speed' { pct } and 'rank' { graph, id }. This frame answers with 'hello' (its graph
+// and layout lists), 'ready' (recorded and waiting at the start, with the totals of the last frame as the Lab counts them),
+// 'state' (playing, progress, finished), 'ranked' (every open-source layout run on a graph and counted) and 'error'.
+const EMB = { id: 0, last: '', sent: 0, side: new URLSearchParams(location.search).get('side') || '' };
+function embPost(m) { try { parent.postMessage({ src: 'layout-lab', side: EMB.side, ...m }, location.origin === 'null' ? '*' : location.origin); } catch (e) {} }
+function embedState() {
+  const fin = !playing && T >= TL.total, s = playing ? 'p' : fin ? 'f' : 's', now = performance.now();
+  if (s === EMB.last && !(playing && now - EMB.sent > 250)) return; EMB.last = s; EMB.sent = now;
+  embPost({ type: 'state', id: EMB.id, playing, finished: fin, t: T, total: TL.total, step: C ? meta(C.key)[2] : '' });
+}
+function embedReady() {
+  T = 0; render(); const p = lastProblems(R);
+  embPost({ type: 'ready', id: EMB.id, graph: R.key, algo: R.algo, name: ENGINES[R.algo] ? ENGINES[R.algo].name : ALGO_NAME[R.algo], n: R.n, links: R.E.length, work: R.frames.reduce((a, f) => a + (f.ms || 0), 0),
+    totals: { pr: p.pr, cross: p.cross, thru: p.thru, red: p.red, orange: p.orange, yellow: p.yellow, sharp: p.sharp, area: p.area } });
+}
+const embSpeed = (pc) => { $('speed').value = Math.log10(Math.max(0.1, Math.min(100, +pc || 100))); showSpeed(); };
+// every open-source layout on one graph, with straight links as in the benchmark, counted as the Lab counts them
+async function embedRank(key, seed) {
+  const keep = $('ourLinks').checked, out = []; $('ourLinks').checked = false;
+  try { for (const a of Object.keys(ENGINES)) { try { const p = lastProblems(await recordRun(key, a, seed)); out.push({ algo: a, name: ENGINES[a].name, cross: p.cross, thru: p.thru, fill: p.area }); }
+    catch (e) { out.push({ algo: a, name: ENGINES[a].name, error: e.message }); } } } finally { $('ourLinks').checked = keep; }
+  return out;
+}
+function embedInit() {
+  $('handles').checked = false;
+  // no editing by hand here: a class or a link pressed does nothing, the drawing can still be panned and zoomed
+  svg.addEventListener('pointerdown', (ev) => { if (ev.target.closest && ev.target.closest('.node, .hit, .handle')) ev.stopImmediatePropagation(); }, true);
+  document.addEventListener('keydown', (ev) => { if (/^[pPzZ]$/.test(ev.key)) ev.stopImmediatePropagation(); }, true);
+  addEventListener('message', async (ev) => {
+    if (ev.source !== parent) return; const m = ev.data || {};
+    if (m.cmd === 'load') { EMB.id = m.id; EMB.last = ''; if (m.pct) embSpeed(m.pct);
+      $('graph').value = m.graph; if ($('graph').value !== m.graph) { embPost({ type: 'error', id: m.id, message: 'this graph is not in the list' }); return; }
+      $('algo').value = m.algo; $('seed').value = m.seed || 1; run(); return; }
+    if (m.cmd === 'speed') { embSpeed(m.pct); return; }
+    if (m.cmd === 'rank') { const ranking = await embedRank(m.graph, m.seed || 1); embPost({ type: 'ranked', id: m.id, graph: m.graph, ranking }); return; }
+    if (!R || !TL) return;
+    if (m.cmd === 'play') play(); else if (m.cmd === 'pause') pause(); else if (m.cmd === 'restart') { T = 0; play(); } else if (m.cmd === 'end') { pause(); T = TL.total; render(); }
+  });
+  const kids = (el) => [...el.children];
+  embPost({ type: 'hello', graphs: kids($('graph')).map((g) => ({ label: g.label, keys: kids(g).map((o) => [o.value, o.dataset.name || o.textContent]) })),
+    algos: kids($('algo')).map((g) => ({ label: g.label, opts: kids(g).map((o) => [o.value, o.textContent]) })) });
+}
+if (EMBED) embedInit(); else run();
 </script>
 </body>
 </html>

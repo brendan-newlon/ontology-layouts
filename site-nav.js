@@ -7,6 +7,7 @@
   const PAGES = [
     ['intro', 'Introduction', 'What the layouts do, in two minutes', 'docs/INTRO.html'],
     ['lab', 'Lab', 'Watch a layout work step by step, change it by hand, lay out your own graph, export it', 'tools/layout-bench/playback.html'],
+    ['compare', 'Comparison', 'Our layout and the best open-source layout, side by side, graph after graph', 'tools/layout-bench/compare.html'],
     ['story', 'How it was built', 'How the layouts work, how a person taught the clean-up, the work it builds on', 'docs/STORY.html'],
     ['benchmarks', 'Benchmarks', 'The results against 11 open-source layouts on 51 graphs, and the method', 'docs/ONTOLOGY-LAYOUT-ALGORITHMS.html'],
     ['developers', 'Developer guide', 'Use the layout in your own app: one call, every option', 'docs/DEVELOPER-GUIDE.html']

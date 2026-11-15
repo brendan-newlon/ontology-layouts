@@ -179,6 +179,19 @@ label.tog { display: inline-flex; gap: 6px; align-items: center; cursor: pointer
 .famnote { border-left: 4px solid var(--accent); padding: 6px 12px; background: var(--paper); border-radius: 0 8px 8px 0; }
 .sharedh { border-top: 2px solid var(--rule); padding-top: 1.4rem; margin-top: 2.6rem; }
 @media (max-width: 600px) { .famtabs button { flex: 1 1 100%; } }
+.tmw { background: var(--paper); border: 1px solid var(--rule); border-radius: 12px; padding: 14px; margin: 1rem 0 1.8rem; }
+.tmw-bar { display: flex; flex-wrap: wrap; gap: 6px 8px; align-items: center; margin-bottom: 8px; }
+.tmw-bar b { font-size: .8rem; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); margin-right: 6px; }
+.tmw-bar button { font: inherit; font-size: .9rem; padding: 5px 10px; border-radius: 8px; border: 1px solid var(--rule); background: var(--bg); color: var(--ink); cursor: pointer; }
+.tmw-bar button[aria-pressed="true"] { background: var(--accent); border-color: var(--accent); color: var(--paper); }
+.tmw-main { display: grid; grid-template-columns: minmax(0, 3fr) minmax(0, 2fr); gap: 14px; }
+@media (max-width: 860px) { .tmw-main { grid-template-columns: 1fr; } }
+.tmw-svg { width: 100%; aspect-ratio: 4 / 3; background: var(--bg); border: 1px solid var(--rule); border-radius: 8px; }
+.tmw-svg .e { stroke: var(--muted); stroke-width: 1.1; opacity: .7; } .tmw-svg .e.sub { stroke-dasharray: 4 3; }
+.tmw-svg .n rect { fill: var(--paper); stroke: var(--ink); stroke-width: .8; } .tmw-svg .n text { font-size: 9px; fill: var(--ink); }
+.tmw-svg .n.hot rect { stroke: var(--accent); stroke-width: 2.4; } .tmw-svg .room { fill: none; stroke: var(--accent); stroke-dasharray: 5 4; opacity: .6; }
+.tmw-count { font-size: .9rem; color: var(--muted); margin: 6px 2px 0; } .tmw-count b { color: var(--ink); }
+.tmw-text p { margin: .3rem 0 .7rem; }
 .rgroup { margin: 1rem 0 1.4rem; }
 .rtabs { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 6px; }
 .rtabs button[aria-selected="true"] { background: var(--accent); border-color: var(--accent); color: var(--paper); }
@@ -231,7 +244,7 @@ tr.mine td:first-child { box-shadow: inset 4px 0 0 var(--accent); }
 </div>
 
 <nav class="toc" aria-label="Contents"><b>On this page</b>
-<a href="#summary">Summary</a><a href="#tm">How it draws</a><a href="#results">Rankings</a><a href="#unseen">Unseen graphs</a><a href="#explore">Every test graph</a><a href="#time">Time and scale</a><a href="#shared">Shared by all our layouts</a><a href="#change">Editing and exploring</a><a href="#cleanup">The clean-up</a><a href="#learned">How it was learned</a><a href="#routing">Link routing</a><a href="#how">How the layouts work</a><a href="#method">Method</a><a href="#limits">Limits</a><a href="#code">Appendix: the code</a></nav>
+<a href="#summary">Summary</a><a href="#tm">How it draws</a><a href="#results">Rankings</a><a href="#unseen">Unseen graphs</a><a href="#explore">Every test graph</a><a href="#time">Time and scale</a><a href="#change">Editing and exploring</a><a href="#cleanup">Step by step</a><a href="#routing">Link routing</a><a href="#code">Using the code</a><a href="#shared">Method, limits, source</a><a href="#learned">How it was learned</a><a href="#how">How the layouts work</a></nav>
 
 <div class="prose">
 <p>An ontology diagram is only useful if a reader can follow each link from one class to another. Five problems get in the way, pictured below. The two that matter most are links that cross, and links that pass under a class box, so that two unrelated classes look connected. Then come links that cross at a shallow angle, links that leave a class almost together, and a drawing that sprawls over far more canvas than its classes need. General-purpose layouts reduce crossings only as a side effect and do little about links under boxes. Tidy Stress and Mycelium are built to minimize both, without letting the drawing sprawl.</p>
@@ -333,6 +346,60 @@ tr.mine td:first-child { box-shadow: inset 4px 0 0 var(--accent); }
 <tr><td>Cell Ontology, 3,335 classes</td><td class="best">72,011</td><td>16 s</td><td>72,011</td><td>16 s</td><td>100,245</td><td>6.7 s</td></tr>
 </tbody></table></div>
 <div class="prose"><p>At 3,335 classes d3-force draws about as many (72,111 in 6.4 s, counted as on the <a href="#verylarge-br" data-fam="br">second tab</a>), and Tidy Mycelium takes more than twice as long. Models of thousands of classes still need a multilevel placement, which these layouts do not have.</p></div>
+
+<h2 id="change">Editing and exploring: the drawing a reader knows stays put</h2>
+<div class="prose"><p>Keeping a drawing works after Tidy Mycelium as after any layout. <code>draw(boxes, links, { keep: oldPos })</code> places new classes round the old ones, which move a little: 4 to 14% of the drawing on the library's test models, because Tidy Mycelium packs a drawing tightly and leaves new classes less room. With <code>exact: true</code> no old class moves at all, and a graph browser can grow a drawing one expansion at a time, the new neighbours of a class on an arc on its most open side, in a few milliseconds per click.</p></div>
+
+<h2 id="cleanup">Inside Tidy Mycelium, step by step</h2>
+<div class="prose"><p>Tidy Mycelium runs its own placement, then the library's clean-up (the one a person taught, walked through on the <a href="#cleanup-br" data-fam="br">other tab</a>), then takes in the empty space. What each part is worth, on the 15 development graphs (crossed links and links through classes counted within 3 px, median area over the boxes):</p></div>
+<div class="tbl"><table>
+<thead><tr><th class="l">After</th><th>Crossed links, total</th><th>Links through classes, total</th><th>Median area</th></tr></thead>
+<tbody>
+<tr><td class="l">The placement (core in groups, parts put back, tightened)</td><td>430</td><td>106</td><td>24.9</td></tr>
+<tr><td class="l">The clean-up</td><td>400</td><td>37</td><td>21.1</td></tr>
+<tr class="ours"><td class="l">The take-in (the finished drawing)</td><td>402</td><td>48</td><td>9.1</td></tr>
+<tr><td class="l">For comparison: the take-in without the clean-up</td><td>429</td><td>94</td><td>7.5</td></tr>
+</tbody></table></div>
+<div class="prose"><p>The clean-up removes most links through classes (106 → 37); the take-in then halves the area or more and gives back a few of them. Without the clean-up the drawing ends smaller still but with twice the links through classes. (The rankings, which also push any overlapping boxes apart at the end, count 54 links through classes after the take-in.)</p></div>
+<h3 id="tmwalk-h">Walk through: every step of Tidy Mycelium on two graphs</h3>
+<div class="prose"><p>Each step on a 115-class biomedical taxonomy, or on a graph of 57 classes with two big hubs that was never seen during development. Classes set aside are not drawn until they come back; green marks classes that just came back or that the clean-up moved, and a dashed frame shows the drawing before a take-in step.</p></div>
+<div class="tmw" id="tmwalk"></div>
+
+<h2 id="routing">Link routing on Tidy Mycelium's drawings</h2>
+<div class="prose"><p>The link routing runs after Tidy Mycelium as after any layout: parallel and reciprocal links become arcs side by side, a link still running through a class bends round it, link ends spread along crowded sides, and names go where they cover nothing. Measured over 51 graphs on the drawn paths (a link counts as running through a class within 9 px of its box; link names derived from the graphs' properties):</p></div>
+<div class="tbl"><table>
+<thead><tr><th class="l">51 graphs, Tidy Mycelium</th><th>Crossed links</th><th>Sharp crossings</th><th>Links through classes</th><th>Names over a class or name</th><th>Names with a link across</th><th>Bends</th></tr></thead>
+<tbody>
+<tr><td class="l">Straight links</td><td>1,754</td><td>344</td><td>214</td><td>–</td><td>–</td><td>0</td></tr>
+<tr class="ours"><td class="l">With the routing</td><td>1,571</td><td>48</td><td>57</td><td>350</td><td>929</td><td>483</td></tr>
+</tbody></table></div>
+<div class="prose"><p>The routing removes three quarters of the links through classes and most sharp crossings, and a tenth of the crossed links. Tidy Mycelium's tight drawings leave names less room than the earlier layouts' (350 names over a class or another name, against 144 after Best Read); an app that draws each name at the middle of its link can say so with <code>midNames</code>, and the take-in then keeps them clear.</p></div>
+
+<h2 id="code">Using the code: Tidy Mycelium</h2>
+<div class="prose">
+<p><strong>Input.</strong> An array of boxes <code>[{ w, h }]</code> and an array of links <code>[[i, j, weight, labelWidth]]</code>: <code>i</code> and <code>j</code> index into the boxes, <code>weight</code> is 2 for subclass links and 1 for others, and <code>labelWidth</code>, the pixel width of the link's name if you draw one, is optional (the layout then leaves that much room along the link).</p>
+<p><strong>Output.</strong> <code>pos</code>, the center <code>{ x, y }</code> of each box, and with <code>draw</code> the paths of the links, ready to draw.</p>
+</div>
+<pre><code>const boxes = [{ w: 90, h: 20 }, { w: 70, h: 20 }, { w: 110, h: 20 }];
+const links = [[1, 0, 2], [2, 0, 1, 60]];       // 1 is a subclass of 0; 2 links to 0 with a 60 px name
+// Everything in one call: Tidy Mycelium, link routing, groups, and paths ready to draw.
+const d = OntologyLayouts.draw(boxes, links, { arrow: 8 });
+d.pos.forEach((p, i) =&gt; console.log(i, p.x, p.y));        // draw class i centered here
+d.paths.forEach((p) =&gt; console.log(p.points, p.tip, p.angle)); // border to border; an 8 px arrowhead from the last point to tip
+// What matters most: the fewest problems (default), smaller drawings, or less time.
+const small = OntologyLayouts.draw(boxes, links, { prefer: 'smaller' });
+const quick = OntologyLayouts.draw(boxes, links, { prefer: 'faster' });
+// Names drawn at the middle of each link (14 px high): no name is made to cover a class or another name.
+const mid = OntologyLayouts.draw(boxes, links, { midNames: 14 });
+// The same in steps. Tidy Mycelium runs its own clean-up and take-in: no cleanUp call after it.
+const { pos } = OntologyLayouts.tidyMycelium(boxes, links, { seed: 1, prefer: 'fewer-problems' });
+const { routes, pos: finalPos } = OntologyLayouts.routeLinks(pos, boxes, links);
+// finalPos, not pos: the routing may push a class off a link it still runs through, and the routes belong to finalPos.
+const paths = OntologyLayouts.routePaths(finalPos, boxes, links, routes, { arrow: 8 });
+// After an edit: the earlier drawing's positions (null for each new class) keep the reader's picture.
+const d2 = OntologyLayouts.draw(boxes2, links2, { keep: oldPos });               // old classes move a little
+const d3 = OntologyLayouts.draw(boxes2, links2, { keep: oldPos, exact: true });  // old classes do not move at all</code></pre>
+<div class="prose"><p>Every time limit counts work, not seconds, so the same graph gives the same drawing on any computer; <code>draw(…, { timeLimit })</code> sets it for one call. The developer guide has the options in full.</p></div>
 </div>
 <div class="fam" id="fam-br" role="tabpanel" aria-labelledby="famtab-br" hidden>
 <section class="exec" aria-labelledby="summary"><h2 id="summary-br">The earlier layouts: Tidy Stress, Mycelium and Best Read</h2>
@@ -354,7 +421,7 @@ tr.mine td:first-child { box-shadow: inset 4px 0 0 var(--accent); }
   <div class="stat"><b>Stable and tidy as a graph grows</b><span>expand a class and nothing already drawn moves; the new classes come in with a third of the crossings of a typical force-directed expansion, in about 6 ms per click</span></div>
   <div class="stat"><b>Under a second</b><span>median, clean-up included; at most about 1.3 s up to 537 classes, and the same drawing on any computer</span></div>
 </div>
-<nav class="toc" aria-label="Contents"><b>On this tab</b><a href="#summary-br">Summary</a><a href="#layouts-br">The layouts</a><a href="#results-br">Rankings</a><a href="#unseen-br">Unseen graphs</a><a href="#topdown-br">Top-down hierarchies</a><a href="#explore-br">Every test graph</a><a href="#time-br">Time and scale</a><a href="#shared">Shared by all our layouts</a></nav>
+<nav class="toc" aria-label="Contents"><b>On this tab</b><a href="#summary-br">Summary</a><a href="#layouts-br">The layouts</a><a href="#results-br">Rankings</a><a href="#unseen-br">Unseen graphs</a><a href="#topdown-br">Top-down hierarchies</a><a href="#explore-br">Every test graph</a><a href="#time-br">Time and scale</a><a href="#change-br">Editing and exploring</a><a href="#cleanup-br">The clean-up, step by step</a><a href="#routing-br">Link routing</a><a href="#experiments-br">Bends instead of moves</a><a href="#code-br">Using the code</a><a href="#shared">Shared by all our layouts</a></nav>
 
 
 <h2 id="layouts-br">Two layouts and an auto mode that keeps the better drawing; the clean-up and routing work after any layout</h2>
@@ -503,11 +570,7 @@ tr.mine td:first-child { box-shadow: inset 4px 0 0 var(--accent); }
 <p>The first run at this size also found two faults, both fixed before the numbers above: the starting placement came out at an arbitrary scale and offset, and a class with a single link and no free spot near its neighbor was left where it started. Together they put part of the Cell Ontology a million pixels from the rest.</p>
 </div>
 
-</div>
-
-<h2 id="shared" class="sharedh">Shared by all our layouts</h2>
-<div class="prose"><p>The rest of the page is the same for Tidy Mycelium and the earlier layouts: keeping a drawing as it grows, the clean-up that runs after any layout, the link routing, the method and the limits. Where a number below was measured on one layout, it says which.</p></div>
-<h2 id="change">When a drawing grows, the classes already shown stay put and the new ones are placed cleanly</h2>
+<h2 id="change-br">When a drawing grows, the classes already shown stay put and the new ones are placed cleanly</h2>
 <div class="prose">
 <p>A diagram is rarely drawn once. A modeller adds classes, and a reader of a graph browser clicks a class to see its neighbours. Each time, redrawing from scratch would move the classes the reader already knows. These layouts can keep the earlier drawing and place only what is new.</p>
 <h3>Exploring a graph: each click draws a third of the crossings of a force-directed expansion, and moves nothing</h3>
@@ -560,7 +623,7 @@ tr.mine td:first-child { box-shadow: inset 4px 0 0 var(--accent); }
 <p>Keeping costs crossings, because the new links have to cross a picture that was not made for them; redrawing from time to time remains the way to a clean drawing. These numbers are the hard case: the added classes were picked at random, hubs included, where an edit usually adds a few classes in one place.</p>
 </div>
 
-<h2 id="cleanup">The clean-up removes two thirds of the links through classes, after any layout</h2>
+<h2 id="cleanup-br">The clean-up removes two thirds of the links through classes, after any layout</h2>
 <div class="prose">
 <p>Both layouts place classes by a global rule: stress, pods, hub rings. What a global rule leaves behind is local: a leaf sitting on a line, a corner where five links cross, a class that could step two box-widths aside into empty space. A person sees these at a glance and fixes them in a minute. The clean-up does the same automatically. It was taught by a person who demonstrated and explained how he does it (see <a href="#learned">How the clean-up was learned</a>), in two rounds, and it runs in two parts:</p>
 <ol>
@@ -705,6 +768,136 @@ tr.mine td:first-child { box-shadow: inset 4px 0 0 var(--accent); }
 <p>Most of the gain comes from the simplest step: single moves into open space alone take 138 links through classes down to 57. Leaf units, region spreading and group moves each add a little; spreading and group moves together remove about a quarter of what is left after the single moves and leaf units. None of the steps reduces crossings much. That is the layout's job; the clean-up mainly takes links off classes and opens sharp crossings.</p>
 </div>
 
+<h2 id="routing-br">Link routing removes most remaining links through classes and shows every parallel link</h2>
+<div class="prose">
+<p>The routing answers three gaps that a review pointed out for business ontologies: parallel and reciprocal links (Organization employs Person, Person manages Organization) drawn as straight lines lie exactly on top of each other; link names are not part of the drawing; and moving classes is the only way the layouts clear a link out of a class's way. The routing draws the links on the final positions and never moves a class:</p>
+<ul>
+<li><strong>Parallel links</strong> between the same two classes become arcs spread 24 px apart on both sides of the straight line (the middle one straight when their number is odd), so each one and its name can be seen.</li>
+<li><strong>Self-links</strong> become a loop on the corner of the class where the fewest links leave.</li>
+<li><strong>Bends:</strong> a link that runs through a class (or, when it pays off, crosses others) tries one bend at the corners and sides of the boxes in its way, gentle arcs to either side, and pairs of those bends; a bend is kept only if the drawing gets better counting crossings, links through classes and the extra length. Links through classes are routed first, then a second pass for any still in the way.</li>
+<li><strong>Ports:</strong> at a class with three or more links, link ends that would meet its box closer than 10 px apart are spread along the side they reach, in the same order, kept only if no link gets a new problem.</li>
+<li><strong>Names:</strong> each link's name goes at the point along its path where it covers no class, no other name and as few links as possible, longest names first.</li>
+</ul>
+<p>Measured on the drawn curves, on Best Read's drawings before the refinements below (no class moved). <strong>Two margins.</strong> Here and in every table about the routing, a link counts as running through a class when it passes within 9 px of its box: closer than that, a drawn line with its arrowhead reads as touching the box, and the routing keeps that clearance. The rankings below count within 3 px, as published comparisons of layouts do, so the same drawing has more links through classes here. That, and the earlier drawings, is why Best Read's straight links show 61 links through classes on the 15 development graphs in this table and 39 in the rankings. The graphs carry no link names, so the names are made up: "has" plus the target class, "relatedTo" plus the target for a second link the same way, and so on; subclass links have none. Totals:</p>
+</div>
+<p class="takeaway">Routing the links leaves 15% fewer crossed links, two thirds fewer links through classes and 93% fewer names on a class or another name, and hides no parallel link, for about 10 bends per graph.</p>
+<div class="tbl"><table>
+<thead><tr><th>Graphs</th><th>Links drawn</th><th>Crossed links</th><th>Sharp crossings</th><th>Links through classes</th><th>Parallel links hidden</th><th>Link ends within 4 px</th><th>Names over a class or name</th><th>Bends</th><th>Area ÷ class area</th></tr></thead>
+<tbody>
+<tr><td>15 development</td><td>Straight (names at the middle)</td><td>450</td><td>30</td><td>61</td><td>46</td><td>371</td><td>1,098</td><td>0</td><td>10.0</td></tr>
+<tr class="ours"><td></td><td>Routed</td><td class="best">388</td><td class="best">8</td><td class="best">11</td><td class="best">0</td><td class="best">205</td><td class="best">72</td><td>177</td><td>10.5</td></tr>
+<tr><td>10 held-out</td><td>Straight (names at the middle)</td><td>309</td><td>6</td><td>49</td><td>19</td><td>81</td><td>911</td><td>0</td><td>11.1</td></tr>
+<tr class="ours"><td></td><td>Routed</td><td class="best">290</td><td class="best">1</td><td class="best">10</td><td class="best">0</td><td class="best">11</td><td class="best">63</td><td>92</td><td>11.2</td></tr>
+<tr><td>26 public</td><td>Straight (names at the middle)</td><td>1,284</td><td>77</td><td>108</td><td>106</td><td>526</td><td>2,387</td><td>0</td><td>11.8</td></tr>
+<tr class="ours"><td></td><td>Routed</td><td class="best">1,058</td><td class="best">16</td><td class="best">54</td><td class="best">0</td><td class="best">256</td><td class="best">193</td><td>269</td><td>12.1</td></tr>
+</tbody></table></div>
+<div class="prose">
+<p><strong>See it on any graph.</strong> Every drawing of ours in this page has a <strong>Curved links</strong> switch: it draws the links as the library does, with the routing, and gives the counts on the drawn links (3 px margin, as ranked). The switch is highlighted where curving removes problems or shows parallel links that straight lines hide; that is 58 of our 98 drawings (39 with fewer problems), and curving never adds a problem in these counts.</p>
+<p>Over the 51 graphs: 15% fewer crossed links, two thirds fewer links through classes, no parallel link hidden (171 before), a fifth of the sharp crossings, half the crowded link ends and 93% fewer names on top of classes or other names, for about 10 bends per graph (a third of them the arcs of parallel links) and 2 to 4% more area. It takes at most 250 ms on the work clock, under 60 ms on most graphs. <code>tools/layout-bench/routebench.mjs</code> adds the steps one at a time.</p>
+<p>Also tested for the review and not adopted: running the routing on the drawing before the clean-up instead of after it (twice the links through classes left, no smaller area: on these graphs the clean-up does not make the drawing sprawl); a smaller area penalty in the clean-up (half or a quarter: within 1% on crossings, a few links through classes fewer, up to 3% more area); a deeper look-ahead for group moves (8 repair moves, three tries instead of two: no clear gain, 6% more area on the development graphs); and giving the layout the names' widths so it reserves room for them (fewer names on names on the unseen graphs, but 15% more crossed links on the development graphs and up to 30% more area). <code>tools/layout-bench/ekgbench.mjs</code> runs these.</p>
+<h3>Watching the routing step by step led to four fixes</h3>
+<p>Watching the routing step by step showed four faults: loops took a fixed corner even where links left the class, names sat on top of the line, a bend could swing far outside the drawing, and some one-link classes ended fenced in by lines with open space nearby. Changes, each kept only where it measured better:</p>
+<ul>
+<li><strong>Loops on the open side.</strong> A self-link's loop now tries 12 places (four corners, and the middle and both ends of each side) and takes the one with the fewest links, classes and crossings in its wedge, counting the class's own links. On the five graphs with a self-link, four loops crossed a link before; none does now.</li>
+<li><strong>Names beside the line.</strong> A name can also sit just beside its link, on either side, where that covers less. Names on a class or another name 331 &rarr; 147, names with a link across them 1,330 &rarr; 882.</li>
+<li><strong>Bends stay inside the drawing.</strong> A bend that takes a link outside the box round the classes costs 1 per 20 px. Over 52 graphs, link length outside that box 2,817 &rarr; 1,056 px, for 15 more crossings (+0.8%), 3 fewer links through classes and 1.5% less area.</li>
+<li><strong>Classes moved off links.</strong> After the clean-up, three short passes (at most 120 ms of the work clock): two one-link classes of the same class trade places when that leaves fewer problems; a one-link class whose link still crosses or runs through something moves to the most open spot round its neighbor (fewest problems, then the most room, then the shorter link); a class that a link runs through, or passes within 9 px of, is pushed sideways off the line just far enough. After the routing, a class that a drawn curve still runs through is pushed off it the same way, the links are routed again, and the result is kept only if it has fewer problems. On straight links, links through classes 216 &rarr; 178.</li>
+<li><strong>Time limit.</strong> <code>_ogSetTimeLimit(ms)</code> sets the time the layouts, the clean-up and the routing may take, on the work clock (so still the same drawing on any computer). The default is 1 s since 12 November 2026 (it was 1.5 s), and the tables in this write-up are measured at 1 s. The link routing keeps at least its time at 1.5 s, because it costs only about 25 ms and cutting it lost the most quality. Over the 51 test graphs, with two seeds each, 1 s made the drawings about 22% faster than 1.5 s (mean 462 to 361 ms); after routing they have 5% more crossed links and 19% fewer links through classes, and 72 of the 102 drawings scored the same, 11 better and 19 worse. Best Read still has the fewest crossed links plus links through classes on every development and unseen graph. 0.75 s was tried as well: 28% faster, but Best Read then lost two of the 36 unseen graphs to tuned <code>neato</code>, by 3 and 20 problems.</li>
+</ul>
+<p class="takeaway">The four fixes cut names on a class or name by more than half and links through classes by a fifth, for about 25 ms more per graph.</p>
+<div class="tbl"><table>
+<thead><tr><th>51 graphs, Best Read with clean-up and routing</th><th>Crossed links</th><th>Sharp crossings</th><th>Links through classes</th><th>Names over a class or name</th><th>Names with a link across</th><th>Bends</th><th>Mean time</th></tr></thead>
+<tbody>
+<tr><td>Before the refinements</td><td>1,738</td><td>25</td><td>75</td><td>331</td><td>1,330</td><td>534</td><td>about 430 ms</td></tr>
+<tr class="ours"><td>After</td><td class="best">1,714</td><td>26</td><td class="best">59</td><td class="best">147</td><td class="best">882</td><td class="best">503</td><td>about 455 ms</td></tr>
+</tbody></table></div>
+<p><strong>Then, pulled in from the edge</strong> (described with the clean-up above). Same 51 graphs, routed, without and with it:</p>
+<p class="takeaway">Pulling in from the edge makes the drawings 9% smaller on the development graphs and 27 to 29% smaller on the unseen ones, with about as many problems.</p>
+<div class="tbl"><table>
+<thead><tr><th>51 graphs, routed</th><th>Crossed links</th><th>Sharp crossings</th><th>Links through classes</th><th>Names over a class or name</th><th>Names with a link across</th><th>Bends</th><th>Area: 15 dev / 10 held-out / 26 public</th><th>Mean time</th></tr></thead>
+<tbody>
+<tr><td>Without pulling in</td><td>1,714</td><td>26</td><td class="best">59</td><td class="best">147</td><td class="best">882</td><td class="best">503</td><td>10.5 / 11.3 / 12.2</td><td class="best">about 445 ms</td></tr>
+<tr class="ours"><td>With pulling in</td><td class="best">1,708</td><td class="best">24</td><td>65</td><td>162</td><td>887</td><td>514</td><td class="best">9.6 / 8.3 / 8.7</td><td>about 455 ms</td></tr>
+</tbody></table></div>
+<p>The drawings are 9% smaller on the development graphs and 27 to 29% smaller on the graphs never seen during development (23% over all 51), for as many problems: 6 fewer crossings, 6 more links through classes after routing (all on the two densest public ontologies, DOLCE and SAREF, where DOLCE also loses 5 crossings), and slightly more crowded names. Three graphs it was built for: Rome graph 7785, whose long chain ran off to the right, 2,026 &rarr; 1,677 px wide; the held-out deep taxonomy, 5,724 &times; 2,272 &rarr; 4,591 &times; 1,714 px (39% less area); the biomedical taxonomy's HormoneSignaling, 484 &rarr; 266 px from Signaling. Tried and not adopted: more room between groups (60 or 80 px: the same problems, less of the gain); not drawing in at all, only turning (most of the gain is from drawing in).</p>
+<p>Area is 0 to 2% larger before pulling in. The slowest graph (SAREF, 98 classes and 160 links) takes about 1.6 s. Also tested and not adopted: starting the placement at the matching size, or at two or three times it, instead of five times too large. Over the 51 graphs and three seeds the four come within 0.5% of each other on crossed links, links through classes and sharp crossings together: the matching size has the most sharp crossings, twice the size the fewest links through classes but the most crossed links. That is the spread between seeds, not a gain, so five times stays. Trading two one-link classes' places alone rarely helps: where two of them lie on one ray from their neighbor, the far one's link runs through the near one whichever is farther.</p>
+</div>
+
+<h2 id="experiments-br">Bending links instead of moving classes leaves more links through classes</h2>
+<div class="prose">
+<p>The layouts and the clean-up remove links through classes by moving classes, which costs area. The alternative, standard in yFiles, MSAGL and ELK, is to leave the classes where the placement put them and route each offending link around the classes in its way. We tested a simple router: one or two bends at the padded corners of the boxes in the way, choosing the bends that cross the fewest other links (a full obstacle-avoiding router would do better). Rerun with the current layouts, averages per graph over the 15 development graphs:</p>
+</div>
+<p class="takeaway">With the first, simple router, bending links instead of moving classes drew a fifth fewer crossings but left twice the links through classes.</p>
+<div class="tbl"><table>
+<thead><tr><th>Approach</th><th>Crossed links</th><th>Links through classes</th><th>Bends</th><th>Area ÷ class area</th></tr></thead>
+<tbody>
+<tr class="ours"><td>Best Read as shipped: move classes, straight links</td><td>34.7</td><td>1.8</td><td class="best">0</td><td>12.7</td></tr>
+<tr><td>Same placement, no moves off links and no clean-up; links bent instead</td><td class="best">27.5</td><td>3.9</td><td>18.3</td><td class="best">11.5</td></tr>
+<tr><td>As shipped, then bends for the links still in the way</td><td>33.5</td><td class="best">0.4</td><td>2.1</td><td>12.7</td></tr>
+</tbody></table></div>
+<div class="prose">
+<p>The review is right that routing is a real alternative: placement plus bends draws a fifth fewer crossings in 9% less area, at about 18 bends per graph and twice the links through classes left over. Moving classes keeps every link straight. The cheapest gain is the third row: two bends per graph remove almost every link through a class that the moves leave. This became the link routing after the layout (see <a href="#routing-br">Link routing</a>), with arcs for parallel links, ports and name placement added. Whether a bend costs a reader less than a crossing is a question for a study; Purchase's studies rank bends as less harmful than crossings.</p>
+<p><strong>Retested with the link routing as it is now.</strong> Bending instead of moving was run again on all 51 graphs: the placement without its moves off links and without the clean-up, then the library's routing, against the full pipeline (<code>EB_NOCLEAN=1 node ekgbench.mjs dev '{"skip":{"thru":true}}'</code>). Measured on the drawn links, 9 px margin:</p>
+</div>
+<p class="takeaway">With today's routing, moving classes and then routing leaves two to eleven times fewer links through classes than bending alone, for about as many crossings.</p>
+<div class="tbl"><table>
+<thead><tr><th>Graphs</th><th>Approach</th><th>Crossed links</th><th>Links through classes</th><th>Bends</th><th>Mean time</th></tr></thead>
+<tbody>
+<tr class="ours"><td>15 development</td><td>Move classes, then route</td><td class="best">400</td><td class="best">4</td><td class="best">160</td><td>0.65 s</td></tr>
+<tr><td></td><td>Bend instead of moving</td><td>409</td><td>21</td><td>338</td><td class="best">0.28 s</td></tr>
+<tr class="ours"><td>10 held-out</td><td>Move classes, then route</td><td class="best">286</td><td class="best">8</td><td class="best">85</td><td>0.67 s</td></tr>
+<tr><td></td><td>Bend instead of moving</td><td>302</td><td>91</td><td>230</td><td class="best">0.30 s</td></tr>
+<tr class="ours"><td>26 public</td><td>Move classes, then route</td><td>1,022</td><td class="best">53</td><td class="best">269</td><td>0.55 s</td></tr>
+<tr><td></td><td>Bend instead of moving</td><td class="best">1,008</td><td>109</td><td>456</td><td class="best">0.31 s</td></tr>
+</tbody></table></div>
+<div class="prose">
+<p>With today's routing the earlier gain is gone: bending instead of moving leaves two to eleven times the links through classes and about twice the bends, for about as many crossings, in half the time. So the library moves classes and then routes. The routing itself is part of every drawing <code>OntologyLayouts.draw</code> makes (<code>route: { straight: true }</code> turns off the bends; <code>arcs: false</code> also straightens repeated links), and the drawings in this page can show it: tick <strong>Curved links</strong> above any of our drawings.</p>
+</div>
+
+<h2 id="code-br">Using the code: the earlier layouts</h2>
+<div class="prose">
+<p><strong>Input.</strong> An array of boxes <code>[{ w, h }]</code> and an array of links <code>[[i, j, weight, labelWidth]]</code>:</p>
+<ul>
+<li><code>i</code> and <code>j</code> index into the boxes;</li>
+<li><code>weight</code> is 2 for subclass links and 1 for others;</li>
+<li><code>labelWidth</code>, the pixel width of the link's label, is optional.</li>
+</ul>
+<p><strong>Output.</strong> An object whose <code>pos</code> array holds the center <code>{ x, y }</code> of each box. All arithmetic is on unrounded floating-point numbers.</p>
+</div>
+<pre><code>const boxes = [{ w: 90, h: 20 }, { w: 70, h: 20 }, { w: 110, h: 20 }];
+const links = [[1, 0, 2], [2, 0, 1, 60]];       // 1 is a subclass of 0; 2 links to 0 with a 60 px label
+// Everything in one call: layout, clean-up, link routing, groups, and paths ready to draw.
+const d = OntologyLayouts.draw(boxes, links, { arrow: 8 });
+d.pos.forEach((p, i) =&gt; console.log(i, p.x, p.y));        // draw class i centered here
+d.paths.forEach((p) =&gt; console.log(p.points, p.tip, p.angle)); // border to border; an 8 px arrowhead from the last point to tip
+console.log(d.groups);                                      // a group number per class, for hulls or background areas
+// The same in three steps. Time is read from the work clock, OntologyLayouts.now(), not from the computer's clock,
+// so the same model gets the same drawing on any computer:
+const t0 = OntologyLayouts.now();
+const { pos } = OntologyLayouts.bestRead(boxes, links, {});    // or .tidyStress(…) / .mycelium(…)
+const cleanPos = OntologyLayouts.cleanUp(pos, boxes, links, t0); // within what is left of the time limit since t0
+const { routes, pos: finalPos } = OntologyLayouts.routeLinks(cleanPos, boxes, links);
+// finalPos, not cleanPos: the routing may push a class off a link it still runs through, and the routes belong to finalPos.
+const paths = OntologyLayouts.routePaths(finalPos, boxes, links, routes, { arrow: 8 });
+// options: bestRead(…, { roomy: true }) leaves 30% more space; routeLinks(…, { settle: false }) never moves a class;
+// OntologyLayouts.setTimeLimit(ms) sets the time for the layout and the clean-up (default 1000; the routing keeps at least its time at 1500).
+// After an edit: pass the earlier drawing's positions (null for each new class) to keep the reader's picture.
+const d2 = OntologyLayouts.draw(boxes2, links2, { keep: oldPos });               // old classes move a few percent
+const d3 = OntologyLayouts.draw(boxes2, links2, { keep: oldPos, exact: true });  // old classes do not move at all
+// A relationship modelled as a class (reified, or an association class): mark it, and it is drawn on the line between the two.
+boxes2[7].between = [2, 5];                                                       // class 7 relates class 2 to class 5
+// Mycelium returns null for fewer than 8 classes; Best Read then uses Tidy Stress.</code></pre>
+<div class="prose"><p>The entry points are collected at the end of the code in <code>OntologyLayouts</code>: <code>draw</code>, <code>bestRead</code>, <code>tidyStress</code>, <code>mycelium</code>, <code>cleanUp</code>, <code>routeLinks</code>, <code>routePaths</code>, <code>groups</code>, <code>routeMetrics</code>, <code>metrics</code>, <code>score</code>, <code>setTimeLimit</code>, <code>now</code>, <code>placeNew</code> and <code>inline</code>.</p>
+<p><strong>Relation classes.</strong> A relationship modelled as a class (RDF reification, an association class, an n-ary relation pattern) reads best on the line between the two classes it relates. Give its box <code>between: [subject, object]</code>, and after the clean-up it moves onto that line, as near the middle as there is room, when that costs it at most one crossing. On the 15 development graphs with every third relationship made a class (225 relation classes): relation classes bent by more than 45 degrees 100 → 66, mean angle at the relation class 129° → 147°, crossed links 521 → 507, links through classes 16 → 12. Without the hint a relation class is an ordinary class, because which classes are relationships is a modelling decision the links alone do not show.</p>
+<p><strong>Draw the classes where the routing leaves them.</strong> <code>routeLinks</code> returns <code>pos</code> as well as the routes: when a drawn link still runs through a class, the class is pushed off it and the links are routed again, and the result is kept only if it has fewer problems. Those positions are the final ones. A renderer that keeps the earlier positions draws routes that miss their classes. Pass <code>{ settle: false }</code> to keep every class where it is.</p>
+<p><strong>Arrowheads.</strong> <code>routePaths</code> turns each route into points from the border of one box to the border of the other. With <code>arrow</code>, each path stops that many pixels short of its end class along its last direction, so an arrowhead drawn from there to <code>tip</code>, at <code>angle</code>, touches the box without entering it. Spreading the arrow ends further apart on a shared side was tried and not kept: on the 15 development graphs it changed no drawing. Where arrowheads crowd, it is at a hub with more incoming links than its side has room for, and spacing them further adds crossings.</p>
+<p><strong>Groups.</strong> <code>groups</code>, and <code>draw</code>'s <code>groups</code>, give each class the number of its group of closely linked classes. These are the groups that Mycelium keeps together and the pull-in slides inward, for a renderer that draws hulls, swimlanes or background areas round related classes.</p>
+<p><strong>Time limits count work, not seconds.</strong> Every time limit (the layouts' and the clean-up's) is measured in units of work: tests of two links, of a link against a box, steps tried, each with a fixed cost in nanoseconds measured on the laptop the layouts were tuned on. A computer half as fast therefore takes twice as long and draws exactly the same picture, instead of drawing a worse one in the same time. To keep the wait bounded on very slow computers, the wall clock still applies at 1/2.5 speed: a computer more than 2.5 times slower gets less work and a somewhat different drawing.</p></div>
+
+</div>
+
+<h2 id="shared" class="sharedh">Shared by all our layouts: method, limits and the source</h2>
+<div class="prose"><p>Below is what holds for both tabs: how the benchmark was run, its limits, and the complete source of the library, which holds both families. How the layouts work, how the clean-up was taught and what did not work are on the <a href="#how">development story</a> page.</p></div>
 <h2 id="learned">The clean-up was taught by a person, in a lab he designed for teaching it</h2>
 <div class="prose">
 <p>The clean-up was not designed from the literature, and it does not replay anyone's moves. Brendan Newlon, who works with these ontologies, designed a way to teach it: the Layout Lab and the Layout Playback, specified by him and built with an AI coding assistant, Claude (Anthropic's Opus 5.5 model), where he could demonstrate his approach and the assistant could follow it. He solved the drawings by hand while saying what he was doing and why, named the principle behind each move, often with a metaphor (open space as a resource, a crowd pushed outward in pizza slices, a leaf that can always be solved), and suggested how a program could recognize the situation and carry the move out. The assistant's part, at his direction, was to distill that practice and its principles into definitions, measures and steps a program can run, and to test whether each one held up on every graph, not only the one it was shown on. The loop had four parts.</p>
@@ -804,61 +997,6 @@ tr.mine td:first-child { box-shadow: inset 4px 0 0 var(--accent); }
 <li><strong>Judged as graph drawing theory, nothing here is new:</strong> no new model, no bounds. The building blocks were chosen because they are the established best for the job, not as stand-ins for something to write from scratch. Stress placement is the standard for general undirected drawings and Pivot MDS its usual start. The new parts are applied: the clean-up and its passes, the routing joined to the placement, the work clock, and the evaluation against eleven libraries on graphs never seen during development.</li>
 <li><strong>Learning the procedure from a person.</strong> Interactive optimization with user hints is established (do Nascimento and Eades, 2005), but there the person guides one run. Here one person's principles, taught once, became a fixed procedure that runs without him on graphs he never saw. The lab that made this possible is offered as a tool of its own; see <a href="#learned">Try it yourself</a>.</li>
 </ul>
-</div>
-
-<h2 id="routing">Link routing removes most remaining links through classes and shows every parallel link</h2>
-<div class="prose">
-<p>The routing answers three gaps that a review pointed out for business ontologies: parallel and reciprocal links (Organization employs Person, Person manages Organization) drawn as straight lines lie exactly on top of each other; link names are not part of the drawing; and moving classes is the only way the layouts clear a link out of a class's way. The routing draws the links on the final positions and never moves a class:</p>
-<ul>
-<li><strong>Parallel links</strong> between the same two classes become arcs spread 24 px apart on both sides of the straight line (the middle one straight when their number is odd), so each one and its name can be seen.</li>
-<li><strong>Self-links</strong> become a loop on the corner of the class where the fewest links leave.</li>
-<li><strong>Bends:</strong> a link that runs through a class (or, when it pays off, crosses others) tries one bend at the corners and sides of the boxes in its way, gentle arcs to either side, and pairs of those bends; a bend is kept only if the drawing gets better counting crossings, links through classes and the extra length. Links through classes are routed first, then a second pass for any still in the way.</li>
-<li><strong>Ports:</strong> at a class with three or more links, link ends that would meet its box closer than 10 px apart are spread along the side they reach, in the same order, kept only if no link gets a new problem.</li>
-<li><strong>Names:</strong> each link's name goes at the point along its path where it covers no class, no other name and as few links as possible, longest names first.</li>
-</ul>
-<p>Measured on the drawn curves, on Best Read's drawings before the refinements below (no class moved). <strong>Two margins.</strong> Here and in every table about the routing, a link counts as running through a class when it passes within 9 px of its box: closer than that, a drawn line with its arrowhead reads as touching the box, and the routing keeps that clearance. The rankings below count within 3 px, as published comparisons of layouts do, so the same drawing has more links through classes here. That, and the earlier drawings, is why Best Read's straight links show 61 links through classes on the 15 development graphs in this table and 39 in the rankings. The graphs carry no link names, so the names are made up: "has" plus the target class, "relatedTo" plus the target for a second link the same way, and so on; subclass links have none. Totals:</p>
-</div>
-<p class="takeaway">Routing the links leaves 15% fewer crossed links, two thirds fewer links through classes and 93% fewer names on a class or another name, and hides no parallel link, for about 10 bends per graph.</p>
-<div class="tbl"><table>
-<thead><tr><th>Graphs</th><th>Links drawn</th><th>Crossed links</th><th>Sharp crossings</th><th>Links through classes</th><th>Parallel links hidden</th><th>Link ends within 4 px</th><th>Names over a class or name</th><th>Bends</th><th>Area ÷ class area</th></tr></thead>
-<tbody>
-<tr><td>15 development</td><td>Straight (names at the middle)</td><td>450</td><td>30</td><td>61</td><td>46</td><td>371</td><td>1,098</td><td>0</td><td>10.0</td></tr>
-<tr class="ours"><td></td><td>Routed</td><td class="best">388</td><td class="best">8</td><td class="best">11</td><td class="best">0</td><td class="best">205</td><td class="best">72</td><td>177</td><td>10.5</td></tr>
-<tr><td>10 held-out</td><td>Straight (names at the middle)</td><td>309</td><td>6</td><td>49</td><td>19</td><td>81</td><td>911</td><td>0</td><td>11.1</td></tr>
-<tr class="ours"><td></td><td>Routed</td><td class="best">290</td><td class="best">1</td><td class="best">10</td><td class="best">0</td><td class="best">11</td><td class="best">63</td><td>92</td><td>11.2</td></tr>
-<tr><td>26 public</td><td>Straight (names at the middle)</td><td>1,284</td><td>77</td><td>108</td><td>106</td><td>526</td><td>2,387</td><td>0</td><td>11.8</td></tr>
-<tr class="ours"><td></td><td>Routed</td><td class="best">1,058</td><td class="best">16</td><td class="best">54</td><td class="best">0</td><td class="best">256</td><td class="best">193</td><td>269</td><td>12.1</td></tr>
-</tbody></table></div>
-<div class="prose">
-<p><strong>See it on any graph.</strong> Every drawing of ours in this page has a <strong>Curved links</strong> switch: it draws the links as the library does, with the routing, and gives the counts on the drawn links (3 px margin, as ranked). The switch is highlighted where curving removes problems or shows parallel links that straight lines hide; that is 58 of our 98 drawings (39 with fewer problems), and curving never adds a problem in these counts.</p>
-<p>Over the 51 graphs: 15% fewer crossed links, two thirds fewer links through classes, no parallel link hidden (171 before), a fifth of the sharp crossings, half the crowded link ends and 93% fewer names on top of classes or other names, for about 10 bends per graph (a third of them the arcs of parallel links) and 2 to 4% more area. It takes at most 250 ms on the work clock, under 60 ms on most graphs. <code>tools/layout-bench/routebench.mjs</code> adds the steps one at a time.</p>
-<p>Also tested for the review and not adopted: running the routing on the drawing before the clean-up instead of after it (twice the links through classes left, no smaller area: on these graphs the clean-up does not make the drawing sprawl); a smaller area penalty in the clean-up (half or a quarter: within 1% on crossings, a few links through classes fewer, up to 3% more area); a deeper look-ahead for group moves (8 repair moves, three tries instead of two: no clear gain, 6% more area on the development graphs); and giving the layout the names' widths so it reserves room for them (fewer names on names on the unseen graphs, but 15% more crossed links on the development graphs and up to 30% more area). <code>tools/layout-bench/ekgbench.mjs</code> runs these.</p>
-<h3>Watching the routing step by step led to four fixes</h3>
-<p>Watching the routing step by step showed four faults: loops took a fixed corner even where links left the class, names sat on top of the line, a bend could swing far outside the drawing, and some one-link classes ended fenced in by lines with open space nearby. Changes, each kept only where it measured better:</p>
-<ul>
-<li><strong>Loops on the open side.</strong> A self-link's loop now tries 12 places (four corners, and the middle and both ends of each side) and takes the one with the fewest links, classes and crossings in its wedge, counting the class's own links. On the five graphs with a self-link, four loops crossed a link before; none does now.</li>
-<li><strong>Names beside the line.</strong> A name can also sit just beside its link, on either side, where that covers less. Names on a class or another name 331 &rarr; 147, names with a link across them 1,330 &rarr; 882.</li>
-<li><strong>Bends stay inside the drawing.</strong> A bend that takes a link outside the box round the classes costs 1 per 20 px. Over 52 graphs, link length outside that box 2,817 &rarr; 1,056 px, for 15 more crossings (+0.8%), 3 fewer links through classes and 1.5% less area.</li>
-<li><strong>Classes moved off links.</strong> After the clean-up, three short passes (at most 120 ms of the work clock): two one-link classes of the same class trade places when that leaves fewer problems; a one-link class whose link still crosses or runs through something moves to the most open spot round its neighbor (fewest problems, then the most room, then the shorter link); a class that a link runs through, or passes within 9 px of, is pushed sideways off the line just far enough. After the routing, a class that a drawn curve still runs through is pushed off it the same way, the links are routed again, and the result is kept only if it has fewer problems. On straight links, links through classes 216 &rarr; 178.</li>
-<li><strong>Time limit.</strong> <code>_ogSetTimeLimit(ms)</code> sets the time the layouts, the clean-up and the routing may take, on the work clock (so still the same drawing on any computer). The default is 1 s since 12 November 2026 (it was 1.5 s), and the tables in this write-up are measured at 1 s. The link routing keeps at least its time at 1.5 s, because it costs only about 25 ms and cutting it lost the most quality. Over the 51 test graphs, with two seeds each, 1 s made the drawings about 22% faster than 1.5 s (mean 462 to 361 ms); after routing they have 5% more crossed links and 19% fewer links through classes, and 72 of the 102 drawings scored the same, 11 better and 19 worse. Best Read still has the fewest crossed links plus links through classes on every development and unseen graph. 0.75 s was tried as well: 28% faster, but Best Read then lost two of the 36 unseen graphs to tuned <code>neato</code>, by 3 and 20 problems.</li>
-</ul>
-<p class="takeaway">The four fixes cut names on a class or name by more than half and links through classes by a fifth, for about 25 ms more per graph.</p>
-<div class="tbl"><table>
-<thead><tr><th>51 graphs, Best Read with clean-up and routing</th><th>Crossed links</th><th>Sharp crossings</th><th>Links through classes</th><th>Names over a class or name</th><th>Names with a link across</th><th>Bends</th><th>Mean time</th></tr></thead>
-<tbody>
-<tr><td>Before the refinements</td><td>1,738</td><td>25</td><td>75</td><td>331</td><td>1,330</td><td>534</td><td>about 430 ms</td></tr>
-<tr class="ours"><td>After</td><td class="best">1,714</td><td>26</td><td class="best">59</td><td class="best">147</td><td class="best">882</td><td class="best">503</td><td>about 455 ms</td></tr>
-</tbody></table></div>
-<p><strong>Then, pulled in from the edge</strong> (described with the clean-up above). Same 51 graphs, routed, without and with it:</p>
-<p class="takeaway">Pulling in from the edge makes the drawings 9% smaller on the development graphs and 27 to 29% smaller on the unseen ones, with about as many problems.</p>
-<div class="tbl"><table>
-<thead><tr><th>51 graphs, routed</th><th>Crossed links</th><th>Sharp crossings</th><th>Links through classes</th><th>Names over a class or name</th><th>Names with a link across</th><th>Bends</th><th>Area: 15 dev / 10 held-out / 26 public</th><th>Mean time</th></tr></thead>
-<tbody>
-<tr><td>Without pulling in</td><td>1,714</td><td>26</td><td class="best">59</td><td class="best">147</td><td class="best">882</td><td class="best">503</td><td>10.5 / 11.3 / 12.2</td><td class="best">about 445 ms</td></tr>
-<tr class="ours"><td>With pulling in</td><td class="best">1,708</td><td class="best">24</td><td>65</td><td>162</td><td>887</td><td>514</td><td class="best">9.6 / 8.3 / 8.7</td><td>about 455 ms</td></tr>
-</tbody></table></div>
-<p>The drawings are 9% smaller on the development graphs and 27 to 29% smaller on the graphs never seen during development (23% over all 51), for as many problems: 6 fewer crossings, 6 more links through classes after routing (all on the two densest public ontologies, DOLCE and SAREF, where DOLCE also loses 5 crossings), and slightly more crowded names. Three graphs it was built for: Rome graph 7785, whose long chain ran off to the right, 2,026 &rarr; 1,677 px wide; the held-out deep taxonomy, 5,724 &times; 2,272 &rarr; 4,591 &times; 1,714 px (39% less area); the biomedical taxonomy's HormoneSignaling, 484 &rarr; 266 px from Signaling. Tried and not adopted: more room between groups (60 or 80 px: the same problems, less of the gain); not drawing in at all, only turning (most of the gain is from drawing in).</p>
-<p>Area is 0 to 2% larger before pulling in. The slowest graph (SAREF, 98 classes and 160 links) takes about 1.6 s. Also tested and not adopted: starting the placement at the matching size, or at two or three times it, instead of five times too large. Over the 51 graphs and three seeds the four come within 0.5% of each other on crossed links, links through classes and sharp crossings together: the matching size has the most sharp crossings, twice the size the fewest links through classes but the most crossed links. That is the spread between seeds, not a gain, so five times stays. Trading two one-link classes' places alone rarely helps: where two of them lie on one ray from their neighbor, the far one's link runs through the near one whichever is farther.</p>
 </div>
 
 <h2 id="how">How the layouts work</h2>
@@ -1030,43 +1168,12 @@ clean:  rounds of single moves → leaf units → region spreading → group mov
 <p><strong>Runs.</strong> One run per layout and graph, seed 1, on one consumer laptop, so the times compare with each other but are not absolute. The open-source layouts ran in a browser tab; ours ran at native speed in Node.js with the same code the library runs, which takes about as long as a browser tab in front. Our time limits count work rather than seconds, so our drawings do not depend on the machine or how busy it was.</p>
 </div>
 
-<h2 id="experiments">Bending links instead of moving classes leaves more links through classes</h2>
-<div class="prose">
-<p>The layouts and the clean-up remove links through classes by moving classes, which costs area. The alternative, standard in yFiles, MSAGL and ELK, is to leave the classes where the placement put them and route each offending link around the classes in its way. We tested a simple router: one or two bends at the padded corners of the boxes in the way, choosing the bends that cross the fewest other links (a full obstacle-avoiding router would do better). Rerun with the current layouts, averages per graph over the 15 development graphs:</p>
-</div>
-<p class="takeaway">With the first, simple router, bending links instead of moving classes drew a fifth fewer crossings but left twice the links through classes.</p>
-<div class="tbl"><table>
-<thead><tr><th>Approach</th><th>Crossed links</th><th>Links through classes</th><th>Bends</th><th>Area ÷ class area</th></tr></thead>
-<tbody>
-<tr class="ours"><td>Best Read as shipped: move classes, straight links</td><td>34.7</td><td>1.8</td><td class="best">0</td><td>12.7</td></tr>
-<tr><td>Same placement, no moves off links and no clean-up; links bent instead</td><td class="best">27.5</td><td>3.9</td><td>18.3</td><td class="best">11.5</td></tr>
-<tr><td>As shipped, then bends for the links still in the way</td><td>33.5</td><td class="best">0.4</td><td>2.1</td><td>12.7</td></tr>
-</tbody></table></div>
-<div class="prose">
-<p>The review is right that routing is a real alternative: placement plus bends draws a fifth fewer crossings in 9% less area, at about 18 bends per graph and twice the links through classes left over. Moving classes keeps every link straight. The cheapest gain is the third row: two bends per graph remove almost every link through a class that the moves leave. This became the link routing after the layout (see <a href="#routing">Link routing</a>), with arcs for parallel links, ports and name placement added. Whether a bend costs a reader less than a crossing is a question for a study; Purchase's studies rank bends as less harmful than crossings.</p>
-<p><strong>Retested with the link routing as it is now.</strong> Bending instead of moving was run again on all 51 graphs: the placement without its moves off links and without the clean-up, then the library's routing, against the full pipeline (<code>EB_NOCLEAN=1 node ekgbench.mjs dev '{"skip":{"thru":true}}'</code>). Measured on the drawn links, 9 px margin:</p>
-</div>
-<p class="takeaway">With today's routing, moving classes and then routing leaves two to eleven times fewer links through classes than bending alone, for about as many crossings.</p>
-<div class="tbl"><table>
-<thead><tr><th>Graphs</th><th>Approach</th><th>Crossed links</th><th>Links through classes</th><th>Bends</th><th>Mean time</th></tr></thead>
-<tbody>
-<tr class="ours"><td>15 development</td><td>Move classes, then route</td><td class="best">400</td><td class="best">4</td><td class="best">160</td><td>0.65 s</td></tr>
-<tr><td></td><td>Bend instead of moving</td><td>409</td><td>21</td><td>338</td><td class="best">0.28 s</td></tr>
-<tr class="ours"><td>10 held-out</td><td>Move classes, then route</td><td class="best">286</td><td class="best">8</td><td class="best">85</td><td>0.67 s</td></tr>
-<tr><td></td><td>Bend instead of moving</td><td>302</td><td>91</td><td>230</td><td class="best">0.30 s</td></tr>
-<tr class="ours"><td>26 public</td><td>Move classes, then route</td><td>1,022</td><td class="best">53</td><td class="best">269</td><td>0.55 s</td></tr>
-<tr><td></td><td>Bend instead of moving</td><td class="best">1,008</td><td>109</td><td>456</td><td class="best">0.31 s</td></tr>
-</tbody></table></div>
-<div class="prose">
-<p>With today's routing the earlier gain is gone: bending instead of moving leaves two to eleven times the links through classes and about twice the bends, for about as many crossings, in half the time. So the library moves classes and then routes. The routing itself is part of every drawing <code>OntologyLayouts.draw</code> makes (<code>route: { straight: true }</code> turns off the bends; <code>arcs: false</code> also straightens repeated links), and the drawings in this page can show it: tick <strong>Curved links</strong> above any of our drawings.</p>
-</div>
-
 <h2 id="limits">Limits</h2>
 <div class="prose"><ul>
 <li><strong>Which measures count.</strong> The main rankings leave out distance fidelity and even link lengths on purpose; a tab on each ranking table adds them, and our layouts rank lower with them in. No study with people reading the diagrams has been done, so which measures matter most for understanding an ontology is a judgment, not a finding.</li>
 <li><strong>Measuring what we optimize.</strong> The layouts and the clean-up try to reduce crossed links and links through classes, and the rankings count them, so a lead on those two is partly by design. Three things keep this honest: crossing angle and angular resolution are ranked but not optimized by the clean-up beyond avoiding sharp crossings; the tuned open-source runs were chosen by the same two counts, so each library was given its best chance on exactly what we are judged on; and the results on <a href="#unseen">graphs never seen during development</a> show the lead is not fitted to the 15 development graphs.</li>
 <li><strong>Tuning.</strong> The tuned settings are a reasonable search, not an exhaustive one. A library tuned per graph by an expert could do better.</li>
-<li><strong>Straight links in the rankings.</strong> Every drawing in the rankings is measured with straight links, as the layouts place them; the link routing that now runs after the layout (see <a href="#routing">Link routing</a>) is measured separately, on our drawings only. ELK layered can route its own links around boxes, so it was also measured that way, on the links it routes itself (best of four placement settings and two routings per graph, over the 15 development graphs): no link runs through a class, but 1,322 pairs of links cross, against 480 for Best Read with straight links, with about 165 bends per graph. Bends are not a defect in themselves: routing links around boxes is a different trade-off, keeping classes in place and adding bends, and our own experiment with it is under <a href="#experiments">Bending links instead of moving classes</a>. A comparison with a dedicated obstacle-avoiding router, as in yFiles or MSAGL, has not been done.</li>
+<li><strong>Straight links in the rankings.</strong> Every drawing in the rankings is measured with straight links, as the layouts place them; the link routing that now runs after the layout (see <a href="#routing">Link routing</a>) is measured separately, on our drawings only. ELK layered can route its own links around boxes, so it was also measured that way, on the links it routes itself (best of four placement settings and two routings per graph, over the 15 development graphs): no link runs through a class, but 1,322 pairs of links cross, against 480 for Best Read with straight links, with about 165 bends per graph. Bends are not a defect in themselves: routing links around boxes is a different trade-off, keeping classes in place and adding bends, and our own experiment with it is under <a href="#experiments-br" data-fam="br">Bending links instead of moving classes</a>. A comparison with a dedicated obstacle-avoiding router, as in yFiles or MSAGL, has not been done.</li>
 <li><strong>Hierarchy.</strong> None of our layouts draws subclass links top-down by default, Tidy Mycelium included; about half point down. The top-down drawing that does is an experiment, not yet among the library's entry points (see <a href="#topdown-br" data-fam="br">Top-down hierarchies</a>). Consistent upward or downward flow is a standard aesthetic for directed graphs in the graph-drawing literature; our choice for conceptual ontologies is a judgment, not a finding.</li>
 <li><strong>No study with people.</strong> The rankings use geometric measures only. A task-based study (find the common superclass of two classes, name a relationship's domain and range), timed and scored against tuned Graphviz, WebCola and a commercial engine with orthogonal routing, would settle which drawings read best; it has not been done.</li>
 <li><strong>Test graphs.</strong> The 15 development graphs are reconstructions and inventions of typical shapes. The graphs never seen during development add eight published ontologies and 18 Rome graphs, but not a large corpus such as the OBO Foundry or the Manchester OWL corpus, and the ontologies were drawn as classes with subclass and domain-to-range links only.</li>
@@ -1098,46 +1205,8 @@ clean:  rounds of single moves → leaf units → region spreading → group mov
 <li><strong>Clean-up: turning larger groups.</strong> Turning the parts hanging off a class as one piece, up to 12 classes, made no measurable difference over the limit of 4.</li>
 </ul></div>
 
-<h2 id="code">Appendix: using the code</h2>
-<div class="prose">
-<p>The implementation below is complete and self-contained: plain JavaScript, no dependencies, about 1,800 lines, the clean-up included.</p>
-<p><strong>Input.</strong> An array of boxes <code>[{ w, h }]</code> and an array of links <code>[[i, j, weight, labelWidth]]</code>:</p>
-<ul>
-<li><code>i</code> and <code>j</code> index into the boxes;</li>
-<li><code>weight</code> is 2 for subclass links and 1 for others;</li>
-<li><code>labelWidth</code>, the pixel width of the link's label, is optional.</li>
-</ul>
-<p><strong>Output.</strong> An object whose <code>pos</code> array holds the center <code>{ x, y }</code> of each box. All arithmetic is on unrounded floating-point numbers.</p>
-</div>
-<pre><code>const boxes = [{ w: 90, h: 20 }, { w: 70, h: 20 }, { w: 110, h: 20 }];
-const links = [[1, 0, 2], [2, 0, 1, 60]];       // 1 is a subclass of 0; 2 links to 0 with a 60 px label
-// Everything in one call: layout, clean-up, link routing, groups, and paths ready to draw.
-const d = OntologyLayouts.draw(boxes, links, { arrow: 8 });
-d.pos.forEach((p, i) =&gt; console.log(i, p.x, p.y));        // draw class i centered here
-d.paths.forEach((p) =&gt; console.log(p.points, p.tip, p.angle)); // border to border; an 8 px arrowhead from the last point to tip
-console.log(d.groups);                                      // a group number per class, for hulls or background areas
-// The same in three steps. Time is read from the work clock, OntologyLayouts.now(), not from the computer's clock,
-// so the same model gets the same drawing on any computer:
-const t0 = OntologyLayouts.now();
-const { pos } = OntologyLayouts.bestRead(boxes, links, {});    // or .tidyStress(…) / .mycelium(…)
-const cleanPos = OntologyLayouts.cleanUp(pos, boxes, links, t0); // within what is left of the time limit since t0
-const { routes, pos: finalPos } = OntologyLayouts.routeLinks(cleanPos, boxes, links);
-// finalPos, not cleanPos: the routing may push a class off a link it still runs through, and the routes belong to finalPos.
-const paths = OntologyLayouts.routePaths(finalPos, boxes, links, routes, { arrow: 8 });
-// options: bestRead(…, { roomy: true }) leaves 30% more space; routeLinks(…, { settle: false }) never moves a class;
-// OntologyLayouts.setTimeLimit(ms) sets the time for the layout and the clean-up (default 1000; the routing keeps at least its time at 1500).
-// After an edit: pass the earlier drawing's positions (null for each new class) to keep the reader's picture.
-const d2 = OntologyLayouts.draw(boxes2, links2, { keep: oldPos });               // old classes move a few percent
-const d3 = OntologyLayouts.draw(boxes2, links2, { keep: oldPos, exact: true });  // old classes do not move at all
-// A relationship modelled as a class (reified, or an association class): mark it, and it is drawn on the line between the two.
-boxes2[7].between = [2, 5];                                                       // class 7 relates class 2 to class 5
-// Mycelium returns null for fewer than 8 classes; Best Read then uses Tidy Stress.</code></pre>
-<div class="prose"><p>The entry points are collected at the end of the code in <code>OntologyLayouts</code>: <code>draw</code>, <code>bestRead</code>, <code>tidyStress</code>, <code>mycelium</code>, <code>cleanUp</code>, <code>routeLinks</code>, <code>routePaths</code>, <code>groups</code>, <code>routeMetrics</code>, <code>metrics</code>, <code>score</code>, <code>setTimeLimit</code>, <code>now</code>, <code>placeNew</code> and <code>inline</code>.</p>
-<p><strong>Relation classes.</strong> A relationship modelled as a class (RDF reification, an association class, an n-ary relation pattern) reads best on the line between the two classes it relates. Give its box <code>between: [subject, object]</code>, and after the clean-up it moves onto that line, as near the middle as there is room, when that costs it at most one crossing. On the 15 development graphs with every third relationship made a class (225 relation classes): relation classes bent by more than 45 degrees 100 → 66, mean angle at the relation class 129° → 147°, crossed links 521 → 507, links through classes 16 → 12. Without the hint a relation class is an ordinary class, because which classes are relationships is a modelling decision the links alone do not show.</p>
-<p><strong>Draw the classes where the routing leaves them.</strong> <code>routeLinks</code> returns <code>pos</code> as well as the routes: when a drawn link still runs through a class, the class is pushed off it and the links are routed again, and the result is kept only if it has fewer problems. Those positions are the final ones. A renderer that keeps the earlier positions draws routes that miss their classes. Pass <code>{ settle: false }</code> to keep every class where it is.</p>
-<p><strong>Arrowheads.</strong> <code>routePaths</code> turns each route into points from the border of one box to the border of the other. With <code>arrow</code>, each path stops that many pixels short of its end class along its last direction, so an arrowhead drawn from there to <code>tip</code>, at <code>angle</code>, touches the box without entering it. Spreading the arrow ends further apart on a shared side was tried and not kept: on the 15 development graphs it changed no drawing. Where arrowheads crowd, it is at a hub with more incoming links than its side has room for, and spacing them further adds crossings.</p>
-<p><strong>Groups.</strong> <code>groups</code>, and <code>draw</code>'s <code>groups</code>, give each class the number of its group of closely linked classes. These are the groups that Mycelium keeps together and the pull-in slides inward, for a renderer that draws hulls, swimlanes or background areas round related classes.</p>
-<p><strong>Time limits count work, not seconds.</strong> Every time limit (the layouts' and the clean-up's) is measured in units of work: tests of two links, of a link against a box, steps tried, each with a fixed cost in nanoseconds measured on the laptop the layouts were tuned on. A computer half as fast therefore takes twice as long and draws exactly the same picture, instead of drawing a worse one in the same time. To keep the wait bounded on very slow computers, the wall clock still applies at 1/2.5 speed: a computer more than 2.5 times slower gets less work and a somewhat different drawing.</p></div>
+<h2 id="source">The complete source</h2>
+<div class="prose"><p>The library is complete and self-contained: plain JavaScript, no dependencies, Tidy Mycelium and the earlier layouts, the clean-up and the routing in one file. Its use is shown on each tab (<a href="#code">Tidy Mycelium</a>, <a href="#code-br" data-fam="br">the earlier layouts</a>).</p></div>
 <details class="code">
   <summary>Show the code (about 1,800 lines)</summary>
   <div class="bar"><button type="button" id="copyCode">Copy</button></div>
@@ -1303,6 +1372,64 @@ function buildCompare(host) {
   fill();
 }
 document.querySelectorAll(".cmp").forEach(buildCompare);
+// Tidy Mycelium step by step (data from gen_tm_walk.mjs)
+const TMW = /*__TMWALK__*/null;
+(function () {
+  const host = document.getElementById("tmwalk"); if (!host || !TMW) return;
+  const GRAPHS = [["bio", "Biomedical taxonomy (115 classes)"], ["hx_hubs", "Two big hubs (57 classes, never seen during development)"]];
+  const STEPS = [
+    ["aside", "1. Set aside what hangs off",
+      "Every small part that hangs off the rest of the graph by one class is set aside first: a leaf, a chain, a small tree or a small cluster. Only the core is placed now. Each class that hides parts keeps a ring of room (dashed) in proportion to what it hides, so the parts can come back without crowding.",
+      "A unit is what lies beyond a cut vertex (Hopcroft and Tarjan's biconnected parts), at most 8 classes and at most a quarter of its component. Room R(v) grows with the classes and units hidden behind v, and the stress distances become d(i, j) + R(i) + R(j)."],
+    ["core", "2. Place the core in groups",
+      "The core is placed as Mycelium places a graph: closely linked groups (colors) kept together, with longer links between them and rings of room round hubs. Then it is tidied: crossings and links through classes removed where a move or a swap clears them.",
+      "Louvain communities; target lengths L = 170 px, twice that for core links, times 0.85 inside a group and 1.6 between; stress majorization from a pivot-MDS start, the best of 8 restarts; then crossing swaps and moves off links."],
+    ["back", "3. Put the parts back",
+      "Each part comes back into the most open slice round its class, largest first; large parts prefer slices that open to the outside. Green marks the classes that came back.",
+      "From each anchor, rays in 36 directions are cast through a grid of the drawing so far; a slice's score is the free depth along its rays, with a bonus outward for large units; the unit is laid out radially in the best slice. Single leaves use the library's leaf placement."],
+    ["tighten", "4. Tighten",
+      "The whole drawing is drawn toward its middle as long as that adds no crossing, no link through a class and no overlap, and every named link keeps room for its name.",
+      "Uniform scaling about the centroid by f = 0.88, the step halved after a failure, kept while crossings + links through classes + 1000 · overlaps + links too short for their names do not rise."],
+    ["clean", "5. The clean-up",
+      "The library's clean-up, the same that runs after any layout and that a person taught: single moves into open space, leaves turned round their class, crowded regions spread. Its own walk-through is on the earlier layouts' tab.",
+      "Single moves onto open cells, leaf units, region spreading in 8 slices, group moves with look-ahead, then the finishing passes; within what is left of the time limit."],
+    ["bands", "6. Take in the empty space: bands",
+      "Whole bands of the drawing move inward from each side and corner, taking along whatever they would bump into. A small part that blocks the way may first swing round its class into an open pocket inside. The dashed frame is the drawing before this step.",
+      "For 8 directions and cut lines at 1/6, 1/3 and 1/2 of the extent, everything beyond the line moves inward by 6% then 2% of the extent; a blocking class widens the selection (up to 4 times) or swings round its parent. Kept only if no boxes overlap, every name still fits, no class sweeps across a link, and crossings, links through classes and links on links do not rise."],
+    ["classes", "7. Take in the empty space: class by class",
+      "Then each class with what hangs from it, and whole groups, step toward the middle, outermost first, each step kept only if nothing gets worse. The dashed frame is the drawing before this step; this is the finished drawing, before the links are routed.",
+      "Steps of 30% and 12% toward the centroid, the class's neighbours or its parent, with the same checks; a class that could not move is tried again only after something near it has moved; a grid of 140 px cells keeps every check local."],
+  ];
+  let g = "bio", st = 0, math = false;
+  const PAL = ["#5b8def", "#e8892b", "#3aa675", "#c75b9b", "#8b6fd6", "#d9b622", "#4fb3bf", "#b5653f", "#7a8f3a", "#d0566a"];
+  host.innerHTML = `<div class="tmw-bar"><b>Walk through</b>${GRAPHS.map(([k, l]) => `<button type="button" data-g="${k}">${l}</button>`).join("")}</div>
+    <div class="tmw-bar"><b>Steps</b>${STEPS.map(([k, l], i) => `<button type="button" data-s="${i}">${l}</button>`).join("")}</div>
+    <div class="tmw-main"><div><svg class="tmw-svg" role="img"></svg><p class="tmw-count"></p></div>
+    <div class="tmw-text"><div class="tmw-bar"><button type="button" data-m="0">In plain terms</button><button type="button" data-m="1">The math</button></div><div class="tmw-body"></div></div></div>`;
+  const svg = host.querySelector("svg"), esc = (t) => String(t).replace(/&/g, "&amp;").replace(/</g, "&lt;");
+  function draw() {
+    const G = TMW[g], S = G.steps[st], hid = new Set(S.hidden), hot = new Set([...(S.fresh || []), ...(S.moved || [])]), P = S.pos, n = P.length;
+    let x1 = 1e18, y1 = 1e18, x2 = -1e18, y2 = -1e18;
+    for (let i = 0; i < n; i++) { if (hid.has(i)) continue; x1 = Math.min(x1, P[i][0] - G.w[i] / 2); x2 = Math.max(x2, P[i][0] + G.w[i] / 2); y1 = Math.min(y1, P[i][1] - 10); y2 = Math.max(y2, P[i][1] + 10); }
+    if (S.prev) { x1 = Math.min(x1, S.prev[0]); y1 = Math.min(y1, S.prev[1]); x2 = Math.max(x2, S.prev[2]); y2 = Math.max(y2, S.prev[3]); }
+    (S.anchors || []).forEach(([i, r]) => { x1 = Math.min(x1, P[i][0] - r); x2 = Math.max(x2, P[i][0] + r); y1 = Math.min(y1, P[i][1] - r); y2 = Math.max(y2, P[i][1] + r); });
+    const pad = 20, W = x2 - x1 + 2 * pad, H = y2 - y1 + 2 * pad; svg.setAttribute("viewBox", `${x1 - pad} ${y1 - pad} ${W} ${H}`);
+    let out = S.prev ? `<rect class="room" x="${S.prev[0]}" y="${S.prev[1]}" width="${S.prev[2] - S.prev[0]}" height="${S.prev[3] - S.prev[1]}" rx="6"/>` : ""; (S.anchors || []).forEach(([i, r]) => (out += `<circle class="room" cx="${P[i][0]}" cy="${P[i][1]}" r="${r}"/>`));
+    G.edges.forEach(([a, b, sub]) => { if (hid.has(a) || hid.has(b)) return; out += `<line class="e${sub ? " sub" : ""}" x1="${P[a][0]}" y1="${P[a][1]}" x2="${P[b][0]}" y2="${P[b][1]}"/>`; });
+    for (let i = 0; i < n; i++) { if (hid.has(i)) continue; const w = G.w[i], fill = S.groups ? ` style="fill:${PAL[S.groups[i] % PAL.length]};fill-opacity:.35"` : "";
+      out += `<g class="n${hot.has(i) ? " hot" : ""}" transform="translate(${P[i][0]},${P[i][1]})"><rect x="${-w / 2}" y="-10" width="${w}" height="20" rx="4"${fill}/><text text-anchor="middle" y="3">${esc(G.labels[i])}</text></g>`; }
+    svg.innerHTML = out; svg.setAttribute("aria-label", STEPS[st][1]);
+    const m = S.m; host.querySelector(".tmw-count").innerHTML = `<b>${m.cross}</b> crossed links · <b>${m.thru}</b> links through classes · area <b>${m.area}</b>× the boxes` + (m.shown < n ? ` · ${m.shown} of ${n} classes placed so far` : "");
+    host.querySelector(".tmw-body").innerHTML = `<p><strong>${STEPS[st][1]}</strong></p><p>${STEPS[st][math ? 3 : 2]}</p>`;
+    host.querySelectorAll("[data-g]").forEach((b) => b.setAttribute("aria-pressed", String(b.dataset.g === g)));
+    host.querySelectorAll("[data-s]").forEach((b) => b.setAttribute("aria-pressed", String(+b.dataset.s === st)));
+    host.querySelectorAll("[data-m]").forEach((b) => b.setAttribute("aria-pressed", String(+b.dataset.m === +math)));
+  }
+  host.addEventListener("click", (ev) => { const b = ev.target.closest("button"); if (!b) return;
+    if (b.dataset.g) g = b.dataset.g; else if (b.dataset.s != null) st = +b.dataset.s; else if (b.dataset.m != null) math = b.dataset.m === "1"; draw(); });
+  draw();
+})();
+
 // The worked example: one recorded clean-up, shown in four steps (data from gen_example.mjs)
 const EX = /*__EXAMPLE__*/null;
 // The finishing passes on the same graph, after the worked example's clean-up (data from gen_finish.mjs with FX_FROM=example.json)

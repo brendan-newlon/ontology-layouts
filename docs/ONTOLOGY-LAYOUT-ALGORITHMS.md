@@ -84,7 +84,7 @@ The tidy tree in the library (`_ogTreeLayout`, after Reingold–Tilford, levels 
   - region spreading: the regions where problems pile up are pushed outward in 8 slices, more toward open space, then repaired;
   - group moves with look-ahead, and a last leaf pass.
 
-  It uses what is left of the time limit, at most a third of it. Above 100 classes the layout gets 40% of the limit, so the clean-up keeps its share. (The default limit is 1 s since 2026-11-12; it was 1.5 s.) Effect on Best Read over the 15 graphs, with the finishing passes: links through classes 124 → 39, crossings 484 → 452, area 8.0 → 6.3 times the boxes, median time 0.2 → 0.5 s.
+  It uses what is left of the time limit, at most a third of it. Above 100 classes the layout gets 40% of the limit, so the clean-up keeps its share. (The default limit is 1 s since 2026-11-12; it was 1.5 s.) Effect inside Tidy Mycelium, over the 15 development graphs: links through classes 106 → 37, crossings 430 → 400, before the take-in. (On the earlier layouts' Best Read, with the finishing passes: links through classes 124 → 39, crossings 484 → 452, area 8.0 → 6.3 times the boxes, median time 0.2 → 0.5 s.)
 - **Clean-up, finishing passes** (`_ogLeafSwap`, `_ogPullIn`). These came from a second round of teaching, in which he watched the first part in the Layout Playback and named what was still wrong:
   - one-link classes of the same class trade places;
   - "don't fence me in": a one-link class whose link still crosses or runs through something moves to the most open spot round its neighbor;
@@ -108,7 +108,7 @@ The tidy tree in the library (`_ogTreeLayout`, after Reingold–Tilford, levels 
 ## Limits
 - As graph-drawing theory nothing here is new: no new model and no bounds. The new parts are applied: the clean-up taught by demonstration, routing joined to placement, the work clock, and the evaluation on unseen graphs.
 - No study with people reading the diagrams has been done. Which measures matter most is a judgment backed by Purchase's studies of crossings; a task-based study is the missing evidence.
-- At 3,335 classes d3-force draws fewer problems (72,111 in 6.4 s, against 102,600 in 9.8 s). More time does not close the gap: with a 60 s limit Best Read takes 44 s and draws 92,316. At 1,204 classes more time helps (6,176 problems at the default, 4,881 in 4.3 s). Thousands of classes need a multilevel placement.
+- At 3,335 classes Tidy Mycelium draws about as many problems as d3-force (72,011 against 72,111) but takes 16 s against 6.4 s. For the earlier layouts, Best Read draws 102,600 in 9.8 s, and more time does not close the gap: with a 60 s limit it takes 44 s and draws 92,316. At 1,204 classes more time helps Best Read (6,176 problems at the default, 4,881 in 4.3 s). Thousands of classes need a multilevel placement.
 - Boxes: every benchmark sizes boxes from their labels. The layouts work on any box sizes; with all boxes 60 × 40 the counts are about the same, and with mixed boxes up to 220 × 90 there are 14% more crossed links and twice the links through classes, still a quarter of d3-force's crossings and a tenth of its links through classes (`sizebench.mjs`).
 - The clean-up's principles come from one person. The layouts use a random seed, and totals differ by a few percent between seeds; every result uses seed 1.
 - The tuned settings are a reasonable search, not an exhaustive one. The rankings measure straight links.
