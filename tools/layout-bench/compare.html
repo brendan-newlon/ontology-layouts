@@ -1,0 +1,214 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Layout Comparison</title>
+<meta name="description" content="Our layout and the best open-source layout, side by side, graph after graph.">
+<style>
+:root { --bg: #f4f3ee; --paper: #fff; --ink: #1d232b; --muted: #5d6673; --rule: #d9d6cc; --accent: #2f6b4f; --win: #2e9a5a; --lose: #d0453a; color-scheme: light; }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) { --bg: #15181c; --paper: #1c2026; --ink: #e6e8eb; --muted: #9aa4b1; --rule: #30353d; --accent: #7cc39e; --win: #5cc787; --lose: #ff6f61; color-scheme: dark; } }
+:root[data-theme="dark"] { --bg: #15181c; --paper: #1c2026; --ink: #e6e8eb; --muted: #9aa4b1; --rule: #30353d; --accent: #7cc39e; --win: #5cc787; --lose: #ff6f61; color-scheme: dark; }
+* { box-sizing: border-box; }
+html, body { height: 100%; }
+body { margin: 0; background: var(--bg); color: var(--ink); font: 14px/1.45 "Segoe UI", system-ui, sans-serif; display: grid; grid-template-rows: auto minmax(0, 1fr) auto; }
+[hidden] { display: none !important; }
+header, footer { display: flex; flex-wrap: wrap; gap: 8px 14px; align-items: center; padding: 7px 14px; background: var(--paper); }
+header { border-bottom: 1px solid var(--rule); } footer { border-top: 1px solid var(--rule); }
+header h1 { font-size: 15px; margin: 0 8px 0 0; }
+select, button, input { font: inherit; font-size: 13px; padding: 3px 8px; border: 1px solid var(--rule); border-radius: 6px; background: var(--paper); color: var(--ink); }
+input[type=range] { padding: 0; }
+button { cursor: pointer; } button:hover { border-color: var(--accent); } button:disabled { opacity: .45; cursor: default; }
+label.tog { display: inline-flex; gap: 5px; align-items: center; cursor: pointer; color: var(--muted); font-size: 13px; }
+.grp { display: flex; gap: 4px; align-items: center; }
+#graph { max-width: min(340px, 60vw); }
+#status { color: var(--muted); font-size: 12px; font-variant-numeric: tabular-nums; }
+#speedV { font-variant-numeric: tabular-nums; min-width: 38px; display: inline-block; }
+main { display: grid; grid-template-columns: 1fr 1fr; min-height: 0; }
+.side { display: grid; grid-template-rows: auto minmax(0, 1fr) auto; min-width: 0; min-height: 0; }
+.side + .side { border-left: 1px solid var(--rule); }
+.bar, .tot { display: flex; flex-wrap: wrap; gap: 4px 10px; align-items: center; padding: 6px 12px; background: var(--paper); }
+.bar { border-bottom: 1px solid var(--rule); }
+.bar .who { font-size: 11px; text-transform: uppercase; letter-spacing: .05em; color: var(--muted); }
+.bar select { max-width: 100%; }
+.bar .drawn { color: var(--muted); font-size: 12.5px; }
+.bar .drawn b { color: var(--ink); font-weight: 600; }
+.side iframe { width: 100%; height: 100%; border: 0; display: block; background: var(--bg); }
+.tot { border-top: 1px solid var(--rule); font-size: 12.5px; color: var(--muted); font-variant-numeric: tabular-nums; min-height: 34px; }
+.tot b { color: var(--ink); font-weight: 600; } .tot b.win { color: var(--win); } .tot b.lose { color: var(--lose); } .tot .err { color: var(--lose); }
+.tot span { white-space: nowrap; }
+footer .about { flex: 1 1 100%; margin: 0; font-size: 12px; color: var(--muted); }
+@media (max-width: 800px) {
+  html, body { height: auto; } body { display: block; }
+  main { grid-template-columns: 1fr; }
+  .side { grid-template-rows: auto 58vh auto; }
+  .side + .side { border-left: 0; border-top: 1px solid var(--rule); }
+  header, footer { padding: 7px 16px; } .bar, .tot { padding: 6px 16px; }
+}
+</style>
+<script src="../../site-nav.js" data-page="compare" defer></script>
+</head>
+<body>
+<header>
+  <h1>Comparison</h1>
+  <div class="grp">
+    <button id="gPrev" title="The graph before this one">◀</button>
+    <select id="graph" title="Graph"></select>
+    <button id="gNext" title="The next graph">▶</button>
+  </div>
+  <label class="tog" title="When both drawings are finished, wait 5 seconds, then show the next graph"><input type="checkbox" id="autoplay" checked> Autoplay</label>
+  <span id="status">Loading…</span>
+</header>
+<main>
+  <section class="side" id="sL">
+    <div class="bar"><span class="who">Open-source layout</span><select id="aL" title="The layout drawn on the left"></select><span class="drawn" id="dL"></span></div>
+    <iframe id="fL" title="The open-source layout"></iframe>
+    <div class="tot" id="tL"></div>
+  </section>
+  <section class="side" id="sR">
+    <div class="bar"><span class="who">Our layout</span><select id="aR" title="The layout drawn on the right"></select><span class="drawn" id="dR"></span></div>
+    <iframe id="fR" title="Our layout"></iframe>
+    <div class="tot" id="tR"></div>
+  </section>
+</main>
+<footer>
+  <div class="grp">
+    <button id="bRestart" title="Both drawings again from the start">⏮</button>
+    <button id="bPlay" title="Play or pause both drawings" style="min-width:76px">▶ Play</button>
+    <button id="bEnd" title="Both drawings to the end">⏭</button>
+  </div>
+  <label class="tog" title="Playing speed as a share of each layout's real speed. 100%: each plays as fast as it ran in this browser; 10%: ten times as long.">Speed <input type="range" id="speed" min="-1" max="2" step="0.01" value="2" style="width:120px"> <span id="speedV">100%</span> <small>of real speed</small></label>
+  <p class="about">Both drawings play step by step at the same share of their own real speed, as the Lab plays them. Left, by default: the open-source layout that leaves the fewest crossed links and links through classes on this graph, at its general settings. Right, by default: Tidy Mycelium. Under each drawing, the problems in its last frame as the Lab counts them: crossed links, links through a class (a clipped corner counts half, nearly touching a quarter), covered names and overlapping boxes.</p>
+</footer>
+<script>
+// Two Lab drawings (playback.html?embed=1) side by side, driven from here by messages: the graph, the layout on each side,
+// play, pause, restart, to the end and the speed. compare_best.json (built by compare_rank.mjs) names the best open-source
+// layout on each graph; a graph it does not list (a graph of the reader's own) is measured here once, by the left frame.
+const $ = (id) => document.getElementById(id);
+const esc = (t) => String(t).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/"/g, '&quot;');
+const SIDES = ['L', 'R'], OTHER = { L: 'R', R: 'L' }, FR = { L: $('fL'), R: $('fR') };
+const ORIGIN = location.origin === 'null' ? '*' : location.origin;
+const q = new URLSearchParams(location.search), MEASURE = q.has('measure');
+let BEST = null, LISTS = null, hello = { L: false, R: false }, seq = 0, cur = null, apT = null, apAt = 0, cdT = null;
+const want = { L: q.get('left') || 'default', R: q.get('right') || 'default' }; // 'default' or a layout chosen by hand, kept from graph to graph
+let S = { L: {}, R: {} }; // per side, for the graph shown: algo, ready (the frame's report), playing, finished, t, total, step, error
+const NAMES = {}; // layout value -> its name in the Lab
+const send = (sd, m) => { try { FR[sd].contentWindow.postMessage(m, ORIGIN); } catch (e) {} };
+const pct = () => Math.pow(10, +$('speed').value);
+const showSpeed = () => { const p = pct(); $('speedV').textContent = (p >= 10 ? Math.round(p) : p >= 1 ? p.toFixed(1).replace(/\.0$/, '') : p.toFixed(2).replace(/0$/, '')) + '%'; };
+
+addEventListener('message', (ev) => {
+  const sd = SIDES.find((s) => ev.source === FR[s].contentWindow), m = ev.data || {}; if (!sd || m.src !== 'layout-lab') return;
+  if (m.type === 'hello') { hello[sd] = true; if (!LISTS) LISTS = m; start(); return; }
+  if (m.type === 'ranked') { if (RANKWAIT && RANKWAIT.id === m.id) { const w = RANKWAIT; RANKWAIT = null; w.done(m.ranking); } return; }
+  if (m.id !== seq) return; const s = S[sd];
+  if (m.type === 'ready') { s.ready = m; s.finished = false; if (SIDES.every((x) => S[x].ready || S[x].error)) SIDES.forEach((x) => S[x].ready && send(x, { cmd: 'play' })); }
+  else if (m.type === 'state') { if (!s.ready) return; s.playing = m.playing; s.finished = m.finished; s.t = m.t; s.total = m.total; s.step = m.step; }
+  else if (m.type === 'error') { s.error = m.message; s.finished = true; }
+  draw(); checkDone();
+});
+
+// ---------- the lists ----------
+function start() {
+  if (!hello.L || !hello.R || !BEST || $('graph').options.length) return;
+  LISTS.graphs.forEach((g) => { const og = document.createElement('optgroup'); og.label = g.label; g.keys.forEach(([k, n]) => { const o = document.createElement('option'); o.value = k; o.textContent = n; og.appendChild(o); }); $('graph').appendChild(og); });
+  LISTS.algos.forEach((g) => g.opts.forEach(([v, n]) => (NAMES[v] = n)));
+  SIDES.forEach((sd) => { const sel = $('a' + sd); sel.innerHTML = '<option value="default">Default</option>' + LISTS.algos.map((g) => `<optgroup label="${esc(g.label)}">${g.opts.map(([v, n]) => `<option value="${esc(v)}">${esc(n)}</option>`).join('')}</optgroup>`).join('');
+    sel.value = want[sd]; if (sel.value !== want[sd]) sel.value = want[sd] = 'default'; });
+  if (MEASURE) { measureAll(); return; }
+  const g = q.get('graph'); $('graph').value = g && [...$('graph').options].some((o) => o.value === g) ? g : $('graph').options[0].value;
+  show($('graph').value);
+}
+fetch('compare_best.json', { cache: 'no-cache' }).then((r) => (r.ok ? r.json() : { graphs: {} })).catch(() => ({ graphs: {} })).then((j) => { BEST = j.graphs || {}; start(); });
+SIDES.forEach((sd) => (FR[sd].src = `playback.html?embed=1&side=${sd}`)); // after the listener is in place, so no hello is missed
+
+// ---------- the best open-source layout on a graph: from the table, else measured here once ----------
+let RANKWAIT = null, rankN = 0;
+const rankIn = (graph) => new Promise((done) => { RANKWAIT = { id: 'r' + (++rankN), done }; send('L', { cmd: 'rank', graph, seed: 1, id: RANKWAIT.id }); });
+const order = (rows) => rows.filter((x) => !x.error && x.cross != null).sort((a, b) => (a.cross + a.thru) - (b.cross + b.thru) || (a.fill == null ? 1e9 : a.fill) - (b.fill == null ? 1e9 : b.fill));
+async function bestFor(graph) {
+  if (BEST[graph]) return BEST[graph];
+  const rows = order(await rankIn(graph)); BEST[graph] = { best: rows.length ? rows[0].algo : 'x:neato', from: 'here', ranking: rows.map((x) => [x.algo, x.cross, x.thru, x.fill]) };
+  return BEST[graph];
+}
+
+// ---------- one graph ----------
+async function show(graph) {
+  const my = ++seq; cur = graph; stopCountdown(); $('graph').value = graph;
+  S = { L: { loading: true }, R: { loading: true } }; draw();
+  const u = new URLSearchParams({ graph }); if (want.L !== 'default') u.set('left', want.L); if (want.R !== 'default') u.set('right', want.R);
+  history.replaceState(null, '', '?' + u);
+  let left = want.L;
+  if (left === 'default') { if (!BEST[graph]) { $('status').textContent = 'Finding the best open-source layout on this graph…'; S.L.finding = true; draw(); }
+    const b = await bestFor(graph); if (my !== seq) return; left = b.best; S.L.def = b; }
+  const right = want.R === 'default' ? 'tidy' : want.R;
+  S.L = { algo: left, def: S.L.def }; S.R = { algo: right }; draw();
+  SIDES.forEach((sd) => send(sd, { cmd: 'load', id: my, graph, algo: S[sd].algo, seed: 1, pct: pct() }));
+}
+function checkDone() {
+  const both = SIDES.every((sd) => S[sd].finished && (S[sd].ready || S[sd].error));
+  if (!both) { stopCountdown(); return; }
+  if ($('autoplay').checked && !apT) { apAt = performance.now() + 5000; apT = setTimeout(nextGraph, 5000); cdT = setInterval(draw, 500); draw(); }
+}
+function stopCountdown() { clearTimeout(apT); clearInterval(cdT); apT = cdT = null; }
+const graphKeys = () => [...$('graph').options].map((o) => o.value);
+function step(d) { const ks = graphKeys(), i = ks.indexOf(cur); show(ks[(i + d + ks.length) % ks.length]); }
+function nextGraph() { stopCountdown(); if ($('autoplay').checked) step(1); }
+
+// ---------- what each side shows ----------
+const fmtArea = (x) => (x == null ? '–' : x.toFixed(1));
+function totals(sd) {
+  const s = S[sd], o = S[OTHER[sd]];
+  if (s.error) return `<span class="err">Could not lay out: ${esc(s.error)}</span>`;
+  if (s.finding) return 'Running every open-source layout on this graph to find the best one…';
+  if (!s.ready) return 'Laying out…';
+  if (!s.finished) return `<span>${s.playing ? 'Playing' : s.t ? 'Paused' : 'Ready'}: ${esc(s.step || '')}</span><span>${s.total ? Math.round(100 * s.t / s.total) : 0}%</span>`;
+  const t = s.ready.totals, ot = o.ready && o.finished && !o.error ? o.ready.totals : null, cls = !ot || t.pr === ot.pr ? '' : t.pr < ot.pr ? 'win' : 'lose';
+  const rest = Math.round(t.pr - t.cross - t.red - t.orange / 2 - t.yellow / 4); // the total's other part: names covered and boxes overlapping
+  return `<span title="Crossed links, links through a class (a clipped corner counts half, nearly touching a quarter), covered names and overlapping boxes, in the last frame">Total problems <b class="${cls}">${t.pr}</b></span>`
+    + `<span>Crossings <b>${t.cross}</b></span><span title="The link runs through the middle of the class">Through a class <b>${t.red}</b></span>`
+    + `<span title="The link cuts across a small corner of the class: counts half a problem">Clipped corners <b>${t.orange}</b></span><span title="The link passes within 3 px of the class: counts a quarter of a problem">Nearly touching <b>${t.yellow}</b></span>`
+    + (rest > 0 ? `<span title="Link names covered by a class or another name, and boxes that overlap">Covered names and overlaps <b>${rest}</b></span>` : '')
+    + `<span>Sharp crossings <b>${t.sharp}</b></span><span title="Width times height of the drawing, over the room the boxes take: smaller is tighter">Area <b>${fmtArea(t.area)}</b></span><span title="All the steps of the run, measured in this browser">Time <b>${Math.round(s.ready.work)} ms</b></span>`;
+}
+function drawn(sd) {
+  const s = S[sd]; if (!s.algo) return '';
+  if (want[sd] !== 'default') return '';
+  const how = sd === 'R' ? 'Our layout shown unless another is chosen' : s.def && s.def.from === 'benchmark' ? 'The open-source layout with the fewest crossed links and links through classes on this graph, in the benchmark results (a tie goes to the smaller drawing)'
+    : 'The open-source layout with the fewest crossed links and links through classes on this graph (a tie goes to the smaller drawing), measured in a browser';
+  return `<span title="${esc(how)}">Default: <b>${esc(NAMES[s.algo] || s.algo)}</b></span>`;
+}
+function draw() {
+  SIDES.forEach((sd) => { $('t' + sd).innerHTML = totals(sd); $('d' + sd).innerHTML = drawn(sd); });
+  const any = SIDES.some((sd) => S[sd].playing); $('bPlay').textContent = any ? '⏸ Pause' : '▶ Play';
+  if (MEASURE) return;
+  const ks = graphKeys(), i = ks.indexOf(cur) + 1;
+  $('status').textContent = apT ? `Next graph in ${Math.max(1, Math.ceil((apAt - performance.now()) / 1000))} s` : S.L.finding ? 'Finding the best open-source layout on this graph…' : cur ? `Graph ${i} of ${ks.length}` : 'Loading…';
+}
+
+// ---------- controls ----------
+$('graph').onchange = () => show($('graph').value);
+$('gPrev').onclick = () => step(-1); $('gNext').onclick = () => step(1);
+$('autoplay').onchange = () => { stopCountdown(); checkDone(); draw(); };
+$('bPlay').onclick = () => {
+  if (SIDES.some((sd) => S[sd].playing)) { $('autoplay').checked = false; stopCountdown(); SIDES.forEach((sd) => send(sd, { cmd: 'pause' })); draw(); return; } // pausing stops the autoplay
+  stopCountdown(); const all = SIDES.every((sd) => S[sd].finished); SIDES.forEach((sd) => { if (S[sd].ready && (all || !S[sd].finished)) send(sd, { cmd: 'play' }); }); };
+$('bRestart').onclick = () => { stopCountdown(); SIDES.forEach((sd) => S[sd].ready && send(sd, { cmd: 'restart' })); };
+$('bEnd').onclick = () => SIDES.forEach((sd) => S[sd].ready && send(sd, { cmd: 'end' }));
+$('speed').oninput = () => { showSpeed(); SIDES.forEach((sd) => send(sd, { cmd: 'speed', pct: pct() })); };
+SIDES.forEach((sd) => ($('a' + sd).onchange = () => { want[sd] = $('a' + sd).value; if (cur) show(cur); }));
+document.addEventListener('keydown', (ev) => { if (ev.target.tagName === 'INPUT' || ev.target.tagName === 'SELECT') return;
+  if (ev.key === ' ') { ev.preventDefault(); $('bPlay').onclick(); } else if (ev.key === 'ArrowRight') step(1); else if (ev.key === 'ArrowLeft') step(-1); });
+showSpeed();
+
+// ---------- ?measure=1: every graph without recorded results, measured once (see compare_rank.mjs) ----------
+async function measureAll() {
+  const ks = graphKeys().filter((k) => !(BEST[k] && BEST[k].from === 'benchmark') && !/^imp_/.test(k)), out = {};
+  for (let i = 0; i < ks.length; i++) { $('status').textContent = `Measuring ${i + 1} of ${ks.length}: ${ks[i]}…`; out[ks[i]] = await rankIn(ks[i]); }
+  const body = JSON.stringify({ made: new Date().toISOString().slice(0, 10), about: 'Each open-source layout on the Lab graphs that have no recorded results: seed 1, straight links, counted as the Lab counts them. Read by compare_rank.mjs.', graphs: out }, null, 1);
+  window.MEASURED = body; $('status').textContent = `Measured ${ks.length} graphs: compare_measured.json saved.`;
+  const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([body], { type: 'application/json' })); a.download = 'compare_measured.json'; document.body.appendChild(a); a.click(); a.remove();
+}
+</script>
+</body>
+</html>

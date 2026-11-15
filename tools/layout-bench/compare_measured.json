@@ -1,0 +1,875 @@
+{
+ "made": "2026-11-15",
+ "about": "Each open-source layout on the Lab graphs that have no recorded results: seed 1, straight links, counted as the Lab counts them. Read by compare_rank.mjs.",
+ "graphs": {
+  "parcels": [
+   {
+    "algo": "x:d3",
+    "name": "d3-force",
+    "cross": 0,
+    "thru": 0,
+    "fill": 26.969630278414364
+   },
+   {
+    "algo": "x:cola",
+    "name": "WebCola",
+    "cross": 0,
+    "thru": 0,
+    "fill": 15.478184273847347
+   },
+   {
+    "algo": "x:cose",
+    "name": "Cytoscape cose",
+    "cross": 0,
+    "thru": 13,
+    "fill": 1.7787415974868113
+   },
+   {
+    "algo": "x:fcose",
+    "name": "Cytoscape fcose",
+    "cross": 2,
+    "thru": 4,
+    "fill": 7.960308366579042
+   },
+   {
+    "algo": "x:dagre",
+    "name": "dagre (layered)",
+    "cross": 0,
+    "thru": 3,
+    "fill": 2.207787398915724
+   },
+   {
+    "algo": "x:elk-stress",
+    "name": "ELK stress",
+    "cross": 0,
+    "thru": 0,
+    "fill": 14.94472175994771
+   },
+   {
+    "algo": "x:elk-force",
+    "name": "ELK force",
+    "cross": 0,
+    "thru": 0,
+    "fill": 9.825112329357147
+   },
+   {
+    "algo": "x:elk-layered",
+    "name": "ELK layered",
+    "cross": 0,
+    "thru": 0,
+    "fill": 4.661462866260517
+   },
+   {
+    "algo": "x:neato",
+    "name": "Graphviz neato",
+    "cross": 0,
+    "thru": 0,
+    "fill": 11.343004324412535
+   },
+   {
+    "algo": "x:fdp",
+    "name": "Graphviz fdp",
+    "cross": 0,
+    "thru": 1,
+    "fill": 5.270724103387004
+   },
+   {
+    "algo": "x:sfdp",
+    "name": "Graphviz sfdp",
+    "cross": 0,
+    "thru": 0,
+    "fill": 4.403720626631854
+   }
+  ],
+  "supply": [
+   {
+    "algo": "x:d3",
+    "name": "d3-force",
+    "cross": 58,
+    "thru": 14,
+    "fill": 39.60929595958556
+   },
+   {
+    "algo": "x:cola",
+    "name": "WebCola",
+    "cross": 47,
+    "thru": 11,
+    "fill": 18.88003592711803
+   },
+   {
+    "algo": "x:cose",
+    "name": "Cytoscape cose",
+    "cross": 322,
+    "thru": 444,
+    "fill": 4.618883730148928
+   },
+   {
+    "algo": "x:fcose",
+    "name": "Cytoscape fcose",
+    "cross": 122,
+    "thru": 38,
+    "fill": 5.800526754028027
+   },
+   {
+    "algo": "x:dagre",
+    "name": "dagre (layered)",
+    "cross": 154,
+    "thru": 65,
+    "fill": 12.568386067454123
+   },
+   {
+    "algo": "x:elk-stress",
+    "name": "ELK stress",
+    "cross": 61,
+    "thru": 16,
+    "fill": 16.032148719957018
+   },
+   {
+    "algo": "x:elk-force",
+    "name": "ELK force",
+    "cross": 275,
+    "thru": 47,
+    "fill": 16.394130115350315
+   },
+   {
+    "algo": "x:elk-layered",
+    "name": "ELK layered",
+    "cross": 129,
+    "thru": 26,
+    "fill": 20.446888332104074
+   },
+   {
+    "algo": "x:neato",
+    "name": "Graphviz neato",
+    "cross": 64,
+    "thru": 11,
+    "fill": 14.036857144019269
+   },
+   {
+    "algo": "x:fdp",
+    "name": "Graphviz fdp",
+    "cross": 527,
+    "thru": 64,
+    "fill": 9.46576317031108
+   },
+   {
+    "algo": "x:sfdp",
+    "name": "Graphviz sfdp",
+    "cross": 42,
+    "thru": 12,
+    "fill": 9.572308271915269
+   }
+  ],
+  "retail": [
+   {
+    "algo": "x:d3",
+    "name": "d3-force",
+    "cross": 126,
+    "thru": 21,
+    "fill": 9.272640534322967
+   },
+   {
+    "algo": "x:cola",
+    "name": "WebCola",
+    "cross": 107,
+    "thru": 20,
+    "fill": 12.457645509032352
+   },
+   {
+    "algo": "x:cose",
+    "name": "Cytoscape cose",
+    "cross": 378,
+    "thru": 412,
+    "fill": 4.103739884800303
+   },
+   {
+    "algo": "x:fcose",
+    "name": "Cytoscape fcose",
+    "cross": 159,
+    "thru": 41,
+    "fill": 6.926888476513774
+   },
+   {
+    "algo": "x:dagre",
+    "name": "dagre (layered)",
+    "cross": 128,
+    "thru": 49,
+    "fill": 11.529994780893075
+   },
+   {
+    "algo": "x:elk-stress",
+    "name": "ELK stress",
+    "cross": 118,
+    "thru": 25,
+    "fill": 8.142337214260351
+   },
+   {
+    "algo": "x:elk-force",
+    "name": "ELK force",
+    "cross": 397,
+    "thru": 39,
+    "fill": 15.588336797455186
+   },
+   {
+    "algo": "x:elk-layered",
+    "name": "ELK layered",
+    "cross": 101,
+    "thru": 16,
+    "fill": 11.480093002657219
+   },
+   {
+    "algo": "x:neato",
+    "name": "Graphviz neato",
+    "cross": 104,
+    "thru": 18,
+    "fill": 8.6749268115078
+   },
+   {
+    "algo": "x:fdp",
+    "name": "Graphviz fdp",
+    "cross": 518,
+    "thru": 67,
+    "fill": 6.975042417558083
+   },
+   {
+    "algo": "x:sfdp",
+    "name": "Graphviz sfdp",
+    "cross": 108,
+    "thru": 22,
+    "fill": 5.4036991679157875
+   }
+  ],
+  "mesh": [
+   {
+    "algo": "x:d3",
+    "name": "d3-force",
+    "cross": 335,
+    "thru": 68,
+    "fill": 10.819501241951235
+   },
+   {
+    "algo": "x:cola",
+    "name": "WebCola",
+    "cross": 284,
+    "thru": 59,
+    "fill": 10.840374904619996
+   },
+   {
+    "algo": "x:cose",
+    "name": "Cytoscape cose",
+    "cross": 859,
+    "thru": 893,
+    "fill": 2.529567503996335
+   },
+   {
+    "algo": "x:fcose",
+    "name": "Cytoscape fcose",
+    "cross": 362,
+    "thru": 98,
+    "fill": 6.413747469079779
+   },
+   {
+    "algo": "x:dagre",
+    "name": "dagre (layered)",
+    "cross": 483,
+    "thru": 77,
+    "fill": 36.23900719026553
+   },
+   {
+    "algo": "x:elk-stress",
+    "name": "ELK stress",
+    "cross": 310,
+    "thru": 77,
+    "fill": 6.444550131536023
+   },
+   {
+    "algo": "x:elk-force",
+    "name": "ELK force",
+    "cross": 1372,
+    "thru": 143,
+    "fill": 15.770301729290765
+   },
+   {
+    "algo": "x:elk-layered",
+    "name": "ELK layered",
+    "cross": 481,
+    "thru": 58,
+    "fill": 17.335424568057334
+   },
+   {
+    "algo": "x:neato",
+    "name": "Graphviz neato",
+    "cross": 265,
+    "thru": 50,
+    "fill": 8.66166659992793
+   },
+   {
+    "algo": "x:fdp",
+    "name": "Graphviz fdp",
+    "cross": 1320,
+    "thru": 161,
+    "fill": 15.008710907780422
+   },
+   {
+    "algo": "x:sfdp",
+    "name": "Graphviz sfdp",
+    "cross": 317,
+    "thru": 58,
+    "fill": 5.541119390191413
+   }
+  ],
+  "hr": [
+   {
+    "algo": "x:d3",
+    "name": "d3-force",
+    "cross": 4,
+    "thru": 1,
+    "fill": 16.840566875953307
+   },
+   {
+    "algo": "x:cola",
+    "name": "WebCola",
+    "cross": 2,
+    "thru": 1,
+    "fill": 23.963882290969213
+   },
+   {
+    "algo": "x:cose",
+    "name": "Cytoscape cose",
+    "cross": 3,
+    "thru": 71,
+    "fill": 2.16996020609307
+   },
+   {
+    "algo": "x:fcose",
+    "name": "Cytoscape fcose",
+    "cross": 8,
+    "thru": 6,
+    "fill": 9.125907079330444
+   },
+   {
+    "algo": "x:dagre",
+    "name": "dagre (layered)",
+    "cross": 1,
+    "thru": 8,
+    "fill": 2.9769900634606783
+   },
+   {
+    "algo": "x:elk-stress",
+    "name": "ELK stress",
+    "cross": 0,
+    "thru": 0,
+    "fill": 17.881815803929115
+   },
+   {
+    "algo": "x:elk-force",
+    "name": "ELK force",
+    "cross": 25,
+    "thru": 9,
+    "fill": 9.885478928240508
+   },
+   {
+    "algo": "x:elk-layered",
+    "name": "ELK layered",
+    "cross": 0,
+    "thru": 0,
+    "fill": 5.2618642959864035
+   },
+   {
+    "algo": "x:neato",
+    "name": "Graphviz neato",
+    "cross": 1,
+    "thru": 0,
+    "fill": 17.20276082657864
+   },
+   {
+    "algo": "x:fdp",
+    "name": "Graphviz fdp",
+    "cross": 37,
+    "thru": 17,
+    "fill": 4.170788706040006
+   },
+   {
+    "algo": "x:sfdp",
+    "name": "Graphviz sfdp",
+    "cross": 5,
+    "thru": 0,
+    "fill": 4.822833246175971
+   }
+  ],
+  "grid": [
+   {
+    "algo": "x:d3",
+    "name": "d3-force",
+    "cross": 21,
+    "thru": 7,
+    "fill": 21.119957647060296
+   },
+   {
+    "algo": "x:cola",
+    "name": "WebCola",
+    "cross": 11,
+    "thru": 1,
+    "fill": 21.97797546987079
+   },
+   {
+    "algo": "x:cose",
+    "name": "Cytoscape cose",
+    "cross": 40,
+    "thru": 151,
+    "fill": 3.589294240547696
+   },
+   {
+    "algo": "x:fcose",
+    "name": "Cytoscape fcose",
+    "cross": 16,
+    "thru": 1,
+    "fill": 14.092988444235079
+   },
+   {
+    "algo": "x:dagre",
+    "name": "dagre (layered)",
+    "cross": 30,
+    "thru": 20,
+    "fill": 5.0794783608767
+   },
+   {
+    "algo": "x:elk-stress",
+    "name": "ELK stress",
+    "cross": 11,
+    "thru": 1,
+    "fill": 15.752455858580902
+   },
+   {
+    "algo": "x:elk-force",
+    "name": "ELK force",
+    "cross": 84,
+    "thru": 21,
+    "fill": 10.529532288496636
+   },
+   {
+    "algo": "x:elk-layered",
+    "name": "ELK layered",
+    "cross": 20,
+    "thru": 6,
+    "fill": 9.977988748241911
+   },
+   {
+    "algo": "x:neato",
+    "name": "Graphviz neato",
+    "cross": 10,
+    "thru": 1,
+    "fill": 19.772496868407174
+   },
+   {
+    "algo": "x:fdp",
+    "name": "Graphviz fdp",
+    "cross": 117,
+    "thru": 21,
+    "fill": 5.777942164425106
+   },
+   {
+    "algo": "x:sfdp",
+    "name": "Graphviz sfdp",
+    "cross": 16,
+    "thru": 7,
+    "fill": 7.2587768657700416
+   }
+  ],
+  "pub": [
+   {
+    "algo": "x:d3",
+    "name": "d3-force",
+    "cross": 0,
+    "thru": 0,
+    "fill": 24.005273965420574
+   },
+   {
+    "algo": "x:cola",
+    "name": "WebCola",
+    "cross": 0,
+    "thru": 0,
+    "fill": 33.69386879056225
+   },
+   {
+    "algo": "x:cose",
+    "name": "Cytoscape cose",
+    "cross": 2,
+    "thru": 31,
+    "fill": 3.489843210537132
+   },
+   {
+    "algo": "x:fcose",
+    "name": "Cytoscape fcose",
+    "cross": 1,
+    "thru": 1,
+    "fill": 12.316468330480939
+   },
+   {
+    "algo": "x:dagre",
+    "name": "dagre (layered)",
+    "cross": 2,
+    "thru": 9,
+    "fill": 2.470060650462195
+   },
+   {
+    "algo": "x:elk-stress",
+    "name": "ELK stress",
+    "cross": 0,
+    "thru": 0,
+    "fill": 22.357597576925375
+   },
+   {
+    "algo": "x:elk-force",
+    "name": "ELK force",
+    "cross": 7,
+    "thru": 1,
+    "fill": 10.382702407673502
+   },
+   {
+    "algo": "x:elk-layered",
+    "name": "ELK layered",
+    "cross": 1,
+    "thru": 0,
+    "fill": 5.821888888888888
+   },
+   {
+    "algo": "x:neato",
+    "name": "Graphviz neato",
+    "cross": 0,
+    "thru": 0,
+    "fill": 21.751170624999993
+   },
+   {
+    "algo": "x:fdp",
+    "name": "Graphviz fdp",
+    "cross": 14,
+    "thru": 5,
+    "fill": 4.495168142857141
+   },
+   {
+    "algo": "x:sfdp",
+    "name": "Graphviz sfdp",
+    "cross": 0,
+    "thru": 1,
+    "fill": 4.4825384464285705
+   }
+  ],
+  "proj": [
+   {
+    "algo": "x:d3",
+    "name": "d3-force",
+    "cross": 14,
+    "thru": 4,
+    "fill": 12.185432365175043
+   },
+   {
+    "algo": "x:cola",
+    "name": "WebCola",
+    "cross": 9,
+    "thru": 0,
+    "fill": 16.4497459331303
+   },
+   {
+    "algo": "x:cose",
+    "name": "Cytoscape cose",
+    "cross": 21,
+    "thru": 100,
+    "fill": 3.728682889470922
+   },
+   {
+    "algo": "x:fcose",
+    "name": "Cytoscape fcose",
+    "cross": 14,
+    "thru": 8,
+    "fill": 10.023355145407788
+   },
+   {
+    "algo": "x:dagre",
+    "name": "dagre (layered)",
+    "cross": 8,
+    "thru": 11,
+    "fill": 3.2577551395007345
+   },
+   {
+    "algo": "x:elk-stress",
+    "name": "ELK stress",
+    "cross": 17,
+    "thru": 6,
+    "fill": 13.130606517804683
+   },
+   {
+    "algo": "x:elk-force",
+    "name": "ELK force",
+    "cross": 10,
+    "thru": 5,
+    "fill": 8.775853549185788
+   },
+   {
+    "algo": "x:elk-layered",
+    "name": "ELK layered",
+    "cross": 7,
+    "thru": 6,
+    "fill": 5.780064549681841
+   },
+   {
+    "algo": "x:neato",
+    "name": "Graphviz neato",
+    "cross": 5,
+    "thru": 2,
+    "fill": 13.180691308737154
+   },
+   {
+    "algo": "x:fdp",
+    "name": "Graphviz fdp",
+    "cross": 75,
+    "thru": 14,
+    "fill": 5.547420799490639
+   },
+   {
+    "algo": "x:sfdp",
+    "name": "Graphviz sfdp",
+    "cross": 5,
+    "thru": 0,
+    "fill": 3.6664179429377763
+   }
+  ],
+  "sf60": [
+   {
+    "algo": "x:d3",
+    "name": "d3-force",
+    "cross": 280,
+    "thru": 62,
+    "fill": 74.63135592167623
+   },
+   {
+    "algo": "x:cola",
+    "name": "WebCola",
+    "cross": 142,
+    "thru": 44,
+    "fill": 12.011917037896636
+   },
+   {
+    "algo": "x:cose",
+    "name": "Cytoscape cose",
+    "cross": 581,
+    "thru": 620,
+    "fill": 2.8139809336428594
+   },
+   {
+    "algo": "x:fcose",
+    "name": "Cytoscape fcose",
+    "cross": 296,
+    "thru": 142,
+    "fill": 4.381904327948076
+   },
+   {
+    "algo": "x:dagre",
+    "name": "dagre (layered)",
+    "cross": 309,
+    "thru": 111,
+    "fill": 16.2851805327085
+   },
+   {
+    "algo": "x:elk-stress",
+    "name": "ELK stress",
+    "cross": 138,
+    "thru": 55,
+    "fill": 9.296347586698191
+   },
+   {
+    "algo": "x:elk-force",
+    "name": "ELK force",
+    "cross": 718,
+    "thru": 92,
+    "fill": 32.19159587637505
+   },
+   {
+    "algo": "x:elk-layered",
+    "name": "ELK layered",
+    "cross": 291,
+    "thru": 49,
+    "fill": 14.973534919141695
+   },
+   {
+    "algo": "x:neato",
+    "name": "Graphviz neato",
+    "cross": 143,
+    "thru": 32,
+    "fill": 10.944959234869868
+   },
+   {
+    "algo": "x:fdp",
+    "name": "Graphviz fdp",
+    "cross": 926,
+    "thru": 108,
+    "fill": 13.90315145813735
+   },
+   {
+    "algo": "x:sfdp",
+    "name": "Graphviz sfdp",
+    "cross": 145,
+    "thru": 38,
+    "fill": 7.077869238005645
+   }
+  ],
+  "sf120": [
+   {
+    "algo": "x:d3",
+    "name": "d3-force",
+    "cross": 1421,
+    "thru": 245,
+    "fill": 9.92520755436955
+   },
+   {
+    "algo": "x:cola",
+    "name": "WebCola",
+    "cross": 1066,
+    "thru": 261,
+    "fill": 9.682324159184226
+   },
+   {
+    "algo": "x:cose",
+    "name": "Cytoscape cose",
+    "cross": 2438,
+    "thru": 2207,
+    "fill": 2.362729392472725
+   },
+   {
+    "algo": "x:fcose",
+    "name": "Cytoscape fcose",
+    "cross": 1276,
+    "thru": 455,
+    "fill": 4.118700652151452
+   },
+   {
+    "algo": "x:dagre",
+    "name": "dagre (layered)",
+    "cross": 1512,
+    "thru": 264,
+    "fill": 34.779425394665765
+   },
+   {
+    "algo": "x:elk-stress",
+    "name": "ELK stress",
+    "cross": 994,
+    "thru": 363,
+    "fill": 5.17437718526162
+   },
+   {
+    "algo": "x:elk-force",
+    "name": "ELK force",
+    "cross": 4418,
+    "thru": 292,
+    "fill": 35.29568335950061
+   },
+   {
+    "algo": "x:elk-layered",
+    "name": "ELK layered",
+    "cross": 1784,
+    "thru": 186,
+    "fill": 30.12435430865262
+   },
+   {
+    "algo": "x:neato",
+    "name": "Graphviz neato",
+    "cross": 940,
+    "thru": 130,
+    "fill": 24.889608759842535
+   },
+   {
+    "algo": "x:fdp",
+    "name": "Graphviz fdp",
+    "cross": 2100,
+    "thru": 294,
+    "fill": 15.26972460243941
+   },
+   {
+    "algo": "x:sfdp",
+    "name": "Graphviz sfdp",
+    "cross": 1049,
+    "thru": 140,
+    "fill": 18.602136598733992
+   }
+  ],
+  "sf250": [
+   {
+    "algo": "x:d3",
+    "name": "d3-force",
+    "cross": 3632,
+    "thru": 724,
+    "fill": 61.64522060002876
+   },
+   {
+    "algo": "x:cola",
+    "name": "WebCola",
+    "cross": 3375,
+    "thru": 841,
+    "fill": 8.634353794374594
+   },
+   {
+    "algo": "x:cose",
+    "name": "Cytoscape cose",
+    "cross": 8040,
+    "thru": 5675,
+    "fill": 1.8177611736359638
+   },
+   {
+    "algo": "x:fcose",
+    "name": "Cytoscape fcose",
+    "cross": 5806,
+    "thru": 2438,
+    "fill": 2.416771086471008
+   },
+   {
+    "algo": "x:dagre",
+    "name": "dagre (layered)",
+    "cross": 5056,
+    "thru": 525,
+    "fill": 56.07317284930603
+   },
+   {
+    "algo": "x:elk-stress",
+    "name": "ELK stress",
+    "cross": 3525,
+    "thru": 1275,
+    "fill": 4.267627716008079
+   },
+   {
+    "algo": "x:elk-force",
+    "name": "ELK force",
+    "cross": 21787,
+    "thru": 909,
+    "fill": 80.74923696271543
+   },
+   {
+    "algo": "x:elk-layered",
+    "name": "ELK layered",
+    "cross": 5322,
+    "thru": 348,
+    "fill": 62.37973173615199
+   },
+   {
+    "algo": "x:neato",
+    "name": "Graphviz neato",
+    "cross": 3155,
+    "thru": 356,
+    "fill": 90.64933189996552
+   },
+   {
+    "algo": "x:fdp",
+    "name": "Graphviz fdp",
+    "cross": 7120,
+    "thru": 691,
+    "fill": 36.99643380738275
+   },
+   {
+    "algo": "x:sfdp",
+    "name": "Graphviz sfdp",
+    "cross": 2988,
+    "thru": 377,
+    "fill": 45.63111626299576
+   }
+  ]
+ }
+}
