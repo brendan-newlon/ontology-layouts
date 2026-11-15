@@ -831,7 +831,7 @@ clean:  rounds of single moves → leaf units → region spreading → group mov
 <p><code>draw(boxes, links, { prefer })</code> chooses what matters most. <code>'fewer-problems'</code> (the default) is the above. <code>'smaller'</code> places tighter (usual length 150 px, core links 1.6 times, links on graphs over 100 classes at 200 px rather than 260) and its bands take along more. <code>'faster'</code> gives the core one start and fewer sweeps and takes in less. Over the 62 graphs of the Layout Lab and three seeds, all drawn the same way:</p>
 </div>
 <div class="tbl"><table>
-<thead><tr><th class="l">Layout</th><th>Problems (crossed links, links through classes, covered names, overlaps), total</th><th>Area, total of each drawing's area over its boxes'</th><th>Time, total</th></tr></thead>
+<thead><tr><th class="l">Layout</th><th>Problems (crossed links, links through classes, overlaps), total</th><th>Area, total of each drawing's area over its boxes'</th><th>Time, total</th></tr></thead>
 <tbody>
 <tr class="ours"><td class="l">Tidy Mycelium, <code>'fewer-problems'</code></td><td class="best">15,316</td><td>1,600</td><td>59 s</td></tr>
 <tr class="ours"><td class="l">Tidy Mycelium, <code>'smaller'</code></td><td>16,633</td><td class="best">1,224</td><td>57 s</td></tr>
@@ -840,7 +840,7 @@ clean:  rounds of single moves → leaf units → region spreading → group mov
 <tr><td class="l">Mycelium</td><td>17,516</td><td>2,002</td><td>42 s</td></tr>
 <tr><td class="l">Tidy Stress</td><td>21,481</td><td>1,580</td><td>58 s</td></tr>
 </tbody></table></div>
-<div class="prose"><p>Measured with straight links after the clean-up and the take-in, link names from the graphs' properties. Every preference drew fewer problems than Best Read and Mycelium. Choosing a preference from measures of the graph (size, links per class, hubs, how cleanly it splits into groups) was tried and did not pay: the default's settings won on nearly every larger graph whatever the measure.</p></div>
+<div class="prose"><p>Measured with straight links after the clean-up and the take-in, without link names. Every preference drew fewer problems than Best Read and Mycelium. With a name on every relationship (seed 1), names need room along their links: Tidy Mycelium draws 5,325 problems, 52 of them names covering a class or another name, in a total area of 704 and 25 s; Best Read draws 6,191 (183 covered names) in 647 and 22 s, and Mycelium 6,004 in 718 and 16 s. So with names, Tidy Mycelium still has the fewest problems and the fewest covered names, in drawings about a tenth larger than Best Read's. Choosing a preference from measures of the graph (size, links per class, hubs, how cleanly it splits into groups) was tried and did not pay: the default's settings won on nearly every larger graph whatever the measure.</p></div>
 
 <h2 id="prior">Prior work these layouts use</h2>
 <div class="prose">

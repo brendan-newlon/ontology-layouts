@@ -210,7 +210,15 @@ function checkApi(L) {
     const seen = new Set([key(dft)]);
     for (const prefer of ['smaller', 'faster']) { const r = A.draw(D, E, { prefer }); if (r.algo !== 'tidyMycelium') bad.push(`draw({ prefer: "${prefer}" }) drew with ${r.algo}`);
       if (seen.has(key(r))) bad.push(`draw({ prefer: "${prefer}" }) drew the same as another preference`); seen.add(key(r));
-      for (let u = 0; u < n; u++) for (let v = u + 1; v < n; v++) if (Math.abs(r.pos[u].x - r.pos[v].x) < (D[u].w + D[v].w) / 2 - 1 && Math.abs(r.pos[u].y - r.pos[v].y) < (D[u].h + D[v].h) / 2 - 1) { bad.push(`draw({ prefer: "${prefer}" }) put a class on another`); u = v = n; } } }
+      for (let u = 0; u < n; u++) for (let v = u + 1; v < n; v++) if (Math.abs(r.pos[u].x - r.pos[v].x) < (D[u].w + D[v].w) / 2 - 1 && Math.abs(r.pos[u].y - r.pos[v].y) < (D[u].h + D[v].h) / 2 - 1) { bad.push(`draw({ prefer: "${prefer}" }) put a class on another`); u = v = n; } }
+    // link names: Tidy Mycelium leaves room along each link for its name (2026-11-15: the names were dropped before the
+    // placement, and on small graphs most names drawn at the middle of their link covered a class)
+    let shortAll = 0, namedAll = 0;
+    for (const mm of [MODELS[0], MODELS[1], MODELS[2]]) { const En = mm.edges.map((e) => [e[0], e[1], e[2], 90]), Pn = A.tidyMycelium(mm.D, En, { seed: 1 }).pos;
+      const ext = (i, ux, uy) => Math.min(ux ? mm.D[i].w / 2 / Math.abs(ux) : 1e9, uy ? mm.D[i].h / 2 / Math.abs(uy) : 1e9); let short = 0;
+      En.forEach(([a, b]) => { const dx = Pn[b].x - Pn[a].x, dy = Pn[b].y - Pn[a].y, d = Math.hypot(dx, dy) || 1; if (d - ext(a, dx / d, dy / d) - ext(b, dx / d, dy / d) < 90) short++; });
+      shortAll += short; namedAll += En.length; }
+    if (shortAll > 0.1 * namedAll) bad.push(`tidyMycelium left ${shortAll} of ${namedAll} links too short for their names`); }
   return bad;
 }
 // 8. keeping a drawing and relation classes: draw(..., { keep, exact: true }) leaves every old class exactly where it was and puts
@@ -368,6 +376,7 @@ if (process.argv.includes('--self-test')) {
     ['api', 'no room left for the arrowhead', code.replace('let rem = Math.min(o.arrow,', 'let rem = Math.min(0,')],
     ['keep', 'exact keeping still runs the clean-up', code.replace('const clean = ex || o.cleanUp === false || lay.algo === "tidyMycelium" ? lay.pos :', 'const clean = o.cleanUp === false || lay.algo === "tidyMycelium" ? lay.pos :')],
     ['api', 'draw() defaults to Best Read, not Tidy Mycelium', code.replace('const kind = o.layout || (o.start ? "given" : "tidyMycelium")', 'const kind = o.layout || (o.start ? "given" : "auto")')],
+    ['api', 'Tidy Mycelium places without the link names', code.replace('_tmBest(boxes, links, { seed: o.seed || 1, variant: v })', '_tmBest(boxes, links.map((e) => e.slice(0, 3)), { seed: o.seed || 1, variant: v })').replace('_ogLayoutCleanUp(r.pos, boxes, links, t0, false), cp', '_ogLayoutCleanUp(r.pos, boxes, links.map((e) => e.slice(0, 3)), t0, false), cp')],
     ['api', 'the prefer option ignored', code.replace('v = _TM_VAR[o.prefer] ? o.prefer : undefined', 'v = undefined')],
     ['api', 'draw({ timeLimit }) does not restore the limit', code.replace('finally { _ogSetTimeLimit(prev); }', 'finally { }')],
     ['api', 'the paths ignore circle classes', code.replace('if (it.shape === "circle") {', 'if (false) {')],
