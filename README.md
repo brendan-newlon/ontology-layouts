@@ -2,12 +2,13 @@
 
 Layouts for drawing ontologies (classes as boxes, subclass and relationship links between them) so that a reader can follow every link: far fewer crossed links and far fewer links running through classes than the widely used open-source layouts.
 
-**See it live:** [brendan-newlon.github.io/ontology-layouts](https://brendan-newlon.github.io/ontology-layouts/), one page with an introduction, the Layout Playback, the Layout Lab (open your own Turtle file, export the drawing), how it was built, the benchmarks and the developer guide. **Use it in an app:** [docs/DEVELOPER-GUIDE.md](docs/DEVELOPER-GUIDE.md) and the files in `dist/`.
+**See it live:** [brendan-newlon.github.io/ontology-layouts](https://brendan-newlon.github.io/ontology-layouts/), one page with an introduction, the Layout Lab (watch a layout work step by step, change it, open your own Turtle file, export the drawing), how it was built, the benchmarks and the developer guide. **Use it in an app:** [docs/DEVELOPER-GUIDE.md](docs/DEVELOPER-GUIDE.md) and the files in `dist/`.
 
+- **Tidy Mycelium** (the default): the dense core placed in closely linked groups, the parts hanging off it put into the open space round them, the clean-up, then the empty space taken in. Over 62 graphs it draws 14% fewer problems than Best Read in 11% less area, in about the same time. Developers who care most about size or speed can say so (`prefer: 'smaller'` or `'faster'`).
 - **Tidy Stress**: stress placement, then a search that removes crossings and links through classes.
 - **Mycelium**: the same, with closely linked groups of classes kept together and room around hubs.
 - **Top-down** (experiment, not yet an entry point): the same placement with every subclass below its superclass, for models where the hierarchy is the content; a third to a half of the crossings of tuned ELK layered. The repository also has a Reingold–Tilford-style **Tree** (`_ogTreeLayout`), which the top-down drawing beats on every test set.
-- **Best Read**: runs Tidy Stress and Mycelium and keeps the more readable drawing.
+- **Best Read** (the default until November 2026): runs Tidy Stress and Mycelium and keeps the more readable drawing.
 - **Link routing**: after the layout, draws the links: parallel and reciprocal links as arcs, self-links as loops on the most open side, bends round classes in the way that stay inside the drawing, link ends spread along crowded boxes, link names on or beside their link where they cover nothing; a class a link still runs through is pushed off it when that helps.
 - **Keeping a drawing**: after an edit, new classes are placed round the old ones, which stay where the reader knows them.
 - **Exploring**: a drawing can start from one class and grow one expansion at a time; the new neighbours of a class go on an arc on its most open side, and nothing already drawn moves. In simulated sessions that is a third of the crossings of a typical force-directed expansion, in a few milliseconds per click. Links can be drawn without bends (`straight: true`); repeated and reciprocal links then stay arcs side by side, unless `arcs: false` draws them as parallel straight lines.
@@ -16,7 +17,7 @@ Layouts for drawing ontologies (classes as boxes, subclass and relationship link
 
 Same input, same drawing on any computer: time limits count units of work, not wall time.
 
-**Teach it something.** The clean-up was taught by a person, not designed from the literature: Brendan Newlon designed the Layout Lab as a place to teach it, tidied drawings there by hand while explaining how he approaches them, and had an AI assistant, Claude (Opus 5.5), distill the practice and its reasons into rules and tested them on graphs nobody had looked at. The Layout Lab and the Layout Playback are offered as tools in their own right. Try your hand in the [lab edition of the write-up](docs/ONTOLOGY-LAYOUT-ALGORITHMS-LAB.html#lab), which needs nothing installed: tidy any graph, say why, and download the session as one file for your AI assistant to turn into rules. Or copy the lab for any problem a person can see and fix better than they can describe. Start with [docs/SHOW-AND-TELL-LABS.md](docs/SHOW-AND-TELL-LABS.md).
+**Teach it something.** The clean-up was taught by a person, not designed from the literature: Brendan Newlon designed the Layout Lab as a place to teach it, tidied drawings there by hand while explaining how he approaches them, and had an AI assistant, Claude (Opus 5.5), distill the practice and its reasons into rules and tested them on graphs nobody had looked at. The Layout Lab, where a layout plays step by step and can be changed at any step, is offered as a tool in its own right. Try your hand in the [lab edition of the write-up](docs/ONTOLOGY-LAYOUT-ALGORITHMS-LAB.html#lab), which needs nothing installed: tidy any graph, say why, and download the session as one file for your AI assistant to turn into rules. Or copy the lab for any problem a person can see and fix better than they can describe. Start with [docs/SHOW-AND-TELL-LABS.md](docs/SHOW-AND-TELL-LABS.md).
 
 ## Where things are
 
@@ -44,7 +45,7 @@ node tests/check_ontology_layout.mjs
 node tests/check_ontology_layout.mjs --self-test
 ```
 
-Playback and lab: double-click `Start Layout Lab.cmd`, or by hand: serve the repository root (`python -m http.server 8011`), run `node tools/layout-bench/build_base.mjs`, open `http://localhost:8011/tools/layout-bench/playback.html`, `lab.html` or `contenders.html`; for the lab, also run `python tools/recv.py`.
+Layout Lab: double-click `Start Layout Lab.cmd`, or by hand: serve the repository root (`python -m http.server 8011`), run `node tools/layout-bench/build_base.mjs`, open `http://localhost:8011/tools/layout-bench/playback.html` (the Layout Lab; `lab.html` forwards to it) or `contenders.html`; to save notes to `_temp/`, also run `python tools/recv.py`.
 
 `_temp/` is scratch space for bench output and lab sessions; it is not committed.
 

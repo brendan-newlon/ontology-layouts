@@ -3,14 +3,14 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Layout Playback</title>
+<title>Layout Lab</title>
 <style>
 :root { --bg: #f4f3ee; --paper: #fff; --ink: #1d232b; --muted: #5d6673; --rule: #d9d6cc; --accent: #2f6b4f; --box: #eef3fb; --box-line: #6d86b0;
   --sub: #6f9a54; --rel: #8b97a8; --bad: #c43d32; --warn: #c98a12; --new: #e0a100; --name: #4b5563; --name-bg: #fffdf5;
-  --ov-grid: #2f9d6a; --ov-slice: #c98a12; --ov-group: #c2417a; --ov-stress: #7c5cd6; --ov-extent: #5d6673; --ov-clear: #1793ad; --pen: #d1197a; --sel: #e0a100; --note: #fdf6e3; }
+  --ov-grid: #2f9d6a; --ov-slice: #c98a12; --ov-group: #c2417a; --ov-stress: #7c5cd6; --ov-extent: #5d6673; --ov-clear: #1793ad; --ov-room: #a0522d; --ov-ray: #0f766e; --ov-drop: #7c3aed; --pen: #d1197a; --sel: #e0a100; --note: #fdf6e3; }
 @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) { --bg: #15181c; --paper: #1c2026; --ink: #e6e8eb; --muted: #9aa4b1; --rule: #30353d; --accent: #7cc39e;
   --box: #233041; --box-line: #6f8db8; --sub: #8fbf6f; --rel: #6f7b8c; --bad: #ff6f61; --warn: #f0b44a; --new: #ffcc33; --name: #b8c0cc; --name-bg: #22262d;
-  --ov-grid: #5fd39a; --ov-slice: #f0b44a; --ov-group: #f07aae; --ov-stress: #a98bff; --ov-extent: #9aa4b1; --ov-clear: #3fc8e4; --pen: #ff5cae; --sel: #ffcc33; --note: #2a261c; color-scheme: dark; } }
+  --ov-grid: #5fd39a; --ov-slice: #f0b44a; --ov-group: #f07aae; --ov-stress: #a98bff; --ov-extent: #9aa4b1; --ov-clear: #3fc8e4; --ov-room: #e3a27a; --ov-ray: #5eead4; --ov-drop: #c4a7ff; --pen: #ff5cae; --sel: #ffcc33; --note: #2a261c; color-scheme: dark; } }
 * { box-sizing: border-box; }
 html, body { height: 100%; }
 body { margin: 0; background: var(--bg); color: var(--ink); font: 14px/1.45 "Segoe UI", system-ui, sans-serif; display: grid; grid-template-rows: auto auto minmax(0, 1fr) auto; }
@@ -30,6 +30,8 @@ label.tog .sw { margin-right: 0; }
 a { color: var(--accent); }
 main { display: grid; grid-template-columns: 1fr 420px; min-height: 0; }
 #stage { position: relative; min-width: 0; min-height: 0; }
+#tally { position: absolute; right: 6px; bottom: 2px; z-index: 3; max-width: 46%; background: color-mix(in srgb, var(--paper) 90%, transparent); border: 1px solid var(--rule); border-radius: 6px; padding: 3px 8px; font-size: 12px; font-variant-numeric: tabular-nums; color: var(--muted); line-height: 1.45; }
+#tally b { font-weight: 600; } #tally .win { color: #2e9a5a; } #tally .lose { color: #d0453a; } #tally:empty { display: none; }
 #svg { width: 100%; height: 100%; display: block; background: var(--bg); touch-action: none; user-select: none; cursor: grab; }
 #caption { position: absolute; left: 6px; top: 6px; max-width: max(200px, min(460px, calc(100% - 90px))); background: color-mix(in srgb, var(--paper) 88%, transparent); border: 1px solid var(--rule); border-radius: 6px; padding: 3px 7px; pointer-events: none; font-size: 12px; line-height: 1.35; }
 #caption .t1 { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
@@ -37,10 +39,13 @@ main { display: grid; grid-template-columns: 1fr 420px; min-height: 0; }
 #caption .k { color: var(--muted); font-size: 11px; }
 #caption .d { color: var(--muted); display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
 #caption .body { pointer-events: auto; }
-#counts { position: absolute; right: 4px; top: 6px; background: color-mix(in srgb, var(--paper) 88%, transparent); border: 1px solid var(--rule); border-radius: 6px; padding: 2px 4px 3px; font-size: 11.5px; font-variant-numeric: tabular-nums; color: var(--muted); pointer-events: none; }
-#countsB { display: grid; grid-template-columns: 16px auto; gap: 3px 4px; align-items: center; pointer-events: auto; }
+#counts { display: none !important; position: absolute; right: 4px; top: 6px; background: color-mix(in srgb, var(--paper) 88%, transparent); border: 1px solid var(--rule); border-radius: 6px; padding: 2px 4px 3px; font-size: 11.5px; font-variant-numeric: tabular-nums; color: var(--muted); pointer-events: none; }
+#countsB { display: grid; grid-template-columns: 16px auto auto; gap: 3px 6px; align-items: center; pointer-events: auto; }
 #countsB svg { width: 16px; height: 16px; fill: none; stroke: var(--muted); stroke-width: 1.6; stroke-linecap: round; }
-#countsB b { color: var(--ink); text-align: right; font-weight: 600; }
+#countsB b { color: var(--ink); text-align: right; font-weight: 600; } #countsB span { white-space: nowrap; }
+#vsrow { position: absolute; left: 0; bottom: 19px; z-index: 2; padding: 1px 8px; font-size: 11.5px; font-variant-numeric: tabular-nums; color: var(--muted); background: color-mix(in srgb, var(--paper) 88%, transparent); border-top: 1px solid var(--rule); white-space: nowrap; overflow: hidden; pointer-events: none; }
+#vsrow:empty { display: none; } #vsrow b { color: var(--ink); font-weight: 600; } #vsrow .win { color: #2e9a5a; } #vsrow .lose { color: #d0453a; } #vsrow span { margin-right: 14px; }
+.node.thru .shape { stroke: var(--bad); stroke-width: 2.4; } .node.clip .shape { stroke: #e8892b; stroke-width: 2.4; } .node.near .shape { stroke: #d9b622; stroke-width: 2.2; } .xdot { fill: none; stroke: var(--bad); stroke-width: 1.3; }
 #legend { position: absolute; left: 0; right: 0; bottom: 0; background: color-mix(in srgb, var(--paper) 88%, transparent); border-top: 1px solid var(--rule); padding: 1px 6px; font-size: 11px; line-height: 16px; color: var(--muted); pointer-events: none; display: none; white-space: nowrap; overflow: hidden; }
 #legendB { display: inline-flex; gap: 12px; pointer-events: auto; }
 #legend span { display: inline-flex; gap: 4px; align-items: center; cursor: help; }
@@ -135,28 +140,54 @@ footer .grp { display: flex; gap: 4px; align-items: center; }
 #tip { position: fixed; z-index: 19; max-width: 360px; background: var(--paper); border: 1px solid var(--rule); border-radius: 8px; box-shadow: 0 6px 24px rgba(0,0,0,.25); padding: 8px 10px; font-size: 12.5px; display: none; pointer-events: none; }
 #tip .t { font-weight: 600; } #tip .g { font-size: 11px; text-transform: uppercase; letter-spacing: .05em; color: var(--muted); }
 #tip .d { color: var(--muted); margin: 3px 0; } #tip .m { font-variant-numeric: tabular-nums; }
+.fmenu { position: relative; display: inline-block; }
+.fmenu .fm { display: none; position: absolute; left: 0; top: calc(100% + 4px); z-index: 50; min-width: 260px; background: var(--paper); border: 1px solid var(--rule); border-radius: 8px; box-shadow: 0 8px 24px rgba(0,0,0,.18); padding: 5px; }
+.fmenu.open .fm { display: block; }
+.fmenu .fm button { display: block; width: 100%; text-align: left; border: 0; background: none; padding: 5px 9px; border-radius: 5px; }
+.fmenu .fm button:hover { background: var(--bg); }
+.fmenu .fm button[hidden] { display: none; }
+.fmenu .fm .h { font-size: 11px; text-transform: uppercase; letter-spacing: .05em; color: var(--muted); padding: 6px 9px 2px; }
+.hit { fill: none; stroke: transparent; stroke-width: 12; pointer-events: stroke; cursor: copy; }
+.handle { fill: var(--paper); stroke: var(--accent); stroke-width: 2; cursor: move; vector-effect: non-scaling-stroke; }
+.link.picked { stroke: var(--accent); stroke-width: 2.6; }
+.marquee { fill: color-mix(in srgb, var(--sel) 15%, transparent); stroke: var(--sel); stroke-dasharray: 4 3; vector-effect: non-scaling-stroke; }
+#menu .sep { border-top: 1px solid var(--rule); margin: 3px 0; }
+#menu .sub { font-size: 11px; color: var(--muted); padding: 2px 10px 4px; }
 @media (max-width: 900px) { main { grid-template-columns: 1fr; grid-template-rows: 60vh auto; } aside { border-left: 0; border-top: 1px solid var(--rule); } }
 </style>
-<script src="../../site-nav.js" data-page="playback" defer></script>
+<script src="../../site-nav.js" data-page="lab" defer></script>
 </head>
 <body>
 <header>
-  <h1>Layout Playback</h1>
+  <h1>Layout Lab</h1>
+  <span class="fmenu" id="fileMenu"><button id="fileBtn" title="Open your own graph (Turtle), export the drawing shown, download your notes">File ▾</button>
+    <span class="fm">
+      <div class="h">Your graph</div>
+      <button data-f="ttl">Open a Turtle file (.ttl)…</button>
+      <button data-f="forget" id="fForget">Remove this graph from the list</button>
+      <div class="h">Export the drawing shown</div>
+      <button data-f="svg">SVG image</button><button data-f="png">PNG image</button>
+      <button data-f="math" title="The whole run as plain text: the graph, every step in order with its time and the problems after it, the result against our other layouts, and the final positions. Paste it into another assistant to ask for ideas.">Copy the math (the run as text)</button>
+      <button data-f="json">JSON: positions, sizes and link paths</button><button data-f="graphml">GraphML (yEd, Gephi, Cytoscape)</button>
+      <div class="h">Your notes</div>
+      <button data-f="session">Download this session (JSON)</button>
+    </span></span>
+  <input type="file" id="ttlFile" accept=".ttl,.nt,.turtle,text/turtle,application/n-triples" hidden>
   <select id="graph" title="Graph"></select>
   <select id="algo" title="Layout">
-    <optgroup label="Our layouts"><option value="auto">Best Read</option><option value="compact">Tidy Stress</option><option value="grouped">Mycelium</option></optgroup>
+    <optgroup label="Our layouts"><option value="tidy">Tidy Mycelium</option><option value="tidyS">Tidy Mycelium, smaller drawings</option><option value="tidyQ">Tidy Mycelium, faster</option><option value="auto">Best Read</option><option value="compact">Tidy Stress</option><option value="grouped">Mycelium</option></optgroup>
     <optgroup label="Open-source layouts"><option value="x:d3">d3-force</option><option value="x:cola">WebCola</option><option value="x:cose">Cytoscape cose</option><option value="x:fcose">Cytoscape fcose</option><option value="x:elk-stress">ELK stress</option><option value="x:elk-force">ELK force</option><option value="x:elk-layered">ELK layered</option><option value="x:neato">Graphviz neato</option><option value="x:fdp">Graphviz fdp</option><option value="x:sfdp">Graphviz sfdp</option><option value="x:dagre">dagre (layered)</option></optgroup>
   </select>
-  <label class="tog" title="How each class is drawn: a box or a circle, with its name on it or under it. The layout is given each class's own size. Open your own graph (Turtle) in the Lab: it then appears here too, under Your graphs.">Nodes <select id="nstyle"><option value="box">Boxes</option><option value="circle">Circles</option></select></label>
+  <label class="tog" title="How each class is drawn: a box or a circle, with its name on it or under it. The layout is given each class's own size. File, then Open a Turtle file, adds your own graph to the list.">Nodes <select id="nstyle"><option value="box">Boxes</option><option value="circle">Circles</option></select></label>
   <label class="tog" title="Where each class's name goes: on the box or circle (sized to fit it), or under a small box or circle">Labels <select id="nlabel"><option value="on">On the node</option><option value="under">Under the node</option></select></label>
   <label class="tog" title="The layouts' random seed">Seed <input type="number" id="seed" value="1" min="1" max="999"></label>
   <label class="tog" title="How long our layout and its clean-up may work (default 1 s; the link drawing keeps at least its time at 1.5 s). It is a limit on work done, measured against a reference laptop, so the same limit gives the same drawing on any computer. Stopping sooner or allowing longer shows what each step does with less or more time.">Time limit <input type="range" id="limit" min="200" max="6000" step="50" value="1000" style="width:110px"> <span id="limitV">1 s</span></label>
   <label class="tog" id="oursTog" title="Draw this layout's links with our link drawing (arcs, bends, ports, names), so both are compared on the same footing" hidden><input type="checkbox" id="ourLinks" checked> Our link drawing</label>
+  <label class="tog" title="What the link steps do. Auto-bend: a link that runs through a class is bent round it, repeated links between two classes are drawn apart, and links are bent away from crossings where that pays off. Bend where they overlap: the same, without the bends away from crossings. Straight: no link steps; links stay straight unless you bend one by hand. By hand, at any frame: drag a link to pull a bend into it, drag a bend to reshape it, double-click a bend to remove it or a link to straighten it.">Lines <select id="lines"><option value="auto">Auto-bend</option><option value="round">Bend where they overlap</option><option value="straight">Straight</option></select></label>
   <span id="status"></span>
-  <span id="editBar"><span id="editTxt"></span><button id="editDrop" title="Go back to the layout's own run">Discard the edit</button></span>
+  <span id="editBar"><span id="editTxt"></span><button id="editDrop" title="Go back to the layout's own run, without your edits and the steps done again by hand (Ctrl+Z undoes one at a time)">Back to the layout's own run</button></span>
   <button id="penBtn" title="Draw on the drawing with the mouse (P). Circle a part, then type a note: the note keeps your marks, what they enclose, the frame and the positions shown">✎ Pen</button>
   <button id="inkClear" title="Remove your marks from the drawing (they stay in the notes)">Clear marks</button>
-  <a id="labLink" href="lab.html" target="layout-lab" title="Open the drawing as shown now in the Layout Lab. The lab follows the playback until you move something there; your moves come back here and the playback continues from them.">Open in Layout Lab ↗</a>
 </header>
 <nav>
   <span class="lbl">Show the math</span>
@@ -164,13 +195,19 @@ footer .grp { display: flex; gap: 4px; align-items: center; }
   <label class="tog" title="During crowd spreading: the 8 slices round the crowd's center; the darker a slice, the more open space lay beyond it and the further it was pushed"><input type="checkbox" data-ov="slice"><span class="sw" style="background:var(--ov-slice)"></span>Spreading slices</label>
   <label class="tog" title="During group moves: the problem being fixed, the side of the drawing that moves together and where it moves"><input type="checkbox" data-ov="group"><span class="sw" style="background:var(--ov-group)"></span>Group-move side</label>
   <label class="tog" title="During placement: rings round each class show how far it is from where its link distances want it; more and tighter rings, a stronger pull"><input type="checkbox" data-ov="stress"><span class="sw" style="background:var(--ov-stress)"></span>Stress rings</label>
+  <label class="tog" title="Rulers along the top and left of the drawing: its width and height, against the best other layout on this graph"><input type="checkbox" data-ov="ruler"><span class="sw" style="background:var(--ov-extent)"></span>Rulers</label>
   <label class="tog" title="The drawing's extent: the area the scores count"><input type="checkbox" data-ov="extent"><span class="sw" style="background:var(--ov-extent)"></span>Drawing extent</label>
   <label class="tog" title="During the link steps: the margin round each class that a link must keep clear of"><input type="checkbox" data-ov="clear"><span class="sw" style="background:var(--ov-clear)"></span>Link clearance</label>
+  <label class="tog" title="During group moves: the moves tried and thrown away just before this one (dashed boxes where the group would have gone)"><input type="checkbox" data-ov="drop"><span class="sw" style="background:var(--ov-drop)"></span>Dropped tries</label>
+  <label class="tog" title="Tidy Mycelium, while the core is placed: the room each class keeps round it for the parts set aside (dashed circle), and how many classes wait there (+n)"><input type="checkbox" data-ov="room"><span class="sw" style="background:var(--ov-room)"></span>Room kept</label>
+  <label class="tog" title="Tidy Mycelium, as each part comes back: the rays cast round the class it hangs from (each as long as that direction is open), the slice chosen, and the outward direction"><input type="checkbox" data-ov="ray"><span class="sw" style="background:var(--ov-ray)"></span>Slice search</label>
 </nav>
 <main>
   <div id="stage">
     <svg id="svg"></svg>
     <div id="caption" class="pnl" data-name="Step"><div class="body"><div class="t1"><span class="t" id="cT"></span> <span class="k" id="cK"></span></div><div class="d" id="cD"></div></div></div>
+    <div id="tally"></div>
+    <div id="vsrow"></div>
     <div id="counts" class="pnl" data-name="Counts"><div class="body" id="countsB"></div></div>
     <div id="legend" class="pnl" data-name="Legend"><div class="body" id="legendB"></div></div>
     <div id="drawer"></div>
@@ -178,7 +215,7 @@ footer .grp { display: flex; gap: 4px; align-items: center; }
   <aside>
    <div id="sideTop">
     <h2>Steps <small id="totalInfo"></small></h2>
-    <p class="hint">Times are measured in this browser. Hover a step for details, right-click it for more. <b>Show</b> unticked: the drawing is not animated during the step (its time still passes). <b>Run</b> unticked: the layout is redone without it. Drag <span class="grip">⋮⋮</span> to run steps in another order.</p>
+    <p class="hint">Times are measured in this browser. Hover a step for details. Right-click a step (here or on the bar under the drawing) to do it now on the drawing shown, or to do it again with more time. <b>Show</b> unticked: the drawing is not animated during the step (its time still passes). <b>Run</b> unticked: the layout is redone without it. Drag <span class="grip">⋮⋮</span> to run steps in another order.</p>
     <table id="steps"></table>
     <div class="row" id="ordRow" hidden>Steps run in another order than usual. <button id="oReset">Usual order</button></div>
     <div id="tbarWrap">
@@ -201,7 +238,7 @@ footer .grp { display: flex; gap: 4px; align-items: center; }
     <h2>Notes <small id="saveInfo">not saved yet</small></h2>
     <div id="nlog"></div>
     <textarea id="ntext" placeholder="A note about what you see now (Enter sends, Shift+Enter: new line). It keeps the frame, the step, the positions and any marks drawn since the last note."></textarea>
-    <div class="row"><span id="selInfo">Drag a class to move it; Ctrl+click to select several</span><button id="nsend">Add note</button></div>
+    <div class="row"><span id="selInfo">Drag a class to move it, or a link to bend it; Ctrl+click or Shift+drag selects several</span><button id="nsend">Add note</button></div>
    </div>
   </aside>
 </main>
@@ -219,9 +256,10 @@ footer .grp { display: flex; gap: 4px; align-items: center; }
   <label class="tog" title="Playing speed as a share of the real speed. 100%: the layout plays as fast as it ran in this browser; 10%: ten times as long. Every frame plays for its share of the measured work, so the progress bar's proportions are the work's proportions.">Speed <input type="range" id="speed" min="-1" max="2" step="0.01" value="0.7" style="width:120px"> <span id="speedV">5%</span> <small>of real speed</small></label>
   <label class="tog" title="Keep the whole drawing in view. The drawing stays centered; the view only zooms, gradually, when the drawing outgrows the space or shrinks to under half of it."><input type="checkbox" id="follow" checked> Follow the drawing</label>
   <label class="tog"><input type="checkbox" id="names" checked> Link names</label>
-  <label class="tog"><input type="checkbox" id="marks" checked> Mark links through classes</label>
+  <label class="tog"><input type="checkbox" id="marks" checked> Mark crossings and classes a link runs through</label>
+  <label class="tog" title="Show a handle on each bend while paused: drag it to reshape the link, double-click it to remove it"><input type="checkbox" id="handles" checked> Bend handles</label>
   <span id="result"></span>
-  <div id="scrub" title="Click or drag to move through the layout; right-click a step for more"></div>
+  <div id="scrub" title="Click or drag to move through the layout; right-click a step to do it now on the drawing shown"></div>
   <div id="chips"></div>
 </footer>
 <div id="menu"></div>
@@ -233,6 +271,7 @@ footer .grp { display: flex; gap: 4px; align-items: center; }
 <script src="models4.js"></script>
 <script src="models5.js"></script>
 <script src="models6.js"></script>
+<script src="ttl.js"></script>
 <script src="graphs.js?v=2"></script>
 <script>
 // Plays back a layout step by step: the library reports the positions after every step that moves classes (_ogTraced),
@@ -248,20 +287,29 @@ const STEPS = [ // key, group, name, what it does, color, can it be left out (Ru
   ['cross', 'Placement', 'Crossing swaps', 'A class at the end of a crossed link swaps place with another class, or moves beside a neighbor, when that crosses fewer links.', '#c43d32', true],
   ['thru', 'Placement', 'Off-link moves', 'A class with a link running through its box moves off it, never adding a crossing.', '#e0702b', true],
   ['tight', 'Placement', 'Shortening long links', 'Each class is pulled toward its neighbors when its links get shorter and nothing gets worse; then the whole drawing shrinks as far as the boxes allow.', '#8a6fd1', true],
-  ['leaves', 'Placement', 'One-link classes placed', 'Classes with one link come back, each beside its neighbor in the direction where its link crosses nothing.', '#2f9d6a', false],
+  ['leaves', 'Placement', 'One-link classes placed', 'Classes with one link come back, each beside its neighbor in the direction where its link crosses nothing A long name goes to the side rather than above or below. Each frame is one class with all its one-link classes.', '#2f9d6a', false],
   ['leaffix', 'Placement', 'One-link classes re-placed', 'One-link classes that the moves left too close or on a line are placed again.', '#5fb98a', false],
+  ['tm-start', 'Tidy Mycelium', 'Start: hanging parts set aside', 'Parts that hang off the rest by one class (a leaf, a chain, a small tree, a triangle) are set aside. The class each hangs from keeps room for them: more for more classes, and more again for each separate part, since each needs a slice of its own. The rest, the core, starts where a quick projection of the graph distances puts it. A dense core (more than 2.7 links per class once everything that hangs off is peeled away) is placed the way Mycelium places it instead: only one-link classes are set aside, no room is kept, links inside a group are shorter and between groups longer, and the core is tightened at the end.', '#5b8def', false],
+  ['tm-stress', 'Tidy Mycelium', 'Stress majorization, with room', 'The core\'s classes are pulled toward distances that match how many links apart they are, plus the room each keeps for its hidden parts, so a class with more hidden parts keeps further from the others. A class with many links gets longer links, so its neighbors fit round it in a ring. Links in the core are 1.6 times the usual length: room for the parts placed later, so fewer links cross, without spreading the drawing more than it needs. Each frame is one sweep.', '#3d6fd6', false],
+  ['tm-cross', 'Tidy Mycelium', 'Core crossing swaps', 'Before the hidden parts come back: a class at the end of a crossed link swaps place with another, or moves beside a neighbor, when that crosses fewer links.', '#c43d32', true],
+  ['tm-thru', 'Tidy Mycelium', 'Core off-link moves', 'Before the hidden parts come back: a class with a link running through its box moves off it, never adding a crossing.', '#e0702b', true],
+  ['tm-unit', 'Tidy Mycelium', 'Parts placed in open slices', 'Each part set aside comes back, largest first, fanned out round the class it hangs from, in the slice with the most open space. Rays are cast round that class through a grid of what is drawn already; a larger part also prefers a slice that opens to the outside of the drawing ("don\'t fence me in"). Each frame is one part.', '#1f8577', false],
+  ['tm-leaves', 'Tidy Mycelium', 'One-link classes placed', 'Single classes with one link come back, each beside its neighbor in the direction where its link crosses nothing A long name goes to the side rather than above or below. Each frame is one class with all its one-link classes.', '#2f9d6a', false],
+  ['tm-finish', 'Tidy Mycelium', 'Classes moved off links', 'Boxes that touch are pushed apart, a class with a link running through it moves off it, and two rounds of tightening draw long links in where that crosses nothing new.', '#9f4f2f', false],
+  ['tm-shrink', 'Tidy Mycelium', 'Pulled in', 'The whole drawing shrinks toward its middle a step at a time, boxes pushed apart after each step; a step is kept only when it adds no crossing and no link through a class, so nothing is pulled across other links. Each frame is one step kept.', '#5b7fa8', true],
   ['e-iter', 'Open-source layout', 'Iterations', 'The open-source layout at work; each frame is a few of its iterations.', '#64748b', false],
   ['e-final', 'Open-source layout', 'Result', 'This layout does not report its steps: its result appears at once, after the time it took.', '#475569', false],
   ['c-single', 'Clean-up', 'Moves into open space', 'A class in a problem moves into nearby open space (cells with no class and no link) or is nudged.', '#d9822b', true],
   ['c-unit', 'Clean-up', 'Leaf units turned', 'A leaf, leaf chain or leaf triangle hanging off one class is turned, mirrored or resized around it.', '#1f8577', true],
-  ['c-spread', 'Clean-up', 'Crowds spread outward', 'Where problems pile up, the region is pushed outward in 8 slices, more toward open space, then repaired; kept only if better.', '#2f5fb3', true],
+  ['c-spread', 'Clean-up', 'Crowds spread outward', 'Where problems pile up, the region is pushed outward in 8 slices, more toward open space, then repaired; kept only if better. A region that would push more than half of all classes is not tried: that would only enlarge the whole drawing.', '#2f5fb3', true],
   ['c-group', 'Clean-up', 'Group moves', 'The classes on one side of a remaining problem move together away from the line, with a few repair moves; kept only if better.', '#b5548c', true],
-  ['c-finish', 'Clean-up', 'Final leaf pass', 'A last pass over leaf units and single classes still in a problem.', '#6f9a54', true],
+  ['c-finish', 'Clean-up', 'Final leaf pass', 'A last pass over leaf units and single classes still in a problem. Left out when the last such passes found nothing and nothing has moved since.', '#6f9a54', true],
   ['c-swap', 'Clean-up', 'Leaves trade places', 'Two one-link classes of the same class trade places when that leaves fewer problems (a shorter box fits where a longer one was in the way).', '#94a34a', true],
   ['c-fence', 'Clean-up', 'Leaves to open space', 'A one-link class whose link still crosses another link or runs through a class moves to the most open spot round its neighbor: fewest problems first, then the most room around it, then the shorter link.', '#4d9a8a', true],
   ['c-nudge', 'Clean-up', 'Pushed off a link', 'A class that a link runs through (or passes within 9 px of) is pushed sideways off the line just far enough, or a one-link class turns round its neighbor; kept only if it leaves fewer problems.', '#a0703c', true],
-  ['c-pull', 'Clean-up', 'Pulled in from the edge', 'A part hanging off the rest by one link (a one-link class, a chain, a small tree) turns round the class it hangs from or draws in toward it, and whole groups slide toward the middle, into open space; kept only if the drawing gets smaller (or the links of the part much shorter) with no more problems.', '#5b7fa8', true],
-  ['edit', 'Your edit', 'Moved by hand', 'The positions as you left them (here, or in the Layout Lab); the steps after this one were run again from there.', '#e0a100', false],
+  ['c-pull', 'Clean-up', 'Pulled in from the edge', 'A part hanging off the rest by one link (a one-link class, a chain, a small tree) turns round the class it hangs from or draws in toward it, and whole groups slide toward the middle, into open space; kept only if the drawing gets smaller (or the links of the part much shorter) with no more problems. Only a part in a problem, or one whose link is drawn out (more than 150 px between the boxes), is moved: a part that is fine where it is stays. A group slides only when that makes the drawing at least 10% smaller.', '#5b7fa8', true],
+  ['c-compact', 'Clean-up', 'Empty space taken in', 'The last step of Tidy Mycelium. First and last, bands and islands: everything beyond a line across the drawing (from each side and each corner, an outer sixth, a third or half of the way in) moves inward as one block, taking along any class in its way, as long as nothing overlaps, every name fits and no problem is added. Between those, each class, carrying the parts that hang from it, steps toward the middle of the drawing, toward the classes it links to, or toward the class it hangs from, or straight in from the edge, as long as that adds no crossing, no link through a class and no two links lying on each other, keeps boxes 20 px apart and leaves each link room for its name. Outermost first; one frame per round. A part hanging on the edge of the drawing turns round its class into open space inside only when there is ample room there, it adds no crossing, and the drawing gets at least 3% smaller. Two links from one class that lie on each other are turned a few degrees apart. A class pushed just clear of a link that runs through it, when that leaves fewer problems.', '#3f7d6e', true],
+  ['edit', 'Your edit', 'Changed by hand', 'The drawing as you left it: classes you moved (the steps after this one were run again from there) or a link you bent.', '#e0a100', false],
   ['r-arcs', 'Links', 'Parallel links as arcs', 'Two or more links between the same two classes (a link and its reverse, or two relationships) spread into arcs, so none hides another.', '#0e7490', true],
   ['r-loops', 'Links', 'Self-link loops', 'A link from a class to itself becomes a loop on its emptiest side.', '#0891b2', false],
   ['r-bends', 'Links', 'Bends round obstacles', 'A link that still runs through a class (or crosses others when that pays off) bends round it; one link per frame.', '#be185d', true],
@@ -280,6 +328,7 @@ const saveCtl = () => store.set('ctl2', CTL);
 // steps that can run in another order
 const ORD = { place: store.get('order:place', ['cross', 'thru', 'tight']), clean: store.get('order:clean', ['c-single', 'c-unit', 'c-spread', 'c-group']) };
 const ordOf = (k) => (ORD.place.includes(k) ? 'place' : ORD.clean.includes(k) ? 'clean' : null);
+let LINES = store.get('lines', 'auto'); // what the link steps do: auto (bends round classes and away from crossings), round (round classes only), straight (none)
 const VERBS = ['has', 'relatedTo', 'ownedBy', 'partOf', 'uses'];
 const esc = (t) => String(t).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/"/g, '&quot;');
 const fmtMs = (ms) => (ms >= 1000 ? (ms / 1000).toFixed(2) + ' s' : ms >= 10 ? Math.round(ms) + ' ms' : ms >= 1 ? ms.toFixed(1) + ' ms' : ms.toFixed(2) + ' ms');
@@ -291,7 +340,6 @@ const TOO_BIG = new Set(['huge', 'hx_md1200', 'pb_cl', 'sf400']);
 const groups = [['Development graphs', DEV.filter((k) => MODELS[k])], ['Other training graphs', Object.keys(MODELS).filter((k) => !DEV.includes(k) && !/^(hx_|pb_)/.test(k) && !TOO_BIG.has(k))],
   ['Unseen: held-out graphs', Object.keys(MODELS).filter((k) => k.startsWith('hx_') && !TOO_BIG.has(k))], ['Unseen: public ontologies and Rome graphs', Object.keys(MODELS).filter((k) => k.startsWith('pb_') && !TOO_BIG.has(k))]];
 const graphName = (k) => DEVN[k] || (MODELS[k].name || k).replace(/^Public: /, '');
-if (LayoutGraphs.imported().length) groups.unshift(['Your graphs (opened in the Lab)', LayoutGraphs.imported()]);
 groups.forEach(([label, keys]) => { const g = document.createElement('optgroup'); g.label = label; keys.forEach((k) => { const o = document.createElement('option'); o.value = k; o.textContent = graphName(k); g.appendChild(o); }); $('graph').appendChild(g); });
 
 // ---------- open-source layouts, loaded when first chosen (default settings, as in the benchmark) ----------
@@ -346,7 +394,7 @@ function graphOf(key, Md) {
   // link names: the graph's own (an imported ontology's property labels), else made up ("has" plus the target class)
   const seen = new Map(), E = Md.edges.map((e) => { const sub = e.kind === 'sub'; let name = ''; if (!sub) { const k = e.s + '>' + e.t, i = seen.get(k) || 0; seen.set(k, i + 1); name = e.name || VERBS[i % VERBS.length] + labels[e.t]; } return { s: e.s, t: e.t, sub, name }; });
   const edges = E.filter((e) => e.s !== e.t).map((e) => [e.s, e.t, e.sub ? 2 : 1]);
-  return { key, labels, D, n, E, edges, E2: edges.map(([s, t]) => ({ s, t })), items: D.map((d) => ({ w: d.w, h: d.h })), N: D.map((d) => ({ w: d.w + 16, h: d.h + 12 })) };
+  return { key, labels, iris: Md.iris, D, n, E, edges, E2: edges.map(([s, t]) => ({ s, t })), items: D.map((d) => ({ w: d.w, h: d.h })), N: D.map((d) => ({ w: d.w + 16, h: d.h + 12 })) };
 }
 function recordOurs(G, algo, seed) {
   const n = G.n, skip = {}; ORD.place.forEach((k) => { if (!ctl(k).run) skip[k] = true; }); O.tune.skip = skip; O.tune.order = ORD.place.slice();
@@ -357,7 +405,7 @@ function recordOurs(G, algo, seed) {
     keepRestart(r) { const keep = [], drop = []; cur.frames.forEach((f) => (f.r < 0 || f.r === r ? keep : drop).push(f)); cur.frames = keep;
       if (drop.length) { const starts = new Set(drop.map((f) => f.r)).size; keep.push({ key: 'restart', P: keep[keep.length - 1].P, r: -1, ms: drop.reduce((s, f) => s + f.ms, 0), hold: true, note: `${starts} other start${starts > 1 ? 's' : ''} tried and dropped; the one shown ended with the fewest crossings.` }); }
       rtag = -1; },
-    snap(stage, P, info) { if (!cur) return; const t = performance.now(); if (info && info.v != null) cur.hidden[info.v] = 0; if (info && info.D) cur.D = info.D;
+    snap(stage, P, info) { if (!cur) return; const t = performance.now(); if (info && info.v != null) cur.hidden[info.v] = 0; if (info && info.show) info.show.forEach((v) => (cur.hidden[v] = 0)); if (info && info.D) cur.D = info.D;
       const A = new Float64Array(2 * n).fill(NaN), map = sink.map;
       if (map) map.forEach((v, k) => { A[2 * v] = P[k].x; A[2 * v + 1] = P[k].y; });
       else for (let v = 0; v < n; v++) if (!cur.hidden[v]) { A[2 * v] = P[v].x; A[2 * v + 1] = P[v].y; }
@@ -369,8 +417,46 @@ function recordOurs(G, algo, seed) {
   const tEnd = performance.now(), P = res.pos.map((p) => ({ x: p.x, y: p.y })); O.sep(P, G.N, 6, 200); const tSep = performance.now();
   const win = runs.find((r) => r.name === chosen) || runs[runs.length - 1], wi = runs.indexOf(win);
   const frames = [{ key: 'start', P: new Float64Array(2 * n).fill(NaN), ms: 0, run: -1 }]; // the empty canvas: the start fades in where it is
-  runs.forEach((r, i) => { if (r !== win) r.frames.forEach((f) => frames.push({ key: 'variant:' + r.name, P: f.P, ms: f.ms, run: i })); });
+  variantFrames(runs, win, frames);
   win.frames.forEach((f) => frames.push({ key: f.key, P: f.P, ms: f.ms, run: wi, hold: f.hold, note: f.note }));
+  frames.push({ key: 'separate', P: flat(P), ms: (tEnd - tLast) + (tSep - tEnd), run: wi });
+  return { frames, P, runs: runs.map((r) => ({ D: r.D, core: r.core })), variants: runs.map((r) => ({ name: r.name, score: r.score, kept: r === win, frames: r.frames.length })), run: wi };
+}
+// The variants not kept: each is a whole layout of its own, played to its end, then set aside for the one that scores best,
+// which starts again from an empty canvas. A held frame at the end of each says so, with the scores.
+function variantFrames(runs, win, frames) {
+  const sc = (r) => (r.score == null ? '?' : Math.round(r.score));
+  runs.forEach((r, i) => { if (r === win || !r.frames.length) return;
+    r.frames.forEach((f) => frames.push({ key: 'variant:' + r.name, P: f.P, ms: f.ms, run: i }));
+    frames.push({ key: 'variant:' + r.name, P: r.frames[r.frames.length - 1].P, ms: 0, run: i, hold: true,
+      note: `${r.name} ends here and is set aside: its score is ${sc(r)}, ${win.name} scores ${sc(win)} (lower is better). ${win.name} plays next from an empty canvas; nothing of ${r.name} carries over.` }); });
+}
+// Tidy Mycelium (in the library), recorded the same way: the core's sweeps and moves, each part as it comes back, the pull-in
+function recordTidy(G, seed) {
+  const n = G.n, runs = []; let cur = null, rtag = -1, chosen = null, tLast = 0, room = null;
+  const KEY = { stress: 'tm-stress', cross: 'tm-cross', leaves: 'tm-leaves' }, CORE = /^(tm-start|restart|tm-stress|separate|tm-cross|tm-thru)$/;
+  const sink = { map: null, tmPhase: 'core',
+    begin(name, nn, core, hide) { cur = { name, frames: [], hidden: new Uint8Array(n), score: null, D: null, core: core.slice() }; hide.forEach((u, v) => { if (u >= 0) cur.hidden[v] = 1; }); runs.push(cur); rtag = 0; room = null; tLast = performance.now(); },
+    restart(r) { rtag = r; },
+    keepRestart(r) { const keep = [], drop = []; cur.frames.forEach((f) => (f.r < 0 || f.r === r ? keep : drop).push(f)); cur.frames = keep;
+      if (drop.length) { const starts = new Set(drop.map((f) => f.r)).size; keep.push({ key: 'restart', P: keep[keep.length - 1].P, r: -1, ms: drop.reduce((a, f) => a + f.ms, 0), hold: true, ov: room ? { room } : null, note: `${starts} other start${starts > 1 ? 's' : ''} tried and dropped; the one shown ended with the fewest crossings.` }); }
+      rtag = -1; },
+    snap(stage, P, info) { if (!cur) return; const t = performance.now(), key = stage === 'tight' ? (sink.tmPhase === 'fin' ? 'tm-finish' : 'tm-thru') : KEY[stage] || (stage === 'thru' ? (sink.tmPhase === 'fin' ? 'tm-finish' : 'tm-thru') : stage);
+      if (info && info.show) info.show.forEach((v) => (cur.hidden[v] = 0)); if (info && info.v != null) cur.hidden[info.v] = 0; if (info && info.D) cur.D = info.D; if (info && info.room) room = info.room;
+      const A = new Float64Array(2 * n).fill(NaN), map = sink.map;
+      if (map) map.forEach((v, k) => { A[2 * v] = P[k].x; A[2 * v + 1] = P[k].y; });
+      else for (let v = 0; v < n; v++) if (!cur.hidden[v] && P[v]) { A[2 * v] = P[v].x; A[2 * v + 1] = P[v].y; }
+      const ov = info && info.ov ? info.ov : room && CORE.test(key) ? { room } : null;
+      cur.frames.push({ key, P: A, r: rtag, ms: t - tLast, ov, from: info && info.from != null ? info.from : undefined, note: undefined }); tLast = performance.now(); },
+    score(name, s) { const r = runs.find((x) => x.name === name); if (r) r.score = s; },
+    chosen(name) { chosen = name; } };
+  const tm = { finCross: ctl('tm-cross').run, finThru: ctl('tm-thru').run, shrink: ctl('tm-shrink').run ? _TM_DEF.shrink : false };
+  let res; tLast = performance.now(); res = O.clocked(() => O.traced(sink, () => _tmBest(G.items, G.edges, { seed, tm, variant: TM_PREFER[G.algo] })));
+  const tEnd = performance.now(), P = res.pos.map((p) => ({ x: p.x, y: p.y })); O.sep(P, G.N, 6, 200); const tSep = performance.now();
+  const win = runs.find((r) => r.name === chosen) || runs[runs.length - 1], wi = runs.indexOf(win);
+  const frames = [{ key: 'start', P: new Float64Array(2 * n).fill(NaN), ms: 0, run: -1 }];
+  variantFrames(runs, win, frames);
+  win.frames.forEach((f) => frames.push({ key: f.key, P: f.P, ms: f.ms, run: wi, hold: f.hold, note: f.note, ov: f.ov, from: f.from }));
   frames.push({ key: 'separate', P: flat(P), ms: (tEnd - tLast) + (tSep - tEnd), run: wi });
   return { frames, P, runs: runs.map((r) => ({ D: r.D, core: r.core })), variants: runs.map((r) => ({ name: r.name, score: r.score, kept: r === win, frames: r.frames.length })), run: wi };
 }
@@ -384,32 +470,42 @@ async function recordEngine(G, algo, seed) {
   const t2 = performance.now(); O.sep(P, G.N, 6, 200); frames.push({ key: 'separate', P: flat(P), ms: performance.now() - t2, run: 0, note: 'The same overlap removal every layout gets in the comparisons.' });
   return { frames, P, runs: [], variants: [], run: 0 };
 }
+// The clean-up (_ogHandTidy) from positions P, its log turned into frames: one per move kept, a held frame per round
+function cleanFrames(G, P, opt, run) {
+  const frames = [], info = {}, w0 = performance.now();
+  const r = O.clocked(() => O.tidy.run(P, G.items, G.E2, { ...opt, record: true }));
+  const wall = performance.now() - w0; let tTot = 0; r.log.forEach((s) => { tTot = Math.max(tTot, s.t || 0, s.kind === 'phase-end' ? s.t0 + s.ms : 0); });
+  const k = tTot > 0 ? wall / tTot : 0; // the log's work-clock ms -> ms measured here
+  let Q = P.map((p) => ({ ...p })), phase = 'single', prevT = 0, inPhase = 0, grid = null, dropped = [];
+  const push = (f) => { if (dropped.length) { f.ov = { ...(f.ov || {}), dropped };
+      const cls = dropped.reduce((a, t) => a + t.nodes.length, 0);
+      f.note = `${dropped.length} group move${dropped.length > 1 ? 's' : ''} tried and thrown away just before this (dashed boxes: where ${cls} class${cls > 1 ? 'es' : ''} would have gone; none was drawn, since each left more problems).` + (f.note ? ' ' + f.note : ''); dropped = []; }
+    frames.push({ run, ...f }); inPhase++; };
+  for (const s of r.log) {
+    if (s.kind === 'phase') { phase = s.phase; prevT = s.t; inPhase = 0; grid = s.grid || null; continue; }
+    const key = 'c-' + phase;
+    if (s.kind === 'phase-end') { const I = (info[key] = info[key] || { tried: 0, kept: 0, skipped: 0, rounds: 0 }); I.tried += s.tried; I.kept += s.kept; I.skipped += s.skipped; I.rounds++;
+      const left = (s.t0 + s.ms - prevT) * k; prevT = s.t0 + s.ms;
+      if (s.tried && (left > 0.2 || !inPhase)) push({ key, P: flat(Q), ms: left, hold: true, ov: grid ? { grid } : null, note: `Round ${s.round + 1}: tried ${s.tried}, kept ${s.kept}${s.skipped ? `, skipped ${s.skipped} where nothing had changed` : ''}.` });
+      continue; }
+    if (s.kind === 'group-rejected') { if (s.from) dropped.push({ nodes: s.nodes, from: s.from, dx: s.dx, dy: s.dy, loss: s.loss }); continue; } // its time goes to the next frame
+    const ms = (s.t - prevT) * k; prevT = s.t;
+    if (s.kind === 'move' || s.kind === 'unit' || s.kind === 'spread') {
+      const ov = s.kind === 'spread' ? { spread: s } : grid && s.kind === 'move' ? { grid, from: s.from && s.from[0] } : null;
+      if (s.pushed) { const Qp = Q.map((p) => ({ ...p })); s.pushed.forEach(([v, x, y]) => (Qp[v] = { x, y })); push({ key, P: flat(Qp), ms: ms / 2, ov, note: 'Pushed outward, slice by slice; repair moves follow.' }); }
+      s.nodes.forEach((v, i) => (Q[v] = { x: s.to[i][0], y: s.to[i][1] })); push({ key, P: flat(Q), moved: s.nodes, ms: s.pushed ? ms / 2 : ms, ov });
+    } else if (s.kind === 'group') { s.after.forEach(([v, x, y]) => (Q[v] = { x, y })); push({ key, P: flat(Q), moved: s.after.map((a) => a[0]), ms, ov: { group: s } }); }
+  }
+  return { frames, info, P: r.P.map((p) => ({ x: p.x, y: p.y })) };
+}
+// the links with the width of their names (for the room the last step of Tidy Mycelium keeps along each link)
+const namedLinks = (G) => G.E.filter((e) => e.s !== e.t).map((e) => [e.s, e.t, e.sub ? 2 : 1, e.name ? e.name.length * 6 + 8 : 0]);
 // the clean-up (ours only) and the link steps, from positions P
 function tailFrames(G, P, { cleanup, budgetMs, links, run }) {
   const frames = [], info = {}; let Pc = P;
   if (cleanup && budgetMs >= 100) {
-    const order = ORD.clean.filter((k) => ctl(k).run).map((k) => k.slice(2)), w0 = performance.now();
-    const r = O.clocked(() => O.tidy.run(P, G.items, G.E2, { budgetMs, record: true, order, spread: ctl('c-spread').run, groups: ctl('c-group').run, finish: ctl('c-finish').run }));
-    const wall = performance.now() - w0; let tTot = 0; r.log.forEach((s) => { tTot = Math.max(tTot, s.t || 0, s.kind === 'phase-end' ? s.t0 + s.ms : 0); });
-    const k = tTot > 0 ? wall / tTot : 0; // the log's work-clock ms -> ms measured here
-    let Q = P.map((p) => ({ ...p })), phase = 'single', prevT = 0, inPhase = 0, grid = null;
-    const push = (f) => { frames.push({ run, ...f }); inPhase++; };
-    for (const s of r.log) {
-      if (s.kind === 'phase') { phase = s.phase; prevT = s.t; inPhase = 0; grid = s.grid || null; continue; }
-      const key = 'c-' + phase;
-      if (s.kind === 'phase-end') { const I = (info[key] = info[key] || { tried: 0, kept: 0, skipped: 0, rounds: 0 }); I.tried += s.tried; I.kept += s.kept; I.skipped += s.skipped; I.rounds++;
-        const left = (s.t0 + s.ms - prevT) * k; prevT = s.t0 + s.ms;
-        if (s.tried && (left > 0.2 || !inPhase)) frames.push({ key, P: flat(Q), ms: left, run, hold: true, ov: grid ? { grid } : null, note: `Round ${s.round + 1}: tried ${s.tried}, kept ${s.kept}${s.skipped ? `, skipped ${s.skipped} where nothing had changed` : ''}.` });
-        continue; }
-      if (s.kind === 'group-rejected') continue; // its time goes to the next frame
-      const ms = (s.t - prevT) * k; prevT = s.t;
-      if (s.kind === 'move' || s.kind === 'unit' || s.kind === 'spread') {
-        const ov = s.kind === 'spread' ? { spread: s } : grid && s.kind === 'move' ? { grid, from: s.from && s.from[0] } : null;
-        if (s.pushed) { const Qp = Q.map((p) => ({ ...p })); s.pushed.forEach(([v, x, y]) => (Qp[v] = { x, y })); push({ key, P: flat(Qp), ms: ms / 2, ov, note: 'Pushed outward, slice by slice; repair moves follow.' }); }
-        s.nodes.forEach((v, i) => (Q[v] = { x: s.to[i][0], y: s.to[i][1] })); push({ key, P: flat(Q), moved: s.nodes, ms: s.pushed ? ms / 2 : ms, ov });
-      } else if (s.kind === 'group') { s.after.forEach(([v, x, y]) => (Q[v] = { x, y })); push({ key, P: flat(Q), moved: s.after.map((a) => a[0]), ms, ov: { group: s } }); }
-    }
-    Pc = r.P.map((p) => ({ x: p.x, y: p.y }));
+    const c = cleanFrames(G, P, { budgetMs, order: ORD.clean.filter((k) => ctl(k).run).map((k) => k.slice(2)), spread: ctl('c-spread').run, groups: ctl('c-group').run, finish: ctl('c-finish').run }, run);
+    frames.push(...c.frames); Object.assign(info, c.info); Pc = c.P;
   }
   if (cleanup) { // the passes the layouts run after the clean-up: leaf swaps, leaves to open space, classes pushed off links
     const keep = { noSwap: O.tune.noSwap, noFence: O.tune.noFence, noNudge: O.tune.noNudge };
@@ -417,11 +513,12 @@ function tailFrames(G, P, { cleanup, budgetMs, links, run }) {
     let tl = performance.now(); const sink = { map: null, begin() {}, restart() {}, keepRestart() {}, score() {}, chosen() {},
       snap(stage, Q) { const t = performance.now(); frames.push({ key: 'c-' + stage, P: flat(Q), ms: t - tl, run }); tl = performance.now(); } };
     try { const EL = G.E.filter((e) => e.s !== e.t).map((e) => [e.s, e.t]); Pc = O.clocked(() => O.traced(sink, () => O.leafSwap(Pc, G.items, EL)));
-      if (ctl('c-pull').run) Pc = O.clocked(() => O.traced(sink, () => O.pullIn(Pc, G.items, EL))); } finally { Object.assign(O.tune, keep); }
+      if (ctl('c-pull').run) Pc = O.clocked(() => O.traced(sink, () => O.pullIn(Pc, G.items, EL)));
+      if (isTM(G.algo) && ctl('c-compact').run) Pc = O.clocked(() => O.traced(sink, () => _tmBest.compact(Pc, G.items, namedLinks(G), TM_PREFER[G.algo] ? _TM_VAR[TM_PREFER[G.algo]].cp : undefined))); } finally { Object.assign(O.tune, keep); }
   }
-  if (!links) return { frames, info, P: Pc };
+  if (!links || LINES === 'straight') return { frames, info, P: Pc };
   // the links, one routing step at a time, on the final positions
-  const RE = G.E.map((e) => [e.s, e.t, e.sub ? 2 : 1, e.name ? e.name.length * 6 + 8 : 0]), FP = flat(Pc), base = { sep: ctl('r-arcs').run ? 24 : 0 };
+  const RE = G.E.map((e) => [e.s, e.t, e.sub ? 2 : 1, e.name ? e.name.length * 6 + 8 : 0]), FP = flat(Pc), base = { sep: ctl('r-arcs').run ? 24 : 0, crossBends: LINES === 'auto' };
   let last = null; const route = (o) => { const w0 = performance.now(), r = O.route(Pc, G.D, RE, { ...base, settle: false, ...o }); last = { r, wall: performance.now() - w0 }; return r.routes; };
   const r1 = route({ bends: false, ports: 0, labels: false }), r2 = ctl('r-bends').run ? route({ ports: 0, labels: false }) : r1;
   const r3 = ctl('r-ports').run ? route({ bends: ctl('r-bends').run, labels: false }) : r2, r4 = ctl('r-names').run ? route({ bends: ctl('r-bends').run, ports: ctl('r-ports').run ? 3 : 0 }) : r3;
@@ -457,22 +554,25 @@ showX();
 // would misstate what each step costs: before the first recording, the same run is recorded once and thrown away.
 let warmed = false;
 async function recordRun(key, algo, seed) {
-  const Md = await MODELS[key].load(), G = graphOf(key, Md), engine = !!ENGINES[algo], limit = +$('limit').value;
+  const Md = await MODELS[key].load(), G = graphOf(key, Md), engine = !!ENGINES[algo], limit = +$('limit').value; G.algo = algo;
   const prev = O.setTimeLimit(limit);
   try {
     const xk = engine ? [] : Object.keys(XT); xk.forEach((k) => (O.tune[k] = XT[k]));
-    let head; const t0 = O.now(); try { head = engine ? await recordEngine(G, algo, seed) : recordOurs(G, algo, seed); } finally { xk.forEach((k) => delete O.tune[k]); }
+    let head; const t0 = O.now(); try { head = engine ? await recordEngine(G, algo, seed) : isTM(algo) ? recordTidy(G, seed) : recordOurs(G, algo, seed); } finally { xk.forEach((k) => delete O.tune[k]); }
     // the clean-up gets what is left of the time limit, at most a third of it, as in the layouts
     const budgetMs = Math.min(500, 1500 - (O.now() - t0));
     const tail = tailFrames(G, head.P, { cleanup: !engine, budgetMs, links: !engine || $('ourLinks').checked, run: head.run });
-    return { ...G, algo, seed, limit, engine, frames: head.frames.concat(tail.frames), runs: head.runs, variants: head.variants, info: tail.info, run: head.run, budgetMs, mcache: new Map() };
+    const frames = head.frames.concat(tail.frames); idleNotes(frames);
+    return { ...G, algo, seed, limit, engine, frames, runs: head.runs, variants: head.variants, info: tail.info, run: head.run, budgetMs, mcache: new Map() };
   } finally { O.setTimeLimit(prev); }
 }
-// An edit made in the Layout Lab: keep the frames up to where it was made, then run the clean-up and the links again from it
-function applyEdit(msg) {
-  if (!R || msg.graph !== R.key || msg.n !== R.n) return;
-  if (!R.base) R.base = { frames: R.frames, j: C ? C.fj : R.frames.length - 1, info: R.info };
-  const j = R.base.j; editFrom(R.base.frames.slice(0, j + 1), j, msg.P.map((p) => (p ? { x: p[0], y: p[1] } : null)), 'lab');
+// A frame in which no class moved (and no link changed) still shows the time it took: say so, so that a step that spends time
+// and changes nothing is plain to see.
+function idleNotes(frames) {
+  for (let j = 1; j < frames.length; j++) { const f = frames[j], g = frames[j - 1];
+    if (f.note || f.hold || f.key === 'start' || f.key.startsWith('variant:') || f.run !== g.run || f.ms < 0.5 || f.routes !== g.routes && (f.routes || g.routes) && JSON.stringify(f.routes) !== JSON.stringify(g.routes)) continue;
+    let same = true; for (let i = 0; i < f.P.length && same; i++) if (!(f.P[i] === g.P[i] || (isNaN(f.P[i]) && isNaN(g.P[i])) || Math.abs(f.P[i] - g.P[i]) < 0.05)) same = false;
+    if (same) f.note = `Nothing moved here: ${fmtMs(f.ms)} of work checked and found nothing to change.`; }
 }
 // The frames up to frame j are kept; from the positions P (null: as in frame j; not placed yet: where the layout's own run ended) the
 // clean-up and the link steps run again. An edit made during the link steps reruns only the link steps.
@@ -481,14 +581,86 @@ function editFrom(F, j, Pin, src) {
   const P = Pin.map((p, v) => p || (isNaN(last[2 * v]) ? { x: fin[2 * v], y: fin[2 * v + 1] } : { x: last[2 * v], y: last[2 * v + 1] })).map((p) => (isNaN(p.x) ? { x: 0, y: 0 } : p));
   const inLinks = F[j].key.startsWith('r-'), prev = O.setTimeLimit(R.limit);
   let tail; try { tail = tailFrames(R, P, { cleanup: !R.engine && !inLinks, budgetMs: Math.max(100, Math.min(500, R.budgetMs || 500)), links: !R.engine || $('ourLinks').checked, run: F[j].run }); } finally { O.setTimeLimit(prev); }
+  if (LINES === 'straight' && F[j].routes) tail.frames.forEach((f) => { if (!f.routes) f.routes = F[j].routes; });
   const moved = []; for (let v = 0; v < R.n; v++) if (!isNaN(last[2 * v]) && Math.hypot(P[v].x - last[2 * v], P[v].y - last[2 * v + 1]) > 0.5) moved.push(v);
-  R.frames = F.concat([{ key: 'edit', P: flat(P), ms: 0, run: F[j].run, moved, routes: F[j].routes, note: `${moved.length} class${moved.length === 1 ? '' : 'es'} moved by hand${src === 'lab' ? ' in the Layout Lab' : ''}. ${inLinks ? 'The link steps' : 'The clean-up and the link steps'} were run again from here: press Play.` }], tail.frames);
-  R.info = { ...R.base.info, ...tail.info }; R.mcache = new Map();
+  R.frames = F.concat([{ key: 'edit', P: flat(P), ms: 0, run: F[j].run, moved, routes: F[j].routes, note: `${moved.length} class${moved.length === 1 ? '' : 'es'} moved by hand. ${inLinks ? 'The link steps' : 'The clean-up and the link steps'} were run again from here: press Play.` }], tail.frames);
+  idleNotes(R.frames); R.info = { ...R.base.info, ...tail.info }; R.mcache = new Map();
   pause(); timeline(); buildPanel(); T = TL.at[j + 1]; countsFor = -1; render();
-  $('editTxt').textContent = src === 'lab' ? 'Continuing from your edit in the Layout Lab' : 'Continuing from your edit'; $('editBar').classList.add('on');
+  $('editTxt').textContent = 'Continuing from your edit (Ctrl+Z undoes it)'; $('editBar').classList.add('on');
   return moved;
 }
-$('editDrop').onclick = () => { if (!R || !R.base) return; note('edit-discarded', {}); R.frames = R.base.frames; R.info = R.base.info; const j = R.base.j; R.base = null; R.mcache = new Map(); $('editBar').classList.remove('on'); timeline(); buildPanel(); T = TL.at[j]; countsFor = -1; render(); };
+// ---------- a step done again by hand, on the drawing shown (right-click a step) ----------
+// Each step's own method runs once more on the positions on screen, with its usual time or four times it. Placement steps
+// work on the classes placed so far; the frames before stay, the new ones follow (and, if asked, the steps after it again).
+const REDO_PLACE = { stress: 'stress', 'tm-stress': 'stress', separate: 'separate', cross: 'cross', 'tm-cross': 'cross', thru: 'thru', 'tm-thru': 'thru', 'tm-finish': 'thru', tight: 'tight', 'tm-shrink': 'shrink' };
+const REDO_LEAF = new Set(['leaves', 'leaffix', 'tm-leaves']);
+function canRedo(k) { if (!R || R.engine) return false; if (k === 'stress' || k === 'tm-stress') return !!(R.runs && R.runs.some((r) => r && r.D));
+  return !!REDO_PLACE[k] || REDO_LEAF.has(k) || /^c-(single|unit|spread|group|finish|swap|fence|nudge|pull|compact)$/.test(k) || (k.startsWith('r-') && LINES !== 'straight'); }
+const hasBudget = (k) => !!REDO_PLACE[k] || REDO_LEAF.has(k) || /^c-(single|unit|spread|group|finish)$/.test(k);
+function stepNow(k, P, mult, run) {
+  const n = R.n, frames = [], now = () => performance.now(); let tl = now(), cur = P.map((p) => p && { x: p.x, y: p.y });
+  const sink = { map: null, begin() {}, restart() {}, keepRestart() {}, score() {}, chosen() {},
+    snap(stage, Q) { if (sink.map) sink.map.forEach((v, i) => { const o = cur[v]; cur[v] = { x: Q[i].x, y: Q[i].y }; if (sink.follow && o) (sink.follow.get(v) || []).forEach((u) => { if (cur[u]) cur[u] = { x: cur[u].x + cur[v].x - o.x, y: cur[u].y + cur[v].y - o.y }; }); }); else Q.forEach((q, v) => { if (q && cur[v]) cur[v] = { x: q.x, y: q.y }; });
+      const t = now(); frames.push({ key: k, P: flat(cur.map((p) => p || { x: NaN, y: NaN })), ms: t - tl, run }); tl = now(); } };
+  const traced = (fn) => O.clocked(() => O.traced(sink, fn));
+  const fill = () => { const fin = R.frames[R.frames.length - 1].P; return cur.map((p, v) => p || { x: fin[2 * v], y: fin[2 * v + 1] }); };
+  let info = {};
+  if (REDO_PLACE[k]) { // on the classes placed so far
+    const what = REDO_PLACE[k];
+    if (what === 'stress') { const rr = R.runs[run] && R.runs[run].D ? R.runs[run] : R.runs.find((x) => x && x.D), core = rr.core.filter((v) => cur[v]);
+      const ix = core.map((v) => rr.core.indexOf(v)), D = ix.map((a) => ix.map((b) => rr.D[a][b])), PC = core.map((v) => ({ ...cur[v] }));
+      // the classes outside the core (placed already) move with the core class they hang from: the nearest one through classes outside the core
+      const nb = Array.from({ length: n }, () => []); R.E2.forEach((e) => { nb[e.s].push(e.t); nb[e.t].push(e.s); });
+      const follow = new Map(core.map((v) => [v, []])), seen = new Set(core); let q = core.slice();
+      const own = new Map(core.map((v) => [v, v]));
+      for (let i = 0; i < q.length; i++) { const v = q[i]; for (const u of nb[v]) if (!seen.has(u)) { seen.add(u); own.set(u, own.get(v)); if (cur[u]) follow.get(own.get(v)).push(u); q.push(u); } }
+      sink.map = core; sink.follow = follow; traced(() => _ogClStress(PC, D, Math.round(40 * mult), O.rng(R.seed + 17), _ogNow() + 150 * mult)); }
+    else { const vis = []; cur.forEach((p, v) => { if (p) vis.push(v); }); const idx = new Map(vis.map((v, i) => [v, i]));
+      const Q = vis.map((v) => ({ ...cur[v] })), N = vis.map((v) => R.N[v]), E2 = R.E2.filter((e) => idx.has(e.s) && idx.has(e.t)).map((e) => ({ s: idx.get(e.s), t: idx.get(e.t) }));
+      sink.map = vis;
+      if (what === 'separate') { O.sep(Q, N, 12, 120); sink.snap(k, Q); }
+      else if (what === 'cross') traced(() => { _ogClFinCross(Q, N, E2, 150 * mult, R.seed); O.sep(Q, N, 12, 120); sink.snap(k, Q); });
+      else if (what === 'thru') traced(() => _ogClFinThru(Q, N, E2, 12, 10, 150 * mult));
+      else if (what === 'tight') traced(() => _ogClFinTight(Q, N, E2, 12, 26, 200 * mult));
+      else if (what === 'shrink') { O.sep(Q, N, 12, 120); const kept = traced(() => _tmShrink(Q, N, E2.map((e) => ({ s: e.s, t: e.t })), { ..._TM_DEF, shrinkMs: 150 * mult }, _ogNow())); info.note = `${kept} shrink step${kept === 1 ? '' : 's'} kept.`; } }
+  } else if (REDO_LEAF.has(k)) { cur = fill(); const leafOf = _ogClLeaves(n, R.E2), Q = cur.map((p) => ({ ...p }));
+    traced(() => _ogClPlaceLeaves(Q, R.N, R.E2, leafOf, new Array(n).fill(40), 170, 10, true, _ogNow() + 200 * mult)); }
+  else if (/^c-(single|unit|spread|group|finish)$/.test(k)) { cur = fill(); const st = k.slice(2);
+    const c = cleanFrames(R, cur, { budgetMs: 500 * mult, order: st === 'finish' ? [] : [st], spread: st === 'spread', groups: st === 'group', finish: st === 'finish' }, run);
+    c.frames.forEach((f) => frames.push({ ...f, key: k })); cur = c.P; info.tried = c.info[k]; }
+  else if (/^c-(swap|fence|nudge|pull|compact)$/.test(k)) { cur = fill(); const EL = R.E.filter((e) => e.s !== e.t).map((e) => [e.s, e.t]), keep = { noSwap: O.tune.noSwap, noFence: O.tune.noFence, noNudge: O.tune.noNudge };
+    try { if (k === 'c-pull') cur = traced(() => O.pullIn(cur, R.items, EL)); else if (k === 'c-compact') cur = traced(() => _tmBest.compact(cur, R.items, namedLinks(R))); else { Object.assign(O.tune, { noSwap: k !== 'c-swap', noFence: k !== 'c-fence', noNudge: k !== 'c-nudge' }); cur = traced(() => O.leafSwap(cur, R.items, EL)); } }
+    finally { Object.assign(O.tune, keep); }
+    frames.forEach((f) => (f.key = k)); }
+  else if (k.startsWith('r-')) { cur = fill(); const t = tailFrames(R, cur, { cleanup: false, links: true, run }); frames.push(...t.frames); cur = t.P; }
+  const P0 = flat(P.map((p) => p || { x: NaN, y: NaN })), last = frames.length ? frames[frames.length - 1].P : P0;
+  let movedAny = false; for (let i = 0; i < last.length; i++) if (!(isNaN(last[i]) && isNaN(P0[i])) && Math.abs(last[i] - P0[i]) > 0.5) { movedAny = true; break; }
+  if (!frames.length) frames.push({ key: k, P: flat(cur.map((p) => p || { x: NaN, y: NaN })), ms: now() - tl, run, hold: !movedAny });
+  if (!movedAny && !k.startsWith('r-')) { frames[frames.length - 1].hold = true; info.none = true; }
+  return { frames, P: cur, info };
+}
+let UNDO = [];
+const pushUndo = () => { UNDO.push({ frames: R.frames, info: R.info, base: R.base, T }); if (UNDO.length > 40) UNDO.shift(); };
+function undo() { const u = UNDO.pop(); if (!u || !R) return; playing = false; R.frames = u.frames; R.info = u.info; R.base = u.base; R.mcache = new Map(); timeline(); buildPanel(); T = Math.min(u.T, TL.total); countsFor = -1;
+  $('editBar').classList.toggle('on', !!R.base); if (R.base) $('editTxt').textContent = 'Undone; earlier changes still apply'; note('undo', {}); render(); }
+function redo(k, mult, cont) {
+  if (!R || !C || !canRedo(k)) return; pause();
+  const j = C.fj, F = R.frames.slice(0, j + 1), run = F[j].run, before = metricsAt(C.dj), ctx = ctxNow();
+  pushUndo(); if (!R.base) R.base = { frames: R.frames, j, info: R.info };
+  $('status').textContent = `Doing “${meta(k)[2]}” again…`;
+  const prev = O.setTimeLimit(R.limit); let res, tail = null;
+  try { res = stepNow(k, C.P, mult, run);
+    if (cont) { const inLinks = k.startsWith('r-'); if (!inLinks) tail = tailFrames(R, res.P.map((p, v) => p || { x: 0, y: 0 }), { cleanup: true, budgetMs: Math.max(100, Math.min(500, R.budgetMs || 500)), links: $('ourLinks').checked || !R.engine, run }); }
+  } finally { O.setTimeLimit(prev); }
+  const ms = res.frames.reduce((a, f) => a + (f.ms || 0), 0), f0 = res.frames[0];
+  f0.note = `Done again by hand on frame ${j + 1}${mult > 1 ? `, with ${mult}× its time` : ''}: ${res.frames.length} frame${res.frames.length > 1 ? 's' : ''}, ${fmtMs(ms)} of work${res.info.none ? '; nothing moved' : ''}.${res.info.note ? ' ' + res.info.note : ''}${cont ? ' The steps after it ran again from there.' : ' Right-click any step to do it now as well.'}`;
+  R.frames = F.concat(res.frames, tail ? tail.frames : []); R.info = { ...R.base.info, ...(tail ? tail.info : {}) }; R.mcache = new Map();
+  timeline(); buildPanel(); countsFor = -1; T = TL.at[j]; userView = false;
+  $('editTxt').textContent = `“${meta(k)[2]}” done again by hand`; $('editBar').classList.add('on'); $('status').textContent = `${R.n} classes, ${R.E.length} links`;
+  note('redo', { key: k, redo: meta(k)[2], mult, then: !!cont, ...ctx, before: brief(before), after: brief(metricsAt(R.frames.length - 1 - (tail ? tail.frames.length : 0))) });
+  play();
+}
+$('editDrop').onclick = () => { if (!R || !R.base) return; pushUndo(); note('edit-discarded', {}); R.frames = R.base.frames; R.info = R.base.info; const j = R.base.j; R.base = null; R.mcache = new Map(); $('editBar').classList.remove('on'); timeline(); buildPanel(); T = TL.at[j]; countsFor = -1; render(); };
 
 // ---------- the timeline ----------
 // The timeline is in seconds of measured work: frame j > 0 is reached by a transition as long as the work that led to it.
@@ -498,7 +670,7 @@ const frameDur = (f) => Math.max(0, f.ms || 0) / 1000;
 function timeline() { const F = R.frames, at = [0], disp = [0];
   for (let j = 1; j < F.length; j++) { at.push(at[j - 1] + frameDur(F[j])); disp.push(ctl(F[j].key).show ? j : disp[j - 1]); }
   TL = { at, disp, total: at[at.length - 1] || 0.001 }; }
-const meta = (k) => k.startsWith('variant:') ? ['variant', 'Variants not kept', `Variant "${k.slice(8)}"`, 'Best Read (and Tidy Stress on small graphs) runs several variants and keeps the best-scoring drawing; this one was not kept.', '#b0b7c3', false] : STEPS[SI[k]] || [k, '', k, '', '#888', false];
+const meta = (k) => k.startsWith('variant:') ? ['variant', 'Variants not kept', `Variant "${k.slice(8)}"`, 'Best Read runs several layouts (variants) and keeps the best-scoring drawing; Tidy Stress does the same on small graphs. This one was not kept: it plays to its end first, then the one kept starts over from an empty canvas.', '#b0b7c3', false] : STEPS[SI[k]] || [k, '', k, '', '#888', false];
 function frameAt(t) { const at = TL.at; let lo = 0, hi = at.length - 1; if (t >= at[hi]) return [hi, 0]; while (lo < hi - 1) { const m = (lo + hi) >> 1; if (at[m] <= t) lo = m; else hi = m; }
   while (lo < at.length - 1 && at[lo + 1] <= t) lo++; // several frames at the same time (a step shown at once): the last of them
   const span = at[lo + 1] - at[lo]; return [lo, span > 0 ? (t - at[lo]) / span : 1]; }
@@ -535,7 +707,7 @@ function current() {
     const ax = aP ? aP[2 * v] : NaN, ay = aP ? aP[2 * v + 1] : NaN, bx = b.P[2 * v], by = b.P[2 * v + 1];
     if (isNaN(bx) && isNaN(ax)) { P[v] = null; continue; }
     if (isNaN(ax)) { // appears in this step: grows out of a placed neighbor, or fades in where it is
-      let from = null; if (aP) for (const e of R.E) { const o = e.s === v ? e.t : e.t === v ? e.s : -1; if (o >= 0 && o !== v && !isNaN(aP[2 * o])) { from = { x: aP[2 * o], y: aP[2 * o + 1] }; break; } }
+      let from = b.from != null && aP && !isNaN(aP[2 * b.from]) ? { x: aP[2 * b.from], y: aP[2 * b.from + 1] } : null; if (aP && !from) for (const e of R.E) { const o = e.s === v ? e.t : e.t === v ? e.s : -1; if (o >= 0 && o !== v && !isNaN(aP[2 * o])) { from = { x: aP[2 * o], y: aP[2 * o + 1] }; break; } }
       from = from || { x: bx, y: by }; P[v] = { x: from.x + (bx - from.x) * u, y: from.y + (by - from.y) * u }; alpha[v] = u; continue; }
     if (isNaN(bx)) { P[v] = { x: ax, y: ay }; continue; }
     P[v] = { x: ax + (bx - ax) * u, y: ay + (by - ay) * u };
@@ -553,7 +725,7 @@ function bounds(P) { let x1 = 1e18, y1 = 1e18, x2 = -1e18, y2 = -1e18; P.forEach
 // no longer fits, in when it fills less than half of the space, and then gradually (at most 4% per frame), with 8% to spare.
 let CR = null; // the stage and its margins, measured once until the window or the panels change
 function area() {
-  const st = $('stage').getBoundingClientRect(), W = Math.max(1, st.width), H = Math.max(1, st.height), m = 10; let ix = m, iy = m;
+  const st = $('stage').getBoundingClientRect(), W = Math.max(1, st.width), H = Math.max(1, st.height), m = OV.ruler ? 44 : 10; let ix = OV.ruler ? 112 : m, iy = m;
   document.querySelectorAll('#stage .pnl').forEach((el) => { if (!el.offsetParent || getComputedStyle(el).display === 'none') return; const r = el.getBoundingClientRect();
     if (el.id === 'counts') ix = Math.max(ix, st.right - r.left + m); else if (r.top - st.top < H / 2) iy = Math.max(iy, r.bottom - st.top + m); else iy = Math.max(iy, st.bottom - r.top + m); });
   ix = Math.min(ix, W / 4); iy = Math.min(iy, H / 4); return { W, H, ix, iy };
@@ -595,25 +767,51 @@ function pathOf(A, B, r) {
 }
 
 // ---------- the math made visible: one color per idea, drawn faintly behind the graph ----------
-const OV = store.get('ov', {}); document.querySelectorAll('[data-ov]').forEach((el) => { el.checked = !!OV[el.dataset.ov]; el.onchange = () => { OV[el.dataset.ov] = el.checked; store.set('ov', OV); if (R) render(); }; });
-const OVS = { grid: 'Grid', slice: 'Slices', group: 'Group side', stress: 'Stress', extent: 'Extent', clear: 'Clearance' };
+const OV = store.get('ov', {}); if (OV.ruler === undefined) OV.ruler = true; document.querySelectorAll('[data-ov]').forEach((el) => { el.checked = !!OV[el.dataset.ov]; el.onchange = () => { OV[el.dataset.ov] = el.checked; CR = null; store.set('ov', OV); if (R) render(); }; });
+const OVS = { grid: 'Grid', slice: 'Slices', group: 'Group side', stress: 'Stress', extent: 'Extent', clear: 'Clearance', drop: 'Dropped tries', room: 'Room kept', ray: 'Slice search' };
 const OVL = { grid: ['var(--ov-grid)', 'Open-space grid', 'tinted cells hold no class and no link; the dashed circle is how far the class may jump (moves into open space)'],
   slice: ['var(--ov-slice)', 'Spreading slices', 'the 8 slices round a crowd; the darker, the more open space beyond, so pushed further (crowd spreading)'],
   group: ['var(--ov-group)', 'Group-move side', 'the problem fixed (ring), the side that moves together (tint) and where to (arrow) (group moves)'],
   stress: ['var(--ov-stress)', 'Stress rings', 'more and tighter rings: the class is further from the distances its links ask for, a stronger pull (placement)'],
   extent: ['var(--ov-extent)', 'Drawing extent', 'the area the scores count'],
-  clear: ['var(--ov-clear)', 'Link clearance', 'the margin round each class a link must keep clear of (link steps)'] };
+  clear: ['var(--ov-clear)', 'Link clearance', 'the margin round each class a link must keep clear of (link steps)'],
+  drop: ['var(--ov-drop)', 'Dropped tries', 'dashed boxes: where a group move tried just before this one would have put the group, thrown away because the drawing got no better (group moves)'],
+  room: ['var(--ov-room)', 'Room kept', 'dashed circle: the room a class keeps round it for the parts set aside; +n: how many classes wait there (Tidy Mycelium, core steps)'],
+  ray: ['var(--ov-ray)', 'Slice search', 'rays round the class a part hangs from, each as long as that direction is open; the shaded slice is the one chosen, the arrow points outward (Tidy Mycelium, parts placed)'] };
 function stressOf(f) { // per class: Σ over pairs ((distance − target) / target)², relative to the largest in the frame
   if (f.stress !== undefined) return f.stress; f.stress = null;
-  const run = R.runs && R.runs[f.run]; if (!run || !run.D || !/^(start|restart|stress|separate|cross|thru|tight|leaves|leaffix)$/.test(f.key)) return null;
+  const run = R.runs && R.runs[f.run]; if (!run || !run.D || !/^(start|restart|stress|separate|cross|thru|tight|leaves|leaffix|tm-start|tm-stress|tm-cross|tm-thru)$/.test(f.key)) return null;
   const core = run.core, D = run.D, m = core.length, e = new Float64Array(m);
   for (let i = 0; i < m; i++) { const vi = core[i], xi = f.P[2 * vi], yi = f.P[2 * vi + 1]; if (isNaN(xi)) continue;
     for (let j = 0; j < m; j++) { if (i === j) continue; const vj = core[j], d = D[i][j], c = Math.hypot(xi - f.P[2 * vj], yi - f.P[2 * vj + 1]); if (!isFinite(d) || d <= 0 || isNaN(c)) continue; const r = (c - d) / d; e[i] += r * r; } }
   let mx = 0; for (let i = 0; i < m; i++) mx = Math.max(mx, e[i]); if (!mx) return null;
   f.stress = { core, e: Array.from(e, (x) => x / mx) }; return f.stress;
 }
+// Rulers on the top and left edges of the drawing: ticks in drawing px, the width and height called out at the outer end, with the
+// best other layout's width and height on the same graph (and a mark on the ruler where it would end)
+let RIVNOW = null;
+function rulers(P) {
+  const b = bounds(P); if (!(b.x1 < b.x2)) return ''; const z = 1 / (camK || 1), T = 16 * z, g = 5 * z, W = b.x2 - b.x1, H = b.y2 - b.y1, fs = 11 * z;
+  const r = RIVNOW && R.rivals && R.rivals[RIVNOW], rw = r && r.w, rh = r && r.h, nm = r ? ALGO_NAME[RIVNOW] : '';
+  const step = [25, 50, 100, 200, 500, 1000, 2000].find((x) => x / z >= 36) || 5000, col = (me, them) => (them == null || Math.round(me) === Math.round(them) ? 'var(--ink)' : me < them ? '#2e9a5a' : '#d0453a');
+  let s = '<g pointer-events="none">';
+  const ty = b.y1 - g - T, lx = b.x1 - g - T;
+  s += '<rect x="' + b.x1 + '" y="' + ty + '" width="' + W + '" height="' + T + '" fill="var(--ov-extent)" fill-opacity=".22"/>';
+  s += '<rect x="' + lx + '" y="' + b.y1 + '" width="' + T + '" height="' + H + '" fill="var(--ov-extent)" fill-opacity=".22"/>';
+  let d = ''; for (let x = 0; x <= W; x += step) { const big = (x / step) % 2 === 0; d += 'M' + (b.x1 + x) + ',' + (ty + T) + 'v' + (-(big ? 0.6 : 0.35) * T); }
+  for (let y = 0; y <= H; y += step) { const big = (y / step) % 2 === 0; d += 'M' + (lx + T) + ',' + (b.y1 + y) + 'h' + (-(big ? 0.6 : 0.35) * T); }
+  s += '<path d="' + d + '" stroke="var(--muted)" stroke-width="1" vector-effect="non-scaling-stroke" opacity=".8"/>';
+  for (let x = 2 * step; x < W - step; x += 2 * step) s += '<text x="' + (b.x1 + x + 2 * z) + '" y="' + (ty + 0.45 * T) + '" font-size="' + 8 * z + '" fill="var(--muted)">' + x + '</text>';
+  if (rw) s += '<path d="M' + (b.x1 + rw) + ',' + (ty - g) + 'v' + (T + 2 * g) + '" stroke="var(--muted)" stroke-width="2" stroke-dasharray="3 2" vector-effect="non-scaling-stroke"/>';
+  if (rh) s += '<path d="M' + (lx - g) + ',' + (b.y1 + rh) + 'h' + (T + 2 * g) + '" stroke="var(--muted)" stroke-width="2" stroke-dasharray="3 2" vector-effect="non-scaling-stroke"/>';
+  const lab = (v, o, x) => '<tspan font-weight="600" fill="' + col(v, o) + '">' + Math.round(v) + ' px</tspan>' + (o ? '<tspan x="' + x + '" dy="' + 1.2 * fs + '">vs ' + Math.round(o) + ' ' + esc(nm) + '</tspan>' : '');
+  s += '<text x="' + (b.x2 + g) + '" y="' + (ty + 0.75 * T) + '" font-size="' + fs + '" fill="var(--muted)">' + lab(W, rw, b.x2 + g) + '</text>'; // stays at the end of the top ruler
+  s += '<text x="' + (lx - g) + '" y="' + (b.y2 - (rh ? 1.5 : 0.3) * fs) + '" font-size="' + fs + '" fill="var(--muted)" text-anchor="end">' + lab(H, rh, lx - g) + '</text>'; // left of the side ruler, at its bottom end
+  return s + '</g>';
+}
 function overlays(P) {
   const f = C.f, on = (k) => OV[k], now = []; let s = ''; const nse = 'vector-effect="non-scaling-stroke"';
+  if (on('ruler')) s += rulers(P);
   if (on('extent')) { const b = bounds(P); if (b.x1 < b.x2) { s += `<rect x="${b.x1}" y="${b.y1}" width="${b.x2 - b.x1}" height="${b.y2 - b.y1}" fill="none" stroke="var(--ov-extent)" stroke-width="1.2" stroke-dasharray="7 5" opacity=".7" ${nse}/>`
     + `<text x="${b.x1 + 4}" y="${b.y1 - 6}" font-size="11" fill="var(--ov-extent)">${Math.round(b.x2 - b.x1)} × ${Math.round(b.y2 - b.y1)} px</text>`; now.push('extent'); } }
   const ov = f.ov || {};
@@ -635,6 +833,21 @@ function overlays(P) {
     now.push('group'); }
   if (on('stress')) { const st = stressOf(f); if (st) { st.core.forEach((v, i) => { const p = P[v], x = st.e[i]; if (!p || x < 0.04) return; const n = Math.max(1, Math.round(x * 4)), gap = 9 - 4 * x, d = R.D[v];
       for (let r = 1; r <= n; r++) { const o = r * gap; s += `<rect x="${(p.x - d.w / 2 - o).toFixed(1)}" y="${(p.y - d.h / 2 - o).toFixed(1)}" width="${(d.w + 2 * o).toFixed(1)}" height="${(d.h + 2 * o).toFixed(1)}" rx="${(6 + o).toFixed(1)}" fill="none" stroke="var(--ov-stress)" stroke-opacity="${(0.65 - 0.12 * r).toFixed(2)}" stroke-width="1.1" ${nse}/>`; } }); now.push('stress'); } }
+  if (on('drop') && ov.dropped) { ov.dropped.forEach((t) => { (t.from || []).forEach(([x, y], i) => { const v = t.nodes[i], d = R.D[v]; if (!d) return; const X = x + t.dx, Y = y + t.dy;
+      s += `<rect x="${(X - d.w / 2).toFixed(1)}" y="${(Y - d.h / 2).toFixed(1)}" width="${d.w}" height="${d.h}" rx="4" fill="var(--ov-drop)" fill-opacity=".06" stroke="var(--ov-drop)" stroke-width="1.1" stroke-dasharray="4 3" ${nse}/>`
+        + `<line x1="${x}" y1="${y}" x2="${X}" y2="${Y}" stroke="var(--ov-drop)" stroke-opacity=".6" stroke-width="1" stroke-dasharray="2 3" marker-end="url(#ovArrowD)" ${nse}/>`
+        + `<text x="${X.toFixed(1)}" y="${(Y + 3.5).toFixed(1)}" text-anchor="middle" font-size="10" fill="var(--ov-drop)" opacity=".85">${esc(R.labels[v])}</text>`; }); }); now.push('drop'); }
+  if (on('room') && ov.room) { ov.room.forEach((q) => { const p = P[q.v]; if (!p) return;
+      s += `<circle cx="${p.x.toFixed(1)}" cy="${p.y.toFixed(1)}" r="${q.r.toFixed(1)}" fill="var(--ov-room)" fill-opacity=".05" stroke="var(--ov-room)" stroke-width="1.2" stroke-dasharray="6 4" opacity=".8" ${nse}/>`
+        + `<text x="${(p.x + R.D[q.v].w / 2 + 4).toFixed(1)}" y="${(p.y - R.D[q.v].h / 2 - 3).toFixed(1)}" font-size="11" font-weight="600" fill="var(--ov-room)">+${q.classes}${q.units > 1 ? ` in ${q.units}` : ''}</text>`; }); now.push('room'); }
+  if (on('ray') && ov.slice) { const sl = ov.slice, a = P[sl.anchor] || sl.at, c = { x: a.x, y: a.y };
+    (sl.rays || []).forEach(([th, fr]) => { s += `<line x1="${c.x.toFixed(1)}" y1="${c.y.toFixed(1)}" x2="${(c.x + Math.cos(th) * fr).toFixed(1)}" y2="${(c.y + Math.sin(th) * fr).toFixed(1)}" stroke="var(--ov-ray)" stroke-opacity="${fr >= sl.cap * 0.98 ? 0.55 : 0.3}" stroke-width="1" ${nse}/>`
+      + `<circle cx="${(c.x + Math.cos(th) * fr).toFixed(1)}" cy="${(c.y + Math.sin(th) * fr).toFixed(1)}" r="2.2" fill="var(--ov-ray)" opacity=".6"/>`; });
+    const r = Math.max(sl.r, 20), a0 = sl.th - sl.half, a1 = sl.th + sl.half, big = a1 - a0 > Math.PI ? 1 : 0;
+    s += `<path d="M${c.x},${c.y}L${c.x + r * Math.cos(a0)},${c.y + r * Math.sin(a0)}A${r},${r} 0 ${big} 1 ${c.x + r * Math.cos(a1)},${c.y + r * Math.sin(a1)}Z" fill="var(--ov-ray)" fill-opacity=".14" stroke="var(--ov-ray)" stroke-width="1.4" ${nse}/>`
+      + `<line x1="${c.x}" y1="${c.y}" x2="${c.x + Math.cos(sl.th) * sl.free}" y2="${c.y + Math.sin(sl.th) * sl.free}" stroke="var(--ov-ray)" stroke-width="2.4" ${nse}/>`;
+    if (sl.outward != null) { const L = Math.min(r * 0.8, 90); s += `<line x1="${c.x}" y1="${c.y}" x2="${c.x + Math.cos(sl.outward) * L}" y2="${c.y + Math.sin(sl.outward) * L}" stroke="var(--ov-ray)" stroke-width="1.6" stroke-dasharray="3 3" marker-end="url(#ovArrowR)" ${nse}/>`; }
+    now.push('ray'); }
   if (on('clear') && f.key.startsWith('r-')) { const pad = (O.ROUTE && O.ROUTE.pad) || 9; P.forEach((p, v) => { if (!p) return; const d = R.D[v]; s += `<rect x="${p.x - d.w / 2 - pad}" y="${p.y - d.h / 2 - pad}" width="${d.w + 2 * pad}" height="${d.h + 2 * pad}" rx="${4 + pad}" fill="var(--ov-clear)" fill-opacity=".07" stroke="var(--ov-clear)" stroke-opacity=".5" stroke-width="1" stroke-dasharray="2 3" ${nse}/>`; }); now.push('clear'); }
   const ks = Object.keys(OVL).filter(on); // the legend lists every overlay that is on; the ones drawn on this frame in full
   if ($('legend').style.display !== (ks.length ? 'block' : 'none')) { $('legend').style.display = ks.length ? 'block' : 'none'; CR = null; }
@@ -645,27 +858,37 @@ function overlays(P) {
 // ---------- render ----------
 let C = null;
 function render() {
-  if (!R) return; C = current(); if (EDITP) C.P = EDITP;
+  if (!R) return; C = current(); if (EDITP) C.P = EDITP; if (EDITR) EDITR.forEach((r, k) => (C.routes[k] = r));
   if ($('follow').checked && !userView) steadyView(C.P);
   svg.setAttribute('viewBox', `${view.x} ${view.y} ${view.w} ${view.h}`);
-  const thru = new Set(); const paused = !playing;
+  const thru = new Map(), xs = []; const paused = !playing; // classes a link touches: through the middle red, a clipped corner orange, nearly touching yellow; points where links cross (small red rings)
   if ($('marks').checked && (paused || R.n < 120)) {
-    R.E.forEach((e, k) => { const A = C.P[e.s], B = C.P[e.t]; if (!A || !B || e.s === e.t) return; const pl = O.routePoly(A, B, C.routes[k], 6);
-      for (let v = 0; v < R.n && !thru.has(k); v++) { if (v === e.s || v === e.t || !C.P[v]) continue; const p = C.P[v]; // the box, or the circle and its name
-        for (let i = 0; i < pl.length - 1; i++) if (LayoutGraphs.hits(R.D[v], pl[i].x - p.x, pl[i].y - p.y, pl[i + 1].x - p.x, pl[i + 1].y - p.y, 3, O.segBox)) { thru.add(k); break; } } });
+    const PL = R.E.map((e, k) => { const A = C.P[e.s], B = C.P[e.t]; return !A || !B || e.s === e.t ? null : O.routePoly(A, B, C.routes[k], 6); });
+    R.E.forEach((e, k) => { const pl = PL[k]; if (!pl) return;
+      for (let v = 0; v < R.n; v++) { if (thru.get(v) === 3 || v === e.s || v === e.t || !C.P[v]) continue; const p = C.P[v], d = R.D[v], box = d.shape !== 'circle' && !d.under; // the box, or the circle and its name
+        for (let i = 0; i < pl.length - 1; i++) { const ax = pl[i].x - p.x, ay = pl[i].y - p.y, bx = pl[i + 1].x - p.x, by = pl[i + 1].y - p.y;
+          const g = box ? _tmBest.touch(ax, ay, bx, by, d.w / 2, d.h / 2, 3) : LayoutGraphs.hits(d, ax, ay, bx, by, 3, O.segBox) ? 3 : 0; if (g > (thru.get(v) || 0)) thru.set(v, g); if (g === 3) break; } }
+      for (let g = k + 1; g < R.E.length; g++) { const q = PL[g], f = R.E[g]; if (!q || e.s === f.s || e.s === f.t || e.t === f.s || e.t === f.t) continue;
+        for (let i = 0; i < pl.length - 1; i++) for (let j = 0; j < q.length - 1; j++) { const a = pl[i], b = pl[i + 1], c = q[j], d = q[j + 1], den = (b.x - a.x) * (d.y - c.y) - (b.y - a.y) * (d.x - c.x); if (!den) continue;
+          const t = ((c.x - a.x) * (d.y - c.y) - (c.y - a.y) * (d.x - c.x)) / den, u = ((c.x - a.x) * (b.y - a.y) - (c.y - a.y) * (b.x - a.x)) / den;
+          if (t > 0 && t < 1 && u > 0 && u < 1) xs.push([a.x + t * (b.x - a.x), a.y + t * (b.y - a.y)]); } } });
   }
-  let s = '<defs><marker id="ovArrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0,0L10,5L0,10z" fill="var(--ov-group)"/></marker></defs><g>' + overlays(C.P) + '</g><g>';
+  let s = '<defs><marker id="ovArrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0,0L10,5L0,10z" fill="var(--ov-group)"/></marker><marker id="ovArrowR" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0,0L10,5L0,10z" fill="var(--ov-ray)"/></marker><marker id="ovArrowD" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M0,0L10,5L0,10z" fill="var(--ov-drop)"/></marker></defs><g>' + overlays(C.P) + '</g><g>';
   R.E.forEach((e, k) => { const A = C.P[e.s], B = C.P[e.t]; if (!A || !B) return; const r = C.routes[k]; if (e.s === e.t && !(r && r.loop)) return;
-    const op = Math.min(C.alpha[e.s], C.alpha[e.t]); s += `<path class="link${e.sub ? ' sub' : ''}${thru.has(k) ? ' thru' : ''}" d="${pathOf(A, B, r)}"${op < 1 ? ` opacity="${op.toFixed(2)}"` : ''}/>`; });
+    const op = Math.min(C.alpha[e.s], C.alpha[e.t]); s += `<path class="link${e.sub ? ' sub' : ''}${BEND && BEND.k === k ? ' picked' : ''}" d="${pathOf(A, B, r)}"${op < 1 ? ` opacity="${op.toFixed(2)}"` : ''}/>`; });
+  if (!playing && !PEN) R.E.forEach((e, k) => { const A = C.P[e.s], B = C.P[e.t]; if (A && B && e.s !== e.t) s += `<path class="hit" data-k="${k}" d="${pathOf(A, B, C.routes[k])}"/>`; }); // a wide, invisible stroke to grab a link by
   s += '</g><g>';
   if ($('names').checked) R.E.forEach((e, k) => { const r = C.routes[k]; if (!r || !r.label || !e.name) return; const L = r.label, op = r.labelU;
     s += `<g class="lname" opacity="${op.toFixed(2)}"><rect x="${L.x - L.w / 2}" y="${L.y - L.h / 2}" width="${L.w}" height="${L.h}" rx="3"/><text x="${L.x}" y="${L.y + 3.5}" text-anchor="middle">${esc(e.name)}</text></g>`; });
   s += '</g><g>';
   C.P.forEach((p, v) => { if (!p) return; const d = R.D[v];
-    s += `<g class="node${C.moved.has(v) ? ' moved' : ''}${SEL.has(v) ? ' sel' : ''}${ndrag && ndrag.moved && ndrag.group.includes(v) ? ' dragged' : ''}" data-v="${v}" transform="translate(${p.x.toFixed(1)},${p.y.toFixed(1)})"${C.alpha[v] < 1 ? ` opacity="${C.alpha[v].toFixed(2)}"` : ''}>${LayoutGraphs.nodeSvg(R.labels[v], d, esc)}</g>`; });
-  s += '</g>';
+    s += `<g class="node${['', ' near', ' clip', ' thru'][thru.get(v) || 0]}${C.moved.has(v) ? ' moved' : ''}${SEL.has(v) ? ' sel' : ''}${ndrag && ndrag.moved && ndrag.group.includes(v) ? ' dragged' : ''}" data-v="${v}" transform="translate(${p.x.toFixed(1)},${p.y.toFixed(1)})"${C.alpha[v] < 1 ? ` opacity="${C.alpha[v].toFixed(2)}"` : ''}>${LayoutGraphs.nodeSvg(R.labels[v], d, esc)}</g>`; });
+  s += '</g>' + xs.map(([x, y]) => `<circle class="xdot" cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="3.2"/>`).join('');
+  if (!playing && !PEN && $('handles').checked) R.E.forEach((e, k) => { const r = C.routes[k], A = C.P[e.s], B = C.P[e.t]; if (!r || !r.bends || !r.bends.length || r.loop || !A || !B || e.s === e.t) return;
+    _ogRoutePts(A, B, r.bends).forEach((h, j) => (s += `<circle class="handle" data-k="${k}" data-j="${j}" cx="${h.x.toFixed(1)}" cy="${h.y.toFixed(1)}" r="5"/>`)); });
   INK.forEach((k) => (s += `<path class="ink${k.noted ? ' old' : ''}" d="${inkD(k.pts)}"/>`));
   if (idrag) s += `<path class="ink" d="${inkD(idrag.pts)}"/>`;
+  if (mq) s += `<rect class="marquee" x="${Math.min(mq.a.x, mq.b.x)}" y="${Math.min(mq.a.y, mq.b.y)}" width="${Math.abs(mq.b.x - mq.a.x)}" height="${Math.abs(mq.b.y - mq.a.y)}"/>`;
   svg.innerHTML = s;
   const m = meta(C.key); $('cT').textContent = m[2];
   $('cK').textContent = `${m[1]} · ${C.fj + 1}/${R.frames.length}${C.fj > 0 && C.key !== 'edit' ? ' · ' + fmtMs(C.f.ms || 0) : ''}${C.hid ? ' · not animated' : ''}`;
@@ -679,7 +902,7 @@ function render() {
   $('steps').querySelectorAll('tr[data-k]').forEach((tr) => tr.classList.toggle('cur', tr.dataset.k === C.key));
   $('tbar').querySelectorAll('.tseg').forEach((el) => el.classList.toggle('cur', el.dataset.k === C.key));
   $('bPlay').textContent = playing ? '⏸ Pause' : '▶ Play';
-  showCounts(); postFrame();
+  showCounts();
 }
 // counts on a frame (on the drawn paths), cached
 function metricsAt(j) {
@@ -700,14 +923,15 @@ let countsFor = -1, countsT = null;
 function showCounts() {
   const j = C.dj; if (j === countsFor) return; // the counts of the drawing on screen
   clearTimeout(countsT); countsT = setTimeout(() => {
+    if (!R.frames[j]) { countsFor = -1; return; } // the frames changed since (a step done again, an undo)
     countsFor = j; const f = R.frames[j], m = metricsAt(j);
-    $('countsB').innerHTML = [['Crossings', m.cross, 'cross'], ['Sharp crossings (under 30°)', m.sharp, 'sharp'], ['Links through a class', m.thru, 'thru'], ['Bends', m.bends, 'bend'], ['Classes placed', m.placed === R.n ? m.placed : m.placed + '/' + R.n, 'placed']]
-      .map(([l, v, ic]) => `<svg viewBox="0 0 16 16"><title>${l}</title>${ICON[ic]}</svg><b title="${l}: ${v}">${v}</b>`).join('');
+    $('countsB').innerHTML = [['Crossings', m.cross, 'cross', 'Crossings'], ['Sharp crossings (under 30°)', m.sharp, 'sharp', 'Sharp'], ['Links through a class', m.thru, 'thru', 'Through a class'], ['Covered names', m.labelOver || 0, 'thru', 'Covered names'], ['Bends', m.bends, 'bend', 'Bends'], ['Classes placed', m.placed === R.n ? m.placed : m.placed + '/' + R.n, 'placed', 'Placed']]
+      .filter(([l, v], i) => i !== 3 || v).map(([l, v, ic, sh]) => `<svg viewBox="0 0 16 16"><title>${l}</title>${ICON[ic]}</svg><span title="${l}">${sh}</span><b title="${l}: ${v}">${v}</b>`).join('');
   }, playing ? 250 : 30);
 }
 
 // ---------- side panel: steps, time bar, variants ----------
-const GROUP_ORDER = ['Variants not kept', 'Placement', 'Open-source layout', 'Clean-up', 'Your edit', 'Links'];
+const GROUP_ORDER = ['Variants not kept', 'Placement', 'Tidy Mycelium', 'Open-source layout', 'Clean-up', 'Your edit', 'Links'];
 function orderedKeys(keys) {
   const pos = (k) => { if (k.startsWith('variant:')) return -1; const o = ordOf(k); if (o === 'place') return SI.cross + ORD.place.indexOf(k) * 0.1; if (o === 'clean') return SI['c-single'] + ORD.clean.indexOf(k) * 0.1; return SI[k]; };
   return keys.sort((a, b) => GROUP_ORDER.indexOf(meta(a)[1]) - GROUP_ORDER.indexOf(meta(b)[1]) || pos(a) - pos(b));
@@ -715,8 +939,10 @@ function orderedKeys(keys) {
 let SS = null;
 function buildPanel() {
   SS = stepStats();
-  const ks = new Set(Object.keys(SS)); STEPS.forEach((s) => { if (s[5] && !ctl(s[0]).run && !(R.engine && !s[0].startsWith('r-'))) ks.add(s[0]); }); // left out: still listed, to put back
-  if (!R.engine) [...ORD.place, ...ORD.clean].forEach((k) => ks.add(k)); // steps that can be reordered: always listed, even when they made no move
+  // a step of another layout (Best Read's placement for Tidy Mycelium, or the other way round) is not listed
+  const mine = (k) => (isTM(R.algo) ? !ORD.place.includes(k) && !/^(stress|leaves|leaffix|tight)$/.test(k) : !k.startsWith('tm-') && k !== 'c-compact');
+  const ks = new Set(Object.keys(SS)); STEPS.forEach((s) => { if (s[5] && !ctl(s[0]).run && !(R.engine && !s[0].startsWith('r-')) && mine(s[0])) ks.add(s[0]); }); // left out: still listed, to put back
+  if (!R.engine) [...ORD.place, ...ORD.clean].filter(mine).forEach((k) => ks.add(k)); // steps that can be reordered: always listed, even when they made no move
   const keys = [...ks];
   let h = '', g = null; const canOrder = (k) => ordOf(k) && !R.engine;
   orderedKeys(keys).forEach((k) => {
@@ -731,7 +957,7 @@ function buildPanel() {
   $('steps').innerHTML = h;
   $('ordRow').hidden = R.engine || (ORD.place.join() === 'cross,thru,tight' && ORD.clean.join() === 'c-single,c-unit,c-spread,c-group');
   const sumOf = (re) => Object.entries(SS).filter(([k]) => re.test(k)).reduce((s, [, x]) => s + x.ms, 0);
-  const lay = sumOf(/^(start|restart|stress|separate|cross|thru|tight|leaves|leaffix|e-iter|e-final|variant:.*)$/), cl = sumOf(/^c-/), li = sumOf(/^r-/);
+  const lay = sumOf(/^(start|restart|stress|separate|cross|thru|tight|leaves|leaffix|e-iter|e-final|tm-.*|variant:.*)$/), cl = sumOf(/^c-/), li = sumOf(/^r-/);
   $('totalInfo').textContent = `${R.frames.length} frames · work ${fmtMs(lay + cl + li)}: layout ${fmtMs(lay)}${R.engine ? '' : `, clean-up ${fmtMs(cl)}`}, links ${fmtMs(li)}`;
   const vs = R.variants; $('variants').innerHTML = vs.length > 1 ? '<b>Variants tried</b> (lower score is better):' + vs.map((v) => `<div>${v.kept ? '✓' : '·'} ${esc(v.name)}: score ${v.score == null ? '–' : Math.round(v.score)}${v.kept ? ' (kept)' : ''}</div>`).join('') : '';
   // scrubber segments, one per run of frames of the same step
@@ -788,11 +1014,13 @@ document.addEventListener('mouseover', (ev) => { const el = ev.target.closest('#
 document.addEventListener('mousemove', (ev) => { if (tip.style.display !== 'block') return; const w = tip.offsetWidth, h = tip.offsetHeight; let x = ev.clientX + 14, y = ev.clientY + 14;
   if (x + w > innerWidth - 8) x = ev.clientX - w - 14; if (y + h > innerHeight - 8) y = ev.clientY - h - 14; tip.style.left = Math.max(8, x) + 'px'; tip.style.top = Math.max(8, y) + 'px'; });
 const menu = $('menu');
-document.addEventListener('contextmenu', (ev) => { const el = ev.target.closest('#steps tr[data-k], #tbar .tseg, #scrub .seg'); if (!el || !R) return; ev.preventDefault(); tip.style.display = 'none';
-  const k = el.dataset.k, m = meta(k), c = ctl(k), has = SS && SS[k];
-  const items = [[has ? 'Jump to this step' : null, () => jumpTo(k)], [c.show ? 'Do not animate it (its time still passes)' : 'Animate this step', () => { c.show = !c.show; saveCtl(); retime(); }],
+document.addEventListener('contextmenu', (ev) => { const el = ev.target.closest('#steps tr[data-k], #tbar .tseg, #scrub .seg, #chips .chip'); if (!el || !R) return; ev.preventDefault(); tip.style.display = 'none';
+  const k = el.dataset.k, m = meta(k), c = ctl(k), has = SS && SS[k], at = C ? C.fj + 1 : 0, rd = canRedo(k);
+  const items = [[rd ? `Do this step now, on frame ${at} as shown` : null, () => redo(k, 1, false)], [rd && hasBudget(k) ? 'Do it now with 4× its time' : null, () => redo(k, 4, false)],
+    [rd && !k.startsWith('r-') ? 'Do it now, then the steps after it again' : null, () => redo(k, 1, true)], [rd ? '-' : null],
+    [has ? 'Jump to this step' : null, () => jumpTo(k)], [c.show ? 'Do not animate it (its time still passes)' : 'Animate this step', () => { c.show = !c.show; saveCtl(); retime(); }],
     [m[5] ? (c.run ? 'Run the layout without this step' : 'Run the layout with this step again') : null, () => { c.run = !c.run; saveCtl(); run(true); }]].filter((x) => x[0]);
-  menu.innerHTML = `<div class="h">${esc(m[2])}</div>` + items.map((x, i) => `<button data-i="${i}">${esc(x[0])}</button>`).join('');
+  menu.innerHTML = `<div class="h">${esc(m[2])}</div>` + (rd ? `<div class="sub">The playback pauses; the step runs on the drawing as it is on screen${UNDO.length ? '' : ' (Ctrl+Z undoes it)'}.</div>` : '') + items.map((x, i) => (x[0] === '-' ? '<div class="sep"></div>' : `<button data-i="${i}">${esc(x[0])}</button>`)).join('');
   menu.onclick = (e) => { const b = e.target.closest('button'); if (!b) return; menu.style.display = 'none'; items[+b.dataset.i][1](); };
   menu.style.display = 'block'; const w = menu.offsetWidth, h = menu.offsetHeight; menu.style.left = Math.min(ev.clientX, innerWidth - w - 8) + 'px'; menu.style.top = Math.min(ev.clientY, innerHeight - h - 8) + 'px'; });
 document.addEventListener('pointerdown', (ev) => { if (!ev.target.closest('#menu')) menu.style.display = 'none'; });
@@ -820,36 +1048,68 @@ $('scrub').addEventListener('pointerdown', (ev) => { if (!R || ev.button !== 0) 
 $('scrub').addEventListener('pointermove', (ev) => { if (scrubbing) scrubTo(ev); });
 $('scrub').addEventListener('pointerup', () => (scrubbing = false));
 document.addEventListener('keydown', (ev) => { if (ev.target.tagName === 'INPUT' || ev.target.tagName === 'SELECT' || ev.target.tagName === 'TEXTAREA' || !R) return;
-  const k = ev.key; if ((k === 'p' || k === 'P') && !ev.ctrlKey && !ev.metaKey && !ev.altKey) { setPen(!PEN); return; } if (k === 'Escape' && PEN) { setPen(false); return; } if (k === ' ') { ev.preventDefault(); playing ? pause() : play(); } else if (k === 'ArrowRight') frameStep(1); else if (k === 'ArrowLeft') frameStep(-1);
+  const k = ev.key; if ((k === 'z' || k === 'Z') && (ev.ctrlKey || ev.metaKey)) { ev.preventDefault(); undo(); return; }
+  if ((k === 'p' || k === 'P') && !ev.ctrlKey && !ev.metaKey && !ev.altKey) { setPen(!PEN); return; } if (k === 'Escape' && PEN) { setPen(false); return; } if (k === ' ') { ev.preventDefault(); playing ? pause() : play(); } else if (k === 'ArrowRight') frameStep(1); else if (k === 'ArrowLeft') frameStep(-1);
   else if (k === 'PageDown') { ev.preventDefault(); stepStep(1); } else if (k === 'PageUp') { ev.preventDefault(); stepStep(-1); } else if (k === 'Home') $('bStart').onclick(); else if (k === 'End') $('bEnd').onclick(); });
 $('speed').oninput = () => { showSpeed(); store.set('speed3', +$('speed').value); };
-['follow', 'names', 'marks'].forEach((id) => ($(id).onchange = () => { store.set(id, $(id).checked); if (id === 'follow') userView = false; countsFor = -1; if (R) R.mcache = new Map(); render(); }));
+['follow', 'names', 'marks', 'handles'].forEach((id) => ($(id).onchange = () => { store.set(id, $(id).checked); if (id === 'follow') userView = false; countsFor = -1; if (R) R.mcache = new Map(); render(); }));
 // pan and zoom by hand stop the camera from following until Play or Home
-let pan = null, ndrag = null, idrag = null, EDITP = null, SEL = new Set(), PEN = false, INK = [];
+let BEND = null, EDITR = null, lastClick = null, mq = null, pan = null, ndrag = null, idrag = null, EDITP = null, SEL = new Set(), PEN = false, INK = [];
 const svgPt = (ev) => { const p = svg.createSVGPoint(); p.x = ev.clientX; p.y = ev.clientY; return p.matrixTransform(svg.getScreenCTM().inverse()); };
-const showSel = () => ($('selInfo').textContent = SEL.size ? 'Selected: ' + [...SEL].map((v) => R.labels[v]).join(', ') : 'Drag a class to move it; Ctrl+click to select several');
+const showSel = () => ($('selInfo').textContent = SEL.size ? 'Selected: ' + [...SEL].map((v) => R.labels[v]).join(', ') : 'Drag a class to move it, or a link to bend it; Ctrl+click or Shift+drag selects several');
 svg.addEventListener('pointerdown', (ev) => {
   if (!R || !C) return; svg.setPointerCapture(ev.pointerId); const p = svgPt(ev);
   if (PEN && ev.button === 0) { if (playing) pause(); idrag = { pts: [[+p.x.toFixed(1), +p.y.toFixed(1)]], c: [ev.clientX, ev.clientY] }; return; }
+  const tg = ev.target, isH = tg.classList && tg.classList.contains('handle'), isL = tg.classList && tg.classList.contains('hit');
+  if (ev.button === 0 && (isH || isL) && !ev.shiftKey) { const k = +tg.dataset.k, r0 = C.routes[k];
+    BEND = { k, j: isH ? +tg.dataset.j : -1, kind: isH ? 'handle' : 'link', p0: p, moved: false, r: { bends: ((r0 && r0.bends) || []).map((h) => ({ t: h.t, d: h.d })), ports: (r0 && r0.ports) || null, loop: null, label: (r0 && r0.label) || null, labelU: 1 } }; return; }
   const node = ev.target.closest('.node');
   if (node && ev.button === 0) { // moving a class pauses the playback; on release the steps after this frame run again from the new positions
     const v = +node.dataset.v; if (ev.ctrlKey || ev.metaKey) { SEL.has(v) ? SEL.delete(v) : SEL.add(v); } else if (!SEL.has(v)) SEL = new Set();
     if (playing) pause(); const group = SEL.has(v) ? [...SEL] : [v];
     ndrag = { group, p0: p, P: C.P.map((q) => q && { ...q }), start: group.map((i) => ({ ...C.P[i] })), moved: false, ctx: ctxNow() }; userView = true; showSel(); render(); return; }
+  if (ev.shiftKey && ev.button === 0) { mq = { a: p, b: p, add: ev.ctrlKey || ev.metaKey }; if (playing) pause(); return; }
   pan = { x: ev.clientX, y: ev.clientY, v: { ...view }, moved: false }; });
 svg.addEventListener('pointermove', (ev) => {
   if (idrag) { if (Math.hypot(ev.clientX - idrag.c[0], ev.clientY - idrag.c[1]) < 3) return; const p = svgPt(ev); idrag.c = [ev.clientX, ev.clientY]; idrag.pts.push([+p.x.toFixed(1), +p.y.toFixed(1)]); render(); return; }
+  if (mq) { mq.b = svgPt(ev); render(); return; }
+  if (BEND) { const p = svgPt(ev); if (!BEND.moved && Math.hypot(p.x - BEND.p0.x, p.y - BEND.p0.y) < 3) return;
+    if (!BEND.moved && BEND.kind === 'link') { const h = bendAt(BEND.k, BEND.p0); BEND.r.bends.push(h); BEND.r.bends.sort((a, b) => a.t - b.t); BEND.j = BEND.r.bends.indexOf(h); }
+    BEND.moved = true; const hb = bendAt(BEND.k, p); BEND.r.bends[BEND.j] = hb; BEND.r.bends.sort((a, b) => a.t - b.t); BEND.j = BEND.r.bends.indexOf(hb);
+    EDITR = new Map([[BEND.k, BEND.r]]); render(); return; }
   if (ndrag) { const p = svgPt(ev), dx = p.x - ndrag.p0.x, dy = p.y - ndrag.p0.y; if (!ndrag.moved && Math.hypot(dx, dy) < 2) return; ndrag.moved = true;
     ndrag.group.forEach((i, j) => (ndrag.P[i] = { x: ndrag.start[j].x + dx, y: ndrag.start[j].y + dy })); EDITP = ndrag.P; render(); return; }
   if (!pan) return; pan.moved = true; const r = svg.getBoundingClientRect(), s = view.w / r.width; view.x = pan.v.x - (ev.clientX - pan.x) * s; view.y = pan.v.y - (ev.clientY - pan.y) * s; userView = true; svg.setAttribute('viewBox', `${view.x} ${view.y} ${view.w} ${view.h}`); });
 svg.addEventListener('pointerup', () => {
   if (idrag) { const d = idrag; idrag = null; if (d.pts.length > 1) inkDone(d.pts); else render(); return; }
+  if (BEND) { const d = BEND; BEND = null; EDITR = null;
+    // double-clicks are found here: every redraw replaces the elements, which can swallow the browser's own dblclick
+    const key = d.kind + ':' + d.k + ':' + d.j, now = performance.now(), dbl = !d.moved && lastClick && lastClick.key === key && now - lastClick.t < 400; lastClick = d.moved ? null : { key, t: now };
+    if (d.moved) linkEdit(d.k, d.r, d.kind === 'link' ? 'Bent' : 'Reshaped');
+    else if (dbl && d.kind === 'handle') { d.r.bends.splice(d.j, 1); linkEdit(d.k, d.r, 'Removed a bend from'); lastClick = null; }
+    else if (dbl && d.r.bends.length) { d.r.bends = []; linkEdit(d.k, d.r, 'Straightened'); lastClick = null; }
+    else render(); return; }
+  if (mq) { const x1 = Math.min(mq.a.x, mq.b.x), x2 = Math.max(mq.a.x, mq.b.x), y1 = Math.min(mq.a.y, mq.b.y), y2 = Math.max(mq.a.y, mq.b.y); if (!mq.add) SEL = new Set();
+    C.P.forEach((p, v) => { if (p && p.x >= x1 && p.x <= x2 && p.y >= y1 && p.y <= y2) SEL.add(v); }); mq = null; showSel(); render(); return; }
   if (ndrag) { const d = ndrag; ndrag = null; EDITP = null;
-    if (d.moved) { const j = C.fj; if (!R.base) R.base = { frames: R.frames, j, info: R.info };
+    if (d.moved) { const j = C.fj; pushUndo(); if (!R.base) R.base = { frames: R.frames, j, info: R.info };
       const moved = editFrom(R.frames.slice(0, j + 1), j, d.P, 'here'), g0 = d.group[0];
       note('edit', { classes: moved.map((v) => R.labels[v]), dx: Math.round(d.P[g0].x - d.start[0].x), dy: Math.round(d.P[g0].y - d.start[0].y), ...d.ctx, after: brief(metricsAt(j + 1)) }); }
     else render(); return; }
   if (pan && !pan.moved && SEL.size) { SEL.clear(); showSel(); render(); } pan = null; });
+// a point as a bend of link k: t along the line between its ends, d off it (the library's own bends)
+function bendAt(k, p) { const e = R.E[k], A = C.P[e.s], B = C.P[e.t], dx = B.x - A.x, dy = B.y - A.y, L2 = dx * dx + dy * dy || 1, L = Math.sqrt(L2);
+  return { t: Math.max(0.03, Math.min(0.97, ((p.x - A.x) * dx + (p.y - A.y) * dy) / L2)), d: ((p.x - A.x) * -dy + (p.y - A.y) * dx) / L }; }
+// a link bent by hand: a frame of its own after the frame shown (the frames after it are left out until Ctrl+Z)
+function linkEdit(k, r, what) {
+  pause(); const ctx = ctxNow(), j = C.fj, F = R.frames.slice(0, j + 1), left = R.frames.length - 1 - j, nm = R.labels[R.E[k].s] + ' — ' + R.labels[R.E[k].t];
+  pushUndo(); if (!R.base) R.base = { frames: R.frames, j, info: R.info };
+  const routes = R.E.map((e, i) => (i === k ? r : C.routes[i] ? { bends: (C.routes[i].bends || []).map((h) => ({ t: h.t, d: h.d })), ports: C.routes[i].ports, loop: C.routes[i].loop, label: C.routes[i].label } : null));
+  R.frames = F.concat([{ key: 'edit', P: flat(C.P.map((q) => q || { x: NaN, y: NaN })), ms: 0, run: F[j].run, moved: [], routes, note: `${what} by hand: ${nm}.${left ? ` The ${left} frame${left > 1 ? 's' : ''} after this one are left out (Ctrl+Z brings them back).` : ''}` }]);
+  R.mcache = new Map(); timeline(); buildPanel(); T = TL.total; countsFor = -1;
+  $('editTxt').textContent = 'Link bent by hand (Ctrl+Z undoes it)'; $('editBar').classList.add('on');
+  note('bend', { link: nm, what, bends: r.bends.map((h) => [+h.t.toFixed(3), +h.d.toFixed(1)]), ...ctx }); render();
+}
 // ---------- pen ----------
 const inkD = (pts) => pts.map((q, i) => (i ? 'L' : 'M') + q[0] + ',' + q[1]).join('');
 function inPoly(x, y, pts) { let c = false; for (let i = 0, j = pts.length - 1; i < pts.length; j = i++) { const [xi, yi] = pts[i], [xj, yj] = pts[j]; if ((yi > y) !== (yj > y) && x < ((xj - xi) * (y - yi)) / (yj - yi) + xi) c = !c; } return c; }
@@ -894,6 +1154,9 @@ function showNote(ev) {
   else if (ev.kind === 'edit') h = at + `Moved ${esc(ev.classes.join(', '))} by ${ev.dx}, ${ev.dy}; the steps after it ran again`;
   else if (ev.kind === 'run') h = `Ran ${esc(graphName(ev.setup.graph))}${ev.setup.leftOut.length ? ' without ' + esc(ev.setup.leftOut.join(', ')) : ''}${ev.setup.experiment ? ' (time experiments on)' : ''}: work ${fmtMs(ev.result.work)}, crossings ${ev.result.cross}, through classes ${ev.result.thru}`;
   else if (ev.kind === 'experiment') h = 'Time experiments: ' + (Object.keys(ev.tune).length ? esc(JSON.stringify(ev.tune)) : 'back to the shipped settings');
+  else if (ev.kind === 'redo') h = at + `Did “${esc(ev.redo)}” again${ev.mult > 1 ? ` with ${ev.mult}× its time` : ''}${ev.then ? ', then the steps after it' : ''}: crossings ${ev.before.cross} → ${ev.after.cross}, through classes ${ev.before.thru} → ${ev.after.thru}`;
+  else if (ev.kind === 'undo') h = 'Undone';
+  else if (ev.kind === 'bend') h = at + `${esc(ev.what)} ${esc(ev.link)}`;
   else if (ev.kind === 'ink-clear') h = `Cleared ${ev.cleared.length} mark${ev.cleared.length > 1 ? 's' : ''}`;
   else return; // step toggles, order changes and discarded edits are recorded, not listed (the next run line shows the setup)
   const d = document.createElement('div'); d.className = 'ev ' + ev.kind; d.innerHTML = h; $('nlog').appendChild(d); $('nlog').scrollTop = 1e9;
@@ -924,6 +1187,44 @@ $('chips').addEventListener('dragend', () => { dragK = null; $('chips').querySel
 $('chips').addEventListener('drop', (ev) => { const ch = ev.target.closest('.chip'); if (!dragK || !ch) return; ev.preventDefault(); moveStep(dragK, ch.dataset.k); });
 // ---------- the result of a run, against the run with every step in the usual order ----------
 const REF = {};
+// problems in the last frame of a recording, measured as the counts box measures them, plus overlapping boxes
+function lastProblems(Rx) {
+  const f = Rx.frames[Rx.frames.length - 1], vis = [], idx = new Map();
+  for (let v = 0; v < Rx.n; v++) if (!isNaN(f.P[2 * v])) { idx.set(v, vis.length); vis.push(v); }
+  const P = vis.map((v) => ({ x: f.P[2 * v], y: f.P[2 * v + 1] })), D = vis.map((v) => Rx.D[v]), ks = [];
+  Rx.E.forEach((e, k) => { if (idx.has(e.s) && idx.has(e.t)) ks.push(k); });
+  const m = O.routeMetrics(P, D, ks.map((k) => [idx.get(Rx.E[k].s), idx.get(Rx.E[k].t), Rx.E[k].sub ? 2 : 1, 0]), ks.map((k) => (f.routes ? { ...f.routes[k], label: $('names').checked && Rx.E[k].name ? f.routes[k].label : null } : null)), 3);
+  let ov = 0; for (let i = 0; i < P.length; i++) for (let j = i + 1; j < P.length; j++) if (Math.abs(P[i].x - P[j].x) < (D[i].w + D[j].w) / 2 && Math.abs(P[i].y - P[j].y) < (D[i].h + D[j].h) / 2) ov++;
+  let bx0 = 1e18, by0 = 1e18, bx1 = -1e18, by1 = -1e18; P.forEach((p, i) => { bx0 = Math.min(bx0, p.x - D[i].w / 2); bx1 = Math.max(bx1, p.x + D[i].w / 2); by0 = Math.min(by0, p.y - D[i].h / 2); by1 = Math.max(by1, p.y + D[i].h / 2); });
+  const lk = ks.map((k) => [idx.get(Rx.E[k].s), idx.get(Rx.E[k].t)]), G = _tmBest.grade(P, D, lk, lk.map((e, i) => O.routePoly(P[e[0]], P[e[1]], f.routes ? f.routes[ks[i]] : null, 8)), 3); // a clipped corner counts half, nearly touching a quarter
+  return { w: bx1 - bx0, h: by1 - by0, pr: +(m.cross + G.w + (m.labelOver || 0) + ov).toFixed(2), red: G.red, orange: G.orange, yellow: G.yellow, ms: Rx.frames.reduce((a, x) => a + (x.ms || 0), 0), cross: m.cross, thru: m.thru, sharp: m.sharp, area: m.area };
+}
+// our other layouts on the same graph, run here the same way (same steps switched on, same links), once per graph and setup
+const RIVALS = {};
+async function measureRivals(key, algo, seed) {
+  const ck = [key, seed, $('limit').value, LayoutGraphs.style(), LINES, $('names').checked].join('|'), M = (RIVALS[ck] = RIVALS[ck] || {});
+  for (const a of ['auto', 'compact', 'grouped', 'tidy', 'tidyS', 'tidyQ']) if (a !== algo && !(isTM(a) && isTM(algo)) && !M[a]) M[a] = lastProblems(await recordRun(key, a, seed));
+  return M;
+}
+// bottom right of the drawing: this run's problems and time against the best of our other layouts on this graph (bestof.json):
+// the one that beats it, or the runner-up when this one wins
+function showTally(F, m, work) {
+  if (R.engine) { $('tally').innerHTML = ''; return; }
+  const me = lastProblems(R), M = R.rivals || {}; let riv = null;
+  Object.keys(M).forEach((a) => { if (a !== R.algo && (riv == null || M[a].pr < M[riv].pr || M[a].pr === M[riv].pr && M[a].ms < M[riv].ms)) riv = a; });
+  if (RIVNOW !== riv) { RIVNOW = riv; if (OV.ruler) setTimeout(() => R && render(), 0); }
+  const r = riv && M[riv], cls = !r || me.pr === r.pr ? '' : me.pr < r.pr ? 'win' : 'lose', tcls = !r ? '' : work <= r.ms ? 'win' : 'lose';
+  const off = setupNow().leftOut, odd = off.length || ORD.place.join() !== 'cross,thru,tight' || ORD.clean.join() !== 'c-single,c-unit,c-spread,c-group' || xOn();
+  $('tally').innerHTML = `Total problems <b class="${cls}">${me.pr}</b>${r ? ` (vs ${r.pr} ${ALGO_NAME[riv]})` : ' <small>(measuring the others…)</small>'}<br>Total time <b class="${tcls}">${Math.round(work)} ms</b>${r ? ` (vs ${Math.round(r.ms)} ms)` : ''}`
+    + (odd ? `<br><small class="lose">Not the usual steps${off.length ? ': without ' + esc(off.join(', ')) : ''}</small>` : '');
+  const lg = $('legend'); if (lg) lg.style.right = ($('tally').offsetWidth + 14) + 'px';
+  const one = (l, a, b, f = (x) => x, tip = '') => `<span title="${tip}">${l}: <b class="${b == null || a === b ? '' : a < b ? 'win' : 'lose'}">${f(a)}</b>${b == null ? '' : ` (vs ${f(b)})`}</span>`, ar = (x) => (x == null ? '–' : x.toFixed(1));
+  $('vsrow').innerHTML = me.cross == null ? '' : one('Crossing', me.cross, r && r.cross) + one('Through a class', me.red, r && r.red, undefined, 'The link runs through the middle of the class, outlined red.') + one('Clipped corners', me.orange, r && r.orange, undefined, 'The link cuts across a small corner of the class, outlined orange. Counts half a problem.') + one('Nearly touching', me.yellow, r && r.yellow, undefined, 'The link passes within 3 px of the class, outlined yellow. Counts a quarter of a problem.') + one('Sharp crossings', me.sharp, r && r.sharp) + one('Area', me.area, r && r.area, ar, 'Width times height of the drawing, over the room the boxes take: smaller is tighter.')
+    + (r ? `<span>vs ${ALGO_NAME[riv]}</span>` : '');
+  $('vsrow').style.right = lg ? lg.style.right : '';
+  $('tally').title = 'Problems: crossed links, links through classes (a clipped corner counts half, nearly touching a quarter), covered names and overlapping boxes, in the last frame. Time: all the steps of the run, measured in this browser.'
+    + (r ? ` In brackets: ${ALGO_NAME[riv]}, the best of our other layouts on this graph, run here with the same steps and links: ` + Object.keys(M).map((a) => `${ALGO_NAME[a]} ${M[a].pr} in ${Math.round(M[a].ms)} ms`).join(', ') + '.' : '');
+}
 function showResult() {
   const F = R.frames, m = metricsAt(F.length - 1), work = F.reduce((a, f) => a + (f.ms || 0), 0), cfg = setupNow(), key = [R.key, R.algo, R.seed, R.limit].join('|');
   const usual = !cfg.leftOut.length && ORD.place.join() === 'cross,thru,tight' && ORD.clean.join() === 'c-single,c-unit,c-spread,c-group' && !R.base && !xOn();
@@ -933,46 +1234,135 @@ function showResult() {
   $('result').innerHTML = `Result: work <b>${fmtMs(work)}</b>${ref && !usual ? d(work, ref.work, fmtMs) : ''} · crossings <b>${m.cross}</b>${ref && !usual ? d(m.cross, ref.cross) : ''} · through classes <b>${m.thru}</b>${ref && !usual ? d(m.thru, ref.thru) : ''} · sharp <b>${m.sharp}</b>${ref && !usual ? d(m.sharp, ref.sharp) : ''}`
     + (usual ? ' <small>(every step, shipped settings)</small>' : ref ? ' <small>(in brackets: against every step with the shipped settings)</small>' : ' <small>(run once with every step and the shipped settings to compare)</small>');
   $('result').title = 'Work is measured in this browser and varies by a few percent from run to run; the counts are those of the last frame.';
-  return res;
+  showTally(F, m, work); return res;
 }
 svg.addEventListener('wheel', (ev) => { ev.preventDefault(); const p = svg.createSVGPoint(); p.x = ev.clientX; p.y = ev.clientY; const q = p.matrixTransform(svg.getScreenCTM().inverse()), f = Math.exp(Math.max(-60, Math.min(60, ev.deltaY)) * 0.0015);
   view = { x: q.x - (q.x - view.x) * f, y: q.y - (q.y - view.y) * f, w: view.w * f, h: view.h * f }; userView = true; svg.setAttribute('viewBox', `${view.x} ${view.y} ${view.w} ${view.h}`); }, { passive: false });
 window.addEventListener('resize', () => { CR = null; if (R) render(); });
 
-// ---------- the Layout Lab, kept in step ----------
-// The lab opens on the frame shown here and follows the playback until a class is moved there; each move comes back here
-// and the playback continues from it (BroadcastChannel 'layout-sync'; the frame to open on is left in localStorage).
-const bc = 'BroadcastChannel' in window ? new BroadcastChannel('layout-sync') : null;
-function framePayload() {
-  const P = C.P.map((p) => (p ? [Math.round(p.x * 10) / 10, Math.round(p.y * 10) / 10] : null)), H = [];
-  R.E.forEach((e, k) => { if (e.s === e.t) return; const r = C.routes[k]; H.push(r && r.bends ? r.bends.map((h) => [+h.t.toFixed(4), +h.d.toFixed(1)]) : []); });
-  return { type: 'frame', graph: R.key, algo: R.algo, n: R.n, j: C.fj, of: R.frames.length, key: C.key, step: meta(C.key)[2], group: meta(C.key)[1], P, H };
+// ---------- file menu: your own graph, exports of the drawing shown, your notes ----------
+$('fileBtn').onclick = (ev) => { ev.stopPropagation(); $('fForget').hidden = !(R && MODELS[R.key] && MODELS[R.key].imported); $('fileMenu').classList.toggle('open'); };
+document.addEventListener('click', () => $('fileMenu').classList.remove('open'));
+const baseName = () => String((MODELS[R.key] && MODELS[R.key].name) || R.key).replace(/^Public: /, '').replace(/[^\w.-]+/g, '_').replace(/_+$/, '') || 'graph';
+const shown = () => C.P.map((p, v) => p || null);
+function linkPoly(k) { const e = R.E[k], A = C.P[e.s], B = C.P[e.t]; if (!A || !B) return []; const r = C.routes[k]; if (e.s === e.t && !(r && r.loop)) return []; return O.routePoly(A, B, r, 6); }
+function drawnBox() { let x1 = 1e18, y1 = 1e18, x2 = -1e18, y2 = -1e18; const add = (x, y) => { x1 = Math.min(x1, x); y1 = Math.min(y1, y); x2 = Math.max(x2, x); y2 = Math.max(y2, y); };
+  C.P.forEach((p, v) => { if (p) { add(p.x - R.D[v].w / 2, p.y - R.D[v].h / 2); add(p.x + R.D[v].w / 2, p.y + R.D[v].h / 2); } }); R.E.forEach((e, k) => linkPoly(k).forEach((q) => add(q.x, q.y)));
+  return { x: x1 - 20, y: y1 - 20, w: x2 - x1 + 40, h: y2 - y1 + 40 }; }
+function exportSvg() {
+  const b = drawnBox(), r1 = (x) => Math.round(x * 10) / 10;
+  let s = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="${r1(b.x)} ${r1(b.y)} ${r1(b.w)} ${r1(b.h)}" width="${Math.round(b.w)}" height="${Math.round(b.h)}" font-family="Segoe UI, system-ui, sans-serif">`
+    + '<style>.link{fill:none;stroke:#8b97a8;stroke-width:1.4}.link.sub{stroke:#6f9a54;stroke-width:1.8}.shape{fill:#eef3fb;stroke:#6d86b0;stroke-width:1}.lbg{fill:#fff;opacity:.85}text{font-size:11px;fill:#1d232b}.lname rect{fill:#fffdf5;opacity:.9}.lname text{font-size:10px;fill:#4b5563}</style>'
+    + `<rect x="${r1(b.x)}" y="${r1(b.y)}" width="${r1(b.w)}" height="${r1(b.h)}" fill="#fff"/>`;
+  R.E.forEach((e, k) => { const A = C.P[e.s], B = C.P[e.t]; if (!A || !B) return; const r = C.routes[k]; if (e.s === e.t && !(r && r.loop)) return; s += `<path class="link${e.sub ? ' sub' : ''}" d="${pathOf(A, B, r)}"/>`; });
+  if ($('names').checked) R.E.forEach((e, k) => { const r = C.routes[k]; if (!r || !r.label || !e.name) return; const L = r.label;
+    s += `<g class="lname"><rect x="${r1(L.x - L.w / 2)}" y="${r1(L.y - L.h / 2)}" width="${r1(L.w)}" height="${r1(L.h)}" rx="3"/><text x="${r1(L.x)}" y="${r1(L.y + 3.5)}" text-anchor="middle">${esc(e.name)}</text></g>`; });
+  C.P.forEach((p, i) => { if (p) s += `<g transform="translate(${r1(p.x)},${r1(p.y)})">${LayoutGraphs.nodeSvg(R.labels[i], R.D[i], esc)}</g>`; });
+  return s + '</svg>';
 }
-let postT = 0, postLast = '';
-function postFrame() { if (!bc || !C) return; const now = performance.now(), sig = C.j + ':' + C.u0.toFixed(2); if (sig === postLast || (playing && now - postT < 90)) return; postT = now; postLast = sig; bc.postMessage(framePayload()); }
-if (bc) bc.onmessage = (ev) => { const m = ev.data || {}; if (m.type === 'edit') applyEdit(m); else if (m.type === 'hello' && R && C) { postLast = ''; postFrame(); } };
-$('labLink').addEventListener('click', (ev) => { if (!R || !C) return; try { localStorage.setItem('layout-sync:frame', JSON.stringify(framePayload())); } catch (e) {}
-  const q = `?graph=${R.key}&algo=${R.engine ? 'auto' : R.algo}&sync=1`; $('labLink').href = 'lab.html' + q;
-  if (window.SiteNav && SiteNav.inSite) { ev.preventDefault(); SiteNav.go('lab', q); } }); // in the one-page site: switch to its Lab
+function exportPng() {
+  const b = drawnBox(), k = Math.min(3, 4000 / Math.max(b.w, b.h)) || 1, img = new Image(), url = URL.createObjectURL(new Blob([exportSvg()], { type: 'image/svg+xml' }));
+  img.onload = () => { const c = document.createElement('canvas'); c.width = Math.round(b.w * k); c.height = Math.round(b.h * k); const x = c.getContext('2d'); x.drawImage(img, 0, 0, c.width, c.height); URL.revokeObjectURL(url);
+    c.toBlob((blob) => LayoutGraphs.download(baseName() + '.png', blob), 'image/png'); };
+  img.src = url;
+}
+function exportJson() {
+  const r1 = (x) => Math.round(x * 10) / 10, iris = R.iris;
+  return JSON.stringify({ graph: (MODELS[R.key] && MODELS[R.key].name) || R.key, layout: $('algo').selectedOptions[0].textContent, frame: C.fj + 1, step: meta(C.key)[2], nodeStyle: LayoutGraphs.style(), generator: 'Ontology Layouts, Layout Playback',
+    nodes: R.labels.map((l, i) => ({ id: i, label: l, iri: iris ? iris[i] : undefined, x: C.P[i] ? r1(C.P[i].x) : null, y: C.P[i] ? r1(C.P[i].y) : null, w: r1(R.D[i].w), h: r1(R.D[i].h), shape: R.D[i].shape || 'box', r: R.D[i].r })),
+    links: R.E.map((e, k) => ({ source: e.s, target: e.t, kind: e.sub ? 'subClassOf' : 'relationship', name: e.name || undefined, path: linkPoly(k).map((q) => [r1(q.x), r1(q.y)]) })) }, null, 1);
+}
+// "Copy the math": the run as plain text, for a reader (or another assistant) who has not seen the page
+function mathText() {
+  const r0 = (x) => Math.round(x), F = R.frames, SS2 = stepStats(), me = lastProblems(R), M = R.rivals || {}, setup = setupNow();
+  const L = [`Graph layout run: ${(MODELS[R.key] && MODELS[R.key].name) || R.key}, ${R.n} classes (boxes), ${R.E.length} links. Layout: ${ALGO_NAME[R.algo] || R.algo}, seed ${R.seed}.`,
+    'Problems = links crossing + links running through a class box (within 3 px) + link names covered + overlapping boxes. Area = drawing width x height / room the boxes take. Lower is better for all.',
+    `Lines: ${LINES === 'straight' ? 'straight' : LINES === 'round' ? 'bent round classes only' : 'bent round classes and away from crossings'}. Steps switched off: ${setup.leftOut.join(', ') || 'none'}.`,
+    `Result: problems ${me.pr} (crossings ${me.cross}, through a class ${me.thru}, sharp crossings ${me.sharp}), area ${me.area != null ? me.area.toFixed(1) : '?'}, time ${r0(me.ms)} ms.`,
+    'Our other layouts on the same graph, same settings: ' + (Object.keys(M).filter((a) => a !== R.algo).map((a) => `${ALGO_NAME[a]}: problems ${M[a].pr} (crossings ${M[a].cross}, through ${M[a].thru}, sharp ${M[a].sharp}), area ${M[a].area != null ? M[a].area.toFixed(1) : '?'}, ${r0(M[a].ms)} ms`).join('; ') || 'not measured yet'), '',
+    'STEPS, in the order they ran (time, frames, problems on the drawing after the last frame of the step: crossings / through a class / classes placed):'];
+  const told = new Set();
+  for (let j = 1; j < F.length;) { const k = F[j].key; let e = j, ms = 0; while (e < F.length && F[e].key === k) ms += F[e++].ms || 0;
+    const m = metricsAt(e - 1), md = meta(k);
+    L.push(`- ${md[2]} [${md[1]}]: ${r0(ms)} ms, ${e - j} frame${e - j > 1 ? 's' : ''}; after: ${m.cross} / ${m.thru} / ${m.placed} of ${R.n}.${told.has(k) ? '' : ' What it does: ' + md[3]}`); told.add(k); j = e; }
+  L.push('', 'CLASSES (id, name, x, y, box width, box height), final positions:');
+  const P = C && C.P ? C.P : []; const f = F[F.length - 1];
+  R.labels.forEach((l, i) => { const x = f.P[2 * i], y = f.P[2 * i + 1]; L.push(`${i} ${String(l).replace(/\s+/g, '_')} ${isNaN(x) ? '-' : r0(x)} ${isNaN(y) ? '-' : r0(y)} ${r0(R.D[i].w)} ${r0(R.D[i].h)}`); });
+  L.push('', 'LINKS (from id, to id, kind, name):'); R.E.forEach((e) => L.push(`${e.s} ${e.t} ${e.sub ? 'subClassOf' : 'rel'}${e.name ? ' ' + e.name : ''}`));
+  return L.join(String.fromCharCode(10));
+}
+function exportGraphml() {
+  const x = (t) => String(t).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/"/g, '&quot;'), r1 = (v) => Math.round(v * 10) / 10, iris = R.iris;
+  let s = '<?xml version="1.0" encoding="UTF-8"?>\n<graphml xmlns="http://graphml.graphdrawing.org/xmlns">\n'
+    + ['label', 'iri', 'x', 'y', 'width', 'height'].map((k) => `<key id="${k}" for="node" attr.name="${k}" attr.type="${/^(x|y|width|height)$/.test(k) ? 'double' : 'string'}"/>`).join('\n')
+    + '\n<key id="kind" for="edge" attr.name="kind" attr.type="string"/>\n<graph id="G" edgedefault="directed">\n';
+  R.labels.forEach((l, i) => { const p = C.P[i] || { x: 0, y: 0 }; s += `<node id="n${i}"><data key="label">${x(l)}</data>${iris ? `<data key="iri">${x(iris[i])}</data>` : ''}<data key="x">${r1(p.x)}</data><data key="y">${r1(p.y)}</data><data key="width">${r1(R.D[i].w)}</data><data key="height">${r1(R.D[i].h)}</data></node>\n`; });
+  R.E.forEach((e, k) => (s += `<edge id="e${k}" source="n${e.s}" target="n${e.t}"><data key="kind">${e.sub ? 'subClassOf' : 'relationship'}</data></edge>\n`));
+  return s + '</graph>\n</graphml>\n';
+}
+const sessionBody = () => localStorage.getItem('playback-notes:' + SESS.id) || JSON.stringify({ id: SESS.id, events: SESS.events });
+$('fileMenu').querySelector('.fm').onclick = (ev) => { const b = ev.target.closest('button'); if (!b) return; $('fileMenu').classList.remove('open'); const f = b.dataset.f;
+  if (f === 'ttl') { $('ttlFile').click(); return; }
+  if (!R || !C) return;
+  if (f === 'forget') { if (!MODELS[R.key].imported) return; LayoutGraphs.remove(R.key); ownGraphs(); $('graph').value = 'crm'; run(); return; }
+  if (f === 'svg') LayoutGraphs.download(baseName() + '.svg', exportSvg(), 'image/svg+xml');
+  else if (f === 'png') exportPng();
+  else if (f === 'json') LayoutGraphs.download(baseName() + '.layout.json', exportJson(), 'application/json');
+  else if (f === 'graphml') LayoutGraphs.download(baseName() + '.graphml', exportGraphml(), 'application/xml');
+  else if (f === 'session') LayoutGraphs.download(SESS.id + '.json', sessionBody(), 'application/json');
+  else if (f === 'math') { const t = mathText(); (navigator.clipboard ? navigator.clipboard.writeText(t) : Promise.reject()).then(() => ($('saveInfo').textContent = 'the math is copied (' + Math.round(t.length / 1000) + ' k characters)'), () => LayoutGraphs.download(baseName() + '.math.txt', t, 'text/plain')); }
+  note('export', { format: f, frame: C.fj + 1 }); };
+function ownGraphs() { // the graphs read from files, first in the list
+  let g = $('graph').querySelector('optgroup[data-own]'); if (g) g.remove();
+  const ks = LayoutGraphs.imported(); if (!ks.length) return;
+  g = document.createElement('optgroup'); g.label = 'Your graphs'; g.dataset.own = '1';
+  ks.forEach((k) => { const o = document.createElement('option'); o.value = k; o.textContent = MODELS[k].name; g.appendChild(o); }); $('graph').prepend(g);
+}
+$('ttlFile').onchange = async () => { const file = $('ttlFile').files[0]; $('ttlFile').value = ''; if (!file) return;
+  let g; try { g = OntologyTTL.load(await file.text()); } catch (err) { alert('Could not read ' + file.name + ':\n' + err.message); return; }
+  if (!g.labels.length) { alert(file.name + ' has no classes: the playback draws classes (owl:Class, rdfs:Class, anything in rdfs:subClassOf) and the object properties between them.'); return; }
+  if (g.labels.length > 600 && !confirm(`${file.name} has ${g.labels.length} classes. Laying it out may take several seconds. Go on?`)) return;
+  const key = LayoutGraphs.add({ name: file.name.replace(/\.[^.]+$/, '') + ` (${g.labels.length})`, labels: g.labels, edges: g.edges, iris: g.iris });
+  ownGraphs(); $('graph').value = key; run();
+  setTimeout(() => note('import', { file: file.name, classes: g.stats.classes, subclassLinks: g.stats.subclassLinks, relationshipLinks: g.stats.relationshipLinks, skipped: g.stats.skipped }), 500); };
+
+// ---------- where to look first: graphs where the chosen layout is not the best of ours ----------
+// bestof.json (written by bestof.mjs) holds the problems each of our layouts leaves on each graph, seed 1, boxes; a graph
+// where another of ours leaves fewer gets a mark in the list, so feedback can start there
+let BEST = null;
+const ALGO_NAME = { auto: 'Best Read', compact: 'Tidy Stress', grouped: 'Mycelium', tidy: 'Tidy Mycelium', tidyS: 'Tidy Mycelium, smaller drawings', tidyQ: 'Tidy Mycelium, faster' };
+// the Lab's Tidy Mycelium entries: the library's prefer option
+const TM_PREFER = { tidyS: 'smaller', tidyQ: 'faster' };
+function isTM(a) { return a === 'tidy' || a === 'tidyS' || a === 'tidyQ'; }
+function markGraphs() {
+  const a = $('algo').value; let behind = 0;
+  [...$('graph').options].forEach((o) => { if (o.dataset.name == null) o.dataset.name = o.textContent; let t = o.dataset.name; const g = BEST && BEST.graphs[o.value];
+    if (g && g[a] != null) { const ks = Object.keys(g).filter((k) => k === a || !(isTM(k) && isTM(a))), best = Math.min(...ks.map((k) => g[k])); if (g[a] > best) { behind++; t += `  ◂ ${ks.filter((k) => g[k] === best).map((k) => ALGO_NAME[k]).join(', ')}: ${g[a] - best} fewer problems`; } }
+    o.textContent = t; });
+  $('graph').title = BEST && ALGO_NAME[a] ? `◂ marks the ${behind} graph${behind === 1 ? '' : 's'} where another of our layouts leaves fewer problems than ${ALGO_NAME[a]} (crossed links, links through classes, covered names and overlapping boxes, after the clean-up and the link drawing; seed 1, boxes; measured ${BEST.made}): good places to start` : 'Graph';
+}
+fetch('bestof.json', { cache: 'no-cache' }).then((r) => (r.ok ? r.json() : null)).then((j) => { BEST = j; markGraphs(); }).catch(() => {});
 
 // ---------- run ----------
 let runSeq = 0;
 function run(keepPlace) {
   const keepU = keepPlace === true && R && TL ? T / TL.total : null;
   const key = $('graph').value, algo = $('algo').value, seed = Math.max(1, +$('seed').value || 1), my = ++runSeq, engine = !!ENGINES[algo];
-  pause(); $('status').textContent = engine ? `Running ${ENGINES[algo].name}…` : 'Laying out…'; $('oursTog').hidden = !engine;
-  history.replaceState(null, '', `?graph=${key}&algo=${algo}&seed=${seed}`); $('labLink').href = `lab.html?graph=${key}&sync=1`;
-  store.set('last', { key, algo, seed }); $('editBar').classList.remove('on');
+  pause(); $('status').textContent = engine ? `Running ${ENGINES[algo].name}…` : 'Laying out…'; $('oursTog').hidden = !engine; $('xBox').hidden = engine || isTM(algo); UNDO = [];
+  history.replaceState(null, '', `?graph=${key}&algo=${algo}&seed=${seed}`);
+  store.set('last', { key, algo, seed }); $('editBar').classList.remove('on'); markGraphs();
   const warm = async () => { if (warmed || engine) return; warmed = true; $('status').textContent = 'Warming up…'; await recordRun(key, algo, seed); };
   setTimeout(() => warm().then(() => recordRun(key, algo, seed)).then((r) => {
     if (my !== runSeq) return; R = r; R.base = null; timeline(); buildPanel(); T = 0; countsFor = -1; userView = false;
     if (SESS.key !== R.key + '|' + R.algo + '|' + R.seed) newSession();
     fitView(unflat(R.frames[R.frames.length - 1].P), true);
     const res = showResult(); note('run', { setup: setupNow(), result: res });
+    if (!engine) setTimeout(() => measureRivals(key, algo, seed).then((M) => { if (my !== runSeq) return; R.rivals = M; showTally(R.frames, null, R.frames.reduce((a, f) => a + (f.ms || 0), 0)); }).catch((e) => console.error(e)), 400);
     $('status').textContent = `${R.n} classes, ${R.E.length} links`;
     if (keepU != null) { T = keepU * TL.total; render(); } else play(); // a toggle keeps the place and stays paused, so the change is seen at the same moment
   }).catch((err) => { if (my === runSeq) $('status').textContent = 'Could not lay out: ' + err.message; console.error(err); }), 20);
 }
+ownGraphs();
 { const st = LayoutGraphs.parse(LayoutGraphs.style()); $('nstyle').value = st.shape; $('nlabel').value = st.label; }
 $('nstyle').onchange = $('nlabel').onchange = (ev) => {
   if (ev.target.id === 'nstyle') $('nlabel').value = LayoutGraphs.parse($('nstyle').value).label; // each shape's usual name position
@@ -982,9 +1372,11 @@ const showLimit = () => ($('limitV').textContent = (+$('limit').value / 1000).to
 $('limit').oninput = showLimit; $('limit').onchange = () => { store.set('limit2', +$('limit').value); run(true); };
 const q = new URLSearchParams(location.search), last = store.get('last', {});
 $('graph').value = q.get('graph') || last.key || 'crm'; if (!$('graph').value) $('graph').value = 'crm';
-$('algo').value = q.get('algo') || last.algo || 'auto'; if (!$('algo').value) $('algo').value = 'auto'; $('seed').value = q.get('seed') || last.seed || 1;
-$('speed').value = store.get('speed3', 0.7); showSpeed(); // 5% of real speed $('limit').value = store.get('limit2', 1000); showLimit();
-['follow', 'names', 'marks'].forEach((id) => ($(id).checked = store.get(id, true)));
+$('algo').value = (q.get('algo') || last.algo || 'tidy').replace(/^tidyF$/, 'tidy'); if (!$('algo').value) $('algo').value = 'tidy'; $('seed').value = q.get('seed') || last.seed || 1;
+$('speed').value = store.get('speed3', 0.7); showSpeed(); // 5% of real speed
+$('limit').value = store.get('limit2', 1000); showLimit();
+['follow', 'names', 'marks', 'handles'].forEach((id) => ($(id).checked = store.get(id, true)));
+$('lines').value = LINES; $('lines').onchange = () => { LINES = $('lines').value; store.set('lines', LINES); note('step', { lines: LINES }); run(true); };
 run();
 </script>
 </body>

@@ -66,6 +66,36 @@
   ]
  },
  "totals": {
+  "Tidy Mycelium": {
+   "cross": 402,
+   "thru": 54,
+   "fill": 9.1,
+   "ms": 271,
+   "maxMs": 1033,
+   "xang": 69.7,
+   "down": 0.54,
+   "thruG": 0
+  },
+  "Tidy Mycelium, smaller": {
+   "cross": 474,
+   "thru": 100,
+   "fill": 9.1,
+   "ms": 281,
+   "maxMs": 983,
+   "xang": 70,
+   "down": 0.54,
+   "thruG": 0
+  },
+  "Tidy Mycelium, faster": {
+   "cross": 480,
+   "thru": 63,
+   "fill": 10.8,
+   "ms": 214,
+   "maxMs": 594,
+   "xang": 66.7,
+   "down": 0.5,
+   "thruG": 0
+  },
   "Best Read": {
    "cross": 480,
    "thru": 51,
@@ -73,7 +103,8 @@
    "ms": 378,
    "maxMs": 703,
    "xang": 71.5,
-   "down": 0.49
+   "down": 0.49,
+   "thruG": 0
   },
   "Tidy Stress": {
    "cross": 627,
@@ -82,7 +113,8 @@
    "ms": 341,
    "maxMs": 883,
    "xang": 74.4,
-   "down": 0.52
+   "down": 0.52,
+   "thruG": 0
   },
   "Mycelium": {
    "cross": 442,
@@ -91,7 +123,8 @@
    "ms": 230,
    "maxMs": 735,
    "xang": 66.8,
-   "down": 0.48
+   "down": 0.48,
+   "thruG": 0
   },
   "Graphviz neato (tuned)": {
    "cross": 960,
@@ -100,7 +133,8 @@
    "ms": 230,
    "maxMs": 4246,
    "xang": 68.1,
-   "down": 0.66
+   "down": 0.66,
+   "thruG": 0
   },
   "Graphviz sfdp (tuned)": {
    "cross": 1070,
@@ -109,7 +143,8 @@
    "ms": 375,
    "maxMs": 5565,
    "xang": 65.7,
-   "down": 0.59
+   "down": 0.59,
+   "thruG": 0
   },
   "Graphviz fdp (tuned)": {
    "cross": 1488,
@@ -118,7 +153,8 @@
    "ms": 177,
    "maxMs": 1516,
    "xang": 67.5,
-   "down": 0.49
+   "down": 0.49,
+   "thruG": 0
   },
   "ELK stress (tuned)": {
    "cross": 1425,
@@ -127,7 +163,8 @@
    "ms": 3632,
    "maxMs": 106267,
    "xang": 66.8,
-   "down": 0.51
+   "down": 0.51,
+   "thruG": 0
   },
   "ELK force (tuned)": {
    "cross": 8724,
@@ -136,7 +173,8 @@
    "ms": 8349,
    "maxMs": 110388,
    "xang": 61.4,
-   "down": 0.53
+   "down": 0.53,
+   "thruG": 0
   },
   "ELK layered (tuned)": {
    "cross": 1567,
@@ -145,7 +183,8 @@
    "ms": 2396,
    "maxMs": 88465,
    "xang": 47.9,
-   "down": 0.83
+   "down": 0.83,
+   "thruG": 0
   },
   "dagre (tuned)": {
    "cross": 2027,
@@ -154,7 +193,8 @@
    "ms": 622,
    "maxMs": 4591,
    "xang": 53.9,
-   "down": 0.54
+   "down": 0.54,
+   "thruG": 0
   },
   "WebCola (tuned)": {
    "cross": 971,
@@ -163,7 +203,8 @@
    "ms": 5115,
    "maxMs": 213039,
    "xang": 68.8,
-   "down": 0.47
+   "down": 0.47,
+   "thruG": 0
   },
   "d3-force (tuned)": {
    "cross": 1486,
@@ -172,7 +213,8 @@
    "ms": 2254,
    "maxMs": 15343,
    "xang": 65.4,
-   "down": 0.58
+   "down": 0.58,
+   "thruG": 0
   },
   "Cytoscape cose (tuned)": {
    "cross": 2435,
@@ -181,7 +223,8 @@
    "ms": 2583,
    "maxMs": 67507,
    "xang": 28.8,
-   "down": 0.56
+   "down": 0.56,
+   "thruG": 0
   },
   "Cytoscape fcose (tuned)": {
    "cross": 1844,
@@ -190,7 +233,8 @@
    "ms": 761,
    "maxMs": 4970,
    "xang": 70.7,
-   "down": 0.44
+   "down": 0.44,
+   "thruG": 0
   },
   "Graphviz neato": {
    "cross": 1464,
@@ -199,7 +243,8 @@
    "ms": 50,
    "maxMs": 514,
    "xang": 65.3,
-   "down": 0.58
+   "down": 0.58,
+   "thruG": 0
   },
   "Graphviz fdp": {
    "cross": 6903,
@@ -208,7 +253,8 @@
    "ms": 46,
    "maxMs": 365,
    "xang": 59.6,
-   "down": 0.51
+   "down": 0.51,
+   "thruG": 0
   },
   "Graphviz sfdp": {
    "cross": 1294,
@@ -217,7 +263,8 @@
    "ms": 40,
    "maxMs": 401,
    "xang": 65.3,
-   "down": 0.45
+   "down": 0.45,
+   "thruG": 0
   },
   "ELK stress": {
    "cross": 1460,
@@ -226,7 +273,8 @@
    "ms": 874,
    "maxMs": 25303,
    "xang": 65.4,
-   "down": 0.55
+   "down": 0.55,
+   "thruG": 0
   },
   "ELK force": {
    "cross": 9634,
@@ -235,7 +283,8 @@
    "ms": 741,
    "maxMs": 23439,
    "xang": 59.6,
-   "down": 0.52
+   "down": 0.52,
+   "thruG": 0
   },
   "ELK layered": {
    "cross": 2054,
@@ -244,7 +293,8 @@
    "ms": 347,
    "maxMs": 1307,
    "xang": 42.4,
-   "down": 0.4
+   "down": 0.4,
+   "thruG": 0
   },
   "WebCola": {
    "cross": 1118,
@@ -253,7 +303,8 @@
    "ms": 1132,
    "maxMs": 55468,
    "xang": 67.7,
-   "down": 0.48
+   "down": 0.48,
+   "thruG": 0
   },
   "d3-force": {
    "cross": 2358,
@@ -262,7 +313,8 @@
    "ms": 280,
    "maxMs": 971,
    "xang": 63.8,
-   "down": 0.56
+   "down": 0.56,
+   "thruG": 0
   },
   "dagre": {
    "cross": 2542,
@@ -271,7 +323,8 @@
    "ms": 120,
    "maxMs": 929,
    "xang": 52.2,
-   "down": 0
+   "down": 0,
+   "thruG": 0
   },
   "Cytoscape cose": {
    "cross": 3016,
@@ -280,7 +333,8 @@
    "ms": 1018,
    "maxMs": 19037,
    "xang": 24.2,
-   "down": 0.48
+   "down": 0.48,
+   "thruG": 0
   },
   "Cytoscape fcose": {
    "cross": 2466,
@@ -289,88 +343,103 @@
    "ms": 75,
    "maxMs": 607,
    "xang": 66.8,
-   "down": 0.42
+   "down": 0.42,
+   "thruG": 0
   }
  },
  "tunedRanks": {
   "five": {
+   "Tidy Mycelium": 3.34,
    "Best Read": 2.91,
    "Tidy Stress": 2.57,
    "Mycelium": 3.85,
-   "Graphviz neato": 4.87,
-   "Graphviz sfdp": 5.33,
-   "Graphviz fdp": 6.06,
-   "ELK stress": 6.21,
-   "ELK force": 9.53,
-   "ELK layered": 8.27,
-   "dagre": 8.57,
-   "WebCola": 4.74,
-   "d3-force": 6.57,
-   "Cytoscape cose": 9.31,
-   "Cytoscape fcose": 5.63
+   "Graphviz neato": 4.79,
+   "Graphviz sfdp": 5.27,
+   "Graphviz fdp": 6,
+   "ELK stress": 6.15,
+   "ELK force": 9.51,
+   "ELK layered": 8.26,
+   "dagre": 8.63,
+   "WebCola": 4.67,
+   "d3-force": 6.49,
+   "Cytoscape cose": 9.33,
+   "Cytoscape fcose": 5.56
   },
   "down": {
+   "Tidy Mycelium": 3.87,
    "Best Read": 3.65,
    "Tidy Stress": 3.32,
    "Mycelium": 4.5,
-   "Graphviz neato": 4.78,
-   "Graphviz sfdp": 5.5,
-   "Graphviz fdp": 6.22,
-   "ELK stress": 6.33,
-   "ELK force": 9.14,
+   "Graphviz neato": 4.73,
+   "Graphviz sfdp": 5.46,
+   "Graphviz fdp": 6.17,
+   "ELK stress": 6.3,
+   "ELK force": 9.15,
    "ELK layered": 7.5,
-   "dagre": 8.23,
-   "WebCola": 5.19,
-   "d3-force": 6.56,
-   "Cytoscape cose": 8.82,
-   "Cytoscape fcose": 6.08
+   "dagre": 8.28,
+   "WebCola": 5.16,
+   "d3-force": 6.51,
+   "Cytoscape cose": 8.83,
+   "Cytoscape fcose": 6.04
   },
   "dist": {
+   "Tidy Mycelium": 5.1,
    "Best Read": 4.68,
    "Tidy Stress": 4.3,
    "Mycelium": 5.45,
-   "Graphviz neato": 4.8,
-   "Graphviz sfdp": 5.89,
-   "Graphviz fdp": 5.83,
-   "ELK stress": 5.12,
-   "ELK force": 9.02,
-   "ELK layered": 8.83,
-   "dagre": 9.26,
-   "WebCola": 4.45,
-   "d3-force": 5.66,
+   "Graphviz neato": 4.73,
+   "Graphviz sfdp": 5.82,
+   "Graphviz fdp": 5.78,
+   "ELK stress": 5.08,
+   "ELK force": 9,
+   "ELK layered": 8.8,
+   "dagre": 9.29,
+   "WebCola": 4.4,
+   "d3-force": 5.61,
    "Cytoscape cose": 9.65,
-   "Cytoscape fcose": 4.8
+   "Cytoscape fcose": 4.75
   }
  },
- "tunedRanksBR": {
-  "five": 2.91,
-  "down": 3.65,
-  "dist": 4.68
+ "tunedRanksTM": {
+  "five": 3.34,
+  "down": 3.87,
+  "dist": 5.1
  },
  "tunedPlaces": {
   "five": {
+   "Tidy Mycelium": 1,
    "Best Read": 1,
    "Tidy Stress": 1,
    "Mycelium": 1,
    "next": "WebCola",
-   "nextRank": 4.74
+   "nextRank": 4.67
   },
   "down": {
+   "Tidy Mycelium": 1,
    "Best Read": 1,
    "Tidy Stress": 1,
    "Mycelium": 1,
    "next": "Graphviz neato",
-   "nextRank": 4.78
+   "nextRank": 4.73
   },
   "dist": {
+   "Tidy Mycelium": 5,
    "Best Read": 2,
    "Tidy Stress": 1,
    "Mycelium": 5,
    "next": "WebCola",
-   "nextRank": 4.45
+   "nextRank": 4.4
   }
  },
  "tunedRanksDetail": {
+  "Tidy Mycelium": {
+   "cross": 1.53,
+   "thru": 2.47,
+   "fill": 5.13,
+   "xang": 4.03,
+   "angres": 3.53,
+   "mean": 3.34
+  },
   "Best Read": {
    "cross": 1.37,
    "thru": 1.97,
@@ -396,117 +465,150 @@
    "mean": 3.85
   },
   "Graphviz neato": {
-   "cross": 3.17,
+   "cross": 3.1,
    "thru": 2.6,
-   "fill": 10.13,
-   "xang": 4.97,
-   "angres": 3.47,
-   "mean": 4.87
+   "fill": 10.07,
+   "xang": 4.83,
+   "angres": 3.33,
+   "mean": 4.79
   },
   "Graphviz sfdp": {
    "cross": 4.33,
-   "thru": 4.7,
+   "thru": 4.63,
    "fill": 5.53,
-   "xang": 5.9,
+   "xang": 5.63,
    "angres": 6.2,
-   "mean": 5.33
+   "mean": 5.27
   },
   "Graphviz fdp": {
    "cross": 6.9,
-   "thru": 4.7,
-   "fill": 8.67,
-   "xang": 5.5,
+   "thru": 4.6,
+   "fill": 8.6,
+   "xang": 5.37,
    "angres": 4.53,
-   "mean": 6.06
+   "mean": 6
   },
   "ELK stress": {
    "cross": 6.47,
-   "thru": 6.17,
-   "fill": 7.27,
+   "thru": 6.1,
+   "fill": 7.07,
    "xang": 5.5,
-   "angres": 5.67,
-   "mean": 6.21
+   "angres": 5.6,
+   "mean": 6.15
   },
   "ELK force": {
    "cross": 11.73,
    "thru": 9.7,
    "fill": 7.93,
-   "xang": 8.27,
+   "xang": 8.2,
    "angres": 10,
-   "mean": 9.53
+   "mean": 9.51
   },
   "ELK layered": {
-   "cross": 6.6,
+   "cross": 6.53,
    "thru": 8.2,
-   "fill": 7.13,
-   "xang": 9.77,
+   "fill": 7,
+   "xang": 9.9,
    "angres": 9.67,
-   "mean": 8.27
+   "mean": 8.26
   },
   "dagre": {
    "cross": 9.47,
    "thru": 10.53,
-   "fill": 3.07,
-   "xang": 9.8,
+   "fill": 3.27,
+   "xang": 9.87,
    "angres": 10,
-   "mean": 8.57
+   "mean": 8.63
   },
   "WebCola": {
-   "cross": 3.5,
-   "thru": 4.17,
-   "fill": 8.93,
+   "cross": 3.47,
+   "thru": 4.07,
+   "fill": 8.8,
    "xang": 3.97,
-   "angres": 3.13,
-   "mean": 4.74
+   "angres": 3.07,
+   "mean": 4.67
   },
   "d3-force": {
    "cross": 7.17,
-   "thru": 5.53,
-   "fill": 9.13,
-   "xang": 5.73,
-   "angres": 5.27,
-   "mean": 6.57
+   "thru": 5.43,
+   "fill": 9.07,
+   "xang": 5.67,
+   "angres": 5.13,
+   "mean": 6.49
   },
   "Cytoscape cose": {
    "cross": 10.13,
    "thru": 12,
-   "fill": 1.2,
+   "fill": 1.33,
    "xang": 11.67,
    "angres": 11.53,
-   "mean": 9.31
+   "mean": 9.33
   },
   "Cytoscape fcose": {
    "cross": 7.17,
-   "thru": 7.73,
-   "fill": 4.33,
-   "xang": 3.43,
-   "angres": 5.47,
-   "mean": 5.63
+   "thru": 7.67,
+   "fill": 4.2,
+   "xang": 3.37,
+   "angres": 5.4,
+   "mean": 5.56
   }
  },
  "defaultRanks": {
+  "Tidy Mycelium": 2.91,
   "Best Read": 2.64,
   "Tidy Stress": 2.39,
   "Mycelium": 3.31,
-  "Graphviz neato": 5.1,
-  "Graphviz fdp": 8.83,
-  "Graphviz sfdp": 4.93,
-  "ELK stress": 5.18,
-  "ELK force": 9.71,
-  "ELK layered": 8.11,
-  "WebCola": 4.37,
-  "d3-force": 6.43,
-  "dagre": 7.73,
-  "Cytoscape cose": 8.99,
-  "Cytoscape fcose": 5.96
+  "Graphviz neato": 5.01,
+  "Graphviz fdp": 8.82,
+  "Graphviz sfdp": 4.87,
+  "ELK stress": 5.13,
+  "ELK force": 9.69,
+  "ELK layered": 8.09,
+  "WebCola": 4.34,
+  "d3-force": 6.42,
+  "dagre": 7.77,
+  "Cytoscape cose": 9.01,
+  "Cytoscape fcose": 5.93
  },
- "defaultRanksBR": 2.64,
- "winsBRvsTuned": {
-  "Best Read": 15
+ "defaultRanksTM": 2.91,
+ "winsTMvsTuned": {
+  "Tidy Mycelium": 13,
+  "Graphviz sfdp": 1,
+  "Graphviz neato": 1
  },
  "heldout": {
   "graphs": 10,
   "totals": {
+   "Tidy Mycelium": {
+    "cross": 292,
+    "thru": 8,
+    "fill": 7.6,
+    "ms": 194,
+    "maxMs": 1451,
+    "xang": 74.5,
+    "down": 0.46,
+    "thruG": 4.5
+   },
+   "Tidy Mycelium, smaller": {
+    "cross": 318,
+    "thru": 23,
+    "fill": 5.7,
+    "ms": 266,
+    "maxMs": 1471,
+    "xang": 73.8,
+    "down": 0.48,
+    "thruG": 10
+   },
+   "Tidy Mycelium, faster": {
+    "cross": 345,
+    "thru": 5,
+    "fill": 11.2,
+    "ms": 134,
+    "maxMs": 686,
+    "xang": 73.7,
+    "down": 0.55,
+    "thruG": 2.5
+   },
    "Best Read": {
     "cross": 308,
     "thru": 43,
@@ -514,7 +616,8 @@
     "ms": 316,
     "maxMs": 776,
     "xang": 76.1,
-    "down": 0.53
+    "down": 0.53,
+    "thruG": 27
    },
    "Tidy Stress": {
     "cross": 386,
@@ -523,7 +626,8 @@
     "ms": 284,
     "maxMs": 974,
     "xang": 76.2,
-    "down": 0.53
+    "down": 0.53,
+    "thruG": 140.25
    },
    "Mycelium": {
     "cross": 315,
@@ -532,7 +636,8 @@
     "ms": 125,
     "maxMs": 758,
     "xang": 76.3,
-    "down": 0.51
+    "down": 0.51,
+    "thruG": 24
    },
    "Graphviz neato (tuned)": {
     "cross": 490,
@@ -541,7 +646,8 @@
     "ms": 110,
     "maxMs": 5142,
     "xang": 68.4,
-    "down": 0.47
+    "down": 0.47,
+    "thruG": 71
    },
    "Graphviz sfdp (tuned)": {
     "cross": 553,
@@ -550,7 +656,8 @@
     "ms": 172,
     "maxMs": 9437,
     "xang": 63.2,
-    "down": 0.55
+    "down": 0.55,
+    "thruG": 144
    },
    "Graphviz fdp (tuned)": {
     "cross": 1086,
@@ -559,7 +666,8 @@
     "ms": 91,
     "maxMs": 1319,
     "xang": 65.5,
-    "down": 0.52
+    "down": 0.52,
+    "thruG": 205.25
    },
    "ELK stress (tuned)": {
     "cross": 727,
@@ -568,7 +676,8 @@
     "ms": 2148,
     "maxMs": 133238,
     "xang": 64.6,
-    "down": 0.48
+    "down": 0.48,
+    "thruG": 314
    },
    "ELK force (tuned)": {
     "cross": 14830,
@@ -577,7 +686,8 @@
     "ms": 5782,
     "maxMs": 341441,
     "xang": 60.4,
-    "down": 0.47
+    "down": 0.47,
+    "thruG": 977
    },
    "ELK layered (tuned)": {
     "cross": 1433,
@@ -586,7 +696,8 @@
     "ms": 469,
     "maxMs": 10937,
     "xang": 61.7,
-    "down": 0.93
+    "down": 0.93,
+    "thruG": 232.25
    },
    "dagre (tuned)": {
     "cross": 1861,
@@ -595,7 +706,8 @@
     "ms": 161,
     "maxMs": 5140,
     "xang": 52.9,
-    "down": 0.65
+    "down": 0.65,
+    "thruG": 1323.25
    },
    "WebCola (tuned)": {
     "cross": 433,
@@ -604,7 +716,8 @@
     "ms": 1343,
     "maxMs": 94086,
     "xang": 71.4,
-    "down": 0.54
+    "down": 0.54,
+    "thruG": 155.25
    },
    "d3-force (tuned)": {
     "cross": 676,
@@ -613,7 +726,8 @@
     "ms": 783,
     "maxMs": 15131,
     "xang": 66.8,
-    "down": 0.53
+    "down": 0.53,
+    "thruG": 204.75
    },
    "Cytoscape cose (tuned)": {
     "cross": 945,
@@ -622,7 +736,8 @@
     "ms": 516,
     "maxMs": 95360,
     "xang": 42.2,
-    "down": 0.4
+    "down": 0.4,
+    "thruG": 2681.5
    },
    "Cytoscape fcose (tuned)": {
     "cross": 1066,
@@ -631,7 +746,8 @@
     "ms": 142,
     "maxMs": 6365,
     "xang": 70.5,
-    "down": 0.45
+    "down": 0.45,
+    "thruG": 704.75
    },
    "Graphviz neato": {
     "cross": 734,
@@ -640,7 +756,8 @@
     "ms": 28,
     "maxMs": 1220,
     "xang": 65,
-    "down": 0.55
+    "down": 0.55,
+    "thruG": 168
    },
    "Graphviz fdp": {
     "cross": 4274,
@@ -649,7 +766,8 @@
     "ms": 25,
     "maxMs": 759,
     "xang": 58.1,
-    "down": 0.45
+    "down": 0.45,
+    "thruG": 629.75
    },
    "Graphviz sfdp": {
     "cross": 666,
@@ -658,7 +776,8 @@
     "ms": 24,
     "maxMs": 1412,
     "xang": 67.9,
-    "down": 0.54
+    "down": 0.54,
+    "thruG": 182
    },
    "ELK stress": {
     "cross": 714,
@@ -667,7 +786,8 @@
     "ms": 516,
     "maxMs": 30159,
     "xang": 66.6,
-    "down": 0.47
+    "down": 0.47,
+    "thruG": 452.75
    },
    "ELK force": {
     "cross": 15907,
@@ -676,7 +796,8 @@
     "ms": 481,
     "maxMs": 34501,
     "xang": 60,
-    "down": 0.46
+    "down": 0.46,
+    "thruG": 941
    },
    "ELK layered": {
     "cross": 2017,
@@ -685,7 +806,8 @@
     "ms": 37,
     "maxMs": 727,
     "xang": 46.7,
-    "down": 0.42
+    "down": 0.42,
+    "thruG": 447.75
    },
    "WebCola": {
     "cross": 440,
@@ -694,7 +816,8 @@
     "ms": 350,
     "maxMs": 33979,
     "xang": 69.6,
-    "down": 0.49
+    "down": 0.49,
+    "thruG": 180
    },
    "d3-force": {
     "cross": 1041,
@@ -703,7 +826,8 @@
     "ms": 55,
     "maxMs": 1007,
     "xang": 64.3,
-    "down": 0.51
+    "down": 0.51,
+    "thruG": 293.5
    },
    "dagre": {
     "cross": 2813,
@@ -712,7 +836,8 @@
     "ms": 34,
     "maxMs": 526,
     "xang": 53.7,
-    "down": 0.03
+    "down": 0.03,
+    "thruG": 1439.25
    },
    "Cytoscape cose": {
     "cross": 1746,
@@ -721,7 +846,8 @@
     "ms": 80,
     "maxMs": 23918,
     "xang": 30.1,
-    "down": 0.53
+    "down": 0.53,
+    "thruG": 4290.25
    },
    "Cytoscape fcose": {
     "cross": 1515,
@@ -730,94 +856,158 @@
     "ms": 14,
     "maxMs": 196,
     "xang": 65.2,
-    "down": 0.43
+    "down": 0.43,
+    "thruG": 876.75
    }
   },
   "ranks": {
    "five": {
+    "Tidy Mycelium": 3.23,
     "Best Read": 2.4,
     "Tidy Stress": 2.62,
     "Mycelium": 2.49,
-    "Graphviz neato": 4.53,
-    "Graphviz sfdp": 6.31,
-    "Graphviz fdp": 6.65,
-    "ELK stress": 5.95,
-    "ELK force": 10.26,
-    "ELK layered": 7.48,
+    "Graphviz neato": 4.44,
+    "Graphviz sfdp": 6.24,
+    "Graphviz fdp": 6.56,
+    "ELK stress": 5.78,
+    "ELK force": 10.24,
+    "ELK layered": 7.38,
     "dagre": 8.64,
-    "WebCola": 4.16,
-    "d3-force": 6.69,
-    "Cytoscape cose": 8.82,
-    "Cytoscape fcose": 6.11
+    "WebCola": 4.03,
+    "d3-force": 6.57,
+    "Cytoscape cose": 8.84,
+    "Cytoscape fcose": 6.05
    },
    "down": {
+    "Tidy Mycelium": 4.07,
     "Best Read": 3.07,
     "Tidy Stress": 3.09,
     "Mycelium": 3.18,
-    "Graphviz neato": 5.04,
-    "Graphviz sfdp": 6.25,
-    "Graphviz fdp": 6.76,
-    "ELK stress": 6.23,
-    "ELK force": 9.84,
-    "ELK layered": 6.5,
+    "Graphviz neato": 4.91,
+    "Graphviz sfdp": 6.2,
+    "Graphviz fdp": 6.66,
+    "ELK stress": 6.07,
+    "ELK force": 9.78,
+    "ELK layered": 6.4,
     "dagre": 7.99,
-    "WebCola": 4.42,
-    "d3-force": 6.53,
-    "Cytoscape cose": 8.74,
-    "Cytoscape fcose": 6.65
+    "WebCola": 4.28,
+    "d3-force": 6.38,
+    "Cytoscape cose": 8.71,
+    "Cytoscape fcose": 6.55
    },
    "dist": {
+    "Tidy Mycelium": 4.64,
     "Best Read": 3.87,
     "Tidy Stress": 3.74,
     "Mycelium": 3.98,
-    "Graphviz neato": 4.39,
-    "Graphviz sfdp": 6.81,
-    "Graphviz fdp": 6.71,
-    "ELK stress": 4.72,
-    "ELK force": 9.67,
-    "ELK layered": 8.49,
+    "Graphviz neato": 4.3,
+    "Graphviz sfdp": 6.73,
+    "Graphviz fdp": 6.61,
+    "ELK stress": 4.6,
+    "ELK force": 9.64,
+    "ELK layered": 8.4,
     "dagre": 9.27,
-    "WebCola": 3.97,
-    "d3-force": 6.12,
-    "Cytoscape cose": 8.91,
-    "Cytoscape fcose": 5.06
+    "WebCola": 3.84,
+    "d3-force": 6.01,
+    "Cytoscape cose": 8.94,
+    "Cytoscape fcose": 5.02
+   },
+   "graded": {
+    "Tidy Mycelium": 3.18,
+    "Best Read": 2.41,
+    "Tidy Stress": 2.67,
+    "Mycelium": 2.49,
+    "Graphviz neato": 4.47,
+    "Graphviz sfdp": 6.29,
+    "Graphviz fdp": 6.57,
+    "ELK stress": 5.88,
+    "ELK force": 10.24,
+    "ELK layered": 7.26,
+    "dagre": 8.58,
+    "WebCola": 4.06,
+    "d3-force": 6.5,
+    "Cytoscape cose": 8.92,
+    "Cytoscape fcose": 6.05
    }
   },
-  "ranksBR": {
-   "five": 2.4,
-   "down": 3.07,
-   "dist": 3.87
+  "ranksTM": {
+   "five": 3.23,
+   "down": 4.07,
+   "dist": 4.64,
+   "graded": 3.18
   },
   "places": {
    "five": {
+    "Tidy Mycelium": 1,
     "Best Read": 1,
     "Tidy Stress": 1,
     "Mycelium": 1,
     "next": "WebCola",
-    "nextRank": 4.16
+    "nextRank": 4.03
    },
    "down": {
+    "Tidy Mycelium": 1,
     "Best Read": 1,
     "Tidy Stress": 1,
     "Mycelium": 1,
     "next": "WebCola",
-    "nextRank": 4.42
+    "nextRank": 4.28
    },
    "dist": {
+    "Tidy Mycelium": 4,
     "Best Read": 1,
     "Tidy Stress": 1,
     "Mycelium": 2,
     "next": "WebCola",
-    "nextRank": 3.97
+    "nextRank": 3.84
+   },
+   "graded": {
+    "Tidy Mycelium": 1,
+    "Best Read": 1,
+    "Tidy Stress": 1,
+    "Mycelium": 1,
+    "next": "WebCola",
+    "nextRank": 4.06
    }
   },
   "wins": {
-   "Best Read": 10
+   "Tidy Mycelium": 9,
+   "Graphviz neato": 1
   }
  },
  "public": {
   "graphs": 26,
   "totals": {
+   "Tidy Mycelium": {
+    "cross": 1060,
+    "thru": 142,
+    "fill": 5.5,
+    "ms": 141,
+    "maxMs": 1682,
+    "xang": 73.2,
+    "down": 0.49,
+    "thruG": 71.5
+   },
+   "Tidy Mycelium, smaller": {
+    "cross": 1100,
+    "thru": 140,
+    "fill": 4.8,
+    "ms": 156,
+    "maxMs": 1366,
+    "xang": 73.7,
+    "down": 0.5,
+    "thruG": 53
+   },
+   "Tidy Mycelium, faster": {
+    "cross": 1192,
+    "thru": 130,
+    "fill": 6.9,
+    "ms": 84,
+    "maxMs": 793,
+    "xang": 70.8,
+    "down": 0.48,
+    "thruG": 60.5
+   },
    "Best Read": {
     "cross": 1241,
     "thru": 84,
@@ -825,7 +1015,8 @@
     "ms": 191,
     "maxMs": 757,
     "xang": 70.3,
-    "down": 0.5
+    "down": 0.5,
+    "thruG": 51.25
    },
    "Tidy Stress": {
     "cross": 1252,
@@ -834,7 +1025,8 @@
     "ms": 140,
     "maxMs": 780,
     "xang": 72,
-    "down": 0.49
+    "down": 0.49,
+    "thruG": 108
    },
    "Mycelium": {
     "cross": 1169,
@@ -843,7 +1035,8 @@
     "ms": 94,
     "maxMs": 770,
     "xang": 68.5,
-    "down": 0.51
+    "down": 0.51,
+    "thruG": 75
    },
    "Graphviz neato (tuned)": {
     "cross": 1670,
@@ -852,7 +1045,8 @@
     "ms": 58,
     "maxMs": 955,
     "xang": 71.1,
-    "down": 0.52
+    "down": 0.52,
+    "thruG": 53.5
    },
    "Graphviz sfdp (tuned)": {
     "cross": 1858,
@@ -861,7 +1055,8 @@
     "ms": 87,
     "maxMs": 1570,
     "xang": 71.8,
-    "down": 0.47
+    "down": 0.47,
+    "thruG": 242.75
    },
    "Graphviz fdp (tuned)": {
     "cross": 2486,
@@ -870,7 +1065,8 @@
     "ms": 45,
     "maxMs": 568,
     "xang": 69.1,
-    "down": 0.49
+    "down": 0.49,
+    "thruG": 235.25
    },
    "ELK stress (tuned)": {
     "cross": 2473,
@@ -879,7 +1075,8 @@
     "ms": 1052,
     "maxMs": 12274,
     "xang": 69.1,
-    "down": 0.54
+    "down": 0.54,
+    "thruG": 301
    },
    "ELK force (tuned)": {
     "cross": 10541,
@@ -888,7 +1085,8 @@
     "ms": 3154,
     "maxMs": 42954,
     "xang": 62.8,
-    "down": 0.47
+    "down": 0.47,
+    "thruG": 944.75
    },
    "ELK layered (tuned)": {
     "cross": 3100,
@@ -897,7 +1095,8 @@
     "ms": 272,
     "maxMs": 9742,
     "xang": 62.9,
-    "down": 0.85
+    "down": 0.85,
+    "thruG": 345.25
    },
    "dagre (tuned)": {
     "cross": 4088,
@@ -906,7 +1105,8 @@
     "ms": 74,
     "maxMs": 2343,
     "xang": 57.4,
-    "down": 0.71
+    "down": 0.71,
+    "thruG": 1136.75
    },
    "WebCola (tuned)": {
     "cross": 1996,
@@ -915,7 +1115,8 @@
     "ms": 704,
     "maxMs": 20383,
     "xang": 68.7,
-    "down": 0.54
+    "down": 0.54,
+    "thruG": 305.25
    },
    "d3-force (tuned)": {
     "cross": 2594,
@@ -924,7 +1125,8 @@
     "ms": 445,
     "maxMs": 4832,
     "xang": 69.1,
-    "down": 0.5
+    "down": 0.5,
+    "thruG": 252.5
    },
    "Cytoscape cose (tuned)": {
     "cross": 4668,
@@ -933,7 +1135,8 @@
     "ms": 760,
     "maxMs": 12145,
     "xang": 42.7,
-    "down": 0.46
+    "down": 0.46,
+    "thruG": 3399.75
    },
    "Cytoscape fcose (tuned)": {
     "cross": 3283,
@@ -942,7 +1145,8 @@
     "ms": 66,
     "maxMs": 1286,
     "xang": 71.4,
-    "down": 0.38
+    "down": 0.38,
+    "thruG": 567
    },
    "Graphviz neato": {
     "cross": 2035,
@@ -951,7 +1155,8 @@
     "ms": 11,
     "maxMs": 140,
     "xang": 70.1,
-    "down": 0.56
+    "down": 0.56,
+    "thruG": 240.25
    },
    "Graphviz fdp": {
     "cross": 10102,
@@ -960,7 +1165,8 @@
     "ms": 12,
     "maxMs": 142,
     "xang": 60.9,
-    "down": 0.47
+    "down": 0.47,
+    "thruG": 1138.5
    },
    "Graphviz sfdp": {
     "cross": 2150,
@@ -969,7 +1175,8 @@
     "ms": 8,
     "maxMs": 122,
     "xang": 68.6,
-    "down": 0.52
+    "down": 0.52,
+    "thruG": 311.25
    },
    "ELK stress": {
     "cross": 2507,
@@ -978,7 +1185,8 @@
     "ms": 264,
     "maxMs": 5717,
     "xang": 69.5,
-    "down": 0.53
+    "down": 0.53,
+    "thruG": 420.5
    },
    "ELK force": {
     "cross": 13015,
@@ -987,7 +1195,8 @@
     "ms": 250,
     "maxMs": 4769,
     "xang": 59.4,
-    "down": 0.53
+    "down": 0.53,
+    "thruG": 1035.5
    },
    "ELK layered": {
     "cross": 3562,
@@ -996,7 +1205,8 @@
     "ms": 22,
     "maxMs": 688,
     "xang": 54.4,
-    "down": 0.46
+    "down": 0.46,
+    "thruG": 467.5
    },
    "WebCola": {
     "cross": 2088,
@@ -1005,7 +1215,8 @@
     "ms": 118,
     "maxMs": 4105,
     "xang": 71.9,
-    "down": 0.46
+    "down": 0.46,
+    "thruG": 385
    },
    "d3-force": {
     "cross": 3572,
@@ -1014,7 +1225,8 @@
     "ms": 31,
     "maxMs": 454,
     "xang": 64.5,
-    "down": 0.49
+    "down": 0.49,
+    "thruG": 365.75
    },
    "dagre": {
     "cross": 4523,
@@ -1023,7 +1235,8 @@
     "ms": 17,
     "maxMs": 576,
     "xang": 53.8,
-    "down": 0.08
+    "down": 0.08,
+    "thruG": 1163.75
    },
    "Cytoscape cose": {
     "cross": 6289,
@@ -1032,7 +1245,8 @@
     "ms": 106,
     "maxMs": 5004,
     "xang": 37.2,
-    "down": 0.46
+    "down": 0.46,
+    "thruG": 5947.5
    },
    "Cytoscape fcose": {
     "cross": 4110,
@@ -1041,94 +1255,158 @@
     "ms": 7,
     "maxMs": 178,
     "xang": 69.8,
-    "down": 0.44
+    "down": 0.44,
+    "thruG": 811.25
    }
   },
   "ranks": {
    "five": {
+    "Tidy Mycelium": 3.21,
     "Best Read": 3.15,
     "Tidy Stress": 3.12,
     "Mycelium": 3.43,
-    "Graphviz neato": 4.68,
-    "Graphviz sfdp": 5.2,
-    "Graphviz fdp": 6.45,
-    "ELK stress": 5.94,
+    "Graphviz neato": 4.63,
+    "Graphviz sfdp": 5.27,
+    "Graphviz fdp": 6.39,
+    "ELK stress": 5.88,
     "ELK force": 9.49,
-    "ELK layered": 7.71,
-    "dagre": 8.47,
+    "ELK layered": 7.74,
+    "dagre": 8.52,
     "WebCola": 5.09,
-    "d3-force": 6.48,
-    "Cytoscape cose": 9.33,
-    "Cytoscape fcose": 6
+    "d3-force": 6.44,
+    "Cytoscape cose": 9.41,
+    "Cytoscape fcose": 5.93
    },
    "down": {
+    "Tidy Mycelium": 4.03,
     "Best Read": 3.78,
     "Tidy Stress": 3.73,
     "Mycelium": 3.95,
-    "Graphviz neato": 4.92,
+    "Graphviz neato": 4.86,
     "Graphviz sfdp": 5.73,
-    "Graphviz fdp": 6.6,
-    "ELK stress": 5.88,
-    "ELK force": 9.02,
-    "ELK layered": 6.86,
-    "dagre": 7.79,
-    "WebCola": 5.24,
-    "d3-force": 6.67,
-    "Cytoscape cose": 8.99,
-    "Cytoscape fcose": 6.51
+    "Graphviz fdp": 6.5,
+    "ELK stress": 5.8,
+    "ELK force": 9.01,
+    "ELK layered": 6.89,
+    "dagre": 7.83,
+    "WebCola": 5.23,
+    "d3-force": 6.58,
+    "Cytoscape cose": 9.08,
+    "Cytoscape fcose": 6.45
    },
    "dist": {
+    "Tidy Mycelium": 4.95,
     "Best Read": 4.68,
     "Tidy Stress": 4.6,
     "Mycelium": 5.04,
-    "Graphviz neato": 4.71,
-    "Graphviz sfdp": 5.66,
-    "Graphviz fdp": 6.27,
-    "ELK stress": 4.82,
-    "ELK force": 9.09,
+    "Graphviz neato": 4.66,
+    "Graphviz sfdp": 5.65,
+    "Graphviz fdp": 6.2,
+    "ELK stress": 4.78,
+    "ELK force": 9.08,
     "ELK layered": 8.59,
-    "dagre": 9.28,
-    "WebCola": 4.61,
-    "d3-force": 5.65,
+    "dagre": 9.29,
+    "WebCola": 4.6,
+    "d3-force": 5.62,
     "Cytoscape cose": 9.52,
-    "Cytoscape fcose": 5.12
+    "Cytoscape fcose": 5.06
+   },
+   "graded": {
+    "Tidy Mycelium": 3.12,
+    "Best Read": 3.17,
+    "Tidy Stress": 3.15,
+    "Mycelium": 3.49,
+    "Graphviz neato": 4.69,
+    "Graphviz sfdp": 5.38,
+    "Graphviz fdp": 6.38,
+    "ELK stress": 5.89,
+    "ELK force": 9.46,
+    "ELK layered": 7.66,
+    "dagre": 8.48,
+    "WebCola": 5.07,
+    "d3-force": 6.49,
+    "Cytoscape cose": 9.42,
+    "Cytoscape fcose": 5.95
    }
   },
-  "ranksBR": {
-   "five": 3.15,
-   "down": 3.78,
-   "dist": 4.68
+  "ranksTM": {
+   "five": 3.21,
+   "down": 4.03,
+   "dist": 4.95,
+   "graded": 3.12
   },
   "places": {
    "five": {
+    "Tidy Mycelium": 1,
     "Best Read": 1,
     "Tidy Stress": 1,
     "Mycelium": 1,
     "next": "Graphviz neato",
-    "nextRank": 4.68
+    "nextRank": 4.63
    },
    "down": {
+    "Tidy Mycelium": 1,
     "Best Read": 1,
     "Tidy Stress": 1,
     "Mycelium": 1,
     "next": "Graphviz neato",
-    "nextRank": 4.92
+    "nextRank": 4.86
    },
    "dist": {
+    "Tidy Mycelium": 4,
     "Best Read": 2,
     "Tidy Stress": 1,
     "Mycelium": 4,
     "next": "WebCola",
-    "nextRank": 4.61
+    "nextRank": 4.6
+   },
+   "graded": {
+    "Tidy Mycelium": 1,
+    "Best Read": 1,
+    "Tidy Stress": 1,
+    "Mycelium": 1,
+    "next": "Graphviz neato",
+    "nextRank": 4.69
    }
   },
   "wins": {
-   "Best Read": 26
+   "Graphviz neato": 3,
+   "Tidy Mycelium": 23
   }
  },
  "unseen": {
   "graphs": 36,
   "totals": {
+   "Tidy Mycelium": {
+    "cross": 1352,
+    "thru": 150,
+    "fill": 5.6,
+    "ms": 169,
+    "maxMs": 1682,
+    "xang": 73.5,
+    "down": 0.48,
+    "thruG": 76
+   },
+   "Tidy Mycelium, smaller": {
+    "cross": 1418,
+    "thru": 163,
+    "fill": 4.9,
+    "ms": 199,
+    "maxMs": 1471,
+    "xang": 73.7,
+    "down": 0.49,
+    "thruG": 63
+   },
+   "Tidy Mycelium, faster": {
+    "cross": 1537,
+    "thru": 135,
+    "fill": 8,
+    "ms": 116,
+    "maxMs": 793,
+    "xang": 71.6,
+    "down": 0.51,
+    "thruG": 63
+   },
    "Best Read": {
     "cross": 1549,
     "thru": 127,
@@ -1136,7 +1414,8 @@
     "ms": 226,
     "maxMs": 776,
     "xang": 71.9,
-    "down": 0.51
+    "down": 0.51,
+    "thruG": 78.25
    },
    "Tidy Stress": {
     "cross": 1638,
@@ -1145,7 +1424,8 @@
     "ms": 195,
     "maxMs": 974,
     "xang": 73.2,
-    "down": 0.51
+    "down": 0.51,
+    "thruG": 248.25
    },
    "Mycelium": {
     "cross": 1484,
@@ -1154,7 +1434,8 @@
     "ms": 121,
     "maxMs": 770,
     "xang": 70.7,
-    "down": 0.51
+    "down": 0.51,
+    "thruG": 99
    },
    "Graphviz neato (tuned)": {
     "cross": 2160,
@@ -1163,7 +1444,8 @@
     "ms": 65,
     "maxMs": 5142,
     "xang": 70.4,
-    "down": 0.5
+    "down": 0.5,
+    "thruG": 124.5
    },
    "Graphviz sfdp (tuned)": {
     "cross": 2411,
@@ -1172,7 +1454,8 @@
     "ms": 109,
     "maxMs": 9437,
     "xang": 69.4,
-    "down": 0.5
+    "down": 0.5,
+    "thruG": 386.75
    },
    "Graphviz fdp (tuned)": {
     "cross": 3572,
@@ -1181,7 +1464,8 @@
     "ms": 52,
     "maxMs": 1319,
     "xang": 68.1,
-    "down": 0.5
+    "down": 0.5,
+    "thruG": 440.5
    },
    "ELK stress (tuned)": {
     "cross": 3200,
@@ -1190,7 +1474,8 @@
     "ms": 1275,
     "maxMs": 133238,
     "xang": 67.8,
-    "down": 0.51
+    "down": 0.51,
+    "thruG": 615
    },
    "ELK force (tuned)": {
     "cross": 25371,
@@ -1199,7 +1484,8 @@
     "ms": 3949,
     "maxMs": 341441,
     "xang": 62.2,
-    "down": 0.47
+    "down": 0.47,
+    "thruG": 1921.75
    },
    "ELK layered (tuned)": {
     "cross": 4533,
@@ -1208,7 +1494,8 @@
     "ms": 321,
     "maxMs": 10937,
     "xang": 62.6,
-    "down": 0.88
+    "down": 0.88,
+    "thruG": 577.5
    },
    "dagre (tuned)": {
     "cross": 5949,
@@ -1217,7 +1504,8 @@
     "ms": 94,
     "maxMs": 5140,
     "xang": 56.1,
-    "down": 0.68
+    "down": 0.68,
+    "thruG": 2460
    },
    "WebCola (tuned)": {
     "cross": 2429,
@@ -1226,7 +1514,8 @@
     "ms": 882,
     "maxMs": 94086,
     "xang": 69.4,
-    "down": 0.54
+    "down": 0.54,
+    "thruG": 460.5
    },
    "d3-force (tuned)": {
     "cross": 3270,
@@ -1235,7 +1524,8 @@
     "ms": 499,
     "maxMs": 15131,
     "xang": 68.5,
-    "down": 0.51
+    "down": 0.51,
+    "thruG": 457.25
    },
    "Cytoscape cose (tuned)": {
     "cross": 5613,
@@ -1244,7 +1534,8 @@
     "ms": 676,
     "maxMs": 95360,
     "xang": 42.5,
-    "down": 0.43
+    "down": 0.43,
+    "thruG": 6081.25
    },
    "Cytoscape fcose (tuned)": {
     "cross": 4349,
@@ -1253,7 +1544,8 @@
     "ms": 85,
     "maxMs": 6365,
     "xang": 71.2,
-    "down": 0.41
+    "down": 0.41,
+    "thruG": 1271.75
    },
    "Graphviz neato": {
     "cross": 2769,
@@ -1262,7 +1554,8 @@
     "ms": 20,
     "maxMs": 1220,
     "xang": 68.7,
-    "down": 0.55
+    "down": 0.55,
+    "thruG": 408.25
    },
    "Graphviz fdp": {
     "cross": 14376,
@@ -1271,7 +1564,8 @@
     "ms": 19,
     "maxMs": 759,
     "xang": 60.1,
-    "down": 0.46
+    "down": 0.46,
+    "thruG": 1768.25
    },
    "Graphviz sfdp": {
     "cross": 2816,
@@ -1280,7 +1574,8 @@
     "ms": 14,
     "maxMs": 1412,
     "xang": 68.4,
-    "down": 0.53
+    "down": 0.53,
+    "thruG": 493.25
    },
    "ELK stress": {
     "cross": 3221,
@@ -1289,7 +1584,8 @@
     "ms": 319,
     "maxMs": 30159,
     "xang": 68.7,
-    "down": 0.5
+    "down": 0.5,
+    "thruG": 873.25
    },
    "ELK force": {
     "cross": 28922,
@@ -1298,7 +1594,8 @@
     "ms": 299,
     "maxMs": 34501,
     "xang": 59.6,
-    "down": 0.5
+    "down": 0.5,
+    "thruG": 1976.5
    },
    "ELK layered": {
     "cross": 5579,
@@ -1307,7 +1604,8 @@
     "ms": 24,
     "maxMs": 727,
     "xang": 52.3,
-    "down": 0.44
+    "down": 0.44,
+    "thruG": 915.25
    },
    "WebCola": {
     "cross": 2528,
@@ -1316,7 +1614,8 @@
     "ms": 147,
     "maxMs": 33979,
     "xang": 71.3,
-    "down": 0.47
+    "down": 0.47,
+    "thruG": 565
    },
    "d3-force": {
     "cross": 4613,
@@ -1325,7 +1624,8 @@
     "ms": 33,
     "maxMs": 1007,
     "xang": 64.4,
-    "down": 0.5
+    "down": 0.5,
+    "thruG": 659.25
    },
    "dagre": {
     "cross": 7336,
@@ -1334,7 +1634,8 @@
     "ms": 20,
     "maxMs": 576,
     "xang": 53.8,
-    "down": 0.06
+    "down": 0.06,
+    "thruG": 2603
    },
    "Cytoscape cose": {
     "cross": 8035,
@@ -1343,7 +1644,8 @@
     "ms": 106,
     "maxMs": 23918,
     "xang": 35.2,
-    "down": 0.49
+    "down": 0.49,
+    "thruG": 10237.75
    },
    "Cytoscape fcose": {
     "cross": 5625,
@@ -1352,89 +1654,123 @@
     "ms": 10,
     "maxMs": 196,
     "xang": 68.5,
-    "down": 0.43
+    "down": 0.43,
+    "thruG": 1688
    }
   },
   "ranks": {
    "five": {
+    "Tidy Mycelium": 3.21,
     "Best Read": 2.94,
     "Tidy Stress": 2.98,
     "Mycelium": 3.17,
-    "Graphviz neato": 4.64,
-    "Graphviz sfdp": 5.51,
-    "Graphviz fdp": 6.51,
-    "ELK stress": 5.94,
-    "ELK force": 9.71,
-    "ELK layered": 7.65,
-    "dagre": 8.51,
-    "WebCola": 4.83,
-    "d3-force": 6.54,
-    "Cytoscape cose": 9.19,
-    "Cytoscape fcose": 6.03
+    "Graphviz neato": 4.58,
+    "Graphviz sfdp": 5.54,
+    "Graphviz fdp": 6.44,
+    "ELK stress": 5.86,
+    "ELK force": 9.7,
+    "ELK layered": 7.64,
+    "dagre": 8.56,
+    "WebCola": 4.79,
+    "d3-force": 6.47,
+    "Cytoscape cose": 9.25,
+    "Cytoscape fcose": 5.96
    },
    "down": {
+    "Tidy Mycelium": 4.04,
     "Best Read": 3.57,
     "Tidy Stress": 3.51,
     "Mycelium": 3.74,
-    "Graphviz neato": 5,
+    "Graphviz neato": 4.92,
     "Graphviz sfdp": 5.8,
-    "Graphviz fdp": 6.64,
-    "ELK stress": 6.04,
-    "ELK force": 9.28,
-    "ELK layered": 6.73,
-    "dagre": 7.86,
-    "WebCola": 5,
-    "d3-force": 6.57,
-    "Cytoscape cose": 8.95,
-    "Cytoscape fcose": 6.56
+    "Graphviz fdp": 6.55,
+    "ELK stress": 5.94,
+    "ELK force": 9.25,
+    "ELK layered": 6.72,
+    "dagre": 7.89,
+    "WebCola": 4.95,
+    "d3-force": 6.47,
+    "Cytoscape cose": 9,
+    "Cytoscape fcose": 6.48
    },
    "dist": {
+    "Tidy Mycelium": 4.86,
     "Best Read": 4.45,
     "Tidy Stress": 4.36,
     "Mycelium": 4.74,
-    "Graphviz neato": 4.62,
-    "Graphviz sfdp": 5.98,
-    "Graphviz fdp": 6.39,
-    "ELK stress": 4.79,
-    "ELK force": 9.25,
-    "ELK layered": 8.56,
-    "dagre": 9.28,
-    "WebCola": 4.43,
-    "d3-force": 5.78,
+    "Graphviz neato": 4.56,
+    "Graphviz sfdp": 5.95,
+    "Graphviz fdp": 6.32,
+    "ELK stress": 4.73,
+    "ELK force": 9.24,
+    "ELK layered": 8.54,
+    "dagre": 9.29,
+    "WebCola": 4.39,
+    "d3-force": 5.72,
     "Cytoscape cose": 9.36,
-    "Cytoscape fcose": 5.11
+    "Cytoscape fcose": 5.05
+   },
+   "graded": {
+    "Tidy Mycelium": 3.14,
+    "Best Read": 2.96,
+    "Tidy Stress": 3.01,
+    "Mycelium": 3.21,
+    "Graphviz neato": 4.63,
+    "Graphviz sfdp": 5.63,
+    "Graphviz fdp": 6.43,
+    "ELK stress": 5.89,
+    "ELK force": 9.68,
+    "ELK layered": 7.55,
+    "dagre": 8.51,
+    "WebCola": 4.79,
+    "d3-force": 6.49,
+    "Cytoscape cose": 9.28,
+    "Cytoscape fcose": 5.98
    }
   },
-  "ranksBR": {
-   "five": 2.94,
-   "down": 3.57,
-   "dist": 4.45
+  "ranksTM": {
+   "five": 3.21,
+   "down": 4.04,
+   "dist": 4.86,
+   "graded": 3.14
   },
   "places": {
    "five": {
+    "Tidy Mycelium": 1,
     "Best Read": 1,
     "Tidy Stress": 1,
     "Mycelium": 1,
     "next": "Graphviz neato",
-    "nextRank": 4.64
+    "nextRank": 4.58
    },
    "down": {
+    "Tidy Mycelium": 1,
     "Best Read": 1,
     "Tidy Stress": 1,
     "Mycelium": 1,
     "next": "Graphviz neato",
-    "nextRank": 5
+    "nextRank": 4.92
    },
    "dist": {
+    "Tidy Mycelium": 4,
     "Best Read": 2,
     "Tidy Stress": 1,
     "Mycelium": 3,
     "next": "WebCola",
-    "nextRank": 4.43
+    "nextRank": 4.39
+   },
+   "graded": {
+    "Tidy Mycelium": 1,
+    "Best Read": 1,
+    "Tidy Stress": 1,
+    "Mycelium": 1,
+    "next": "Graphviz neato",
+    "nextRank": 4.63
    }
   },
   "wins": {
-   "Best Read": 36
+   "Graphviz neato": 4,
+   "Tidy Mycelium": 32
   }
  },
  "topdown": {

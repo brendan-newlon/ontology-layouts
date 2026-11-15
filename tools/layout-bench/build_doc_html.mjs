@@ -15,12 +15,12 @@ const NAMES = { uni: 'University', hotel: 'Hotel booking', org: 'W3C ORG', brewe
   hx_small: 'Held-out: small mixed model', hx_mesh: 'Held-out: dense links', hx_rome40: 'Held-out: sparse, Rome style', hx_rings: 'Held-out: process loops', hx_hubs: 'Held-out: two big hubs', hx_md70: 'Held-out: multi-domain', hx_rome90: 'Held-out: sparse, Rome style', hx_tax: 'Held-out: deep taxonomy', hx_md160: 'Held-out: multi-domain', hx_md300: 'Held-out: multi-domain',
   pb_foaf: 'FOAF', pb_dcterms: 'Dublin Core terms', pb_time: 'OWL-Time', pb_dcat: 'DCAT 3', pb_bfo: 'BFO 2020', pb_dul: 'DOLCE+DnS Ultralite', pb_saref: 'SAREF core', pb_gr: 'GoodRelations' };
 const nameOf = (k) => NAMES[k] || (k.startsWith('pb_rome') ? 'Rome graph ' + k.slice(7) : k);
-const OURS = { 'Tidy Stress (ours)': 'Tidy Stress', 'Mycelium (ours)': 'Mycelium', 'Best Read (ours)': 'Best Read' };
+const OURS = { 'Tidy Mycelium (ours)': 'Tidy Mycelium', 'Tidy Stress (ours)': 'Tidy Stress', 'Mycelium (ours)': 'Mycelium', 'Best Read (ours)': 'Best Read' };
 const DATA = {};
 for (const r of rows) {
   if (isUnseen(r.key) && r.n > 120) continue; // the explorer keeps to graphs a page can draw quickly
   const m = (DATA[r.key] = DATA[r.key] || { name: nameOf(r.key), unseen: isUnseen(r.key), labels: r.labels, box: r.box, edges: r.edges, ours: {}, pub: {} });
-  if (r.algo === 'Best Read (ours)') continue; // the auto mode is presented apart from the two layouts
+  if (r.algo === 'Best Read (ours)' || /^Tidy Mycelium, /.test(r.algo)) continue; // Best Read chooses between two of the others; the preferences are in the text
   const side = OURS[r.algo] ? m.ours : m.pub, name = OURS[r.algo] || r.algo;
   side[name] = { pos: r.pos, cross: r.cross, thru: r.thru, fill: Math.round(r.fill * 10) / 10, score: Math.round(r.score), ms: Math.round(r.ms) };
 }
@@ -40,7 +40,7 @@ for (const m of Object.values(DATA)) for (const L of Object.values(m.ours)) {
 }
 const dev = ['uni', 'hotel', 'org', 'brewery', 'trial', 'prov', 'telecom', 'sosa', 'crm', 'schema', 'health', 'fibo', 'pizza', 'bio', 'big'].filter((k) => DATA[k]);
 // an unseen graph is shown only when ours and every general-settings open-source layout are recorded for it
-const complete = (k) => Object.keys(DATA[k].ours).length === 2 && Object.keys(DATA[k].pub).length >= 11;
+const complete = (k) => Object.keys(DATA[k].ours).length === 3 && Object.keys(DATA[k].pub).length >= 11;
 const unseen = Object.keys(DATA).filter((k) => isUnseen(k) && complete(k)).sort((a, b) => DATA[a].labels.length - DATA[b].labels.length || a.localeCompare(b));
 for (const k of Object.keys(DATA)) if (isUnseen(k) && !unseen.includes(k)) delete DATA[k];
 const order = dev.concat(unseen);

@@ -1,13 +1,12 @@
 // The page switcher shared by the site's pages: replaces the page's title (the element with data-site-title, else the first
 // header h1) with a compact button that opens a menu of the pages. Inside the one-page site (index.html, which shows each
 // page in a frame and keeps them alive) a choice switches the frame; a page opened on its own goes to the site instead.
-// Load it with <script src="(path to the repository root)/site-nav.js" data-page="playback" defer></script>.
+// Load it with <script src="(path to the repository root)/site-nav.js" data-page="lab" defer></script>.
 (function () {
   const me = document.currentScript, root = new URL('.', me.src).href, here = me.dataset.page;
   const PAGES = [
     ['intro', 'Introduction', 'What the layouts do, in two minutes', 'docs/INTRO.html'],
-    ['playback', 'Playback', 'Watch a layout work, step by step', 'tools/layout-bench/playback.html'],
-    ['lab', 'Lab', 'Lay out your own graph, tidy it by hand, export it', 'tools/layout-bench/lab.html'],
+    ['lab', 'Lab', 'Watch a layout work step by step, change it by hand, lay out your own graph, export it', 'tools/layout-bench/playback.html'],
     ['story', 'How it was built', 'How the layouts work, how a person taught the clean-up, the work it builds on', 'docs/STORY.html'],
     ['benchmarks', 'Benchmarks', 'The results against 11 open-source layouts on 51 graphs, and the method', 'docs/ONTOLOGY-LAYOUT-ALGORITHMS.html'],
     ['developers', 'Developer guide', 'Use the layout in your own app: one call, every option', 'docs/DEVELOPER-GUIDE.html']
