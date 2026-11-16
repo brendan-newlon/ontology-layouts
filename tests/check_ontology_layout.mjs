@@ -418,7 +418,7 @@ if (process.argv.includes('--self-test')) {
     ['lab', 'a press on a link pans instead of pulling a bend', labSrc.replace('if (ev.button === 0 && (isH || isL) && !ev.shiftKey) {', 'if (ev.button === 0 && isH && !ev.shiftKey) {')],
     ['keep', 'relation classes moved whatever it costs', code.replace('if (c1 <= c0 + 6) {', 'if (true) {')],
     ['opened', 'opened graphs written to the storage', graphsSrc.replace("register(key, MEM[key]); return key;", "register(key, MEM[key]); set(KEY, MEM); return key;")],
-    ['opened', 'graphs an earlier version stored still offered', graphsSrc.replace("const MEM = {}, all = () => MEM;", "const MEM = get(KEY, {}), all = () => MEM; Object.entries(MEM).forEach(([k, g]) => (MODELS[k] = { name: g.name, imported: true }));")],
+    ['opened', 'what an earlier version stored left in the storage', graphsSrc.replace("try { localStorage.removeItem(KEY); Object.keys(localStorage)", "try { Object.keys(localStorage)")],
     ['opened', 'the Lab stores its notes on opened graphs', labSrc.replace("if (!MODELS[R.key] || !MODELS[R.key].imported) try { localStorage.setItem('playback-notes:'", "try { localStorage.setItem('playback-notes:'")],
   ];
   let ok = true;
