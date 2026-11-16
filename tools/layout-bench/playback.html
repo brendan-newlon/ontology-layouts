@@ -171,6 +171,7 @@ html.embed #caption { padding-right: 7px !important; }
       <div class="h">Your graph</div>
       <button data-f="ttl">Open a Turtle file (.ttl)…</button>
       <button data-f="forget" id="fForget">Remove this graph from the list</button>
+      <button data-f="forgetAll" id="fForgetAll">Remove all your graphs</button>
       <div class="h">Export the drawing shown</div>
       <button data-f="svg">SVG image</button><button data-f="png">PNG image</button>
       <button data-f="math" title="The whole run as plain text: the graph, every step in order with its time and the problems after it, the result against our other layouts, and the final positions. Paste it into another assistant to ask for ideas.">Copy the math (the run as text)</button>
@@ -278,7 +279,7 @@ html.embed #caption { padding-right: 7px !important; }
 <script src="models5.js"></script>
 <script src="models6.js"></script>
 <script src="ttl.js"></script>
-<script src="graphs.js?v=2"></script>
+<script src="graphs.js?v=3"></script>
 <script>
 // Plays back a layout step by step: the library reports the positions after every step that moves classes (_ogTraced),
 // the clean-up records each step it keeps, and the link routing is replayed one step at a time. Each frame plays for exactly
@@ -1151,10 +1152,11 @@ function note(kind, detail) {
   if (!R || !SESS.id || EMBED) return; const ev = { seq: SESS.events.length + 1, at: new Date().toISOString(), s: Math.round((performance.now() - SESS.t0) / 1000), kind, ...detail };
   SESS.events.push(ev); showNote(ev);
   const body = JSON.stringify({ id: SESS.id, graph: R.key, algo: R.algo, seed: R.seed, labels: R.labels, links: R.E.map((e) => [e.s, e.t, e.sub ? 1 : 0]), boxes: R.D.map((d) => d.w), events: SESS.events });
-  try { localStorage.setItem('playback-notes:' + SESS.id, body); } catch (e) {}
-  clearTimeout(saveT); if (!/^(localhost|127\.0\.0\.1|\[::1\])$/.test(location.hostname)) { $('saveInfo').textContent = 'kept in this browser only'; return; } // the receiver runs only on your own computer
+  SESS.body = body; // a graph opened from a file stays in memory only: its notes are not written to the browser's storage
+  if (!MODELS[R.key] || !MODELS[R.key].imported) try { localStorage.setItem('playback-notes:' + SESS.id, body); } catch (e) {}
+  clearTimeout(saveT); if (!/^(localhost|127\.0\.0\.1|\[::1\])$/.test(location.hostname)) { $('saveInfo').textContent = MODELS[R.key] && MODELS[R.key].imported ? 'kept until this page closes' : 'kept in this browser only'; return; } // the receiver runs only on your own computer
   saveT = setTimeout(() => fetch('http://127.0.0.1:8613/' + SESS.id + '.json', { method: 'POST', body })
-    .then(() => ($('saveInfo').textContent = 'saved ' + new Date().toLocaleTimeString())).catch(() => ($('saveInfo').textContent = 'kept in this browser only')), 400);
+    .then(() => ($('saveInfo').textContent = 'saved ' + new Date().toLocaleTimeString())).catch(() => ($('saveInfo').textContent = MODELS[R.key] && MODELS[R.key].imported ? 'kept until this page closes' : 'kept in this browser only')), 400);
 }
 function showNote(ev) {
   const at = ev.frame ? `<span class="at">${esc(ev.step)} · frame ${ev.frame} of ${ev.of} · ${ev.workMs != null ? `${fmtMs(ev.workMs)} of ${fmtMs(ev.totalMs)} of work` : `${ev.t} s of ${ev.total} s`}</span>` : '';
@@ -1251,7 +1253,7 @@ svg.addEventListener('wheel', (ev) => { ev.preventDefault(); const p = svg.creat
 window.addEventListener('resize', () => { CR = null; if (R) render(); });
 
 // ---------- file menu: your own graph, exports of the drawing shown, your notes ----------
-$('fileBtn').onclick = (ev) => { ev.stopPropagation(); $('fForget').hidden = !(R && MODELS[R.key] && MODELS[R.key].imported); $('fileMenu').classList.toggle('open'); };
+$('fileBtn').onclick = (ev) => { ev.stopPropagation(); $('fForget').hidden = !(R && MODELS[R.key] && MODELS[R.key].imported); $('fForgetAll').hidden = !LayoutGraphs.imported().length; $('fileMenu').classList.toggle('open'); };
 document.addEventListener('click', () => $('fileMenu').classList.remove('open'));
 const baseName = () => String((MODELS[R.key] && MODELS[R.key].name) || R.key).replace(/^Public: /, '').replace(/[^\w.-]+/g, '_').replace(/_+$/, '') || 'graph';
 const shown = () => C.P.map((p, v) => p || null);
@@ -1310,9 +1312,10 @@ function exportGraphml() {
   R.E.forEach((e, k) => (s += `<edge id="e${k}" source="n${e.s}" target="n${e.t}"><data key="kind">${e.sub ? 'subClassOf' : 'relationship'}</data></edge>\n`));
   return s + '</graph>\n</graphml>\n';
 }
-const sessionBody = () => localStorage.getItem('playback-notes:' + SESS.id) || JSON.stringify({ id: SESS.id, events: SESS.events });
+const sessionBody = () => SESS.body || localStorage.getItem('playback-notes:' + SESS.id) || JSON.stringify({ id: SESS.id, events: SESS.events });
 $('fileMenu').querySelector('.fm').onclick = (ev) => { const b = ev.target.closest('button'); if (!b) return; $('fileMenu').classList.remove('open'); const f = b.dataset.f;
   if (f === 'ttl') { $('ttlFile').click(); return; }
+  if (f === 'forgetAll') { const was = R && MODELS[R.key] && MODELS[R.key].imported; LayoutGraphs.clear(); ownGraphs(); if (was) { $('graph').value = 'crm'; run(); } return; }
   if (!R || !C) return;
   if (f === 'forget') { if (!MODELS[R.key].imported) return; LayoutGraphs.remove(R.key); ownGraphs(); $('graph').value = 'crm'; run(); return; }
   if (f === 'svg') LayoutGraphs.download(baseName() + '.svg', exportSvg(), 'image/svg+xml');
@@ -1325,7 +1328,7 @@ $('fileMenu').querySelector('.fm').onclick = (ev) => { const b = ev.target.close
 function ownGraphs() { // the graphs read from files, first in the list
   let g = $('graph').querySelector('optgroup[data-own]'); if (g) g.remove();
   const ks = LayoutGraphs.imported(); if (!ks.length) return;
-  g = document.createElement('optgroup'); g.label = 'Your graphs (only in this browser)'; g.dataset.own = '1';
+  g = document.createElement('optgroup'); g.label = 'Your graphs (until this page closes)'; g.dataset.own = '1';
   ks.forEach((k) => { const o = document.createElement('option'); o.value = k; o.textContent = MODELS[k].name; g.appendChild(o); }); $('graph').prepend(g);
 }
 $('ttlFile').onchange = async () => { const file = $('ttlFile').files[0]; $('ttlFile').value = ''; if (!file) return;
