@@ -1,21 +1,24 @@
-// Shared by the Layout Lab and the Layout Playback: graphs the reader imported (kept in this browser, so both pages offer
-// them), the node style (label boxes, or circles with the name underneath), and downloads.
+// Shared by the Layout Lab and the Layout Playback: graphs the reader opened from a file (kept in memory only, so they are
+// gone when the page closes, and nothing of them is stored in the browser), the node style (label boxes, or circles with the
+// name underneath), and downloads.
 // Load after models*.js (it adds the imported graphs to MODELS).
 (function () {
   const KEY = 'layout-graphs:imported', STYLE = 'layout-graphs:style';
   const get = (k, d) => { try { const v = localStorage.getItem(k); return v == null ? d : JSON.parse(v); } catch (e) { return d; } };
   const set = (k, v) => { try { localStorage.setItem(k, JSON.stringify(v)); return true; } catch (e) { return false; } };
-  const all = () => get(KEY, {});
+  // Earlier versions kept opened graphs in localStorage; whatever is left there is deleted on every load.
+  // So were the Lab's notes on them, which hold the graph's class names and links (playback-notes:pb_imp_...).
+  try { localStorage.removeItem(KEY); Object.keys(localStorage).filter((k) => k.startsWith('playback-notes:pb_imp_')).forEach((k) => localStorage.removeItem(k)); } catch (e) { /* nothing stored */ }
+  const MEM = {}, all = () => MEM;
   function register(key, g) { MODELS[key] = { name: g.name, imported: true, load: async () => ({ labels: g.labels, edges: g.edges, iris: g.iris }) }; }
-  Object.entries(all()).forEach(([k, g]) => register(k, g));
   // a graph read from a file: { name, labels, edges: [{ s, t, kind: 'sub' | 'rel', name }], iris } -> its key in MODELS
   function add(g) {
-    const A = all(), key = 'imp_' + Date.now().toString(36);
-    A[key] = { name: g.name, labels: g.labels, edges: g.edges, iris: g.iris || null, at: new Date().toISOString() };
-    if (!set(KEY, A)) { delete A[key]; register(key, g); return key; } // too big for this browser's storage: kept until the page closes
-    register(key, A[key]); return key;
+    const key = 'imp_' + Date.now().toString(36);
+    MEM[key] = { name: g.name, labels: g.labels, edges: g.edges, iris: g.iris || null };
+    register(key, MEM[key]); return key;
   }
-  function remove(key) { const A = all(); delete A[key]; set(KEY, A); delete MODELS[key]; }
+  function remove(key) { delete MEM[key]; delete MODELS[key]; }
+  function clear() { Object.keys(MEM).forEach(remove); }
   // Node styles: a shape (box or circle) and where the name goes (on it or under it). Written as "box" (name on the box, the
   // benchmarks' boxes), "circle" (name under the circle, as many graph browsers draw them), "box-under" or "circle-on".
   // The layout is given one box per class that covers everything drawn for it, centered where the links meet the class
@@ -55,5 +58,5 @@
     const blob = data instanceof Blob ? data : new Blob([data], { type: type || 'application/octet-stream' }), url = URL.createObjectURL(blob), a = document.createElement('a');
     a.href = url; a.download = name; document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(url), 2000);
   }
-  window.LayoutGraphs = { all, add, remove, boxes, nodeSvg, hits, download, style: () => get(STYLE, 'box'), setStyle: (s) => set(STYLE, s), parse, compose, imported: () => Object.keys(all()) };
+  window.LayoutGraphs = { all, add, remove, clear, boxes, nodeSvg, hits, download, style: () => get(STYLE, 'box'), setStyle: (s) => set(STYLE, s), parse, compose, imported: () => Object.keys(all()) };
 })();

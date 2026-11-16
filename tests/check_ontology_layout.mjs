@@ -344,9 +344,30 @@ function checkLab(lab) {
   }
   return bad;
 }
-function runAll(code, lab = labSrc) {
+// graphs opened from a file stay in memory only: nothing of them in the browser's storage, and what earlier versions stored
+// (the graphs and the Lab's notes on them) is deleted on load
+const graphsPath = new URL('../tools/layout-bench/graphs.js', import.meta.url), graphsSrc = fs.readFileSync(graphsPath, 'utf8').replace(/\r\n/g, '\n');
+function checkOpened(gs, lab) {
+  const bad = [], mem = new Map([['layout-graphs:imported', '{"imp_a":{"name":"Old","labels":["OldSecret"],"edges":[]}}'], ['playback-notes:pb_imp_a_1', '{"labels":["OldSecret"]}'], ['playback-notes:pb_crm_1', '{}']]);
+  const ls = { getItem: (k) => (mem.has(k) ? mem.get(k) : null), setItem: (k, v) => mem.set(k, String(v)), removeItem: (k) => mem.delete(k) };
+  const lsProxy = new Proxy(ls, { ownKeys: () => [...mem.keys()], getOwnPropertyDescriptor: (t, k) => (mem.has(k) ? { enumerable: true, configurable: true, value: mem.get(k) } : Reflect.getOwnPropertyDescriptor(t, k)) });
+  const win = {}, MODELS = {};
+  try { new Function('window', 'MODELS', 'localStorage', 'document', gs)(win, MODELS, lsProxy, {}); } catch (err) { return ['graphs.js threw: ' + err.message]; }
+  const G = win.LayoutGraphs; if (!G) return ['graphs.js did not set LayoutGraphs'];
+  if (Object.keys(MODELS).length) bad.push('a graph stored by an earlier version is offered again');
+  if ([...mem.values()].some((v) => v.includes('OldSecret'))) bad.push('what an earlier version stored of an opened graph is still in the storage');
+  if (!mem.has('playback-notes:pb_crm_1')) bad.push('notes on a built-in graph deleted');
+  const k = G.add({ name: 'Probe', labels: ['NewSecret'], edges: [] });
+  if (!MODELS[k] || !MODELS[k].imported) bad.push('an opened graph is not offered');
+  if ([...mem.values()].some((v) => v.includes('NewSecret'))) bad.push('an opened graph is written to the storage');
+  if (typeof G.clear !== 'function') bad.push('no way to remove all opened graphs'); else { G.clear(); if (MODELS[k]) bad.push('removing all opened graphs leaves one'); }
+  const line = lab.split('\n').find((l) => l.includes("localStorage.setItem('playback-notes:'"));
+  if (!line || !/\.imported/.test(line)) bad.push('the Lab writes its notes on an opened graph (its class names and links) to the storage');
+  return bad;
+}
+function runAll(code, lab = labSrc, gs = graphsSrc) {
   const out = { clock: checkClock(code) }, L = load(code);
-  out.grid = checkGrid(L); out.repeatable = checkRepeatable(L); out.tree = checkTree(L); out.routes = checkRoutes(L); out.moves = checkMoves(L); out.pull = checkPull(L); out.api = checkApi(L); out.keep = checkKeep(L); out.explore = checkExplore(L); out.apart = checkApart(L); out.lab = checkLab(lab);
+  out.grid = checkGrid(L); out.repeatable = checkRepeatable(L); out.tree = checkTree(L); out.routes = checkRoutes(L); out.moves = checkMoves(L); out.pull = checkPull(L); out.api = checkApi(L); out.keep = checkKeep(L); out.explore = checkExplore(L); out.apart = checkApart(L); out.lab = checkLab(lab); out.opened = checkOpened(gs, lab);
   return out;
 }
 
@@ -396,11 +417,14 @@ if (process.argv.includes('--self-test')) {
     ['explore', 'an overlap only costs 1000 in the clean-up', code.replace('tight: 1, ov: 1e6, area: 6', 'tight: 1, ov: 1000, area: 6')],
     ['lab', 'a press on a link pans instead of pulling a bend', labSrc.replace('if (ev.button === 0 && (isH || isL) && !ev.shiftKey) {', 'if (ev.button === 0 && isH && !ev.shiftKey) {')],
     ['keep', 'relation classes moved whatever it costs', code.replace('if (c1 <= c0 + 6) {', 'if (true) {')],
+    ['opened', 'opened graphs written to the storage', graphsSrc.replace("register(key, MEM[key]); return key;", "register(key, MEM[key]); set(KEY, MEM); return key;")],
+    ['opened', 'graphs an earlier version stored still offered', graphsSrc.replace("const MEM = {}, all = () => MEM;", "const MEM = get(KEY, {}), all = () => MEM; Object.entries(MEM).forEach(([k, g]) => (MODELS[k] = { name: g.name, imported: true }));")],
+    ['opened', 'the Lab stores its notes on opened graphs', labSrc.replace("if (!MODELS[R.key] || !MODELS[R.key].imported) try { localStorage.setItem('playback-notes:'", "try { localStorage.setItem('playback-notes:'")],
   ];
   let ok = true;
   for (const [check, what, broken] of fixtures) {
-    if (broken === code || broken === labSrc) { console.log('FIXTURE NOT APPLIED:', what); ok = false; continue; }
-    let res; try { res = check === 'lab' ? checkLab(broken) : runAll(broken)[check]; } catch (err) { res = ['threw: ' + err.message]; }
+    if (broken === code || broken === labSrc || broken === graphsSrc) { console.log('FIXTURE NOT APPLIED:', what); ok = false; continue; }
+    let res; try { res = check === 'lab' ? checkLab(broken) : check === 'opened' ? (broken.includes('LayoutGraphs') && !broken.includes('<html') ? checkOpened(broken, labSrc) : checkOpened(graphsSrc, broken)) : runAll(broken)[check]; } catch (err) { res = ['threw: ' + err.message]; }
     console.log(res.length ? 'fires' : 'MISSED', '-', check, '-', what);
     if (!res.length) ok = false;
   }
