@@ -78,10 +78,10 @@ h2.tabhead small { display: block; text-transform: uppercase; letter-spacing: .1
 <script src="../site-nav.js" data-page="${pageKey}" defer></script>
 </head>
 <body>
-<header class="sitebar"><h1>${esc(barTitle)}</h1><span class="sp"></span><a href="${REPO}">Source on GitHub</a></header>
+<header class="sitebar"><h1>${esc(barTitle)}</h1><span class="sp"></span><a href="${REPO}" target="_blank" rel="noopener">Source on GitHub</a></header>
 <div class="wrap">
 ${body}
-<p class="foot">Ontology Layouts · Apache License 2.0 · <a href="${REPO}">${REPO.replace('https://', '')}</a></p>
+<p class="foot">Ontology Layouts · Apache License 2.0 · <a href="${REPO}" target="_blank" rel="noopener">${REPO.replace('https://', '')}</a></p>
 </div>
 </body>
 </html>
@@ -186,7 +186,7 @@ function intro() {
 
 <h2 id="taught">How it was built</h2>
 <p class="prose">The placement stands on published methods: stress majorization started from pivot MDS, Louvain community detection to find groups of closely linked classes, and readability measures from graph-drawing research. The clean-up did not come from the literature. Brendan Newlon designed the Lab and the Playback as a place to teach it: he tidied drawings by hand while explaining how he spots problems, which come first and how he thinks about solving them, and had an AI assistant, Claude, derive rules and the math behind them from what he showed and said. Every rule was kept only if it held on graphs nobody had looked at. Then he watched the result in the Playback and named what was still wrong in a few words ("don't fence me in", "pull it in from the edge"); each phrase became a short pass of its own. Ideas that did not hold up, such as bending links instead of moving classes, were measured and dropped. The full account, with the teaching sessions and the lab to try, is on <a ${site('story')}>How it was built</a>.</p>
-<p class="prose">The Lab and the Playback are offered as tools in their own right, for any problem a person can see and fix better than they can describe: <a href="${REPO}/blob/main/docs/SHOW-AND-TELL-LABS.md">how the method works</a>.</p>`;
+<p class="prose">The Lab and the Playback are offered as tools in their own right, for any problem a person can see and fix better than they can describe: <a href="${REPO}/blob/main/docs/SHOW-AND-TELL-LABS.md" target="_blank" rel="noopener">how the method works</a>.</p>`;
   return page({ title: 'Ontology Layouts', description: 'Readable automatic layouts for ontology diagrams: what they do, the difference on one ontology, and where to go next.', pageKey: 'intro', barTitle: 'Introduction', body });
 }
 
